@@ -95,7 +95,7 @@ one commit.
 
 | Surface | Status | Candidates found | Skipped | Measured |
 |---|---|---|---|---|
-| `/` | 200 | 21 | 0 | 21 |
+| `/` | 200 | 22 | 0 | 22 |
 | `/work` | 200 | 8 | 0 | 8 |
 | `/cv` | 200 | 10 | 0 | 10 |
 | `/celeste` | 200 | 4 | 4 | 0 |
@@ -208,6 +208,16 @@ at 10, `/celeste` at four found and four skipped and the 404 at 6, and the pin w
 printed. The four new elements are the two rows' live links and Source links, each `Live` row drawing
 both. Every one clears the floor, so the whole-run total goes from 41 to 45 and the exemption ledger
 gains no row.
+
+**Re-measured 2026-09-30 after Registry 1.7.0 took `cs-tournament` `Live`** (the placement half of
+Story 3-7, `ops/tournament-placement.md`). `/` went from 21 to 22 and the other four did not move.
+**Read off the sweep's own failure output**: CI run 36653670214's `rendered-output` job in
+`mcr.microsoft.com/playwright:v1.62.1-noble` against the old pin failed naming `/` alone and printed
+`/: found 22, skipped 0, measured 22, 0 element(s) of any kind past an edge`, with `/work` at 8, `/cv`
+at 10, `/celeste` at four found and four skipped and the 404 at 6, and the pin was moved to what it
+printed. The new element is `cs-tournament`'s live link, back beside its Source link now that the entry
+is `Live` at `https://tournament.cuatro.dev`, the reverse of the 2026-09-25 move above. It clears the
+floor, so the whole-run total goes from 45 to 46 and the exemption ledger gains no row.
 
 **`/projects` is in neither this table nor the non-Hub list, and that is deliberate.** A browser
 asked for it now gets a 301 to `/#suite` and lands on `/`, which is a Hub surface this sweep already

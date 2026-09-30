@@ -8913,3 +8913,41 @@ status: done
 
     **Owner: the `/bmad-project-context` refresh before Epic 4.** **Trigger: that refresh.**
   status: open
+- id: DW-290
+  summary: >-
+    The tournament's viewer surface shows no signed-in state: `apps/tournament/app/(viewer)/page.tsx`
+    renders the Steam sign-in link in its footer unconditionally, and only the API routes read the
+    session, so a completed login looks identical to no login.
+  evidence: |-
+    Found 2026-09-30 by the placement run (`ops/tournament-placement.md` § Placement run, step 9). The
+    Operator's Steam sign-ins came back to `/` with no `login=error` and no visible change, and were
+    read as failures until `auth.users.last_sign_in_at` showed the sign-in had completed at
+    01:01:26Z with the `steamid64` and `role` claims bound. A signed-in indicator (the player's name
+    or an admin link) on the viewer shell is the missing affordance; where it goes is a UX decision
+    for the Epic 8 restyle of this application (DW-279 owns its token adoption).
+
+    **Owner: Epic 8 wave 2 (`8-6-cs-tournament-visual-restyle`).** **Trigger: that story's spec.**
+  status: open
+- id: DW-291
+  summary: >-
+    The tournament's Supabase store has no discrete migration step: its schema was 26 migrations
+    behind the code at placement and was caught up by hand from the box, and nothing runs the next
+    migration before the next rollout (AD-23).
+  evidence: |-
+    Found 2026-09-30 by the placement run. The project the Operator's `.env.local` named held
+    migrations 0001 to 0003 against 0029 in `apps/tournament/supabase/migrations`, which is why the
+    login's writes and the leaderboard read failed against it. On the Operator's ruling the missing
+    26 were applied from the box through the session pooler, one transaction each, after a
+    `pg_dump -Fc -n public` kept at `/home/deploy/backups/cs-tournament/pre-migrations-20260930T005415Z.dump`,
+    and recorded in `supabase_migrations.schema_migrations`. The placement spec's Decision (no
+    migrate service, since nothing moved) holds for the move, but a later migration in
+    `apps/tournament/supabase/migrations` has no path to this store except that same hand-run. The
+    fix is a `tournament-migrate` service or a runbook step in `ops/tournament-placement.md` § Later
+    rollouts that applies pending migrations from the checkout before `up -d`, the way
+    `tracker-migrate` does for the tracker, and a check that refuses a rollout while the ledger is
+    behind the directory.
+
+    **Owner: the next story that touches the tournament's deploy path (DW-275 in Epic 4 is the
+    natural home).** **Trigger: the next migration added under `apps/tournament/supabase/migrations`,
+    or DW-275, whichever comes first.**
+  status: open

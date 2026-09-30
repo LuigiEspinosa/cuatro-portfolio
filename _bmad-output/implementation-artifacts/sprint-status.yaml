@@ -487,7 +487,14 @@ development_status:
   2-34-fr-17-conformance-no-colour-literal-outside-the-contract: done
   epic-2-retrospective: done
 
-  epic-3: in-progress
+  # 2026-09-30: done. All eight stories done: 3-1 to 3-4 shipped on 2026-09-29 in three AD-20 merges
+  # (PR #82, #83, #84) with the first pull-based deploy dispatched after the third; 3-5 to 3-8 landed on
+  # dev by the unattended run of 2026-09-29 and reached main in PR #86 with DW-285; the tracker cutover
+  # and the tournament placement ran on the box; the four source repositories are archived and the
+  # estate reads 10. Registry 1.7.0 follows in the fifth merge. Remaining, gating no story: the
+  # /bmad-project-context refresh before epic-4 (below), DW-287, DW-290, DW-291 and the open rulings
+  # each row names.
+  epic-3: done
   # 3-1 built and pushed 2026-09-28: dev at 3c7c647, CI run 36467318613 green on seven jobs, every one
   # on Node 24.21.0. turbo 2.10.13 (exact) and a turbo.json of
   # build, test, typecheck and lint, all uncached in loose env mode; the Hub's three scripts run as root
@@ -795,7 +802,19 @@ development_status:
   # dev to main and take TOURNAMENT_TAG from a green Image (tournament) on that main sha; the orchestrator
   # runs ops/tournament-placement.md steps 1 to 8 on the box; the Operator signs in through Steam on
   # https://tournament.cuatro.dev as the admin and dates action 4; then Registry 1.7.0 by reverting 6d72963.
-  3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel: awaiting-operator
+  # 2026-09-30: done. PR #86 merged as 019394d and deployed (run 36648915282); TOURNAMENT_TAG 019394d,
+  # its Image (tournament) run green on that main sha. The placement ran on the box between 00:11Z and
+  # 00:27Z (ops/tournament-placement.md § Placement run): both containers healthy in 8 s, the Caddy block
+  # installed and reloaded at 00:12:23Z, every off-box probe as expected including the WAF rules, load15
+  # 0.19 against 0.60 fifteen minutes in (SM-C4), monitor 804128109 UP. The Supabase project proved to
+  # be the development one, 26 migrations behind; on the Operator's ruling they were applied from the
+  # box at 00:54Z after a dump, and the Operator's Steam sign-in then completed at 01:01:26Z with the
+  # steamid64 and role claims bound: the identity proof, with the premise correction recorded (one Auth
+  # user holds a hash, nothing moved). Registry 1.7.0 (cs-tournament Live at
+  # https://tournament.cuatro.dev, demo none as the Operator ruled) is released by the revert of 6d72963
+  # in the fifth Epic 3 merge. Filed DW-290 (no signed-in state on the viewer surface) and DW-291 (no
+  # discrete migration step for the store); DW-287 (a route for the Go worker) stays open.
+  3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel: done
   # 3-8 review 2026-09-29: ops/estate.md § The end state records 10 repositories (decided 2026-09-26,
   # SM-7 amended, DW-249), the ten named, observed 14 at 2026-09-29T17:02:30Z, the waypoint table dated,
   # the criterion's 8 and 15/11/8 noted against the rulings, SM-C2 stated, Registry 16 entries beside.

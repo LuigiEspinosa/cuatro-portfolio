@@ -588,6 +588,14 @@ infrastructure outside the Registry by decision; the other two are Estate rows a
 
 ### The site blocks, as installed
 
+**Amended 2026-09-30:** an eighth block, `tournament.cuatro.dev`, was appended to
+`/home/deploy/cs-tracker/Caddyfile` at 00:12:23Z (UTC) by `ops/tournament-placement.md` step 5, copied
+from `docker/Caddyfile` (tls with the origin certificate, the three headers,
+`reverse_proxy tournament:3000`), validated and reloaded in place; the file before the append is kept
+beside it as `Caddyfile.bak-3-7`. The upstream is `cuatro-portfolio-tournament-1` under the alias
+`tournament` on `cs-tracker_default`, observed answering `/api/health` from `cs-tracker-caddy-1`
+before the block was added. The seven blocks below are as observed on their own dates.
+
 Read from `/home/deploy/cs-tracker/Caddyfile` on 2026-08-24. Six site blocks, one per live
 hostname; **seven from 2026-09-13T17:36:54Z**, when Story 2-25 appended the `wheel.cuatro.dev`
 block, the last one below, after the Anchor's three and reloaded. Comments and the file's
@@ -1268,7 +1276,7 @@ aliases by name.
 | `anchor-app` | `cuatro-portfolio-anchor-app-1` | `cuatro.dev` |
 | `anchor-umami` | `cuatro-portfolio-anchor-umami-1` | `analytics.cuatro.dev` |
 | `list-wheel` | `list-wheel-list-wheel-1` (`172.18.0.10`). **Added 2026-09-13** by Story 2-25 | `wheel.cuatro.dev` proxies `list-wheel:80` |
-| `tournament` | `cuatro-portfolio-tournament-1`, once `ops/tournament-placement.md` step 4 has run. **Declared 2026-09-29** in `docker-compose.yml`, not yet observed | `tournament.cuatro.dev` proxies `tournament:3000` |
+| `tournament` | `cuatro-portfolio-tournament-1`, once `ops/tournament-placement.md` step 4 has run. **Declared 2026-09-29** in `docker-compose.yml`, not yet observed. **Observed 2026-09-30T00:12Z:** `cs-tracker-caddy-1` reached `http://tournament:3000/api/health` by that name before the block was added, and `tournament-worker:8080` was unreachable from it, as declared | `tournament.cuatro.dev` proxies `tournament:3000` |
 | `api`, `web`, `db`, `migrate` | the obvious containers | nothing routes to these |
 
 **Amended 2026-09-29:** the collision ended at 21:33:20Z that day, when the tracker cutover stopped

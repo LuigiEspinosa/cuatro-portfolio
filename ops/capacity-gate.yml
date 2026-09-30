@@ -82,5 +82,5 @@ placements:
     observed: 2026-09-13
     note: serving wheel.cuatro.dev
   - id: cs-tournament
-    observed: 2026-09-29
+    observed: 2026-09-30
     note: placed by hand from ops/tournament-placement.md, its server and Go worker one entry, the load reading after placement (SM-C4) written there by the session that runs it, serving tournament.cuatro.dev
