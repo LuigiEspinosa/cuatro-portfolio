@@ -73,6 +73,8 @@ context:
 - **DNS-01** reached Cloudflare against Let's Encrypt staging and failed only on the throwaway token: `cloudflare: failed to find zone cuatro.dev.: [status code 400] 6003: Invalid request headers; 6111: Invalid format for Authorization header`. Issuance is Operator item (runbook step 7).
 - **Surprises.** (1) A one-label scratch name is never issued: `No ACME certificate generation required for domains`, because the default `*.cuatro.dev` certificate covers it; the scratch host is `dns01-probe.scratch.cuatro.dev`. (2) Traefik 3.7 warns until `aliasHeadersStrategy` is set; set to `delete` on every entrypoint. (3) `email` is optional: registration without one succeeded on staging, so none is committed. The first staging run registered one account with `hostmaster@cuatro.dev` before the address was dropped; nothing touched the production directory. (4) `global.checkNewVersion: false`, so the box does not phone home.
 - Mutation check of the suite: wheel as an apex `PathPrefix` (2 fail), a resolver on `cs-tracker` (1 fail), the dashboard on `websecure` (1 fail), a committed `$apr1$` hash (2 fail); restored, 19 pass.
+- **Renewal, forced, 2026-09-30T10:20Z to 10:27Z**: Pebble issuing 22 minute certificates, the committed static file with `caServer` at Pebble, `certificatesDuration: 1` and an `exec` DNS provider; logged `Attempt to renew certificates "20m0s" before expiry and check every "1m0s"`, then `Renewing ACME certificate` at 10:23:13Z and 10:26:13Z, and the served certificate went from serial `5FF6F62A70D4485D` (notBefore 10:20:17) to `7E3C606E3229AE82` (notBefore 10:26:13). Setup and output in `ops/traefik-cutover.md` § Rehearsed off the box, with the rehearsal's re-run commands.
+- **Certificate monitoring** departs from the epic's "certificate-age monitoring sees the new certificates": no monitored hostname gets a new certificate and the scratch one is unreachable by design. Raised as Pending action 3 for the Operator to confirm or overrule.
 - Every throwaway container, volume, network, `.env` and scratch file removed; `docker ps -a` and `docker volume ls` show none.
 
 ## Spec Change Log
@@ -97,7 +99,7 @@ Six layers, run inline (no Agent tool in this run): blind hunter (floor 8 at 57.
 | 12 | blind | X-Forwarded-For from Cloudflare differs from Caddy | false | neither trusts the edge's header by default; `CF-Connecting-IP` passes through both unchanged |
 | 13 | edge | `parseRouters` crashes on a key before any router name | false | loud TypeError fails the suite, which is correct |
 | 14 | claims | "exactly as the shared Caddyfile's library block does" | false | `handle /api/*` and `PathPrefix(`/api/`)` both exclude a bare `/api`; `/files/*` likewise |
-| 15 | claims | "renewal proven" (epic intent) | medium | not provable in one run: issuance is Operator item 4 step 7, the schedule is logged (`720h0m0s`, `24h0m0s`); reported as unmet |
+| 15 | claims | "renewal proven" (epic intent) | medium | first routed as unprovable in one run, which was wrong (independent verifier, 2026-09-30); patched: renewal forced against a throwaway Pebble server, the served certificate replaced twice without a restart (Implementation Notes). Issuance on the box stays step 7 |
 | 16 | ECC | Build, types, suite, secret scan | pass | Hub build exit 0; typecheck exit 0; 73 files, 1795 tests pass; lint N/A; no token, hash or PEM in the diff |
 
 ## Design Notes

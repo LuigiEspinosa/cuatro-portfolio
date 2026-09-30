@@ -59,6 +59,35 @@ its port, and a throwaway `.env`. Let's Encrypt's production directory was unrea
 run on purpose (a scratch `extra_hosts` override), so no account was registered there. Everything was
 removed afterwards.
 
+To re-run it, from the repository root in Git Bash (re-run 2026-09-30 at 10:35Z; the lines it printed
+matched the block below, minus the lines this shorter form does not request):
+
+```bash
+docker network create cs-tracker_default && docker volume create cs-tracker_caddy_data
+MSYS_NO_PATHCONV=1 docker run --rm -v cs-tracker_caddy_data:/data alpine:3 sh -c 'apk add -q openssl && mkdir /data/origin-ca && openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=throwaway-origin -addext "subjectAltName=DNS:cuatro.dev,DNS:*.cuatro.dev" -keyout /data/origin-ca/origin.key -out /data/origin-ca/origin.pem'
+for a in anchor-app:3000 anchor-umami:3000 app:4000 cuatro-app:3000 library-web:3000 library-api:4000 list-wheel:80 tournament:3000; do
+  docker run -d --name "stand-in-${a%%:*}" --network cs-tracker_default --network-alias "${a%%:*}" traefik/whoami:v1.11 --port "${a##*:}" --name "${a%%:*}"
+done
+install -m 600 /dev/null ops/traefik/.env
+printf "TRAEFIK_DASHBOARD_USERS='operator:%s'\nCF_DNS_API_TOKEN=throwaway\n" "$(openssl passwd -apr1 throwaway)" >> ops/traefik/.env
+printf 'services:\n  traefik:\n    extra_hosts: ["acme-v02.api.letsencrypt.org:127.0.0.1"]\n' > ops/traefik/offline.yml
+T='docker compose -f ops/traefik/compose.yml -f ops/traefik/offline.yml'
+$T up -d --wait
+for h in cuatro.dev analytics.cuatro.dev cs-tracker.cuatro.dev tracker.cuatro.dev library.cuatro.dev wheel.cuatro.dev tournament.cuatro.dev; do
+  echo "$h $(curl -sk -o /dev/null -w '%{http_code}' --resolve $h:8443:127.0.0.1 https://$h:8443/) $(curl -sk --resolve $h:8443:127.0.0.1 https://$h:8443/ | grep ^Name)"
+done
+curl -sk --resolve library.cuatro.dev:8443:127.0.0.1 https://library.cuatro.dev:8443/api/x | grep ^Name
+curl -sk -o /dev/null -w 'www %{http_code} %{redirect_url}\n' --resolve www.cuatro.dev:8443:127.0.0.1 'https://www.cuatro.dev:8443/some/path?q=1'
+curl -sk -o /dev/null -w 'nope.cuatro.dev %{http_code}\n' --resolve nope.cuatro.dev:8443:127.0.0.1 https://nope.cuatro.dev:8443/
+curl -s -o /dev/null -w 'dashboard, no credentials %{http_code}\n' http://localhost:8080/dashboard/
+curl -s -o /dev/null -w 'dashboard, credentials %{http_code}\n' -u operator:throwaway http://localhost:8080/dashboard/
+echo | openssl s_client -connect 127.0.0.1:8443 -servername cuatro.dev 2>/dev/null | openssl x509 -noout -subject
+# Remove everything; `git status --short` prints nothing afterwards.
+$T down -v; rm -f ops/traefik/.env ops/traefik/offline.yml
+docker rm -f $(docker ps -aq --filter name=stand-in-)
+docker volume rm cs-tracker_caddy_data && docker network rm cs-tracker_default
+```
+
 ```
 traefik-traefik-1 traefik:v3.7.13 Up 6 seconds (healthy) 127.0.0.1:8080->8080/tcp, 0.0.0.0:8443->8443/tcp, [::]:8443->8443/tcp
 cuatro.dev             200 Name: anchor-app
@@ -106,7 +135,38 @@ missing. A one-label scratch name (`dns01-probe.cuatro.dev`, the first attempt) 
 certificate generation required for domains`: the default certificate already covered it. Registration
 without an `email` succeeded against staging, so the static file carries none. **Not proven here:**
 issuance, the Origin CA's real pair, the box's aliases, the edge, and the firewall. Step 7 proves
-issuance.
+issuance. To re-run it, start the block above without `offline.yml`, with a copy of `traefik.yml` whose
+`log.level` is `DEBUG` and whose `acme` block adds
+`caServer: https://acme-staging-v02.api.letsencrypt.org/directory`, mounted over the committed file.
+
+**Renewal, forced against a throwaway Pebble ACME server**, observed 2026-09-30 between 10:20Z and
+10:27Z. Pebble (`ghcr.io/letsencrypt/pebble:latest`, `PEBBLE_VA_ALWAYS_VALID=1`) issued 22 minute
+certificates from a config whose `profiles.default.validityPeriod` is 1320. Traefik v3.7.13 ran a copy
+of the committed static file with four changes under `acme`: `caServer: https://pebble:14000/dir`,
+`certificatesDuration: 1` (hours, which Traefik's table maps to a 20 minute renew window checked every
+minute), and `dnsChallenge.provider: exec` with `propagation.disableChecks: true` (`EXEC_PATH=/bin/true`,
+`LEGO_CA_CERTIFICATES` naming Pebble's `pebble.minica.pem`), with the committed `dns01-probe` router
+alone in `dynamic/`. Nothing else differs from the committed file: the schedule, the storage and the
+renewal loop are Traefik's own. It renewed without a restart, and the served certificate changed:
+
+```
+DBG ... Attempt to renew certificates "20m0s" before expiry and check every "1m0s"
+INF ... Server responded with a certificate. domains=dns01-probe.scratch.cuatro.dev
+INF ... Renewing ACME certificate: {Main:dns01-probe.scratch.cuatro.dev SANs:[]}      (10:23:13Z)
+INF ... Trying renewal. domains=dns01-probe.scratch.cuatro.dev hoursRemaining=0
+INF ... Server responded with a certificate. domains=dns01-probe.scratch.cuatro.dev
+INF ... Renewing ACME certificate: {Main:dns01-probe.scratch.cuatro.dev SANs:[]}      (10:26:13Z)
+
+openssl x509 -serial -dates on the served certificate, 10:20:23Z:
+  serial=5FF6F62A70D4485D  notBefore=Sep 30 10:20:17 2026 GMT  notAfter=Sep 30 10:42:16 2026 GMT
+the same, 10:27:41Z:
+  serial=7E3C606E3229AE82  notBefore=Sep 30 10:26:13 2026 GMT  notAfter=Sep 30 10:48:12 2026 GMT
+```
+
+What that leaves unproven is only what issuance already covers: the production directory and the
+Cloudflare provider, which step 7 exercises with the real token. On the box the committed
+`certificatesDuration` default gives the 720 hour window logged above, so a box renewal first happens
+about 60 days after step 7; step 7's `openssl` line re-read after that date shows a later `notBefore`.
 
 ## The sequence
 
@@ -261,6 +321,11 @@ Once a later story has moved a hostname, delete its Origin Rule first, then the 
   threshold would not fire on a healthy renewal. Rule 2 itself stays unconfigured (the free plan
   refuses it). Step 7's `openssl` line is the check, and a hostname that leaves the proxy gets its
   public certificate, and a monitor, before it does (AD-26).
+- **This departs from the epic's wording.** Story 4.2's acceptance intent says Story 1.2's
+  certificate-age monitoring sees the new certificates. Under AD-26 no monitored hostname gets a new
+  certificate in this story, and the one new certificate is unreachable by design, so no monitor is
+  added or edited. Pending action 3 asks the Operator to confirm that reading or overrule it (the
+  overrule would be a DNS record for the scratch host and a paid certificate monitor on it).
 
 ## Pending Operator actions
 
@@ -268,7 +333,7 @@ Once a later story has moved a hostname, delete its Origin Rule first, then the 
 |---|---|---|---|
 | 1 | **Merge the commit carrying `ops/traefik/` into `main`** and let the Deploy run | The box checkout is `main`; nothing here reaches the box another way | _not done_ |
 | 2 | **Create a Cloudflare API token** for the `cuatro.dev` zone with Zone, DNS, Edit and Zone, Zone, Read, for step 2 | DNS-01 writes only `_acme-challenge` TXT records. The Origin Rules token of the refresh record's action 4 is a separate question, needed from Story 4.3 | _not done_ |
-| 3 | **Confirm or overrule the decisions above** | Each is a decision the Operator may overrule; the spec's Design Notes carry the reasoning | _not done_ |
+| 3 | **Confirm or overrule the decisions above**, and the certificate monitoring reading in § How certificate monitoring sees this | Each is a decision the Operator may overrule; the spec's Design Notes carry the reasoning. The monitoring reading departs from the epic's "certificate-age monitoring sees the new certificates" | _not done_ |
 | 4 | **Run steps 1 to 8 above** | Step 3 is also the refresh record's action 4, firewall half | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and

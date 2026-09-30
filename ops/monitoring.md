@@ -858,6 +858,9 @@ proxied hosts stop renewing on the origin altogether.
 duration, not to each certificate's own lifetime. Thirty days before expiry is before two thirds of
 age at 90, 64 and 45 days (day 60, 34 and 15), so the threshold carries over. The only certificate
 Traefik renews is the DNS-01 scratch one, which no monitor sees; proxied hosts keep the Origin CA.
+That no monitor sees it departs from Story 4.2's wording and waits on the Operator's confirmation
+(Pending action 3 there). A forced renewal against a throwaway Pebble server replaced the served
+certificate without a restart (§ Rehearsed off the box).
 `ops/traefik-cutover.md` § How certificate monitoring sees this.
 
 ### Why the threshold is not exactly two thirds

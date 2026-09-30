@@ -9072,7 +9072,8 @@ status: done
     **Owner: the Operator (ruling), then a `fix(dw-295)` commit.** **Trigger: the Operator's ruling,
     or the next story that touches `packages/tokens`.**
   status: open
-- id: DW-296
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
+  id: DW-296
   summary: >-
     Traefik reads the Origin CA pair from the shared Caddy's volume `cs-tracker_caddy_data`, so retiring
     Caddy must not remove that volume until the pair has moved.
@@ -9088,7 +9089,8 @@ status: done
     **Owner: Story 4.11 (retire Caddy).** **Trigger: that story.** Move the pair to a volume or path the
     Traefik stack owns, repoint the mount, then retire the old volume.
   status: open
-- id: DW-297
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
+  id: DW-297
   summary: >-
     Traefik 3.7's entrypoints default to a 60-second `readTimeout`, where the shared Caddy sets none, so
     a slow upload may be cut off once its hostname moves.
