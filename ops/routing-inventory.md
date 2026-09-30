@@ -36,8 +36,10 @@ kind of fact (NFR-9). Dates and times are ISO 8601 UTC.
 19. [What Story 1.21 changed](#what-story-121-changed)
 20. [What Story 2-25 changed](#what-story-2-25-changed), the placement of `list-wheel` on
     `wheel.cuatro.dev`, with the loopback codes before and after the Caddy reload
-21. [Story 1.7 close-out, 2026-08-24](#story-17-close-out-2026-08-24)
-22. [How to re-gather this record](#how-to-re-gather-this-record)
+21. [What Story 3-7 changes](#what-story-3-7-changes), the placement of `cs-tournament` on
+    `tournament.cuatro.dev`
+22. [Story 1.7 close-out, 2026-08-24](#story-17-close-out-2026-08-24)
+23. [How to re-gather this record](#how-to-re-gather-this-record)
 
 ## What would invalidate this record
 
@@ -195,6 +197,7 @@ Six A, three AAAA, three CNAME, five MX, four NS, four TXT on 2026-08-24. **Seve
 | `tracker.cuatro.dev` | A | `177.7.52.248` | **proxied** | auto |
 | `library.cuatro.dev` | A | `177.7.52.248` | **proxied** | auto |
 | `wheel.cuatro.dev` | A | `177.7.52.248` | **proxied** | auto |
+| `tournament.cuatro.dev` | A | `177.7.52.248` | **proxied** | auto |
 | `cs-tracker.cuatro.dev` | AAAA | `2a02:4780:75:9155::1` | **proxied** | auto |
 | `tracker.cuatro.dev` | AAAA | `2a02:4780:75:9155::1` | **proxied** | auto |
 | `library.cuatro.dev` | AAAA | `2a02:4780:75:9155::1` | **proxied** | auto |
@@ -217,6 +220,11 @@ Six A, three AAAA, three CNAME, five MX, four NS, four TXT on 2026-08-24. **Seve
 
 The `wheel.cuatro.dev` row was **added 2026-09-13T17:37:10Z** by Story 2-25, id
 `78b65a274cd071446893928b554e3c18`; every other row is the 2026-08-24 reading.
+
+The `tournament.cuatro.dev` row was **added 2026-09-29T22:03:33Z** for Story 3-7's placement, with
+the comment `cs-tournament placement, Story 3-7`, and resolves through Cloudflare. **Observed by the
+orchestrator and relayed**; its record id was not relayed, and the zone was not re-enumerated, so the
+27 it implies is inferred, not read. No `AAAA`, by the same rule that leaves `wheel` without one.
 
 **Every `cuatro.dev` A and AAAA record is proxied and points at `177.7.52.248`.** That is the
 complete inversion of the 2026-08-16 state, where only `www` and `_domainconnect` were proxied
@@ -1008,6 +1016,15 @@ which is already in the ledger as a live AD-8 breach.
 
 ### `cuatro-tracker`, services `postgres`, `migrate`, `redis`, `app`, `qbittorrent`, `worker`
 
+**Amended 2026-09-29:** `app` and `worker` are stopped (exited 0) since the tracker cutover that
+evening, and `tracker.cuatro.dev` is served by the Anchor project's `cuatro-portfolio-tracker-1`
+(alias `cuatro-app` on `cs-tracker_default`, the name Caddy proxies at line 46 unchanged) and
+`cuatro-portfolio-tracker-worker-1`, both `ghcr.io/luigiespinosa/tracker:5117673f...` from GHCR, on
+`cuatro-tracker_default` for the stores. `postgres`, `redis` and `qbittorrent` keep running here with
+their volumes, and `~/cuatro-redeploy.sh` is retired. The override's and the redeploy script's text
+are recorded in `ops/tracker-cutover.md` § Cutover run (DW-274). What follows describes the state
+observed 2026-08-24.
+
 | Container | Image | Runs | Restart | Health | Ports | Aliases | Volumes |
 |---|---|---|---|---|---|---|---|
 | `cuatro-tracker-app-1` | `cuatro-tracker-app` (**built on the box**) | `node server.js` | `unless-stopped` | yes | `3000/tcp` exposed | `cs-tracker_default`: `app` **and** `cuatro-app` at `172.18.0.5`; `cuatro-tracker_default`: `app` | none |
@@ -1251,7 +1268,12 @@ aliases by name.
 | `anchor-app` | `cuatro-portfolio-anchor-app-1` | `cuatro.dev` |
 | `anchor-umami` | `cuatro-portfolio-anchor-umami-1` | `analytics.cuatro.dev` |
 | `list-wheel` | `list-wheel-list-wheel-1` (`172.18.0.10`). **Added 2026-09-13** by Story 2-25 | `wheel.cuatro.dev` proxies `list-wheel:80` |
+| `tournament` | `cuatro-portfolio-tournament-1`, once `ops/tournament-placement.md` step 4 has run. **Declared 2026-09-29** in `docker-compose.yml`, not yet observed | `tournament.cuatro.dev` proxies `tournament:3000` |
 | `api`, `web`, `db`, `migrate` | the obvious containers | nothing routes to these |
+
+**Amended 2026-09-29:** the collision ended at 21:33:20Z that day, when the tracker cutover stopped
+`cuatro-tracker-app-1`; the Anchor's replacement service is named `tracker`, not `app`, so
+`cs-tracker_default` carries one `app` alias again, `cs-tracker-app-1`'s.
 
 **The `app` collision is still live on 2026-08-24.** Compose gives a service its own name as a
 DNS alias on every network it joins, and both `cs-tracker` and `cuatro-tracker` call their
@@ -1535,7 +1557,7 @@ This set is what a rebuild has to recreate from nothing, and it is the reason St
 
 | What | Where | In any repository? |
 |---|---|---|
-| The six site blocks that route the whole estate, seven from 2026-09-13 | `/home/deploy/cs-tracker/Caddyfile` | **Partially.** The Anchor's three blocks are mirrored in `docker/Caddyfile` and nothing compares the two. The `wheel.cuatro.dev` block is mirrored the same way from 2026-09-13, as a trailing comment in the `list-wheel` repository's `docker/Caddyfile`, and nothing compares those two either. The `cs-tracker`, `tracker` and `library` blocks are box-only |
+| The six site blocks that route the whole estate, seven from 2026-09-13 | `/home/deploy/cs-tracker/Caddyfile` | **Partially.** The Anchor's three blocks are mirrored in `docker/Caddyfile` and nothing compares the two; a fourth, `tournament.cuatro.dev`, joins them from 2026-09-29 (Story 3-7), appended to the box's file by copying it out of the checkout. The `wheel.cuatro.dev` block is mirrored the same way from 2026-09-13, as a trailing comment in the `list-wheel` repository's `docker/Caddyfile`, and nothing compares those two either. The `cs-tracker`, `tracker` and `library` blocks are box-only |
 | `PHX_HOST=cs-tracker.cuatro.dev`, which the `cs-tracker` site label resolves from | `/home/deploy/cs-tracker/.env` | No |
 | `cuatro-tracker`'s ingress override | `/home/deploy/cuatro-tracker/docker-compose.override.yml` | No, gitignored by design at `.gitignore:23` |
 | `digital-library`'s ingress override | `/home/deploy/digital-library/docker-compose.override.yml` | No. **Untracked and not gitignored**, so it is protected by convention only |
@@ -1839,6 +1861,38 @@ has. No `AAAA` was created for `wheel`, by the same Ask-first rule that leaves t
 without one. The box read Docker 29.6.2, Compose v5.3.1, 78 GB free and 5.6 GB available on the
 day, and at 17:32:05Z `uptime` read 0.43, 0.23, 0.14, the 0.43 being the build's one-minute tail
 against 0.09, 0.09, 0.09 at 16:19Z. Nothing else in this file was re-gathered.
+
+## What Story 3-7 changes
+
+The placement of `cs-tournament` on `tournament.cuatro.dev`, the second genuinely new placement on the
+box since this record was gathered. The first two rows are observations the Operator's session made
+through the zone token and relayed; the rest are the steps of `ops/tournament-placement.md`, dated
+there when the orchestrator runs them, and copied here then.
+
+| Change | Where | When (UTC) |
+|---|---|---|
+| Widened WAF rules R1 and R3 to include `"tournament.cuatro.dev"`, read back at ruleset versions 5 and 6; R2 and R4 and the order unchanged | Cloudflare zone `cuatro.dev` | 2026-09-29T22:03:32Z |
+| Created `A tournament.cuatro.dev 177.7.52.248`, proxied, comment `cs-tournament placement, Story 3-7` | Cloudflare zone `cuatro.dev` | 2026-09-29T22:03:33Z |
+| Start `tournament` (on `cs-tracker_default` as `tournament`, and `default`) and `tournament-worker` (on `default` only) | `/home/deploy/cuatro-portfolio`, runbook step 4 | pending |
+| Append the `tournament.cuatro.dev` block, the copy of `docker/Caddyfile`'s, `caddy validate`, `caddy reload` | `/home/deploy/cs-tracker/Caddyfile`, backup `Caddyfile.bak-3-7`, runbook step 5 | pending |
+
+The block the box will carry, as `docker/Caddyfile` holds it, the house header set and the compose
+alias:
+
+```
+tournament.cuatro.dev {
+	tls /data/origin-ca/origin.pem /data/origin-ca/origin.key
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+	reverse_proxy tournament:3000
+}
+```
+
+The Go worker has no block and no alias on `cs-tracker_default` (Operator ruling 2026-09-29, DW-287).
+The certificate is the origin certificate every block names, which covers `*.cuatro.dev`.
 
 ## Story 1.7 close-out, 2026-08-24
 

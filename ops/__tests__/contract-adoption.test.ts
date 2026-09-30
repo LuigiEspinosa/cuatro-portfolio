@@ -51,9 +51,9 @@ import {
  *
  * **A waypoint change moves four things together**: the sentence in
  * `ops/estate.md` that `ESTATE_SENTENCE` names, `ESTATE_COUNT` in the module,
- * and both of the record's tables. `ops/estate.md` schedules the end state at
- * ten repositories (its § The end state); when it lands, all four move in one
- * change.
+ * and both of the record's tables. The end state of ten repositories (its
+ * § The end state) landed on 2026-09-29 with Registry 1.6.0 (DW-285), and all
+ * four moved in that one change.
  */
 
 // Resolved from the repository root, which is where Vitest runs. Same treatment
@@ -187,10 +187,11 @@ describe('the adopter rows', () => {
     expect(anchor?.path).toBe(ANCHOR_TOKENS);
   });
 
-  it('carry one row for every one of the thirteen repositories, adopted or not', () => {
+  it('carry one row for every one of the ten repositories, adopted or not', () => {
     // Eleven until 2026-09-25, when Registry 1.5.0 listed `covidmap` and `future-vizion`
-    // (Operator ruling 2026-09-25) and `ops/estate.md` named both at the waypoint.
-    expect(ESTATE_COUNT).toBe(13);
+    // (Operator ruling 2026-09-25) and `ops/estate.md` named both at the waypoint. Thirteen
+    // until 2026-09-29, when the three merged repositories were archived (DW-285).
+    expect(ESTATE_COUNT).toBe(10);
     expect(names).toHaveLength(ESTATE_COUNT);
     const listed = rows.map((row) => row.application);
     expect(() => assertEstateCovered(listed, names)).not.toThrow();
@@ -241,7 +242,7 @@ describe('the policy table lists the estate', () => {
   const rows = policyRows(record);
   const names = estateNames(estate);
 
-  it('names exactly the thirteen repositories ops/estate.md names, no more and no fewer', () => {
+  it('names exactly the ten repositories ops/estate.md names, no more and no fewer', () => {
     expect(names).toHaveLength(ESTATE_COUNT);
     expect(() => assertEstateCovered(rows.map((row) => row.repository), names)).not.toThrow();
   });
@@ -254,11 +255,12 @@ describe('the policy table lists the estate', () => {
     }
   });
 
-  it('refuses an estate parse that yields anything but thirteen names before comparing', () => {
-    expect(() => estateNames(`${ESTATE_SENTENCE} \`a\`, \`b\` and \`c\`.`)).toThrow(/names 3 repositories at the waypoint, not the 13 pinned/);
+  it('refuses an estate parse that yields anything but ten names before comparing', () => {
+    expect(() => estateNames(`${ESTATE_SENTENCE} \`a\`, \`b\` and \`c\`.`)).toThrow(/names 3 repositories at the waypoint, not the 10 pinned/);
     const oneMore = `${ESTATE_SENTENCE} ${[...names, 'one-more'].map((name) => `\`${name}\``).join(', ')}.`;
-    expect(() => estateNames(oneMore)).toThrow(/names 14 repositories at the waypoint, not the 13 pinned/);
-    expect(() => estateNames('nothing here')).toThrow(/no "The 13 repositories/);
+    expect(() => estateNames(oneMore)).toThrow(/names 11 repositories at the waypoint, not the 10 pinned/);
+    expect(() => estateNames('nothing here')).toThrow(/no "The 10 repositories at the end state are/);
+    for (const merged of ['cuatro-finance', 'cuatro-tracker', 'cs-tournament']) expect(estateNames(estate)).not.toContain(merged);
     expect(estateNames(estate)).toContain('covidmap');
     expect(estateNames(estate)).toContain('future-vizion');
     expect(estateNames(estate)).toContain('cs-tracker');
@@ -269,7 +271,7 @@ describe('the policy table lists the estate', () => {
     const short = policyRows(fragment({ policy: [['`cuatro-portfolio`', 'yes', 'none', 'none required']] })).map((row) => row.repository);
     // Named in name order, not in the order `ops/estate.md` happens to list
     // them, so a reordered sentence there cannot turn this case red.
-    expect(() => assertEstateCovered(short, names)).toThrow(/missing covidmap, cs-tournament, cs-tracker, cuatro-finance, cuatro-tracker, digital-library, future-vizion, list-wheel, MaiCoin, Mutuo, poketracker-go, StreamVault; extra none/);
+    expect(() => assertEstateCovered(short, names)).toThrow(/missing covidmap, cs-tracker, digital-library, future-vizion, list-wheel, MaiCoin, Mutuo, poketracker-go, StreamVault; extra none/);
 
     const extra = policyRows(fragment({ policy: [['`not-in-the-estate`', 'yes', 'none', 'none required']] })).map((row) => row.repository);
     expect(() => assertEstateCovered([...names, ...extra], names)).toThrow(/missing none; extra not-in-the-estate/);
@@ -413,8 +415,9 @@ describe('the markdown parsers', () => {
   it('reads an escaped pipe as a literal inside a cell, never as a boundary', () => {
     expect(cells('| a | run: cat log \\|\\| true | c |')).toEqual(['a', 'run: cat log || true', 'c']);
     expect(cells('| a | b |')).toEqual(['a', 'b']);
-    // The real record leans on it: the cuatro-tracker policy row quotes a
-    // `\|\| true`, and a split at it would throw the cell-count error below.
+    // The real record leans on it: the list-wheel policy row quotes a
+    // `\|\| true` (the cuatro-tracker row did until 2026-09-29), and a split
+    // at it would throw the cell-count error below.
     expect(record).toContain('\\|\\| true');
     expect(policyRows(record)).toHaveLength(ESTATE_COUNT);
   });

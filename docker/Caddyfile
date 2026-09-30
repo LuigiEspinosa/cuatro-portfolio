@@ -5,7 +5,8 @@
 # repository's compose stack reads it. The box runs one Caddy
 # (cs-tracker-caddy-1) that owns ports 80 and 443 for the whole estate; the
 # Anchor attaches to that Caddy's network under the aliases `anchor-app` and
-# `anchor-umami`, which is how the reverse_proxy targets below resolve. Running
+# `anchor-umami`, and from 2026-09-29 `tournament`, which is how the
+# reverse_proxy targets below resolve. Running
 # a second binder of 80 or 443 on that box is what took cuatro.dev down.
 #
 # Installing it: back the shared Caddyfile up as Caddyfile.bak-1-21, append
@@ -69,4 +70,18 @@ analytics.cuatro.dev {
 		Referrer-Policy "strict-origin-when-cross-origin"
 	}
 	reverse_proxy anchor-umami:3000
+}
+
+# The tournament (Story 3-7), from 2026-09-29: the `tournament` compose service joins the shared
+# network under the alias `tournament`, which is how this block reaches it. Its Go worker has no
+# public hostname and no block (Operator ruling 2026-09-29). The header set is the house one above.
+# The box copy is appended by `ops/tournament-placement.md`, and nothing compares the two.
+tournament.cuatro.dev {
+	tls /data/origin-ca/origin.pem /data/origin-ca/origin.key
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+	reverse_proxy tournament:3000
 }

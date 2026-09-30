@@ -43,9 +43,9 @@ plan's five custom rules are used and one is deliberately held in reserve.
 
 | # | Action | Applies to | What it does |
 |---|---|---|---|
-| 1 | **block** | all six hostnames; seven from 2026-09-13, `wheel.cuatro.dev` added | Blocks AI training and agent crawlers by user agent: `GPTBot`, `ChatGPT-User`, `ClaudeBot`, `Claude-User`, `CCBot`, `Bytespider`, `PerplexityBot`, `Perplexity-User`, `meta-externalagent`, `cohere-ai`, `Diffbot`, `ImagesiftBot`, `Omgilibot`, `YouBot`, `AI2Bot`, `Timpibot`, `Scrapy` |
+| 1 | **block** | all six hostnames; seven from 2026-09-13, `wheel.cuatro.dev` added; eight from 2026-09-29, `tournament.cuatro.dev` added | Blocks AI training and agent crawlers by user agent: `GPTBot`, `ChatGPT-User`, `ClaudeBot`, `Claude-User`, `CCBot`, `Bytespider`, `PerplexityBot`, `Perplexity-User`, `meta-externalagent`, `cohere-ai`, `Diffbot`, `ImagesiftBot`, `Omgilibot`, `YouBot`, `AI2Bot`, `Timpibot`, `Scrapy` |
 | 2 | **skip** | every hostname except `analytics` | Skips the rules below when the user agent contains `UptimeRobot`. The estate's only error signal can never be challenged by the estate's own rules |
-| 3 | **managed challenge** | the five application hostnames, `www` included; six from 2026-09-13, `wheel.cuatro.dev` added | Challenges requests with an empty user agent that are not verified bots |
+| 3 | **managed challenge** | the five application hostnames, `www` included; six from 2026-09-13, `wheel.cuatro.dev` added; seven from 2026-09-29, `tournament.cuatro.dev` added | Challenges requests with an empty user agent that are not verified bots |
 | 4 | **managed challenge** | `analytics.cuatro.dev` | Challenges everything except `/api/` and `/script.js`, so the dashboard is not browsable by automation while the tracker and collector stay open |
 
 **Edited 2026-09-13 by Story 2-25, before the hostname existed in DNS.** Rules 1 and 3 each
@@ -58,6 +58,15 @@ after the two calls: version 4, `last_updated` 17:31:31Z, rule 1 `http.host in {
 "cs-tracker.cuatro.dev" "tracker.cuatro.dev" "library.cuatro.dev" "wheel.cuatro.dev"}`. Rule 2
 is `http.host ne "analytics.cuatro.dev"`, a negation rather than a list, so it covers the new
 hostname with no edit; rule 4 is unchanged; the order is unchanged.
+
+**Edited 2026-09-29 for Story 3-7's placement, before anything served the hostname.** Rules 1 and 3
+each gained `"tournament.cuatro.dev"` in their `http.host in {...}` list, through the zone token the
+way Story 2-25 edited them, and the ruleset read back at versions 5 and 6, `last_updated` 22:03:32Z;
+the proxied `A` record was created at 22:03:33Z, and the box served nothing on the hostname until the
+placement (`ops/tournament-placement.md`), so it was never live unfiltered (AD-17b). **Observed
+2026-09-29 by the orchestrator**, relayed to the session that wrote this paragraph. Rule 2's negation
+covers it with no edit; rule 4 and the order are unchanged. The requests that prove each rule fires on
+it are step 6 of the runbook, and their codes go into that record.
 
 **Rule 2 exists because of AD-17a, not as a convenience.** This is the story that closes the
 monitoring gate. A filter that can silently challenge the probes would close the gate and blind
@@ -300,7 +309,7 @@ change what an origin serves without anybody editing the origin.
 
 ```
 AD-17b status: satisfied as of 2026-08-17
-Rules live on: cuatro.dev, www.cuatro.dev, analytics.cuatro.dev, cs-tracker.cuatro.dev, tracker.cuatro.dev, library.cuatro.dev, wheel.cuatro.dev
+Rules live on: cuatro.dev, www.cuatro.dev, analytics.cuatro.dev, cs-tracker.cuatro.dev, tracker.cuatro.dev, library.cuatro.dev, wheel.cuatro.dev, tournament.cuatro.dev
 ```
 
 **`wheel.cuatro.dev` joined the line on 2026-09-13, Story 2-25, and the status date does not
@@ -312,6 +321,12 @@ only. Each rule was then proven to fire on the hostname by a request, in the dat
 **observed 2026-09-13**, the `list-wheel` container publishes no port and `cs-tracker-caddy-1`
 is still the box's only port publisher, so the hostname is reached only through the ports the
 `DOCKER-USER` rules already cover. Seven hostnames are behind the rules from that date.
+
+**`tournament.cuatro.dev` joined the line on 2026-09-29, Story 3-7, and the status date does not
+move.** Rules 1 and 3 listed it at 22:03:32Z, before its `A` record at 22:03:33Z and before anything
+served it. The `tournament` container publishes no port and reaches the ingress over
+`cs-tracker_default` only. Eight hostnames are behind the rules from that date; the requests proving
+each rule on it are the runbook's step 6.
 
 **Noted 2026-09-26: two `Live` hostnames are not on the line, and the gap is a recorded breach.**
 Operator ruling 2026-09-25 listed `covidmap` and `future-vizion` in the Registry as `Live`, at

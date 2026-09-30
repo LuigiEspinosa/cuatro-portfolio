@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-29-2026 17:20
+last_updated: 09-29-2026 18:40
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -615,7 +615,14 @@ development_status:
   # Decision 2 (the two Umami inputs as literals in image.yml), keeping the package public, DW-253
   # (the Image run's build log prints both telemetry notices), DW-259, DW-261 and the oversized
   # spec's Keep are open rulings that gate no criterion.
-  3-3-build-the-hub-image-in-ci-and-push-to-ghcr: awaiting-operator
+  # 2026-09-29: done. The Operator confirmed Decision 1 (anchor-app keeps its name) and criterion 1's
+  # publishing reading, and every other recorded decision, on 2026-09-29; the four other packages were
+  # made public that day too. Reached main in PR #84 (dev at 57103a0, merged as 5117673 by the
+  # Operator, thirteen checks green: the eight required plus hub, finance, tracker, tournament and
+  # tournament-worker). The merge run's image job built ghcr.io/luigiespinosa/hub:5117673f... and the
+  # dispatch run 36627964371 pulled it on the box: the Hub now runs a sha tag and no floating tag
+  # anywhere in the estate, so criterion 1 holds in full.
+  3-3-build-the-hub-image-in-ci-and-push-to-ghcr: done
   # 3-4 built and pushed 2026-09-28: dev at 7c1ca53, CI run 36519484227 green on seven jobs, every
   # one on Node 24.21.0, and Image run 36519484191 green. b3b72d6 (code, workflows, suites) and the
   # docs commits after it. deploy.yml is one chain: gate (the ref refusal,
@@ -668,7 +675,21 @@ development_status:
   # login under ops/contract-serving.md § The deploy pulls a tag and rolls it runs before the
   # dispatch), Decisions 2, 3 and 5 (anchor-app and DW-260, the designed red first run, DW-130),
   # DW-259, DW-261, DW-265 and the oversized spec's Keep are open rulings that gate no criterion.
-  3-4-deploy-by-pulling-a-tag-with-docker-rollout: awaiting-operator
+  # 2026-09-29: done. The Operator confirmed Decision 1 and every other recorded decision on
+  # 2026-09-29. Reached main in PR #84 (merged as 5117673). As designed (Decision 3, DW-264), that
+  # merge's Deploy run 36627621601 passed gate and image and failed its deploy job at HUB_TAG, the
+  # box's Epic 2 script having reset the checkout first; issue #85 opened and was closed after the
+  # dispatch. The dispatch, run 36627964371 (gate, image / hub, deploy all green, report skipped),
+  # ran the new script on the box: it installed docker-rollout v0.14 into ~/.docker/cli-plugins,
+  # pulled ghcr.io/luigiespinosa/hub:5117673f..., scaled anchor-app to two, waited for health and
+  # removed the old container, with no build output; the deploy job completed 2026-09-29T20:41:37Z,
+  # which is KV-1's Anchor-half date in ops/known-violations.md. cuatro.dev was probed at one
+  # request per second from the workstation through the run with no non-200 answer (the count is in
+  # ops/contract-serving.md action 11); afterwards every route answered as before, /api/health 3.0.0
+  # from the new container, the four contract files byte-identical, and docker ps on the box showed
+  # anchor-app running the sha's image alone. DW-259 closed the same day (bmad-build.toml's build
+  # command); DW-261 (.env.example) stays the Operator's, since agent sessions cannot open .env files.
+  3-4-deploy-by-pulling-a-tag-with-docker-rollout: done
   # 3-5 done 2026-09-29: cuatro-finance's dev history merged into apps/finance by filter-repo and
   # --allow-unrelated-histories (merge 6d5929f), the workspace finance under the one lockfile, its
   # typecheck and suite in ci.yml's test job, apps/finance/Dockerfile and image-finance.yml (build,
@@ -710,7 +731,18 @@ development_status:
   # Open rulings that gate no criterion: Decisions 1 to 14 (above all 3, the data stays in the old
   # project's stores until Epic 4, and 4, the cuatro-app alias), DW-273, DW-275 (rollouts by hand,
   # the capacity-gate id), DW-276, DW-277, DW-278 (GHCR private-storage billing) and DW-270.
-  3-6-merge-cuatro-tracker-into-apps-tracker: awaiting-operator
+  # 2026-09-29: done. The Operator confirmed the recorded decisions; the package was made public;
+  # Epic 3 reached main in PR #84 (5117673) and the dispatch deployed it; and the cutover ran that
+  # evening over the Operator's WSL key (ops/tracker-cutover.md § Cutover run): step 1 matched the
+  # inventory on every point and recorded the two files DW-274 wanted; backup 9 tables and 12 rows,
+  # restore verified with migrations=11-applied-0-pending; the new tracker and worker from
+  # ghcr.io/luigiespinosa/tracker:5117673f... started beside the old app; the old app stopped at
+  # 21:33:20Z; the probe answered 200 on all 1,487 requests while both served and on all 108 across
+  # the switch; cuatro-redeploy.sh retired. Every criterion is now observed. Remaining, gating no
+  # criterion: archive cuatro-tracker a week after the cutover holds (runbook action 4), after which
+  # DW-285 writes absorbed_into; DW-275 (rollouts by hand) belongs to Epic 4. Archived the same
+  # evening at 21:53:16Z on the Operator's ruling (runbook action 4 dated).
+  3-6-merge-cuatro-tracker-into-apps-tracker: done
   # 2026-09-25: the Operator ruling of 2026-09-24 removed Vercel from the estate, so the leaving this
   # key names is done. The key keeps its wording; the story is the merge and the placement on the box
   # (epics.md Story 3.7's amendment, spec-vercel-removal.md).
@@ -744,6 +776,25 @@ development_status:
   # Open rulings that gate no criterion: Decisions 1 to 10 (the ids tournament and tournament-worker,
   # DW-260's split), DW-278 (the two private GHCR packages), DW-279 (token adoption in Epic 8 wave 2),
   # DW-282 and DW-283.
+  # 3-7 placement half 2026-09-29 (spec-3-7-placement-tournament-on-the-box.md), committed on dev, not pushed:
+  # 93949e6 puts the server on cs-tracker_default as tournament (worker on default only), passes the two
+  # public Supabase build inputs from repository variables and refuses an empty one (DW-281 closed),
+  # appends cs-tournament to placements, adds the tournament.cuatro.dev block to docker/Caddyfile, writes
+  # ops/tournament-placement.md and records the Operator's rulings (Supabase Cloud kept, DW-280 closed;
+  # the pooler; the hostname; no worker hostname, DW-287; DW-278 settled public). 9099973 is Registry
+  # 1.7.0, cs-tournament Live at https://tournament.cuatro.dev, which reaches main only after the URL
+  # serves (FR-28). Suite 1761 of 1761 on each. 6d72963 holds 1.7.0 back so dev pushes whole (the Registry
+  # at 1.6.0); the release is the revert of 6d72963 after the URL serves (runbook step 10). The identity export refused on the one admin holding a
+  # password hash, so the merge spec's premise is off by one; the proof is the Operator's Steam sign-in.
+  # Remaining, all the runbook's: push dev and merge it to main, run its steps 1 to 8 on the box, the
+  # Steam sign-in, then revert 6d72963 and merge that release.
+  # 3-7 pushed 2026-09-29: dev pushed whole at 15c245b (8c16399..15c245b), the Registry still 1.6.0 there
+  # because 6d72963 holds 1.7.0 back, so no Registry verification run started. Green on 15c245b: CI
+  # 36645756300, Image 36645756211, Image (tournament) 36645756427 (both Supabase build inputs passed from
+  # the repository variables), Image (finance) 36645756329, Image (tracker) 36645756469. Remaining: merge
+  # dev to main and take TOURNAMENT_TAG from a green Image (tournament) on that main sha; the orchestrator
+  # runs ops/tournament-placement.md steps 1 to 8 on the box; the Operator signs in through Steam on
+  # https://tournament.cuatro.dev as the admin and dates action 4; then Registry 1.7.0 by reverting 6d72963.
   3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel: awaiting-operator
   # 3-8 review 2026-09-29: ops/estate.md § The end state records 10 repositories (decided 2026-09-26,
   # SM-7 amended, DW-249), the ten named, observed 14 at 2026-09-29T17:02:30Z, the waypoint table dated,
@@ -760,7 +811,24 @@ development_status:
   # cs-tournament, and cuatro-tracker a week after the cutover holds, all public, each date recorded;
   # then DW-285 in one Registry MINOR release, moving ESTATE_COUNT, the waypoint sentence and both
   # ops/contract-adoption.md tables to 10. Confirm Decisions 1 to 5 and the DW-275 and DW-283 hand-offs.
-  3-8-record-the-estate-end-state: awaiting-operator
+  # 2026-09-29, evening: the Operator confirmed Decisions 1 to 5 and both hand-offs; Epic 3 reached
+  # main (PR #84, 5117673) and deployed; the tracker cutover ran; and the Operator archived
+  # connect-four-react, cuatro-finance and cs-tournament at 21:43:05Z, all public (the 13 waypoint
+  # reached and passed, observed 11). Registry verification run 36635143162 on main: 40 of 40, the
+  # archived sources resolving. cuatro-tracker archived too at 21:53:16Z on the Operator's ruling
+  # not to wait the week (observed 10, the end state by count). Still awaiting: DW-285 as one Registry MINOR release with
+  # absorbed_into on the three entries and the source shape the Operator ruled on 2026-09-29 (the
+  # Anchor tree URL, with Story 2.23's check widened to accept it), moving ESTATE_COUNT, the
+  # waypoint sentence and both ops/contract-adoption.md tables to 10.
+  # 3-8 done 2026-09-29: DW-285 built as Registry 1.6.0 (absorbed_into: cuatro-portfolio and a source of
+  # the Anchor's tree/main/apps/<dir> on cuatro-finance, cuatro-tracker and cs-tournament); Story 2.23's
+  # job accepts a tree URL and proves its path on the named branch; ESTATE_COUNT, the estate sentence and
+  # both ops/contract-adoption.md tables at 10; ops/estate.md records the end state reached. Pushed to dev
+  # 2026-09-29 at 2974ceb, every run green: CI 36639121657, Registry verification 36639121596 (Registry
+  # 1.6.0, 40 of 40, the three tree sources resolving anonymously), Image, Image (finance), Image
+  # (tournament), and Image (tracker) 36639121642 green on attempt 2 after a transient next/font Google
+  # Fonts fetch failure (nothing under apps/tracker changed). Reaches main at the next dev-to-main merge.
+  3-8-record-the-estate-end-state: done
   epic-3-retrospective: optional
   # REMINDER: run /bmad-project-context (refresh) before starting epic-4.
   # Epic 3 introduces Turborepo, moves the app to apps/hub, and retires the

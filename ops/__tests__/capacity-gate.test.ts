@@ -124,10 +124,10 @@ describe('the committed gate file', () => {
       const threshold = figureIn(gate.threshold, 'threshold');
       expect(threshold).toBeGreaterThan(0);
       expect(figureIn(gate.baseline, 'baseline')).toBeLessThan(threshold);
-      expect(evaluate(gate, 'cs-tournament').allowed).toBe(true);
+      expect(evaluate(gate, 'cuatro-finance').allowed).toBe(true);
     } else {
       expect(gate.status).toBe('blocked');
-      expect(evaluate(gate, 'cs-tournament').allowed).toBe(false);
+      expect(evaluate(gate, 'cuatro-finance').allowed).toBe(false);
     }
 
     // True in both states, because NFR-2 is never traded against the gate.
@@ -156,7 +156,9 @@ describe('the committed gate file', () => {
     expect(figureIn(gate.baseline, 'baseline')).toBeLessThanOrEqual(figureIn(gate.reading, 'reading'));
   });
 
-  it('lists the five applications running on the box', () => {
+  // Six from 2026-09-29: Story 3-7's placement appended `cs-tournament`, one entry for its server and Go
+  // worker, since the gate lists applications and not deploy units.
+  it('lists the six applications placed on the box', () => {
     const gate = parseGate(committed);
     expect(gate.placements.map((entry) => entry.id)).toEqual([
       'cuatro-portfolio',
@@ -164,6 +166,7 @@ describe('the committed gate file', () => {
       'cuatro-tracker',
       'digital-library',
       'list-wheel',
+      'cs-tournament',
     ]);
   });
 
@@ -248,15 +251,16 @@ describe('evaluate', () => {
   // committed gate, which was refused before Story 1-6 and passes after it.
   // Stated as an implication rather than as a fact about today, so a later
   // re-block reads as the Operator acting on `ops/capacity-threshold.md` rather
-  // than as this test catching a defect. The probe is `cs-tournament`, the
-  // other intended addition that record charges for, since Story 2-25 placed
-  // `list-wheel` and an incumbent's message names no threshold.
+  // than as this test catching a defect. The probe is `cuatro-finance`, merged
+  // and not placed, since Story 2-25 placed `list-wheel` and Story 3-7 placed
+  // `cs-tournament`, the two additions that record charges for, and an
+  // incumbent's message names no threshold.
   it('names the threshold it was opened against, whenever the committed gate is open', () => {
     const gate = parseGate(committed);
     if (gate.status !== 'open') return;
-    const result = evaluate(gate, 'cs-tournament');
+    const result = evaluate(gate, 'cuatro-finance');
     expect(result.allowed).toBe(true);
-    expect(result.message).toContain('cs-tournament');
+    expect(result.message).toContain('cuatro-finance');
     expect(result.message).toContain(gate.threshold);
     expect(load15(result.message)).toBe(figureIn(gate.threshold, 'threshold'));
   });
@@ -282,11 +286,11 @@ describe('the command line, as the deploy workflow runs it', () => {
   // the documented re-block procedure does not turn this red.
   it('agrees with the committed gate about whether a new id may be placed', () => {
     const gate = parseGate(committed);
-    const run = runChecker('cs-tournament');
+    const run = runChecker('cuatro-finance');
 
     if (gate.status === 'open') {
       expect(run.status).toBe(0);
-      expect(run.stdout).toContain('cs-tournament');
+      expect(run.stdout).toContain('cuatro-finance');
       // The figure the process printed, parsed back out of its own stdout and
       // compared against the file. `toContain('load15')` would have stayed green
       // with the number dropped.

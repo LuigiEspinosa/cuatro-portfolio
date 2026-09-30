@@ -273,3 +273,13 @@ is the criterion's own test: authenticate as an existing user after the move.
   failed: ... password authentication failed", exit 2, the URL not echoed. No variable: exit 2.
 - `verify` ran against a planted Supabase only (the suite); against a real target it is the Operator's,
   step 4 of `ops/estate.md` § Pending Operator actions for `cs-tournament`.
+
+**Amended 2026-09-29 (evening), the real export.** Run by the Operator's session against the source
+project once the Operator had restored it from a pause, `export` refused, by design, naming the
+project's one Auth user: the admin, created 2026-07-02 with a Steam-style synthetic email, holds a
+password hash. So Decision 4's "no user has a password" is off by one, and the refusal is the check
+doing its job; the script is unchanged. Under the Operator's ruling of that day (DW-280, option one)
+the data stays in Supabase Cloud and moves nowhere, so no hash is touched, no reset can be forced, and
+`verify` has no target. The third criterion's proof, an existing user authenticating after the move,
+becomes the Operator's Steam sign-in on `tournament.cuatro.dev` once it serves, dated in
+`ops/tournament-placement.md` action 4. The placement itself is `spec-3-7-placement-tournament-on-the-box.md`.

@@ -4,8 +4,8 @@
 > `cuatro-portfolio` at `apps/tournament/` (Story 3-7, 2026-09-29) and is the pnpm workspace
 > `tournament`. Install from the repository root, then run `pnpm --filter tournament dev`, `test`,
 > `typecheck` or `build`; the Go worker in `worker/` builds and tests with `go` from that directory.
-> Both are imaged in CI (`.github/workflows/image-tournament.yml`) and placed nowhere yet; Vercel was
-> left on 2026-09-24. The status and hosting notes below describe the repository it came from.
+> Both are imaged in CI (`.github/workflows/image-tournament.yml`); Vercel was left on 2026-09-24, and
+> the placement on the box at `tournament.cuatro.dev` is `ops/tournament-placement.md` (2026-09-29). The status and hosting notes below describe the repository it came from.
 
 A web app to run a Counter-Strike 2 tournament with friends — brackets, automated stat
 tracking, and a prize "awards roulette" so everyone (not just the best fragger) has a shot at

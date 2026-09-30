@@ -90,7 +90,7 @@ name = "ECC Verification Loop"
 instruction = """
 Launch a context-free subagent with this prompt:
 
-Invoke the `verification-loop` skill and run its phases against the current worktree, substituting this repository's verified commands for the skill's generic ones: build `corepack pnpm build`, types `corepack pnpm typecheck`, tests `corepack pnpm test --run` (never without `--run`; the full suite takes about two minutes, run all of it). There is no lint gate in this repository, so report Lint as `N/A (no lint command, see AGENTS.md)` rather than FAIL. Skip the coverage threshold and report the test totals instead. For the diff phase use the diff below, not `git diff HEAD~1`. Produce the skill's VERIFICATION REPORT with real command output excerpts. Never report a PASS you did not observe.
+Invoke the `verification-loop` skill and run its phases against the current worktree, substituting this repository's verified commands for the skill's generic ones: build `corepack pnpm --filter hub build` (the root has had no build script since Story 3-2, DW-259), types `corepack pnpm typecheck`, tests `corepack pnpm test --run` (never without `--run`; the full suite takes about two minutes, run all of it). There is no lint gate in this repository, so report Lint as `N/A (no lint command, see AGENTS.md)` rather than FAIL. Skip the coverage threshold and report the test totals instead. For the diff phase use the diff below, not `git diff HEAD~1`. Produce the skill's VERIFICATION REPORT with real command output excerpts. Never report a PASS you did not observe.
 
 Diff under review:
 

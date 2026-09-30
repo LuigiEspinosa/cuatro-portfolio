@@ -22,7 +22,8 @@
 # to by accident: `finance` joins no shared network, and `tracker` joins it as `tracker`, which
 # `ops/routing-inventory.md` § The shared network lists for no other container, and as `cuatro-app`,
 # which it shares on purpose with the container it replaces (`ops/tracker-cutover.md`, Story 3-6).
-# `tournament` and `tournament-worker` join no shared network until they are placed (Story 3-7).
+# `tournament` joins it as `tournament`, which the same table lists for no other container, and
+# `tournament-worker` joins no shared network (Story 3-7's placement, `ops/tournament-placement.md`).
 name: cuatro-portfolio
 
 services:
@@ -244,18 +245,25 @@ services:
     restart: 'no'
 
   # The tournament (`apps/tournament`, Story 3-7): merged into the Anchor and imaged by
-  # `.github/workflows/image-tournament.yml`, NOT placed on the box. Placement is a separate decision
-  # under AD-9, and nothing starts these two today: both sit under a profile no deploy activates.
+  # `.github/workflows/image-tournament.yml`, and placed by hand from the checkout on the box
+  # (`ops/tournament-placement.md`, AD-9): no deploy activates the `tournament` profile, and wiring it
+  # into `deploy.yml` is DW-275's (Epic 4).
   #
   # Two deploy units (AD-7): the Next.js server and the Go demo worker, each its own image and service,
   # both tagged with TOURNAMENT_TAG, the commit sha to run (AD-3), with `-` rather than `:?` for
   # FINANCE_TAG's reason: compose interpolates every service, and an unset tag is an invalid reference
   # Docker refuses.
   #
-  # Its data stays in Supabase and its demos in Cloudflare R2 until the placement decides otherwise
-  # (DW-280), so neither service reaches `anchor-db` and neither has a migrate service: its SQL
-  # migrations are `supabase db push`, a discrete step, and nothing migrates on boot (AD-23). The
-  # secrets are that deployment's values, set in `.env.production` with a `TOURNAMENT_` prefix.
+  # Its data stays in Supabase Cloud and its demos in Cloudflare R2 (Operator ruling 2026-09-29, DW-280,
+  # AD-10's declared exception), so neither service reaches `anchor-db` and neither has a migrate
+  # service: its SQL migrations are `supabase db push`, a discrete step, and nothing migrates on boot
+  # (AD-23). The secrets are that deployment's values, set in `.env.production` with a `TOURNAMENT_`
+  # prefix. TOURNAMENT_DATABASE_URL is Supabase's session pooler: the direct host answers on IPv6
+  # only, and the project's default network has none.
+  #
+  # The server joins `cs-tracker_default` as `tournament`, the upstream the shared Caddyfile's
+  # tournament.cuatro.dev block proxies, and keeps `default`. The worker stays on `default` alone: it
+  # has no public hostname (Operator ruling 2026-09-29).
   tournament:
     image: ghcr.io/luigiespinosa/tournament:${TOURNAMENT_TAG-}
     profiles: [tournament]
@@ -270,6 +278,11 @@ services:
       - STEAM_RETURN_URL=${TOURNAMENT_STEAM_RETURN_URL-}
       - AUTH_NONCE_SECRET=${TOURNAMENT_AUTH_NONCE_SECRET-}
       - ADMIN_STEAMIDS=${TOURNAMENT_ADMIN_STEAMIDS-}
+    networks:
+      default:
+      cs-tracker_default:
+        aliases:
+          - tournament
     healthcheck:
       # The Hub's probe, for the same reason: the standalone server binds the container's own address.
       # `/api/health` is liveness only (`apps/tournament/app/api/health/route.ts`, DW-280).
@@ -294,6 +307,8 @@ services:
       - R2_BUCKET=${TOURNAMENT_R2_BUCKET-}
       - R2_S3_ENDPOINT=${TOURNAMENT_R2_S3_ENDPOINT-}
       - WORKER_MATCHZY_SHARED_SECRET=${TOURNAMENT_WORKER_MATCHZY_SHARED_SECRET-}
+    networks:
+      default:
     healthcheck:
       # Go's server listens on every address, so loopback answers here, unlike the Next servers'.
       test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:8080/healthz']
