@@ -806,8 +806,8 @@ RULE='{"description":"Story 4-9: library.cuatro.dev to Traefik on 8443","express
    env -i HOME=/home/deploy LOGNAME=deploy PATH=/usr/bin:/bin SHELL=/bin/sh /usr/local/sbin/library-restore-verify.sh > /tmp/library-verify.log 2>&1; echo "exit=$?"
    grep '^library-restore-verify: table ' /tmp/library-verify.log | sed 's/^library-restore-verify: //' > /tmp/library-restored-counts
    DB=/home/deploy/digital-library/data/library.db
-   sudo sqlite3 -readonly "$DB" "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name;" | while IFS= read -r t; do
-     echo "table $t: $(sudo sqlite3 -readonly "$DB" "SELECT count(*) FROM \"$t\";") rows"; done > /tmp/library-live-counts
+   sudo sqlite3 -readonly -cmd '.timeout 30000' "$DB" "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name;" | while IFS= read -r t; do
+     echo "table $t: $(sudo sqlite3 -readonly -cmd '.timeout 30000' "$DB" "SELECT count(*) FROM \"$t\";") rows"; done > /tmp/library-live-counts
    tail -1 /tmp/library-verify.log; diff /tmp/library-live-counts /tmp/library-restored-counts && echo counts-match
    rm -f /tmp/library-verify.log /tmp/library-restored-counts /tmp/library-live-counts
    ```
@@ -815,7 +815,7 @@ RULE='{"description":"Story 4-9: library.cuatro.dev to Traefik on 8443","express
    `roundtrip=sha256-match`, `restore=verified` and `exit=0`, and the shell `exit=0`; the second run
    verifies that same object from the bucket again and prints `exit=0`, its last line reading
    `restore verified from the bucket for digital-library/library-<ts>.tar.gz.gpg: 23 schema objects across 11 tables`
-   (fewer is a finding); and `counts-match` prints. The live read is `-readonly` and changes nothing; a
+   (fewer is a finding); and `counts-match` prints. The live read is `-readonly` and changes nothing, and waits up to thirty seconds on a lock as `library-backup.sh` does; a
    difference means the application wrote between the two reads, so run step 2 again rather than going
    on. Record the object key: it and the local archive beside it are the copies this move stands on,
    kept 30 and 15 days by the windows in § Retention. Anything else stops the move here, with nothing
