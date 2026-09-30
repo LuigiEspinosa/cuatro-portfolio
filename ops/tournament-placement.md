@@ -298,9 +298,10 @@ line and the stderr, leave the cron uninstalled, and file a DW entry.
 
 **Named limits.**
 
-1. **One copy, on the box.** The dump is off Supabase's side, which is what AD-10's exception needs, but
-   it is not shipped anywhere else: losing the box and Supabase together loses both. `library-backup.sh`
-   is the estate's one job with a third site.
+1. **One copy, on the box.** The dump is off Supabase's side but not off the box (the retrospective's M4
+   called the box's own dump "not offsite"), and it is not shipped anywhere else: losing the box and
+   Supabase together loses both. `library-backup.sh` is the estate's one job with a third site. Whether
+   this copy meets AD-10's offsite requirement is the Operator's ruling when action 4 closes.
 2. **RPO 24 hours**, and nothing alerts on a failing night: the log is read by hand, as for the other two
    jobs (`ops/backup-digital-library.md` named limit 3).
 3. **Row level security.** `pg_dump` runs with `row_security` off, so if the pooler's `postgres` user did

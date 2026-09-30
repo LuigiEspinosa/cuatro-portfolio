@@ -9018,8 +9018,7 @@ status: done
     .../branches/main/protection/required_status_checks`, strict false). The applications' unit
     suites do run in the required `test` job (`ci.yml`), so what goes ungated is the image build and
     its probe: a merge that breaks `apps/tracker/Dockerfile` lands green and is found only when the
-    Operator next picks a tag. Making them required was the Operator's optional item from Story 3-3,
-    and the retrospective's open question. All four run on push to every branch with no path filter
+    Operator next picks a tag. Whether to make them required is the retrospective's open question. All four run on push to every branch with no path filter
     (`image.yml` excludes `main`, where the Deploy chain calls it), so the push run on a pull request's
     head sha is there to be required; the cost is a full image build of all four applications before
     every merge, which is today's cost already, since they run anyway.
