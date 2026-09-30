@@ -13,6 +13,14 @@ entryPoints:
   # hostname's Origin Rule sets destination port 8443.
   websecure:
     address: ':8443'
+    # Traefik 3 stops reading a request body after 60 seconds by default; the shared Caddy sets no limit. A
+    # 90 KB body sent slowly to library.cuatro.dev, whose book uploads can take longer than a minute, was
+    # cut at 60 seconds through this entrypoint and read whole through Caddy (Story 4-9's rehearsal,
+    # `ops/backup-digital-library.md`), so 0, no limit, as Caddy has.
+    # The origin firewall admits Cloudflare alone, which holds every client connection itself.
+    transport:
+      respondingTimeouts:
+        readTimeout: 0
     http:
       tls: {}
       aliasHeadersStrategy: delete

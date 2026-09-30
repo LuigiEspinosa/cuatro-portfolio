@@ -56,7 +56,7 @@ http:
     digital-library-api:
       rule: Host(`library.cuatro.dev`) && (PathPrefix(`/api/`) || PathPrefix(`/files/`))
       entryPoints: [websecure]
-      middlewares: [library-headers]
+      middlewares: [library-api-headers]
       service: digital-library-api
       tls: {}
     list-wheel:
@@ -104,6 +104,13 @@ http:
         contentTypeNosniff: true
         customFrameOptionsValue: SAMEORIGIN
         referrerPolicy: strict-origin-when-cross-origin
+    # The API's own responses already carry `Referrer-Policy: no-referrer`. Caddy adds its header beside it,
+    # so browsers apply the last, `no-referrer`; Traefik would replace it (Story 4-9's rehearsal,
+    # `ops/backup-digital-library.md`). So the API router sets the other two only, and its own policy stands.
+    library-api-headers:
+      headers:
+        contentTypeNosniff: true
+        customFrameOptionsValue: SAMEORIGIN
     www-to-apex:
       redirectRegex:
         regex: ^https?://www\.cuatro\.dev(?::\d+)?(.*)$

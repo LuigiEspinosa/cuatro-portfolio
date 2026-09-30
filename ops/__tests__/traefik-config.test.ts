@@ -166,9 +166,36 @@ describe('ops/traefik/dynamic/routes.yml', () => {
     expect(alias).toBeTruthy();
     expect(upstream).toEqual([alias, port]);
   });
+
+  // Story 4-9: library.cuatro.dev moves as a routing move, so both of its routers must answer what Caddy's
+  // block does: the split on exactly Caddy's `handle` paths, the aliases and ports the inventory's row names
+  // (`library-api` 4000, `library-web` 3000), SAMEORIGIN, and the API's own `no-referrer` left standing (Caddy
+  // appends its policy after the API's, so browsers apply the API's; Traefik's would replace it).
+  it("splits library.cuatro.dev on Caddy's handle paths, to the aliases and ports the inventory names", () => {
+    const [web, api] = ['digital-library', 'digital-library-api'].map((n) => routers.find((r) => r.name === n));
+    expect(web).toMatchObject({ rule: 'Host(`library.cuatro.dev`)', middlewares: '[library-headers]', service: 'digital-library-web' });
+    expect(api).toMatchObject({ middlewares: '[library-api-headers]', service: 'digital-library-api' });
+    const caddy = INVENTORY.split('\nlibrary.cuatro.dev {\n')[1]?.split('\n}\n')[0] ?? '';
+    const handles = [...caddy.matchAll(/handle (\/\S+)\/\* \{\n\s*reverse_proxy library-api:4000/g)].map((m) => m[1]);
+    expect(handles).toEqual(['/api', '/files']);
+    expect(api?.rule).toBe(`Host(\`library.cuatro.dev\`) && (${handles.map((p) => `PathPrefix(\`${p}/\`)`).join(' || ')})`);
+    const upstream = (s: string) => new RegExp(`^ {4}${s}:\\n {6}loadBalancer:\\n {8}servers:\\n {10}- url: http://([^:/]+):(\\d+)$`, 'm').exec(ROUTES)?.slice(1).join(':');
+    const row = INVENTORY.split('\n').find((l) => l.startsWith('| `library.cuatro.dev` | `177.7.52.248` |')) ?? '';
+    expect(row).toContain('(alias `library-api`) for `/api/*` and `/files/*`');
+    expect(row).toContain('(alias `library-web`) for everything else | 4000, 3000 |');
+    expect([upstream('digital-library-api'), upstream('digital-library-web')]).toEqual(['library-api:4000', 'library-web:3000']);
+    expect(ROUTES).toContain(['    library-headers:', '      headers:', '        contentTypeNosniff: true', '        customFrameOptionsValue: SAMEORIGIN', '        referrerPolicy: strict-origin-when-cross-origin'].join('\n'));
+    expect(ROUTES).toContain(['    library-api-headers:', '      headers:', '        contentTypeNosniff: true', '        customFrameOptionsValue: SAMEORIGIN', '    www-to-apex:'].join('\n'));
+  });
 });
 
 describe('ops/traefik/traefik.yml and compose.yml', () => {
+  // Story 4-9: Traefik 3 cuts a request body at 60 seconds by default and Caddy never does, so a slow
+  // library upload would fail only through Traefik.
+  it('sets no read timeout on websecure, as the shared Caddy has none', () => {
+    expect(STATIC).toMatch(/^ {2}websecure:\n {4}address: ':8443'\n(?: {4}#.*\n)* {4}transport:\n {6}respondingTimeouts:\n {8}readTimeout: 0\n/m);
+  });
+
   it('keeps the insecure API off and the dashboard entrypoint on loopback', () => {
     expect(STATIC).toMatch(/^ {2}insecure: false$/m);
     expect(COMPOSE).toContain("- '127.0.0.1:8080:8080'");

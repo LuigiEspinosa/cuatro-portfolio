@@ -9139,7 +9139,18 @@ status: done
     **Owner: each hostname's migration story, first Story 4.9 (library).** **Trigger: that hostname's
     move.** Measure the longest legitimate request, then set
     `entryPoints.websecure.transport.respondingTimeouts.readTimeout` only if it exceeds the default.
-  status: open
+
+    **Closed 2026-09-30 by Story 4-9, repository half.** Measured on the authoring machine with the real
+    `digital-library` images (`main` at `46d6e5f`, the box's checkout) behind the committed Traefik and a
+    `caddy:2` v2.11.4 stand-in with the box's block: a 90000 byte POST sent at 1000 bytes a second was
+    cut after 60 seconds at 60000 bytes through Traefik and read whole in 90 through Caddy. Book uploads
+    run through `library-web`'s form action, the API accepts 500 MB, and Cloudflare's plan admits 100 MB,
+    so a legitimate upload on a slow uplink exceeds the default. `ops/traefik/traefik.yml` now sets
+    `readTimeout: 0` on `websecure`, as Caddy has; the same run then read all 90000 bytes in 90 seconds
+    through Traefik, and `ops/__tests__/traefik-config.test.ts` pins it. One setting serves every
+    hostname, so the tracker's case needs nothing more. On the box it takes a Traefik recreate
+    (`ops/backup-digital-library.md` § Moving library.cuatro.dev onto Traefik, step 1).
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
   id: DW-298
   summary: >-

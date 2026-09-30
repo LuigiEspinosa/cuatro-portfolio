@@ -48,6 +48,10 @@ Origin Rule, Caddy serves every public request exactly as today.
   Caddy sends none for, and `SAMEORIGIN` on `library`. Traefik adds `aliasHeadersStrategy: delete` on
   every entrypoint, which Caddy lacks: a header named like one Traefik manages (`X_Forwarded_For`) is
   dropped rather than forwarded.
+- *(Amended 2026-09-30 by Story 4-9.)* `library.cuatro.dev`'s API router takes `library-api-headers`,
+  which sets no `Referrer-Policy`, so the API's own `no-referrer` stands as it does behind Caddy; and
+  `websecure` sets `readTimeout: 0`, as Caddy has no limit (DW-297). Evidence in
+  `ops/backup-digital-library.md` § Moving library.cuatro.dev onto Traefik.
 
 ## Rehearsed off the box
 
