@@ -1144,7 +1144,7 @@ is an HTTPS clone of a public repository, and a rebuild recreates it with one `g
 one `docker compose up --build`. The deploy is a second build on the serving box by the same
 mechanism as the Anchor's, which is what widens KV-1: see
 [Where the deploy goes](#where-the-deploy-goes). *(Amended 2026-09-28: the Anchor's deploy stops
-building at the Epic 3 merge, Story 3-4, committed on `dev`; this one builds until Story 4-3.)*
+building at the Epic 3 merge, Story 3-4, committed on `dev`; this one builds until Story 4-3.)* *(Amended 2026-09-30: Story 4-3 moved the hostname and left the build; it builds until the change that closes DW-308.)*
 
 ### Image identity, so the rebuild is reproducible
 

@@ -386,8 +386,14 @@ docker volume rm cs-tracker_caddy_data && docker network rm cs-tracker_default
 /main-3S57BQZJ.js caddy 200 ct=[text/javascript; charset=utf-8] cc=[] nosniff=[nosniff] xfo=[DENY] rp=[strict-origin-when-cross-origin] via=[1.1 Caddy] server=[Caddy] bytes=165968 sha=4dd045eb8642
 /main-3S57BQZJ.js traefik 200 ct=[text/javascript; charset=utf-8] cc=[] nosniff=[nosniff] xfo=[DENY] rp=[strict-origin-when-cross-origin] via=[] server=[Caddy] bytes=165968 sha=4dd045eb8642
 HEAD / traefik 200
-Traefik log errors: 0
+Traefik log errors other than offline.yml's deliberate ACME failure: 0
 ```
+
+The block is condensed, not the loop's literal output: the loop prints the status and headers, and the
+byte counts and sha256 prefixes are the bodies', which `curl -sk --resolve wheel.cuatro.dev:<port>:127.0.0.1
+<url> | wc -c` and `| sha256sum` reproduce (a verification re-run on 2026-09-30 matched both), as
+`curl -skI` reproduces the HEAD. `docker logs traefik-traefik-1 2>&1 | grep ERR` prints one line, `Unable to obtain ACME
+certificate` with `dial tcp 127.0.0.1:443`, which `offline.yml` provokes on purpose; nothing else.
 
 `/index.html` read the same as `/` on both sides. The only difference is the `via` header, which is
 Caddy's `reverse_proxy` adding itself; `server: Caddy` on both sides is the container's own server. A HEAD
@@ -652,7 +658,9 @@ rule() { printf '{"description":"Story 4-6: %s to Traefik on 8443","expression":
    ```
    One Hub container, healthy; Traefik `healthy`; `1`; every pair's status equal (200, 200, 200, and 301
    on both sides; § The sequence step 5 read the redirect targets); the connection count is the
-   baseline, normally `0`. On the workstation:
+   baseline, normally `0`, or above it if § Moving wheel.cuatro.dev has run (Pending action 8 runs it
+   first); wheel's own monitor and visitors then move the count, so at step 3 the HEAD answering `308` is
+   the sign Traefik answered, and the count's rise is only supporting. On the workstation:
    `CF /phases/http_request_origin/entrypoint | jq '.success, [.result.rules[]?.expression]'` lists no
    rule for either hostname, and the UptimeRobot dashboard shows 803749849, 803756371 and 803756083 `UP`.
    **Set monitor 803756083's HTTP method to `GET`** (UptimeRobot dashboard, the monitor's advanced

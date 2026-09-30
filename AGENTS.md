@@ -154,7 +154,7 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   tournament sit behind compose profiles no deploy starts and roll by hand from their runbooks until
   DW-275 wires them in, and the tournament's Supabase store has no migration step, so a new file under
   `apps/tournament/supabase/migrations` reaches it by hand only (DW-291). KV-1's Anchor half retired
-  2026-09-29T20:41:37Z; its `list-wheel` half stays open until Story 4-3 (`ops/known-violations.md`).
+  2026-09-29T20:41:37Z; its `list-wheel` half, which Story 4-3 left open, stays open until DW-308 closes (`ops/known-violations.md`).
 - `ops/deploy-remote.sh` is the deploy key's forced command, so the box runs the checkout's copy and a
   change to it first runs one deploy late (DW-264): keep the sha the last word of the workflow's
   command string, and never move the file.
