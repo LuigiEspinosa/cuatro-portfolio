@@ -59,7 +59,7 @@ its port, and a throwaway `.env`. Let's Encrypt's production directory was unrea
 run on purpose (a scratch `extra_hosts` override), so no account was registered there. Everything was
 removed afterwards.
 
-To re-run it, from the repository root in Git Bash (re-run 2026-09-30 at 10:35Z; the lines it printed
+To re-run it, from the repository root in Git Bash (re-run 2026-09-30 at 10:35Z, and at 10:43Z with the 8443 dashboard line; the lines it printed
 matched the block below, minus the lines this shorter form does not request):
 
 ```bash
@@ -81,6 +81,7 @@ curl -sk -o /dev/null -w 'www %{http_code} %{redirect_url}\n' --resolve www.cuat
 curl -sk -o /dev/null -w 'nope.cuatro.dev %{http_code}\n' --resolve nope.cuatro.dev:8443:127.0.0.1 https://nope.cuatro.dev:8443/
 curl -s -o /dev/null -w 'dashboard, no credentials %{http_code}\n' http://localhost:8080/dashboard/
 curl -s -o /dev/null -w 'dashboard, credentials %{http_code}\n' -u operator:throwaway http://localhost:8080/dashboard/
+curl -sk -o /dev/null -w 'dashboard on 8443, Host: localhost %{http_code}\n' -H 'Host: localhost' https://127.0.0.1:8443/dashboard/
 echo | openssl s_client -connect 127.0.0.1:8443 -servername cuatro.dev 2>/dev/null | openssl x509 -noout -subject
 # Remove everything; `git status --short` prints nothing afterwards.
 $T down -v; rm -f ops/traefik/.env ops/traefik/offline.yml
@@ -105,7 +106,7 @@ nope.cuatro.dev 404
 dashboard, no credentials 401
 dashboard, wrong password 401
 dashboard, credentials 200
-dashboard on 8443 404
+dashboard on 8443, Host: localhost 404
 12 routers, statuses: enabled
 subject=CN=throwaway-origin
 ```
@@ -113,6 +114,9 @@ subject=CN=throwaway-origin
 Each request went with `curl --resolve <host>:8443:127.0.0.1`, so SNI was the hostname, as Cloudflare
 sends it. The www response carried `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` and
 `Referrer-Policy: strict-origin-when-cross-origin`; `library` answered `X-Frame-Options: SAMEORIGIN`.
+The dashboard line asks 8443 with `Host: localhost`, which no router matches, so neither `/dashboard/`
+nor `/api/rawdata` is reachable there; `https://cuatro.dev:8443/dashboard/` reaches `anchor-app`, the
+Hub's own path, as step 6 expects.
 
 **Traefik has no configuration check command.** `traefik --help` lists two commands, `healthcheck` and
 `version`. What stands in for one: the static file is read strictly, so a misspelled key refuses to
@@ -141,7 +145,10 @@ issuance. To re-run it, start the block above without `offline.yml`, with a copy
 
 **Renewal, forced against a throwaway Pebble ACME server**, observed 2026-09-30 between 10:20Z and
 10:27Z. Pebble (`ghcr.io/letsencrypt/pebble:latest`, `PEBBLE_VA_ALWAYS_VALID=1`) issued 22 minute
-certificates from a config whose `profiles.default.validityPeriod` is 1320. Traefik v3.7.13 ran a copy
+certificates from a config whose `profiles.default.validityPeriod` and
+`profiles.shortlived.validityPeriod` are both 1320 (with only the first set, the first issuance came
+back with the `shortlived` profile's 518400 seconds, six days, per the independent verifier's re-run).
+Traefik v3.7.13 ran a copy
 of the committed static file with four changes under `acme`: `caServer: https://pebble:14000/dir`,
 `certificatesDuration: 1` (hours, which Traefik's table maps to a 20 minute renew window checked every
 minute), and `dnsChallenge.provider: exec` with `propagation.disableChecks: true` (`EXEC_PATH=/bin/true`,
