@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-30-2026 02:04
+last_updated: 09-30-2026 02:05
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1193,7 +1193,7 @@ action_items:
       or restate what one shipped and verified step each requires before Epic 4's
       migrations."
     owner: "Cuatro"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-09-30.md"
   - id: "epic-3-retro-item-30-run-the-bmad-project-context-refresh-bef"
     epic: 3
@@ -1202,7 +1202,7 @@ action_items:
       named, KV-1's Anchor half retired, the suite figure, tracker-backup.test.ts
       in the WSL flake note; close DW-289."
     owner: "Cuatro"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-09-30.md"
   - id: "epic-3-retro-item-31-decide-the-merged-trees-agent-files-apps"
     epic: 3
@@ -1211,7 +1211,7 @@ action_items:
       skills here. Remove them or record why they stay, then amend spec-3-7 Decision
       10 and DW-276, which call them inert."
     owner: "Cuatro"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-09-30.md"
   - id: "epic-3-retro-item-32-establish-and-record-the-tournament-stor"
     epic: 3
