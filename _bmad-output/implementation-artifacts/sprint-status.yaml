@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-29-2026 18:40
+last_updated: 09-29-2026 20:55
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -848,7 +848,7 @@ development_status:
   # (tournament), and Image (tracker) 36639121642 green on attempt 2 after a transient next/font Google
   # Fonts fetch failure (nothing under apps/tracker changed). Reaches main at the next dev-to-main merge.
   3-8-record-the-estate-end-state: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
   # REMINDER: run /bmad-project-context (refresh) before starting epic-4.
   # Epic 3 introduces Turborepo, moves the app to apps/hub, and retires the
   # build-on-the-box deploy, so the orientation, paths, and the AD-8 pitfall line
@@ -1185,3 +1185,63 @@ action_items:
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
+  - id: "epic-3-retro-item-29-rule-on-ad-20-s-as-built-in-epic-3-pr-84"
+    epic: 3
+    action: "Rule on AD-20's as-built in Epic 3: PR #84 shipped Stories 3-3 to 3-8,
+      the deploy chain and all three history merges as one main merge. Record an accepted
+      deviation (dated amendments at ARCHITECTURE-SPINE.md AD-20 and epics.md:3852)
+      or restate what one shipped and verified step each requires before Epic 4's
+      migrations."
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-09-30.md"
+  - id: "epic-3-retro-item-30-run-the-bmad-project-context-refresh-bef"
+    epic: 3
+    action: "Run the /bmad-project-context refresh before Epic 4 and bring the AGENTS.md
+      block current: tracker and tournament placed, 30 ops records with both runbooks
+      named, KV-1's Anchor half retired, the suite figure, tracker-backup.test.ts
+      in the WSL flake note; close DW-289."
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-09-30.md"
+  - id: "epic-3-retro-item-31-decide-the-merged-trees-agent-files-apps"
+    epic: 3
+    action: "Decide the merged trees' agent files: apps/tracker/CLAUDE.md and apps/tournament's
+      .claude, _bmad and _bmad-output (346 tracked files) load as instructions and
+      skills here. Remove them or record why they stay, then amend spec-3-7 Decision
+      10 and DW-276, which call them inert."
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-09-30.md"
+  - id: "epic-3-retro-item-32-establish-and-record-the-tournament-stor"
+    epic: 3
+    action: "Establish and record the tournament store's offsite backup (AD-10): confirm
+      what the Supabase project's plan backs up and where, or add a scheduled offsite
+      dump as ops/tracker-backup.sh does; record it in ops/tournament-placement.md
+      and ops/estate.md, or file a DW entry."
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-09-30.md"
+  - id: "epic-3-retro-item-33-close-dw-259-dw-266-and-dw-274-in-deferr"
+    epic: 3
+    action: "Close DW-259, DW-266 and DW-274 in deferred-work.md with dated notes
+      citing a162232, run 36627621601 and ops/tracker-cutover.md step 1."
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-09-30.md"
+  - id: "epic-3-retro-item-34-file-the-unledgered-hazards-the-applicat"
+    epic: 3
+    action: "File the unledgered hazards: the application Image workflows gate no
+      merge while two of their images run live, and Image (tracker)'s next/font fetch
+      failed twice; note on DW-275 that a push changing only apps/* rolls the Hub."
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-09-30.md"
+  - id: "epic-3-retro-item-35-process-a-placement-checks-its-store-s-s"
+    epic: 3
+    action: "Process: a placement checks its store's schema ledger against the code's
+      migrations before its first probe, and Epic 4's migration stories carry that
+      step."
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-09-30.md"
