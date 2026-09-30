@@ -577,8 +577,9 @@ Observations below were made by the Operator and the orchestrator and relayed; t
   **Amended 2026-09-30 (Epic 3 retrospective action 4, finding M4):** what Supabase's side keeps was never
   confirmed, so the store now has a copy off Supabase's side, a nightly `pg_dump` from the box, `ops/tournament-backup.sh`
   at 03:45 UTC into `/home/deploy/backups/cs-tournament`, fourteen days kept, proved by
-  `ops/tournament-restore-verify.sh` (`ops/tournament-placement.md` § Backup). **Written, not yet running:**
-  it runs from the first backup run that record dates. Its limit: one copy, on the box, so losing the box
+  `ops/tournament-restore-verify.sh` (`ops/tournament-placement.md` § Backup). **Running since
+  2026-09-30T08:04Z:** the first dump (19 tables, 31 rows, 477,822 bytes, the ledger at 29) restored
+  and verified, and the cron line is installed (`ops/tournament-placement.md` § First backup run). Its limit: one copy, on the box, so losing the box
   and Supabase together loses both, and whether a copy held on the box meets AD-10's offsite
   requirement is the Operator's ruling when action 4 closes.
 - **The pooler, a decision.** `TOURNAMENT_DATABASE_URL` is Supabase's session pooler
