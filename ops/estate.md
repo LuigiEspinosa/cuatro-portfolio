@@ -574,6 +574,12 @@ Observations below were made by the Operator and the orchestrator and relayed; t
   as the tournament's store with its offsite backup the Operator's, on Supabase's side; the demos stay in
   Cloudflare R2. Nothing moves and `anchor-db` gains nothing. The project was paused when first probed;
   the Operator restored it, and its auth endpoint answers 401 (alive) from the box and elsewhere.
+  **Amended 2026-09-30 (Epic 3 retrospective action 4, finding M4):** what Supabase's side keeps was never
+  confirmed, so the store's offsite copy is now a nightly `pg_dump` from the box, `ops/tournament-backup.sh`
+  at 03:45 UTC into `/home/deploy/backups/cs-tournament`, fourteen days kept, proved by
+  `ops/tournament-restore-verify.sh` (`ops/tournament-placement.md` § Backup). **Written, not yet running:**
+  it runs from the first backup run that record dates. Its limit: one copy, on the box, so losing the box
+  and Supabase together loses both.
 - **The pooler, a decision.** `TOURNAMENT_DATABASE_URL` is Supabase's session pooler
   (`postgres.<ref>@aws-0-us-east-1.pooler.supabase.com:5432`, `sslmode=require`), because the direct host
   `db.<ref>.supabase.co` answers on IPv6 only and `cuatro-portfolio_default` has no IPv6 (`EnableIPv6`

@@ -232,6 +232,84 @@ Deploy run 36648915282 had put on the box (gate, image / hub and deploy green) a
   working login as a failed one: filed as DW-290. That the app's schema changes have no discrete
   step on this store is DW-291.
 
+## Backup
+
+**Written 2026-09-30 for the Epic 3 retrospective's action 4 (finding M4, AD-10). Nothing here has run on
+the box yet.** The ruling above made the store's offsite backup "the Operator's, on Supabase's side",
+and what the Supabase project's plan backs up was never confirmed. This is the copy off Supabase's side
+that the estate controls: a nightly dump from the box, proved by a restore.
+
+**What runs.** `ops/tournament-backup.sh`, installed as `/home/deploy/tournament-backup.sh` and run by
+`deploy`'s crontab the way `~/cuatro-backup.sh` runs. It reads `TOURNAMENT_DATABASE_URL` from
+`/home/deploy/cuatro-portfolio/.env.production` without sourcing the file, runs
+`pg_dump -Fc -n public -n supabase_migrations` through the session pooler in a one-shot
+`postgres:17-alpine` client (the URL reaches the container through its environment, never an argv),
+and writes `tournament-<stamp>.dump`, `.dump.counts` (every table with its row count, read right after
+the dump) and `.dump.sha256` into `/home/deploy/backups/cs-tournament`, all `0600`. After a good dump it
+removes `tournament-*` files older than 14 whole days (`find -mtime +14`, so 15 in effect, as
+`ops/backup-digital-library.md` § Retention reckons it); the placement's `pre-migrations-*` dump is never
+matched. One summary line, exit 0 or 1. `supabase_migrations` rides along because it is the migration
+ledger the proof compares.
+
+**The proof.** `ops/tournament-restore-verify.sh <dump>` restores into a throwaway `postgres:17-alpine`
+with no network (the three Supabase roles the policies name created first, owners and grants skipped),
+requires the sha256, every table and every count equal, and every file under
+`apps/tournament/supabase/migrations` present in the restored ledger by version, then removes the
+container on every path. The nightly job does not run it; it is run by hand after the first dump and
+whenever a dump is about to be relied on.
+
+**The cron line**, the third in `deploy`'s crontab beside the two `ops/backup-digital-library.md`
+records. 03:45 UTC is the library job's minute too; this dump is tens of kilobytes, so the two overlap at
+no measurable cost.
+
+```
+45 3 * * * /home/deploy/tournament-backup.sh >> /home/deploy/backups/cs-tournament/backup.log 2>&1
+```
+
+**Install and first run, as `deploy` on the box** (action 6 below). The box's checkout follows `main`, so
+until this commit reaches `main` the two files come from a `dev` checkout, copied into `/home/deploy/`.
+
+1. `sha256sum ~/tournament-backup.sh ~/tournament-restore-verify.sh` must print, as committed on
+   2026-09-30, `25fe9d02f235e0a43a579d037d06ab9ce10a9c158bfac8e1c3ea1a4edf3be35d` and
+   `9ed8b79a68d2a75881edc70f0614901c4ea364b84e72460ec17e781bd70d805d`. Stop if not: a CRLF copy
+   (`.gitattributes` keeps `*.sh` LF in a checkout) or a later edit both show here.
+2. `chmod 0700 ~/tournament-backup.sh ~/tournament-restore-verify.sh`.
+3. One run in the shape cron runs it:
+   `env -i HOME=/home/deploy LOGNAME=deploy PATH=/usr/bin:/bin SHELL=/bin/sh /home/deploy/tournament-backup.sh`.
+   It must exit 0 and its line read `dump=ok list=ok`, `supabase_migrations.schema_migrations` must be in
+   the `.counts` file at 29, and `sha256=` must be a digest.
+4. `TOURNAMENT_MIGRATIONS_DIR=/home/deploy/cuatro-portfolio/apps/tournament/supabase/migrations
+   ~/tournament-restore-verify.sh /home/deploy/backups/cs-tournament/tournament-<stamp>.dump`, the dump
+   step 3 named. It must end `restore=ok` and `migrations=29-applied-0-pending exit=0`. The store is
+   live, so a sign-in between steps 3 and 4 can fail the count comparison by one row; if it names a
+   table, repeat steps 3 and 4 once before reading it as a fault. The proof takes each migration's
+   version as its file name's digits before the first `_`, as the Supabase CLI records it; the
+   placement wrote rows 0004 to 0029 by hand, so if it names every one of those as missing, read
+   `SELECT version, name FROM supabase_migrations.schema_migrations ORDER BY 1` through the pooler
+   before reading it as a store behind the code, and record what it shows.
+5. `( crontab -l; echo '45 3 * * * /home/deploy/tournament-backup.sh >> /home/deploy/backups/cs-tournament/backup.log 2>&1' ) | crontab -`,
+   then `crontab -l` must list three jobs.
+
+**What to record here** under a dated "First backup run" heading: both summary lines as printed, the
+dump's byte size, the `.counts` file, `crontab -l`, and the two installed digests; then date action 6,
+amend `ops/estate.md` § `cs-tournament` from "written" to "running", and mark the board's
+`epic-3-retro-item-32-establish-and-record-the-tournament-stor` done. If step 3 or 4 fails, record the
+line and the stderr, leave the cron uninstalled, and file a DW entry.
+
+**Named limits.**
+
+1. **One copy, on the box.** The dump is off Supabase's side, which is what AD-10's exception needs, but
+   it is not shipped anywhere else: losing the box and Supabase together loses both. `library-backup.sh`
+   is the estate's one job with a third site.
+2. **RPO 24 hours**, and nothing alerts on a failing night: the log is read by hand, as for the other two
+   jobs (`ops/backup-digital-library.md` named limit 3).
+3. **Row level security.** `pg_dump` runs with `row_security` off, so if the pooler's `postgres` user did
+   not bypass the policies the dump would fail loudly rather than write a partial copy. The placement's
+   pre-migration dump of `public` succeeded as that user, which answers it for the schema then; step 3
+   answers it for all 29 migrations.
+4. **What Supabase itself keeps is still unconfirmed.** The retrospective's open question (which plan,
+   what it backs up) stands; this job does not depend on the answer.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -241,6 +319,7 @@ Deploy run 36648915282 had put on the box (gate, image / hub and deploy green) a
 | 3 | **Run steps 1 to 8 above** | Step 1's and step 7's readings and step 6's codes go into this record. § Placement run | 2026-09-30T00:27Z |
 | 4 | **Sign in through Steam** on `https://tournament.cuatro.dev` as the admin | The identity proof (§ Identity). Observed server side as `last_sign_in_at` with the `steamid64` and `role` claims bound (§ Placement run, step 9), after the migration catch-up | 2026-09-30T01:01:26Z |
 | 5 | **Release Registry 1.7.0** (step 10: the revert of `6d72963`) and merge it into `main` after step 6 answered | FR-28. Released as `4d467ba` on `dev`; its push's Registry verification run passed 41 of 41 with `PASS cs-tournament live: https://tournament.cuatro.dev answered 200`; the home surface's hit-target pin moved to 22 for the new live link (`ops/hit-target-floor.md`); PR #87 merged as `373e33d`, Deploy run 36655346368 green, and `https://cuatro.dev/contracts/registry.json` served `contract_version` 1.7.0 with the entry `Live` right after | 2026-09-30T01:30:33Z |
+| 6 | **Install the nightly dump and run it once** (§ Backup, steps 1 to 5) | The store's copy off Supabase's side (AD-10, retrospective action 4). Record what § Backup lists under a "First backup run" heading | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.
