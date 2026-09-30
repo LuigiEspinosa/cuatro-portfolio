@@ -9075,14 +9075,18 @@ status: done
     **Closed 2026-09-30 by Operator ruling, landed as a security patch on one condition: the published
     contract stays byte-identical.** `packages/tokens/package.json` and `pnpm-lock.yaml` now pin 5.5.5,
     written by `corepack pnpm --filter @cuatro/tokens add -D -E style-dictionary@5.5.5`, whose
-    re-resolution also deduplicated four transitive entries onto versions the lockfile already held
-    (`qs` 6.15.0 to 6.15.3, `side-channel-list` 1.0.0 to 1.0.1, `lru-cache` under `path-scurry` to
-    11.3.6, and one `eslint-module-utils` snapshot key). `corepack pnpm tokens:build` rewrote
+    re-resolution also deduplicated five transitive entries onto versions the lockfile already held
+    (`qs` 6.15.0 to 6.15.3, `side-channel-list` 1.0.0 to 1.0.1, `side-channel` under `internal-slot`
+    1.1.0 to 1.1.1, `lru-cache` under `path-scurry` to 11.3.6, and one `eslint-module-utils` snapshot
+    key; amended 2026-09-30 by verification, which found the fifth). `corepack pnpm tokens:build` rewrote
     `contracts/tokens.css` and `contracts/tailwind.css`, and every file under `contracts/` hashed
     equal to `HEAD` by sha256 with `git status` clean there. Typecheck, the Hub build and the full
     suite (75 files, 1832 passed, 1 skipped) passed. The releases between: 5.5.3 limits nested
     composite token expansion to the configured type filters and preserves alpha precision in
-    `color/css`; 5.5.4 patches `@bundled-es-modules/glob` for a transitive `qs` advisory; 5.5.5 fixes
+    `color/css`; 5.5.4 widens its `@bundled-es-modules/glob` range to `^13.0.6-hotfix.0` to take a hotfix build
+    for a transitive `qs` advisory, but under semver 13.0.6 ranks above 13.0.6-hotfix.0, so pnpm
+    still resolves 13.0.6 (published 2026-03-02) and this repository does not carry that fix (an
+    upstream range defect, build-time only, filed as DW-304); 5.5.5 fixes
     GHSA-cr3w-v879-f973 in `convertTokenData`'s object output mode.
   status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
@@ -9225,4 +9229,20 @@ status: done
     **Owner: the next AGENTS.md context refresh (with DW-298).** **Trigger: that refresh.** Name every
     suite that spawns WSL's bash in the DW-135 pitfall, not three. Not edited here: AGENTS.md is
     agent context, which this story does not touch.
+  status: open
+- id: DW-304
+  summary: >-
+    Style Dictionary 5.5.4's `@bundled-es-modules/glob` range `^13.0.6-hotfix.0` still resolves 13.0.6,
+    so the transitive `qs` fix that release meant to take is not in this repository.
+  evidence: |-
+    Found 2026-09-30 by the verification of DW-295. `npm view style-dictionary@5.5.5 dependencies` gives
+    `'@bundled-es-modules/glob': '^13.0.6-hotfix.0'`; `npm view @bundled-es-modules/glob time` gives
+    13.0.6 on 2026-03-02 and 13.0.6-hotfix.0 on 2026-09-18. Under semver 13.0.6 ranks above its own
+    prerelease, so the range admits 13.0.6 and pnpm takes it: `pnpm-lock.yaml` holds
+    `'@bundled-es-modules/glob@13.0.6'`, the build that predates the hotfix. An upstream range defect.
+    Exposure is build-time only, at `tokens:build`, on token sources this repository authors.
+
+    **Owner: the next change that touches `packages/tokens`.** **Trigger: a Style Dictionary release
+    whose range excludes 13.0.6, or a glob release above 13.0.6.** Re-read the lockfile then; forcing the
+    prerelease with a `pnpm.overrides` entry is a dependency change that needs its own ruling.
   status: open

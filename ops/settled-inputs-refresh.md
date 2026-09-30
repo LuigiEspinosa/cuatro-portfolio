@@ -166,7 +166,7 @@ record and the Registry verification record carry their own dated entries for th
 |---|---|---|---|
 | 1 | **Re-read the zone settings** with the zone token: `GET /zones/{id}/settings/ssl` (the SSL mode, Full (strict) by the record) and the ruleset phases the token of 2026-08-24 could not read, compared with `ops/routing-inventory.md` § Zone settings | The addresses, the proxied state and the edge certificate were observed publicly on 2026-09-30 (§ The observed serving topology); only these zone-internal settings need the token | _not done_ |
 | 2 | **Confirm or overrule the three decisions**: PostgreSQL 18; in place on the one box; Traefik beside Caddy on 8443 with one Origin Rule per hostname | Each is recorded as a decision the Operator may overrule. Story 4.2 builds on the third | _not done_ |
-| 3 | **Rule on DW-295**, the Style Dictionary bump to 5.5.5 | The pin is below the new floor | _not done_ |
+| 3 | **Rule on DW-295**, the Style Dictionary bump to 5.5.5 | The pin is below the new floor | 2026-09-30 |
 | 4 | **Before Story 4.2's first Origin Rule**: widen the origin firewall to 8443 for Cloudflare's ranges, and provide a token that may edit origin rules | Story 4.2's runbook will name the exact commands; the two prerequisites are recorded here so that story opens knowing them | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
