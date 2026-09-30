@@ -8619,6 +8619,10 @@ status: done
     nothing here runs: its `.github/workflows/ci.yml`, `docker/` and three compose files, two ESLint
     configurations, a Playwright e2e suite, a `CLAUDE.md`, and a Prisma seed that needs `tsx` on PATH.
   evidence: |-
+    **Amended 2026-09-30:** the `CLAUDE.md` was not inert: it loaded here as instructions for work
+    under `apps/tracker/` (Epic 3 retrospective, finding M2). On the Operator's ruling it was removed
+    on 2026-09-30, with the tournament's `.claude/`, `_bmad/` and `_bmad-output/` trees; the rest of
+    this entry stands.
     Observed 2026-09-29 by Story 3-6. GitHub runs workflows from the repository root only, so
     `apps/tracker/.github/workflows/ci.yml` is inert; its unit half now runs in the Anchor's `ci.yml`
     (with a Redis service), and its e2e half (Playwright 1.60 against Postgres, Redis and a worker) runs

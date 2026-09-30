@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-29-2026 20:55
+last_updated: 09-30-2026 02:04
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -971,7 +971,7 @@ action_items:
     action: 'Audit every deploy secret against the current box, not just SERVER_HOST.
       Story 1-21 updated one of three and the pipeline was dead twelve days.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
   # 2026-09-24: done by Operator ruling: deploy.yml's last step runs on failure and opens a
@@ -1079,7 +1079,7 @@ action_items:
       verification is green, or rule in writing that the merge may ship the token_contract
       claim ahead of it."
     owner: "Cuatro"
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
   - id: "epic-2-retro-item-3-at-the-epic-2-merge-make-the-eight-check"
@@ -1088,7 +1088,7 @@ action_items:
       Lighthouse) required on main with strict off, per DW-172. On 2026-09-25 main
       read strict true with no contexts."
     owner: "Cuatro"
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
   - id: "epic-2-retro-item-4-revoke-the-twilio-api-key-found-in-mutuo"
@@ -1150,7 +1150,7 @@ action_items:
       Operator checks, or record a dated override; reconcile 2-27, moved to done before
       its screen-reader read."
     owner: "Cuatro"
-    status: open
+    status: in-progress
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
   - id: "epic-2-retro-item-11-process-keep-an-independent-verifier-on"
@@ -1158,7 +1158,7 @@ action_items:
     action: "Process: keep an independent verifier on every unattended story and package;
       it refused six deliveries the inline review layers had passed, in three days."
     owner: "Cuatro"
-    status: open
+    status: in-progress
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
   - id: "epic-2-retro-item-12-process-plant-every-new-assertion-includ"
@@ -1166,7 +1166,7 @@ action_items:
     action: "Process: plant every new assertion, including guards added in review
       and fix rounds, and record the planted failure beside it."
     owner: "Cuatro"
-    status: open
+    status: in-progress
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
   - id: "epic-2-retro-item-13-process-cite-code-by-symbol-or-test-name"
@@ -1182,7 +1182,7 @@ action_items:
     action: "Process: each package names which of its new ledger entries bind the
       next merge."
     owner: "Cuatro"
-    status: open
+    status: in-progress
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
   - id: "epic-3-retro-item-29-rule-on-ad-20-s-as-built-in-epic-3-pr-84"

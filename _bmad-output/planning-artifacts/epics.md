@@ -3851,6 +3851,11 @@ Eight stories. **The merge order is fixed by AD-20 and is not negotiable**: the 
 `apps/hub` as its own shipped step with nothing else changing, then `cuatro-finance`, then
 `cuatro-tracker`, then `cs-tournament`: one shipped and verified step each.
 
+**Amended 2026-09-30 by Operator ruling** (Epic 3 retrospective, action item 1): as built, the Hub's
+move shipped alone (PR #83) but the three history merges reached `main` together in PR #84, an accepted
+deviation recorded at AD-20, because a merge places nothing and the two steps that changed what the
+box served, the tracker cutover and the tournament placement, were each their own verified step.
+
 **A contradiction inside the spine, resolved here.** The Capability → Architecture Map assigns
 `.github/workflows` → `contracts/workflows` to Epic 3, and the Structural Seed shows
 `contracts/workflows/` existing. But the spine's own § Deferred bundles "published reusable

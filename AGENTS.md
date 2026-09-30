@@ -175,10 +175,6 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   scheduled verification (`ops/registry-verification.md`) proves that path on `main`. Renaming or
   moving `apps/finance`, `apps/tracker` or `apps/tournament` fails it: move the entry's `source` in the
   same Registry release.
-- `apps/tracker/CLAUDE.md` and the 346 tracked files under `apps/tournament/.claude/`, `_bmad/` and
-  `_bmad-output/` are the source repositories' own agent files and load for work under those paths.
-  Their commands (bare `pnpm`, `pnpm lint`, a tracker e2e job) do not hold here; this block's do,
-  until the Operator rules on those files (Epic 3 retrospective, action item 3).
 - `Body` writes the route onto `<body id>` (`Container.tsx`), and two stylesheets key on
   that id: `HomeLayout.scss` (`body[id='']`) and `celeste.scss` (`#celeste`, whose `header` rule
   hides the chrome). A route that needs different chrome takes a rule on that id, never an effect
