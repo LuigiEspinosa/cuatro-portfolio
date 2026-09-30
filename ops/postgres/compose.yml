@@ -1,0 +1,53 @@
+# The estate's one PostgreSQL (Story 4-4, AD-10): one database and one role per consumer, never a schema
+# per application, and no PgBouncer. It replaces the three hand-grown Postgres 16 containers one consumer
+# at a time, each moved by its own migration story (`ops/postgres.md` § Moving a consumer).
+#
+# Not a service of the Anchor's `docker-compose.yml`: the database outlives every application's deploy,
+# serves consumers from three compose projects, and the Anchor's file is interpolated and pulled by every
+# Hub deploy. Started by hand from `ops/postgres.md` § The placement, never by a deploy. Run from the
+# checkout:
+#   docker compose -f ops/postgres/compose.yml up -d
+#
+# The service is `estate-postgres`, never `postgres` or `db`: a consumer that joins this network and its
+# own project's network would otherwise resolve a name another stack's database already answers to (the
+# 28P01 of 2026-08-17 in `docker-compose.yml`'s header).
+name: postgres
+
+services:
+  estate-postgres:
+    # Exact patch and Debian release pinned: 18.6 was the newest 18 on 2026-09-30 (Docker Hub, pushed
+    # 2026-09-24; Story 4-1 decided the major). The `-trixie` suffix pins glibc, whose collation changes
+    # silently invalidate text indexes when a floating base moves under a live volume.
+    image: postgres:18.6-trixie
+    # The connection budget in `ops/postgres.md` § The budget sums every role's CONNECTION LIMIT under this
+    # figure less the three superuser slots. `ops/__tests__/postgres-init.test.ts` holds the sum.
+    command: ['postgres', '-c', 'max_connections=100']
+    env_file:
+      # Gitignored (`.env` anywhere). Names only here; values are the Operator's (`ops/postgres.md`).
+      - .env
+    volumes:
+      # The 18 image keeps its cluster under `/var/lib/postgresql/18/docker` and declares the parent as its
+      # volume, so the named volume mounts at the parent, not at `.../data`.
+      - pgdata:/var/lib/postgresql
+      # Runs once, on an empty volume only. A directory, for the reason `ops/traefik/compose.yml` gives.
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # TCP, not the socket: on a fresh volume the image's bootstrap server listens on the socket alone
+      # while the init script runs, and a socket check would report healthy too early.
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U postgres -d postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    networks:
+      # Only consumers join this network, each declaring it `external`. No ingress network: nothing but a
+      # consumer ever reaches the database.
+      - estate-postgres
+    restart: unless-stopped
+
+networks:
+  estate-postgres:
+    name: estate-postgres
+
+volumes:
+  pgdata:

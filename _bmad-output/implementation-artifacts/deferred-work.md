@@ -9116,6 +9116,9 @@ status: done
     AGENTS.md line 37 reads "holds 31 records". An agent-context file, so not edited by the story (the
     build's review routes such a fix to the ledger).
 
+    **Amended 2026-09-30 by Story 4-4:** `ops/postgres.md` makes it 33, and the list names neither
+    new record.
+
     **Owner: the next `bmad-project-context` refresh.** **Trigger: that refresh, or Epic 4's close.**
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
@@ -9135,4 +9138,61 @@ status: done
     new job is a change to both suites that pin `ci.yml`'s job names.
 
     **Owner: Story 4.3 (the first hostname to move).** **Trigger: that story.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
+  id: DW-300
+  summary: >-
+    Finance's database and role are `cuatro_finance` in the estate's one Postgres (AD-3), while
+    `apps/finance/prisma/provision.sql`, `image-finance.yml` and both finance services in
+    `docker-compose.yml` still name `finance` in `anchor-db`.
+  evidence: |-
+    Found 2026-09-30 by Story 4-4. `ops/postgres/init/10-consumers.sh` creates `cuatro_finance` with
+    CONNECTION LIMIT 10 (AD-3 derives Postgres names from the Registry id `cuatro-finance`), and
+    `ops/postgres.md` § The budget lists it. Finance is placed nowhere, so nothing reads either name
+    today, and `anchor-db`, its current target, goes when Umami moves (Story 4.7). The application side
+    was left alone by the story's scope (no application's connection string changes in 4.4).
+
+    **Owner: finance's placement (DW-269).** **Trigger: that placement, or Story 4.7 retiring
+    `anchor-db`, whichever comes first.** Point `DATABASE_URL` in `finance` and `finance-migrate` at
+    `estate-postgres:5432/cuatro_finance`, join `estate-postgres`, and move or retire `provision.sql`
+    and the workflow step that runs it.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
+  id: DW-301
+  summary: >-
+    No consumer should move onto the estate's one Postgres before Story 4.5's `pg_dump` and restic
+    offsite copy cover it, and the epic's dependency order does not say so: 4.7, 4.8 and 4.10 depend on
+    4.4 and 4.6, not on 4.5.
+  evidence: |-
+    Found 2026-09-30 by Story 4-4. The tracker's nightly `cuatro-backup.sh` and `ops/tracker-backup.sh`
+    dump `cuatro-tracker-postgres-1`; nothing backs up Umami's or `cs-tracker`'s database today
+    (`ops/routing-inventory.md` § Backup coverage). Once a consumer moves, the old container stops
+    receiving its writes, so any backup still aimed at it silently covers stale data. `ops/postgres.md`
+    § Moving a consumer states the precondition as a decision the Operator may overrule (its Pending
+    Operator action 2).
+
+    **Owner: Stories 4.7, 4.8 and 4.10, each before its move.** **Trigger: the first of them to open.**
+    Confirm 4.5 is done and its dump names the moved database, and repoint or retire the old backup.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
+  id: DW-302
+  summary: >-
+    Umami migrates its database on container start, against AD-23, and pools up to ten connections per
+    container with no environment knob, which `ops/estate.md` records as Prisma's default of five.
+  evidence: |-
+    Found 2026-09-30 by Story 4-4's review, read in `ghcr.io/umami-software/umami:postgresql-latest`
+    pulled that day (Umami 3.4.0, Prisma 7.10.0, digest `sha256:85909afc...`). Its command,
+    `scripts/start-docker.sh`, runs `node scripts/check-db.js`, which runs `prisma migrate deploy` unless
+    `SKIP_DB_MIGRATION` is set, before `exec node server.js`. The server builds its client as
+    `new PrismaPg({connectionString})`, so node-postgres's default `max` of 10 applies and a
+    `connection_limit` URL parameter does nothing. The box runs the 2026-08-12 digest
+    `sha256:87312d33...` (`ops/routing-inventory.md` § Image identity, so the rebuild is reproducible), whose version was not read.
+    `ops/postgres.md` § The budget sizes `umami` at 25 for that reason, and § Migration discipline names
+    the boot migration. Neither is in `ops/known-violations.md`, and `ops/estate.md`'s finance data note
+    still says Umami pools five.
+
+    **Owner: Story 4.7 (migrate analytics and pin Umami).** **Trigger: that story.** Pin the version, set
+    `SKIP_DB_MIGRATION` on the server and run `prisma migrate deploy` from the same image as a one-shot
+    before the roll, re-read the pool size of the pinned version against the `umami` limit, and correct
+    the estate note.
   status: open
