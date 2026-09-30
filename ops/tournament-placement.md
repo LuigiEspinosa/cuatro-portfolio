@@ -240,7 +240,7 @@ Deploy run 36648915282 had put on the box (gate, image / hub and deploy green) a
 | 2 | **Note the green Image (tournament) run** on a `main` sha carrying it | Its sha is `TOURNAMENT_TAG`. The workflow ran on the merge commit `019394d` itself, both jobs green | 2026-09-30T00:05Z |
 | 3 | **Run steps 1 to 8 above** | Step 1's and step 7's readings and step 6's codes go into this record. § Placement run | 2026-09-30T00:27Z |
 | 4 | **Sign in through Steam** on `https://tournament.cuatro.dev` as the admin | The identity proof (§ Identity). Observed server side as `last_sign_in_at` with the `steamid64` and `role` claims bound (§ Placement run, step 9), after the migration catch-up | 2026-09-30T01:01:26Z |
-| 5 | **Release Registry 1.7.0** (step 10: the revert of `6d72963`) and merge it into `main` after step 6 answered | FR-28 | |
+| 5 | **Release Registry 1.7.0** (step 10: the revert of `6d72963`) and merge it into `main` after step 6 answered | FR-28. Released as `4d467ba` on `dev`; its push's Registry verification run passed 41 of 41 with `PASS cs-tournament live: https://tournament.cuatro.dev answered 200`; the home surface's hit-target pin moved to 22 for the new live link (`ops/hit-target-floor.md`); PR #87 merged as `373e33d`, Deploy run 36655346368 green, and `https://cuatro.dev/contracts/registry.json` served `contract_version` 1.7.0 with the entry `Live` right after | 2026-09-30T01:30:33Z |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.
