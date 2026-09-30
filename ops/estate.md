@@ -322,6 +322,13 @@ proved by restore on every run. It is a database, not an application, and takes 
 entry. Readings in `ops/postgres.md` § Placement run, 2026-09-30 and `ops/postgres-backup.md` § First run,
 2026-09-30.
 
+**Amended 2026-09-30 by Story 4-3.** No row changes. `wheel.cuatro.dev` is served by Traefik through a
+Cloudflare Origin Rule (ruleset `518ad07108bc402fa36ad71fe1e76862`, rule
+`a186cf20b402453fa147ec4b0626c50b`, HTTPS to origin port 8443) since 2026-09-30T22:31Z; the container,
+its alias and its checkout are unchanged, and the box still builds it on each deploy (KV-1's `list-wheel`
+half, open, DW-308). Caddy's `wheel.cuatro.dev` block remains, unreached, until Story 4.11. Every other box
+row is still served by Caddy. Readings in `ops/traefik-cutover.md` § Cutover run, wheel.cuatro.dev.
+
 | Application | Disposition | Status | `absorbed_into` | Registry treatment |
 |---|---|---|---|---|
 | `cuatro-portfolio` | Anchor | `Live` | n/a | The Hub itself; rendered |

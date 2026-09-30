@@ -2,7 +2,7 @@
 title: 'Story 4-3: Migrate list-wheel, the static first candidate, onto Traefik'
 type: 'feature'
 created: '2026-09-30'
-status: 'awaiting-operator'
+status: 'done'
 baseline_commit: '6dcb2bc3b11cc4b444b2dc595b757966622af337'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -90,6 +90,10 @@ removed.
 1 skipped (1840)`, the seven all around 30 s with empty output in `deploy-remote`, `library-backup`,
 `postgres-backup` and `tournament-backup` (DW-135's shape, none touched here); those four files re-run:
 `Test Files 4 passed (4)`, `Tests 122 passed | 1 skipped (123)`.
+
+## Spec Change Log
+
+- 2026-09-30: box half ran from 22:21Z (runbook § Moving wheel.cuatro.dev, steps 1 to 5), recorded in `ops/traefik-cutover.md` § Cutover run, wheel.cuatro.dev; status `done`. Pending Operator action 7 stays open, and KV-1's `list-wheel` half stays open with its closer in DW-308.
 
 ## Review Triage Log
 

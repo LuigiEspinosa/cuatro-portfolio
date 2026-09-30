@@ -17,6 +17,10 @@ Origin Rule, Caddy serves every public request exactly as today.
 **Amended 2026-09-30:** the sequence below ran on the box that evening from 21:48Z, and Traefik
 has run beside Caddy since; readings in § Cutover run. The sections for later stories have not run.
 
+**Amended 2026-09-30:** § Moving wheel.cuatro.dev ran from 22:21Z, and `wheel.cuatro.dev` has been served
+by Traefik through an Origin Rule since 22:31Z; readings in § Cutover run, wheel.cuatro.dev. § Moving
+cuatro.dev and www has not run.
+
 ## What serves today
 
 **Observed 2026-09-30T09:45:54Z over SSH as `deploy`, read-only.**
@@ -364,6 +368,10 @@ own Caddy, with no store and no server-side runtime, so a fault here is the edge
 Traefik and nothing else (addendum §G). **Nothing here has run on the box or in the zone. Written
 2026-09-30, committed on `dev`.** The Operator runs it and dates Pending Operator actions 7 and 8 below.
 
+**Amended 2026-09-30:** the sequence below ran that evening from 22:21Z with the Operator present; the
+Origin Rule has sent `wheel.cuatro.dev` to Traefik since 22:31Z. Readings in § Cutover run,
+wheel.cuatro.dev.
+
 **Why here and not in a record of `list-wheel`'s own.** Decision, Story 4-3, the Operator may overrule.
 This record owns the per-hostname mechanism and its rollback, and `list-wheel` owns no store, so its move
 has no backup, restore or migration step; `ops/postgres.md` and `ops/postgres-backup.md` need not have
@@ -546,6 +554,37 @@ echo "rule ${ID:-not found}"; [ -n "$RS" ] && [ -n "$ID" ] && CF "/$RS/rules/$ID
 
 It takes effect at the edge without touching the box, and step 3's `curl -sI` shows `via: 1.1 Caddy`
 again. Nothing on the box changed, so nothing is restored.
+
+### Cutover run, wheel.cuatro.dev
+
+**Observed 2026-09-30 from 22:21Z on the box (`deploy@177.7.52.248`) and on the workstation, run by
+the orchestrating session with the Operator present.** Steps 1 to 5 as written above; nothing differed,
+so nothing stopped the run, and the rollback was neither needed nor run. `wheel.cuatro.dev` is served by
+Traefik through an Origin Rule since 22:31Z; Caddy's block remains, unreached, until Story 4.11.
+
+**Preconditions.** § The sequence steps 1 to 8 ran and are recorded (§ Cutover run, `dev` `ac274cd`).
+The Operator created an origin-rules token that day, kept on the workstation as `CF_RULES_TOKEN` and never
+printed. `jq` is not installed in Git Bash on the workstation, so `node` parsed the API's JSON where the
+steps name `jq`.
+
+| Step | Time | Observed |
+|---|---|---|
+| 1 | 22:21:55Z | Box: load `0.31, 0.38, 0.28`; `list-wheel-list-wheel-1` `Up 5 days (healthy)`; Traefik `healthy`; grep count `1` for `url: http://list-wheel:80`; `/` and `/no/such/path` each answered `200` on Caddy (443) and on Traefik (8443); Traefik's `ESTABLISHED` count on 8443, the baseline, `0`. Workstation: the entrypoint read answered `success` `false` with error `10003`, "could not find entrypoint ruleset in the http_request_origin phase", so the zone held no origin rule at all; monitor 803983277 `UP` (17 days); `curl -sI https://wheel.cuatro.dev/` carried `via: 1.1 Caddy`; the asset `main-3S57BQZJ.js`, sha256 prefix `4dd045eb86423b58`, 165968 bytes |
+| 2 | 22:28:28Z | The request loop started on the workstation and ran to 22:46:53Z: 540 lines, one a second, each request with a unique query string |
+| 3 | 22:31:15Z | Step 1's `10003` is the phase having no entrypoint ruleset, so the entrypoint was created with the `PUT` and the one rule: `success` `true`, `errors` `[]`. Ruleset `518ad07108bc402fa36ad71fe1e76862`, rule `a186cf20b402453fa147ec4b0626c50b`, description `Story 4-3: wheel.cuatro.dev to Traefik on 8443`, expression `(http.host eq "wheel.cuatro.dev" and ssl)`, origin port 8443. At 22:31:43Z a HEAD of `https://wheel.cuatro.dev/` answered `200`, `cache-control: no-cache`, `cf-cache-status: DYNAMIC` and no `via`; the asset line printed the same name and digest (`main-3S57BQZJ.js`, `4dd045eb86423b58`, 165968 bytes); `/no/such/path` answered `200` with no `via`. Box at 22:31:47Z: `ESTABLISHED` on 8443 `7` (baseline `0`); load `0.09, 0.19, 0.22` |
+| 4 | 22:47Z | The counts below. Monitor 803983277 `UP` across three five-minute intervals after the rule (state duration 17d 5h 8m at 22:47Z, no incident). Box at 22:47:05Z: load `0.23, 0.28, 0.26`; `ESTABLISHED` on 8443 `7` |
+| 5 | 2026-09-30 | This record, and the dated amendments to `ops/routing-inventory.md` § Ingress and `ops/estate.md` |
+
+Step 4's counts over the loop's 540 lines:
+
+| Count | Result |
+|---|---|
+| Status pairs, `awk '{print $2, $4}' \| sort \| uniq -c` | `540 200 200`: every shell and every unknown path answered `200`, no `000` |
+| Proxy column in order, `awk '{print $3}' \| uniq -c` | `88 caddy`, `1 no-via`, `1 caddy`, `450 no-via` |
+
+The first `no-via` line is 22:31:29Z and the last `caddy` line 22:31:31Z, both inside the minute after the
+rule was created at 22:31:15Z, which step 4 reads as the rule reaching every edge location; no `caddy`
+line follows 22:31:31Z. So no finding, and nothing was rolled back.
 
 ## Moving cuatro.dev and www (Story 4-6)
 
@@ -848,8 +887,8 @@ Once a later story has moved a hostname, delete its Origin Rule first, then the 
 | 4 | **Run steps 1 to 8 above** | Step 3 is also the refresh record's action 4, firewall half. Ran from 21:48Z: § Cutover run | 2026-09-30 |
 | 5 | **Confirm or overrule Story 4-6's decisions** in § Moving cuatro.dev and www: this record rather than a new one, no routing change (www answering `308` to non-GET methods where Caddy answers `301`), www before the apex as two rules, Story 4.4 not a precondition | The Story 4-6 spec's Design Notes carry the reasoning | _not done_ |
 | 6 | **Run § Moving cuatro.dev and www steps 1 to 7**, after actions 1 to 4 here and the refresh record's action 4 (the origin rules token) | Step 1 sets monitor 803756083 to `GET`; step 5 dispatches the Deploy workflow; step 7 amends `ops/routing-inventory.md` and `ops/estate.md` | _not done_ |
-| 7 | **Confirm or overrule Story 4-3's decisions** in § Moving wheel.cuatro.dev: this record rather than a new one, no routing change and no change in `list-wheel`, wheel before the apex, and KV-1's `list-wheel` half left open with its closer in DW-308 | The Story 4-3 spec's Design Notes carry the reasoning | _not done_ |
-| 8 | **Run § Moving wheel.cuatro.dev steps 1 to 5**, after actions 1 to 4 here and the refresh record's action 4 (the origin rules token), and before action 6 | Step 3 creates the origin-rules entrypoint if none exists; step 5 amends `ops/routing-inventory.md` and `ops/estate.md` | _not done_ |
+| 7 | **Confirm or overrule Story 4-3's decisions** in § Moving wheel.cuatro.dev: this record rather than a new one, no routing change and no change in `list-wheel`, wheel before the apex, and KV-1's `list-wheel` half left open with its closer in DW-308 | The Story 4-3 spec's Design Notes carry the reasoning. **2026-09-30:** the Operator was present for the run and has overruled nothing; this waits on an explicit word | _not done_ |
+| 8 | **Run § Moving wheel.cuatro.dev steps 1 to 5**, after actions 1 to 4 here and the refresh record's action 4 (the origin rules token), and before action 6 | Step 3 creates the origin-rules entrypoint if none exists; step 5 amends `ops/routing-inventory.md` and `ops/estate.md`. Ran from 22:21Z, the entrypoint created with the one rule at 22:31:15Z: § Cutover run, wheel.cuatro.dev | 2026-09-30 |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.

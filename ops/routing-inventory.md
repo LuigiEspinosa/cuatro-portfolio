@@ -595,6 +595,14 @@ v3.7.13 (`traefik-traefik-1`, compose project `traefik`, from `ops/traefik/`) ru
 (`/usr/local/sbin/cf-origin-firewall.sh`, `DOCKER-USER`, and `ufw` in step) admits 8443 for Cloudflare's
 ranges only, as it does 80 and 443. Readings in `ops/traefik-cutover.md` § Cutover run.
 
+**Amended 2026-09-30 (Story 4-3):** `wheel.cuatro.dev` is served by Traefik through a Cloudflare Origin
+Rule since 2026-09-30T22:31Z. The zone's `http_request_origin` entrypoint (ruleset
+`518ad07108bc402fa36ad71fe1e76862`) holds one rule, `a186cf20b402453fa147ec4b0626c50b`, which sends
+`(http.host eq "wheel.cuatro.dev" and ssl)` to origin port 8443, where Traefik's `list-wheel` router dials
+`http://list-wheel:80`, the upstream Caddy's block names. Caddy's `wheel.cuatro.dev` block below remains,
+unreached, until Story 4.11; deleting the rule sends the hostname back to it. Every other hostname is still
+served by Caddy on 443. Readings in `ops/traefik-cutover.md` § Cutover run, wheel.cuatro.dev.
+
 ### The site blocks, as installed
 
 **Amended 2026-09-30:** an eighth block, `tournament.cuatro.dev`, was appended to
