@@ -9196,3 +9196,20 @@ status: done
     before the roll, re-read the pool size of the pinned version against the `umami` limit, and correct
     the estate note.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-5-pg-dump-on-cron-plus-restic-offsite.md`
+  id: DW-303
+  summary: >-
+    `ops/__tests__/postgres-backup.test.ts` spawns WSL's bash like the three suites AGENTS.md names for the
+    DW-135 flake, and shows the same shape on this host, but AGENTS.md's Running and verifying section
+    lists only three files (four with `tournament-backup.test.ts`, which also shows it).
+  evidence: |-
+    Found 2026-09-30 by Story 4-5. Two full-suite runs on the final tree each failed one
+    `postgres-backup.test.ts` case after about 30 seconds with empty output (29963 ms in the second),
+    beside the same shape in `deploy-remote`, `library-backup`, `tournament-backup` and
+    `tracker-backup`; the third run passed 75 of 75 files. The suite passed 21 of 21 (one skipped on
+    Windows) alone and three times concurrently. CI runs a native bash and never sees it.
+
+    **Owner: the next AGENTS.md context refresh (with DW-298).** **Trigger: that refresh.** Name every
+    suite that spawns WSL's bash in the DW-135 pitfall, not three. Not edited here: AGENTS.md is
+    agent context, which this story does not touch.
+  status: open

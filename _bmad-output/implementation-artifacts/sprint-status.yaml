@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-30-2026 11:25
+last_updated: 09-30-2026 12:15
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -876,7 +876,12 @@ development_status:
   # the Operator's, ops/postgres.md § The placement steps 1 to 5 and § Pending Operator actions 1 to 3.
   # No consumer moves in 4-4; the tournament stays on Supabase. DW-300 to DW-302 filed, DW-298 amended.
   4-4-one-postgres-one-database-and-one-role-per-consumer: awaiting-operator
-  4-5-pg_dump-on-cron-plus-restic-offsite: backlog
+  # 4-5 awaiting-operator 2026-09-30: repository half built and verified on dev (ops/postgres-backup.sh,
+  # ops/postgres-restore-verify.sh, the postgres-backup suite, the local Docker proof against Postgres 18.6 and a
+  # restic 0.19.1 repository on disk). Box half is the Operator's, ops/postgres-backup.md § Install and first
+  # run steps 1 to 7 and § Pending Operator actions 1 to 5, after ops/postgres.md § The placement. PITR deferred;
+  # the library's path unchanged.
+  4-5-pg_dump-on-cron-plus-restic-offsite: awaiting-operator
   4-6-migrate-cuatro-dev: backlog
   4-7-migrate-analytics-cuatro-dev-and-pin-umami: backlog
   4-8-migrate-tracker-cuatro-dev: backlog
