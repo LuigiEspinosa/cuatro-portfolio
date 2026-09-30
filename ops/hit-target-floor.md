@@ -95,7 +95,7 @@ one commit.
 
 | Surface | Status | Candidates found | Skipped | Measured |
 |---|---|---|---|---|
-| `/` | 200 | 21 | 0 | 21 |
+| `/` | 200 | 22 | 0 | 22 |
 | `/work` | 200 | 8 | 0 | 8 |
 | `/cv` | 200 | 10 | 0 | 10 |
 | `/celeste` | 200 | 4 | 4 | 0 |
