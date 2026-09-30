@@ -1,25 +1,19 @@
 <!-- bmad:context -->
-<!-- Verified 2026-09-25 against 79dccf7. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-09-30 against 9a7f562. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## cuatro-portfolio
 
 The Anchor of the Cuatro Ecosystem: the portfolio at cuatro.dev, plus the contracts in
 `contracts/`, published at `https://cuatro.dev/contracts/`: the design token contract, which a
 second application, `cs-tracker`, renders, and the App Registry the Hub's Suite Directory reads.
-Next.js 16 / React 19 / TypeScript, Sass, pnpm, Turborepo, Vitest, Playwright, deployed by Docker
-Compose over SSH to one Hostinger KVM 2 box. The Hub is the workspace `hub` in `apps/hub/`; the
-contracts, `packages/`, `ops/`, the browser suite and every gate's configuration stay at the root.
-`apps/finance/` is the workspace `finance`, merged from `cuatro-finance` in Story 3-5 (Next.js 16,
-Prisma 7, Tailwind 4): imaged in CI, not placed on the box. The root `tsc`, Vitest and the Hub's
-literal and alias gates exclude it; it runs `corepack pnpm --filter finance typecheck` and `test`.
-`apps/tracker/` is the workspace `tracker`, merged from `cuatro-tracker` in Story 3-6 (Next.js 15,
-Prisma 6, BullMQ): imaged in CI, and serving `tracker.cuatro.dev` only once the Operator runs
-`ops/tracker-cutover.md`. Excluded the same way; its suite needs a Redis on `localhost:6379`.
-`apps/tournament/` is the workspace `tournament`, merged from `cs-tournament` in Story 3-7 (Next.js 16
-on Supabase), with its Go demo worker in `apps/tournament/worker/`, a module of its own that Turborepo
-never runs (AD-2): two images in CI, neither placed. Excluded the same way; its suite runs Python 3.
-Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually runs is in
-`ops/`.
+Next.js 16 / React 19 / TypeScript, Sass, pnpm, Turborepo 2.10.13, Vitest, Playwright, on one
+Hostinger KVM 2 box that pulls CI-built images and never builds. A Turborepo of four workspaces under
+`apps/`: `hub` (the portfolio), `tracker` (merged from `cuatro-tracker`, serving `tracker.cuatro.dev`
+since the cutover of 2026-09-29), `tournament` (merged from `cs-tournament`, with a Go worker in
+`apps/tournament/worker/` that Turborepo never runs, serving `tournament.cuatro.dev` since the
+placement of 2026-09-30) and `finance` (merged from `cuatro-finance`, imaged in CI and placed nowhere).
+The contracts, `packages/`, `ops/`, the browser suite and every gate's configuration stay at the root.
+Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually runs is in `ops/`.
 
 ## Policy
 
@@ -40,20 +34,21 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
 - Architecture invariants AD-1 to AD-26:
   `_bmad-output/planning-artifacts/architecture/architecture-cuatro-portfolio-2026-08-15/ARCHITECTURE-SPINE.md`.
   Every story in `epics.md` names its governing AD. Read that AD before starting.
-- **`ops/` holds 28 records that are the operational source of truth, not the planning
+- **`ops/` holds 30 records that are the operational source of truth, not the planning
   artifacts.** Answer an operational question from there before inferring it from code:
   `routing-inventory.md` (the real routing table), `estate.md` (every application and its
   disposition), `known-violations.md` (what is knowingly in breach, and what closes it),
-  `capacity-threshold.md`, `contract-serving.md`, `cs-tracker-token-adoption.md`,
-  `rendered-output-harness.md`, `monitoring.md`, `backup-digital-library.md`,
-  `bot-mitigation.md`, `asset-budget.md` (what the build actually ships, weighed),
-  `registry-schema.md` (the App Registry's shape and its blocking gate),
-  `registry-inputs.md` (how the Registry's values were first chosen, frozen 2026-09-24:
-  `contracts/registry.json` is the only source of Registry values).
-- The Hub moved to `apps/hub/` in Story 3-2 (committed 2026-09-28, live at the Epic 3 merge). A
-  record, spec or comment written before then names the Hub's paths from the repository root: read
-  `app/`, `components/`, `content/`, `hooks/`, `lib/`, `public/` and `next.config.js` under
-  `apps/hub/`.
+  `tracker-cutover.md` and `tournament-placement.md` (how the tracker and the tournament reached the
+  box, and their by-hand later rollouts), `capacity-threshold.md`, `contract-serving.md`,
+  `cs-tracker-token-adoption.md`, `rendered-output-harness.md`, `monitoring.md`,
+  `backup-digital-library.md`, `bot-mitigation.md`, `asset-budget.md` (what the build actually ships,
+  weighed), `registry-schema.md` (the App Registry's shape and its blocking gate),
+  `registry-verification.md` (the scheduled check of every entry), `registry-inputs.md` (how the
+  Registry's values were first chosen, frozen 2026-09-24: `contracts/registry.json` is the only
+  source of Registry values).
+- The Hub moved to `apps/hub/` in Story 3-2 (2026-09-28). A record, spec or comment written before
+  then names the Hub's paths from the repository root: read `app/`, `components/`, `content/`,
+  `hooks/`, `lib/`, `public/` and `next.config.js` under `apps/hub/`.
 - Token contract, and the restyle specification the Hub was rebuilt against in Epic 2:
   `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/DESIGN.md` and
   `RESTYLE-SPEC.md` beside it.
@@ -65,25 +60,27 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
 ## Running and verifying
 
 - `pnpm` is not on PATH on this host. Prefix every command with `corepack`, as in
-  `corepack pnpm typecheck`. The Hub's own scripts run by filter, `corepack pnpm --filter hub build`
-  and likewise `start` and `dev`; the root keeps `test`, `typecheck`, `test:e2e` and the contract
-  generators, and has no `build`.
-- Turborepo 2.10.13 (`turbo.json`) defines `build`, `test`, `typecheck` and `lint`, all uncached.
-  `build` resolves to the Hub's own script (`hub#build`), while `test` and `typecheck` stay the root
-  tasks `//#test` and `//#typecheck`, because the unit suite reads the tree from the repository root;
-  no workspace defines `lint`. turbo spawns `pnpm` itself, so
-  `corepack pnpm turbo ...` fails here with "Unable to find package manager binary": run
-  `corepack enable --install-directory <dir> pnpm` once, put `<dir>` first on PATH, then
-  `pnpm turbo run test -- --run`. A task that resolves to no script exits 0 with "No tasks were
-  executed", so CI invokes the scripts directly and never gates through turbo (DW-252).
+  `corepack pnpm typecheck`. The root keeps `test`, `typecheck`, `test:e2e` and the contract
+  generators, and has no `build` (DW-259): build the Hub with `corepack pnpm --filter hub build`, and
+  run its `start` and `dev` the same way.
+- The root `tsc` and Vitest exclude `apps/finance`, `apps/tracker` and `apps/tournament`. Each runs
+  its own, `corepack pnpm --filter <finance|tracker|tournament> typecheck` and `test`, as `ci.yml`'s
+  `test` job does. The tracker's suite needs a Redis on `localhost:6379`; the tournament's runs
+  `python3`; its Go worker runs `go vet ./... && go test ./...` in `apps/tournament/worker/`.
+- turbo spawns `pnpm` itself, so `corepack pnpm turbo ...` fails here with "Unable to find package
+  manager binary": run `corepack enable --install-directory <dir> pnpm` once with `<dir>` outside the
+  repository, such as the session's scratchpad (it writes six `pnpm` and `pnpx` shims that nothing
+  ignores, DW-255), put `<dir>` first on PATH, then `pnpm turbo run test -- --run`. A task that
+  resolves to no script exits 0 with "No tasks were executed", so CI invokes the scripts directly and
+  never gates through turbo (DW-252).
 - `corepack pnpm test` starts Vitest in watch mode and never exits. Always pass `--run`. The
-  full suite is 1634 tests across 63 files in roughly 80 seconds on this host, so run all of it.
-  Measured 2026-09-25 at `935df26`; it was 890 in 34 files on 2026-08-29, so treat this figure
-  as a rough expectation and not as a number to assert on.
-- On this host two cases that spawn WSL's bash, in `ops/__tests__/deploy-remote.test.ts` and
-  `ops/__tests__/library-backup.test.ts`, sometimes fail after about 30 seconds with empty output
-  and pass on the next run (DW-135). Re-run the suite before debugging such a failure; CI runs a
-  native bash and never sees it.
+  full suite is 1761 tests across 71 files in roughly 110 seconds on this host, so run all of it.
+  Measured 2026-09-30 at `9a7f562`; treat the figure as a rough expectation, never as a number to
+  assert on.
+- On this host three files whose cases spawn WSL's bash, `ops/__tests__/deploy-remote.test.ts`,
+  `ops/__tests__/library-backup.test.ts` and `ops/__tests__/tracker-backup.test.ts`, sometimes fail
+  a case after about 30 seconds with empty output and pass on the next run (DW-135). Re-run the
+  suite before debugging such a failure; CI runs a native bash and never sees it.
 - There is no lint gate and no working lint command: the script is misspelled `linkg`, and
   `next lint` was removed in Next 16, so `corepack pnpm linkg` fails too. Do not put lint in
   an acceptance criterion, and do not add an `eslint` invocation to CI, until a story lands a
@@ -149,22 +146,40 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
 - A story that moves the host changes the three secrets `deploy.yml` reads together:
   `SERVER_HOST`, `SERVER_USER` and `SSH_PRIVATE_KEY`. Audit all three against the new box, never
   one; Story 1-21 repointed `SERVER_HOST` alone, and that is the twelve days above.
-- `ops/deploy-remote.sh`, which `deploy.yml` runs over SSH, pulls `ghcr.io/luigiespinosa/hub:<sha>`
-  and rolls `anchor-app` with `docker-rollout` v0.14 (Story 3-4). It never builds, and
-  `docker-compose.yml` declares no `build:` and refuses to start without `HUB_TAG`. `deploy.yml`'s
-  `image` job builds that tag first by calling `.github/workflows/image.yml`, whose context must be
-  the repository root. Until the Epic 3 merge the box still runs the old `up --build` line (KV-1 in
-  `ops/known-violations.md`). The script is the deploy key's forced command, so the box runs the
-  checkout's copy and a change to it first runs one deploy late (DW-264): keep the sha the last word
-  of the workflow's command string, and never move the file.
+- A push to `main` rolls the Hub alone: `deploy.yml` builds `ghcr.io/luigiespinosa/hub:<sha>` by
+  calling `image.yml` (context the repository root), then runs `ops/deploy-remote.sh`, which pulls
+  that tag and rolls `anchor-app` with `docker-rollout` v0.14, never building; `docker-compose.yml`
+  declares no `build:` and refuses to start without `HUB_TAG`. The tracker and the
+  tournament sit behind compose profiles no deploy starts and roll by hand from their runbooks until
+  DW-275 wires them in, and the tournament's Supabase store has no migration step, so a new file under
+  `apps/tournament/supabase/migrations` reaches it by hand only (DW-291). KV-1's Anchor half retired
+  2026-09-29T20:41:37Z; its `list-wheel` half stays open until Story 4-3 (`ops/known-violations.md`).
+- `ops/deploy-remote.sh` is the deploy key's forced command, so the box runs the checkout's copy and a
+  change to it first runs one deploy late (DW-264): keep the sha the last word of the workflow's
+  command string, and never move the file.
+- `image-finance.yml`, `image-tracker.yml` and `image-tournament.yml` build on every push, `main`
+  included, and `image.yml` on every push but `main`. None is a required check on `main`, so a red
+  image merges unnoticed: read them on the pushed sha before a merge. Image (tracker) has failed on a
+  transient `next/font` Google Fonts fetch with nothing under `apps/tracker` changed; re-run it before
+  debugging.
 - `docker/Caddyfile` is the Anchor's fragment of the one shared Caddyfile on the box
   (`/home/deploy/cs-tracker/Caddyfile`), and no process here reads it: editing it changes nothing
   live, and the box's copy is not in git. Read `ops/routing-inventory.md` for the real routing
   table.
 - Adding an application to `deploy.yml` trips the Capacity Gate (AD-9), which refuses any id
-  not in `placements` in `ops/capacity-gate.yml`. The gate is open on a measured threshold
-  (load15 0.60). Read `ops/capacity-threshold.md` before editing `threshold` or `status`.
-- `Body` writes the route onto `<body id>` (`Container.tsx:12-16`), and two stylesheets key on
+  not in `placements` in `ops/capacity-gate.yml` (six today, `cs-tournament` the latest). The gate is
+  open on a measured threshold (load15 0.60). Read `ops/capacity-threshold.md` before editing
+  `threshold` or `status`.
+- Registry 1.7.0 gives `cuatro-finance`, `cuatro-tracker` and `cs-tournament`
+  `absorbed_into: cuatro-portfolio` and a `source` of this repository's `tree/main/apps/<dir>`, and the
+  scheduled verification (`ops/registry-verification.md`) proves that path on `main`. Renaming or
+  moving `apps/finance`, `apps/tracker` or `apps/tournament` fails it: move the entry's `source` in the
+  same Registry release.
+- `apps/tracker/CLAUDE.md` and the 346 tracked files under `apps/tournament/.claude/`, `_bmad/` and
+  `_bmad-output/` are the source repositories' own agent files and load for work under those paths.
+  Their commands (bare `pnpm`, `pnpm lint`, a tracker e2e job) do not hold here; this block's do,
+  until the Operator rules on those files (Epic 3 retrospective, action item 3).
+- `Body` writes the route onto `<body id>` (`Container.tsx`), and two stylesheets key on
   that id: `HomeLayout.scss` (`body[id='']`) and `celeste.scss` (`#celeste`, whose `header` rule
   hides the chrome). A route that needs different chrome takes a rule on that id, never an effect
   that mutates another component's node: Story 2-1 removed the one that did, because a mutation

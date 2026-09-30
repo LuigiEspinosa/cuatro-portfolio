@@ -8107,7 +8107,11 @@ status: done
 
     **Owner: the `/bmad-project-context` refresh the board schedules before Epic 4**, or whichever story
     next edits that block. **Trigger: either.**
-  status: open
+
+    **Closed 2026-09-30 by the `/bmad-project-context` refresh before Epic 4.** The managed block's
+    turbo line now says `<dir>` goes outside the repository, such as the session's scratchpad, and
+    names the six shims it writes.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-2-move-the-hub-to-apps-hub.md`
   id: DW-256
@@ -8912,7 +8916,12 @@ status: done
     `ops/tournament-placement.md` beside `ops/tracker-cutover.md`.
 
     **Owner: the `/bmad-project-context` refresh before Epic 4.** **Trigger: that refresh.**
-  status: open
+
+    **Closed 2026-09-30 by the `/bmad-project-context` refresh before Epic 4.** The managed block's
+    orientation says the tracker serves `tracker.cuatro.dev` since the cutover of 2026-09-29 and the
+    tournament serves `tournament.cuatro.dev` since the placement of 2026-09-30, and § Where things
+    are names `ops/tournament-placement.md` beside `ops/tracker-cutover.md`.
+  status: done
 - id: DW-290
   summary: >-
     The tournament's viewer surface shows no signed-in state: `apps/tournament/app/(viewer)/page.tsx`
