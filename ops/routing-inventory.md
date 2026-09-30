@@ -615,6 +615,14 @@ One CI-built deploy (run 36787729657) rolled the Hub through Traefik afterwards,
 `www.cuatro.dev` blocks below remain, unreached, until Story 4.11; deleting a rule sends that hostname back
 to its block. Readings in `ops/traefik-cutover.md` § Cutover run, cuatro.dev and www.
 
+**Amended 2026-09-30 (Story 4-7):** `analytics.cuatro.dev` is served by Traefik through a Cloudflare
+Origin Rule since 2026-09-30T23:36Z. The same entrypoint (ruleset `518ad07108bc402fa36ad71fe1e76862`)
+gained rule `71197cf5c82d48ca80bddc5d5a89d23a` at 23:36:34Z, sending
+`(http.host eq "analytics.cuatro.dev" and ssl)` to origin port 8443, where Traefik's `analytics` router
+dials `anchor-umami:3000`, the upstream Caddy's block names. Caddy's `analytics.cuatro.dev` block below
+remains, unreached, until Story 4.11; deleting the rule sends the hostname back to it. Readings in
+`ops/postgres.md` § Umami move run, 2026-09-30.
+
 ### The site blocks, as installed
 
 **Amended 2026-09-30:** an eighth block, `tournament.cuatro.dev`, was appended to
@@ -1212,6 +1220,13 @@ GHCR first, and the image ids above are how a rebuild proves it got the same thi
 2026-09-28** (Story 3-4, committed on `dev`): from the Epic 3 merge the Hub runs
 `ghcr.io/luigiespinosa/hub:<sha>`, pulled from GHCR, so `cuatro-portfolio-anchor-app:latest` stops being
 used and the Hub's image leaves that set; its container's name changes with each rollout.
+
+**Amended 2026-09-30 (Story 4-7):** `cuatro-portfolio-anchor-umami-1` runs
+`ghcr.io/umami-software/umami:3.4.0@sha256:85909afc45bdcda1917394594a087421fdbb05610fded0fa9f6fb861abb2f367`
+since 22:57:25Z, pinned by digest in `docker-compose.yml`, where the row above had the floating
+`postgresql-latest` (3.3.0), and keeps its data in the `umami` database of `estate-postgres`
+(`postgres-estate-postgres-1`, `postgres:18.6-trixie`). `cuatro-portfolio-anchor-db-1` keeps Umami's old
+store, unreached, until Story 4.11. Readings in `ops/postgres.md` § Umami move run, 2026-09-30.
 
 #### `cs-tracker:latest` is built on the box, and the estate-wide claim is now exact
 

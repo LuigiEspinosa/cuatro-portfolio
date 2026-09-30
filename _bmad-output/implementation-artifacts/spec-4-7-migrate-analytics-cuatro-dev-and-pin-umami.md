@@ -2,7 +2,7 @@
 title: 'Story 4-7: Migrate analytics.cuatro.dev and pin Umami'
 type: 'feature'
 created: '2026-09-30'
-status: 'awaiting-operator'
+status: 'done'
 baseline_commit: 'e72a7c655911a8f4b49ba12653447e7698ecef40'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -77,6 +77,8 @@ context:
 - The compose suite's new block was run against the baseline `docker-compose.yml` and failed its three cases (unpinned image, no one-off, no `estate-postgres`), then passed on the new file.
 
 ## Spec Change Log
+
+- 2026-09-30: box half ran from 22:54Z (runbook § Moving Umami, steps 1 to 14), recorded in `ops/postgres.md` § Umami move run, 2026-09-30; status `done`. A first attempt failed at step 9 because the runbook's compose prefix lacked `HUB_TAG`; the helper block now exports it (DW-310), and the retry from step 3 completed. Pending Operator action 4 stays open.
 
 ## Review Triage Log
 

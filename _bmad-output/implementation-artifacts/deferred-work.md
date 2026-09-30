@@ -9404,3 +9404,23 @@ status: done
     each router's upstream: does it serve a WebSocket, and does it read `X-Forwarded-Proto` on it? If
     so, the same middleware on its router, with a case in `ops/__tests__/traefik-config.test.ts`.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-7-migrate-analytics-cuatro-dev-and-pin-umami.md`
+  id: DW-310
+  summary: >-
+    A runbook wrote its compose prefix for `docker-compose.yml` without `HUB_TAG`, so every compose command
+    in it failed on the box; the other 4-x runbooks have not been checked for the same omission.
+  evidence: |-
+    Found 2026-09-30 by Story 4-7's box run (`ops/postgres.md` § Umami move run, 2026-09-30): the helper
+    block of § Moving Umami § The sequence set `C='docker compose --env-file .env.production'`, and
+    `docker-compose.yml` refuses to interpolate without `HUB_TAG`
+    (`services.anchor-app.image: required variable HUB_TAG is missing a value`), which only
+    `ops/deploy-remote.sh` sets. The first attempt's compose steps all errored while its plain `docker`
+    steps ran, and it failed at step 9; no write reached either store, and a retry from step 3 completed.
+    Fixed in the same commit as the record: the block now runs `export HUB_TAG="$(git rev-parse HEAD)"` first, as
+    `ops/tracker-cutover.md` and `ops/tournament-placement.md` already did.
+
+    **Owner: the next runbook run.** **Trigger: the same, before its first compose command.** Check the
+    other 4-x runbooks (the tracker's in `ops/tracker-cutover.md`, `cs-tracker`'s in
+    `ops/cs-tracker-cutover.md`, the library's) for a compose command against this checkout's
+    `docker-compose.yml` without `HUB_TAG` exported, and fix any before it runs.
+  status: open

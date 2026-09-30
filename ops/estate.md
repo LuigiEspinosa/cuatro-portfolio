@@ -337,6 +337,14 @@ one CI-built deploy (run 36787729657) rolled it through Traefik that evening, le
 `cuatro-portfolio-anchor-app-6`. Caddy's two blocks remain, unreached, until Story 4.11. Readings in
 `ops/traefik-cutover.md` § Cutover run, cuatro.dev and www.
 
+**Amended 2026-09-30 by Story 4-7.** No row changes: Umami is infrastructure, not an application. It runs
+`ghcr.io/umami-software/umami:3.4.0` pinned by digest (`sha256:85909afc...`) since 22:57:25Z, on the estate
+Postgres as database and role `umami` (limit 25), its schema migrated by the discrete
+`anchor-umami-migrate` step, every row of the old store carried over and counted. `analytics.cuatro.dev`
+is served by Traefik through a Cloudflare Origin Rule (ruleset `518ad07108bc402fa36ad71fe1e76862`, rule
+`71197cf5c82d48ca80bddc5d5a89d23a`) since 23:36Z. `anchor-db` and Caddy's `analytics.cuatro.dev` block
+remain, unreached by Umami, until Story 4.11. Readings in `ops/postgres.md` § Umami move run, 2026-09-30.
+
 | Application | Disposition | Status | `absorbed_into` | Registry treatment |
 |---|---|---|---|---|
 | `cuatro-portfolio` | Anchor | `Live` | n/a | The Hub itself; rendered |

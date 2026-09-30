@@ -505,12 +505,19 @@ was created that hour.
 On the box as `deploy` in `/home/deploy/cuatro-portfolio`:
 
 ```bash
+export HUB_TAG="$(git rev-parse HEAD)"
 C='docker compose --env-file .env.production'
 SRC=cuatro-portfolio-anchor-db-1; DST=postgres-estate-postgres-1
 Q="select table_name||' '||(xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name), false, true, '')))[1]::text from information_schema.tables where table_schema='public' and table_type='BASE TABLE' order by 1"
 E="select event_name||' '||count(*) from website_event where event_type = 2 and event_name in ('suite-reach','live-open','source-open') group by event_name order by 1"
 install -d -m 700 /home/deploy/pg-move
 ```
+
+**Amended 2026-09-30, after the run below:** the block first set `C` without `HUB_TAG`, and every compose
+command in the first attempt failed with "required variable HUB_TAG is missing a value". Compose
+interpolates the whole of `docker-compose.yml` whichever service it runs, and the Hub's image line refuses
+an unset tag, which only `ops/deploy-remote.sh` sets. The running Hub's sha is the value that changes
+nothing, as `ops/tracker-cutover.md` and `ops/tournament-placement.md` already prescribe (DW-310).
 
 1. **Read what the move stands on, and stop at the first difference.**
    ```bash
@@ -640,6 +647,71 @@ install -d -m 700 /home/deploy/pg-move
   it forward again, so after R2 nobody runs one until the retry.
 - **Never** `down -v`, `dropdb` or any write against `$SRC`, and never delete the dump before Story 4.11.
 
+### Umami move run, 2026-09-30
+
+**Observed 2026-09-30 on the box as `deploy`, run by the orchestrator with the Operator present; the
+Operator did the browser steps.** Preconditions, each recorded today: § Placement run, 2026-09-30;
+`ops/postgres-backup.md` § First run; `ops/traefik-cutover.md` § Cutover run; `main` at `f9ea578`
+carrying Story 4-7's commits, Deploy run 36779534561.
+
+- **Step 1**, 22:54:20Z: load average `0.56, 0.41, 0.31`. `cuatro-portfolio-anchor-umami-1` on
+  `ghcr.io/umami-software/umami:postgresql-latest`, `running`; the last migration `23_update_session_data`;
+  events `live-open 1`, `source-open 1`, `suite-reach 7`; `0` public tables in the target; the compose pin
+  counted `2`. The source database 9455 kB, `website_event` 88 rows.
+- **A first attempt at steps 2 to 10, from about 22:54:58Z, failed at step 9.** The helper block then set
+  `C='docker compose --env-file .env.production'` with no `HUB_TAG`, and `docker-compose.yml` refuses to
+  interpolate without it (`services.anchor-app.image: required variable HUB_TAG is missing a value`); only
+  `ops/deploy-remote.sh` sets it. So every compose command errored (step 3's `config`, step 4's `pull`,
+  step 5's `stop`, step 9's migrate) while the plain `docker` and shell steps ran: step 2 appended
+  `UMAMI_DB_PASSWORD` to `.env.production` (count `1`), step 3 wrote
+  `/home/deploy/pg-move/umami-rollback.yml`, step 6 dumped 68577 bytes (`exit=0`) **with the old server
+  still running**, since the stop had failed, step 7 restored (`exit=0`), and step 8's diff could not be
+  read in the garbled output. The fail branch's `$C start anchor-umami` errored too, and the old server was
+  found still running, started 2026-08-17 and never stopped. No write reached either store between that
+  dump and the retry: the source held 88 events, with `0` after the first `FROZE` (22:54:58Z), and the
+  target held 25 tables, 88 events, migration 23. The block above now exports `HUB_TAG` (DW-310).
+- **The retry, from step 3, with `HUB_TAG` exported** (`f9ea578`). Step 3's `config` printed the 3.3.0
+  digest reference and the rollback URL count `1`. Step 4 pulled
+  `ghcr.io/umami-software/umami:3.4.0@sha256:85909afc45bdcda1917394594a087421fdbb05610fded0fa9f6fb861abb2f367`.
+- **Step 5**: `anchor-umami` stopped, **`FROZE=2026-09-30T22:56:35Z`**, the container exited; load average
+  `0.93, 0.56, 0.37`.
+- **Steps 6 and 7** were not repeated: the dump of 68577 bytes and its restore from the first attempt
+  stood, since nothing was written after it (above).
+- **Step 8**, against that restore: `counts-match`, and events `live-open 1`, `source-open 1`,
+  `suite-reach 7`, step 1's counts. The script's branch that empties the target and redoes steps 6 to 8 on
+  a difference did not run.
+- **Step 9**: the migrate applied `24_lowercase_username`, `25_add_annotation` and `26_add_api_key` and
+  ended `All migrations have been successfully applied.`, exit 0; load average `0.94, 0.56, 0.37` at
+  22:56:39Z.
+- **Step 10**, by hand at 22:57:25Z with `HUB_TAG` exported: the script's output ended after step 9 and the
+  old container was found `Exited (143)` from step 5's stop. `up -d --wait anchor-umami` printed
+  `Started`, `Waiting`, `Healthy`. The container runs
+  `ghcr.io/umami-software/umami:3.4.0@sha256:85909afc45bdcda1917394594a087421fdbb05610fded0fa9f6fb861abb2f367`,
+  `healthy`, started 22:57:25Z; `Applying migration` lines in its log `0`; heartbeat `{"ok":true}`; the
+  last migration `26_add_api_key`; load average `0.45, 0.49, 0.36`. **Analytics was dark from 22:56:35Z
+  to 22:57:25Z, 50 seconds.**
+- **Step 11**, still through Caddy. From the workstation, `/api/heartbeat` answered 200 `{"ok":true}` and
+  `/script.js` 200, 4773 bytes, each `via: 1.1 Caddy`. The Operator signed in at
+  `https://analytics.cuatro.dev` and saw the history back to 2026-08-17, then loaded `https://cuatro.dev`
+  in a private window and scrolled to the Suite Directory. On the box at 23:36:02Z: estate events after
+  `FROZE` by type `1 3` and `2 1` (three page views, one custom event); the old store after `FROZE` `0`;
+  Traefik on 8443 answered the analytics heartbeat 200; load average `0.94, 0.47, 0.32`.
+- **Step 12**: the probe loop ran from 23:36:32Z to 23:38:07Z, 50 lines. The rule was added to ruleset
+  `518ad07108bc402fa36ad71fe1e76862` at **`MOVED=2026-09-30T23:36:34Z`**: rule
+  **`71197cf5c82d48ca80bddc5d5a89d23a`**, "Story 4-7: analytics.cuatro.dev to Traefik on 8443", `true`
+  and `[]`. At 23:36:46Z `script.js` answered `HEAD` 200 with no `via` line, and the heartbeat 200 with
+  none. On the box at 23:36:41Z: load average `0.97, 0.54, 0.35`, and Traefik's `ESTABLISHED` count 49.
+- **Step 13**, 23:38:27Z: the 50 probe lines counted `200 200` alone. The Operator signed in again through
+  the new path and loaded `https://cuatro.dev` in a new private window. On the box at 23:51:55Z: estate
+  events after `MOVED` by type `1 4` and `2 1`; the old store after `FROZE` still `0`; `website_event`
+  totals 97 in the estate `umami` and 88 in `anchor-db`; `pg_stat_activity` for `umami` 6, against the
+  role's limit of 25; load average `0.29, 0.35, 0.32`; the container `healthy` on the 3.4.0 digest.
+
+Rollbacks R1 and R2 were not needed and not run, so R2's dump of the estate `umami` did not apply.
+`/home/deploy/pg-move` holds `umami.dump` (68577 bytes), `umami-rollback.yml`, `FROZE` and `migrate.log`,
+kept until Story 4.11. `anchor-db` and Caddy's `analytics.cuatro.dev` block remain, unreached, until Story
+4.11.
+
 ## Rollback, whole
 
 Before any consumer moved: `$P down -v; rm -f ops/postgres/.env`. The box is as it was. After one has
@@ -652,9 +724,9 @@ moved, roll every moved consumer back first, one by one, then the same.
 | 1 | **Merge the commit carrying `ops/postgres/` into `main`** and let the Deploy run | The box checkout is `main`; nothing here reaches the box another way. PR #88 merged `dev` as `f9ea578`; Deploy run 36779534561 succeeded; the box checkout read `f9ea578` | 2026-09-30T21:27Z |
 | 2 | **Confirm or overrule the decisions above**: PostgreSQL `18.6-trixie`, a stack beside the Anchor's, `max_connections=100` and the budget, `umami` keeping its name, finance included, the tournament staying on Supabase, and no move before Story 4.5 | The spec's Design Notes carry the reasoning. The Operator was present for the placement on 2026-09-30 and overruled nothing; an explicit word is awaited, so the row stays open | _not done_ |
 | 3 | **Run § The placement, steps 1 to 5** | Nothing moves; only a fourth Postgres starts. Done: § Placement run, 2026-09-30 | 2026-09-30T22:16:07Z |
-| 4 | **Confirm or overrule Story 4-7's decisions** in § Moving Umami: 3.4.0 by release and digest, the freeze, data before hostname, the override-file rollback, the page views written after step 10 not carried back by R2 (kept in `umami-after-r2.dump` only), the runbook here | The Story 4-7 spec's Design Notes carry the reasoning | _not done_ |
+| 4 | **Confirm or overrule Story 4-7's decisions** in § Moving Umami: 3.4.0 by release and digest, the freeze, data before hostname, the override-file rollback, the page views written after step 10 not carried back by R2 (kept in `umami-after-r2.dump` only), the runbook here | The Story 4-7 spec's Design Notes carry the reasoning. The Operator was present for the move on 2026-09-30 and overruled nothing; an explicit word is awaited, so the row stays open | _not done_ |
 | 5 | **Merge the commit carrying Story 4-7 into `main`** and let the Deploy run | It rolls the Hub alone; the running Umami is untouched until § Moving Umami step 5. Done by PR #88, merged as `f9ea578`, which includes `6bb4c14` and `ec9d76e`; Deploy run 36779534561 | 2026-09-30T21:27Z |
-| 6 | **Run § Moving Umami steps 1 to 14**, after action 3 here and `ops/postgres-backup.md` § Install and first run; steps 12 and 13 also after `ops/traefik-cutover.md` actions 1 to 4 and the Origin Rules token | Step 14 amends `ops/routing-inventory.md` | _not done_ |
+| 6 | **Run § Moving Umami steps 1 to 14**, after action 3 here and `ops/postgres-backup.md` § Install and first run; steps 12 and 13 also after `ops/traefik-cutover.md` actions 1 to 4 and the Origin Rules token | Step 14 amends `ops/routing-inventory.md`. Done: § Umami move run, 2026-09-30, after a first attempt that failed at step 9 on the missing `HUB_TAG` and a retry from step 3 | 2026-09-30T23:51:55Z |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.
