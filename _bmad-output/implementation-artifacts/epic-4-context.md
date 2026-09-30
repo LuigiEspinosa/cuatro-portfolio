@@ -45,5 +45,5 @@ Rebuild the estate's serving layer on the one Hostinger KVM 2 box: Traefik repla
 
 - Blocked by the routing inventory (`ops/routing-inventory.md`) and by Epic 3's pull-based deploys, both done.
 - 4.2 depends on 4.1's topology and mechanism decision; 4.3, 4.4 and 4.6 depend on 4.2; 4.5 on 4.4; 4.7, 4.8 and 4.10 on 4.4 and 4.6; 4.9 on 4.5; 4.11 on 4.3 and 4.6 to 4.10.
-- 4.3 also depends on Story 2.25 (`list-wheel` on the box); 4.8 carries DW-275 (per-id deploys for the tracker and the tournament).
+- 4.3 also depends on Story 2.25 (`list-wheel` on the box); DW-275 (per-id deploys for the tracker and the tournament) was assigned to 4.8, and 4.8 deferred it on 2026-09-30 as a change to `deploy.yml`, `ops/deploy-remote.sh` and the Capacity Gate outside its database move: it stays open in Epic 4, its home (4.11 or a story of its own before it) is the Operator's to confirm.
 - Box-side steps are the Operator's, run from runbooks the stories write.
