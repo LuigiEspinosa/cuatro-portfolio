@@ -596,9 +596,12 @@ install -d -m 700 /home/deploy/pg-move
 - **R2, the data**: `$R up -d --wait anchor-umami` (with `C` and `R` set as above). The 3.3.0 server
   returns on `anchor-db`, which took no write after `FROZE` and was never migrated, so it serves exactly
   what it held at the freeze. Page views written to the estate `umami` since step 10 stay there and are
-  not carried back: analytics rows, a loss stated and accepted. The estate `umami` stays as it is for the
-  next attempt, which empties it first (step 7's recovery). A plain `$C up` of `anchor-umami` moves it
-  forward again, so after R2 nobody runs one until the retry.
+  not carried back: analytics rows, a loss stated and accepted (action 4 below). Dump them before anything
+  else, so the retry's emptying never destroys the only copy:
+  `docker exec "$DST" pg_dump -U umami -Fc umami > /home/deploy/pg-move/umami-after-r2.dump; echo "exit=$?"`,
+  `exit=0`, and keep that file beside `umami.dump` until Story 4.11. The estate `umami` then stays as it is
+  for the next attempt, which empties it first (step 7's recovery). A plain `$C up` of `anchor-umami` moves
+  it forward again, so after R2 nobody runs one until the retry.
 - **Never** `down -v`, `dropdb` or any write against `$SRC`, and never delete the dump before Story 4.11.
 
 ## Rollback, whole
@@ -613,7 +616,7 @@ moved, roll every moved consumer back first, one by one, then the same.
 | 1 | **Merge the commit carrying `ops/postgres/` into `main`** and let the Deploy run | The box checkout is `main`; nothing here reaches the box another way | _not done_ |
 | 2 | **Confirm or overrule the decisions above**: PostgreSQL `18.6-trixie`, a stack beside the Anchor's, `max_connections=100` and the budget, `umami` keeping its name, finance included, the tournament staying on Supabase, and no move before Story 4.5 | The spec's Design Notes carry the reasoning | _not done_ |
 | 3 | **Run § The placement, steps 1 to 5** | Nothing moves; only a fourth Postgres starts | _not done_ |
-| 4 | **Confirm or overrule Story 4-7's decisions** in § Moving Umami: 3.4.0 by release and digest, the freeze, data before hostname, the override-file rollback, the runbook here | The Story 4-7 spec's Design Notes carry the reasoning | _not done_ |
+| 4 | **Confirm or overrule Story 4-7's decisions** in § Moving Umami: 3.4.0 by release and digest, the freeze, data before hostname, the override-file rollback, the page views written after step 10 not carried back by R2 (kept in `umami-after-r2.dump` only), the runbook here | The Story 4-7 spec's Design Notes carry the reasoning | _not done_ |
 | 5 | **Merge the commit carrying Story 4-7 into `main`** and let the Deploy run | It rolls the Hub alone; the running Umami is untouched until § Moving Umami step 5 | _not done_ |
 | 6 | **Run § Moving Umami steps 1 to 14**, after action 3 here and `ops/postgres-backup.md` § Install and first run; steps 12 and 13 also after `ops/traefik-cutover.md` actions 1 to 4 and the Origin Rules token | Step 14 amends `ops/routing-inventory.md` | _not done_ |
 
