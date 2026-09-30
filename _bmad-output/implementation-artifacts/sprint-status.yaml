@@ -886,13 +886,24 @@ development_status:
   # cuatro_finance with limits summing to 80, the postgres-init suite, the local Docker proof). Box half is
   # the Operator's, ops/postgres.md § The placement steps 1 to 5 and § Pending Operator actions 1 to 3.
   # No consumer moves in 4-4; the tournament stays on Supabase. DW-300 to DW-302 filed, DW-298 amended.
-  4-4-one-postgres-one-database-and-one-role-per-consumer: awaiting-operator
+  # 4-4 done 2026-09-30: box half ran from 22:15Z with the Operator present, after PR #88 (f9ea578) and
+  # Deploy run 36779534561. postgres-estate-postgres-1 healthy after 8 s, the four databases and limits
+  # exactly as expected, load15 0.24 after. Readings in ops/postgres.md § Placement run, 2026-09-30;
+  # Pending actions 1 and 3 dated. Action 2 (confirm or overrule the decisions) stays open: nothing
+  # overruled, an explicit word awaited. No consumer moved.
+  4-4-one-postgres-one-database-and-one-role-per-consumer: done
   # 4-5 awaiting-operator 2026-09-30: repository half built and verified on dev (ops/postgres-backup.sh,
   # ops/postgres-restore-verify.sh, the postgres-backup suite, the local Docker proof against Postgres 18.6 and a
   # restic 0.19.1 repository on disk). Box half is the Operator's, ops/postgres-backup.md § Install and first
   # run steps 1 to 7 and § Pending Operator actions 1 to 5, after ops/postgres.md § The placement. PITR deferred;
   # the library's path unchanged.
-  4-5-pg_dump-on-cron-plus-restic-offsite: awaiting-operator
+  # 4-5 done 2026-09-30: box half ran with the Operator present, after the 4-4 placement. R2 bucket
+  # cuatro-postgres-backups, repository 97d1ebf584, three runs 22:17Z to 22:18Z each exit=0 with
+  # restore=verified, two snapshots kept (the third run's forget deleted one), the 03:15 cron line
+  # installed, the password proved from the workstation. Readings in ops/postgres-backup.md § First run,
+  # 2026-09-30; Pending actions 1, 3, 4 and 5 dated. Action 2 (confirm or overrule the decisions) stays
+  # open: nothing overruled, an explicit word awaited.
+  4-5-pg_dump-on-cron-plus-restic-offsite: done
   # 4-6 awaiting-operator 2026-09-30: repository half built and verified on dev. No routing change: the apex and
   # www routers in ops/traefik/ already match Caddy's blocks and contracts/ stays the Hub's (ruling 2026-09-24);
   # the traefik-config suite now pins the apex upstream to anchor-app's compose alias. Local proof: the real Hub

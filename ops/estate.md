@@ -313,6 +313,15 @@ public request until an Origin Rule exists for a hostname, so every box row abov
 Caddy, and the origin firewall admits 8443 for Cloudflare's ranges only. Traefik is ingress, not an
 application, and takes no row or `placements` entry. Readings in `ops/traefik-cutover.md` § Cutover run.
 
+**Amended 2026-09-30 by Stories 4-4 and 4-5.** No row changes. The estate Postgres
+(`postgres-estate-postgres-1`, `postgres:18.6-trixie`) runs on the box beside the three old instances,
+ready since 2026-09-30T22:16:04Z. Its databases `umami`, `cuatro_tracker`, `cs_tracker` and
+`cuatro_finance` are empty until each consumer's own story moves it, and every application still uses its
+old database. Its nightly dump (03:15) goes offsite by restic to the R2 bucket `cuatro-postgres-backups`,
+proved by restore on every run. It is a database, not an application, and takes no row or `placements`
+entry. Readings in `ops/postgres.md` § Placement run, 2026-09-30 and `ops/postgres-backup.md` § First run,
+2026-09-30.
+
 | Application | Disposition | Status | `absorbed_into` | Registry treatment |
 |---|---|---|---|---|
 | `cuatro-portfolio` | Anchor | `Live` | n/a | The Hub itself; rendered |

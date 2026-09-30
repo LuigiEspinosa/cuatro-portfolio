@@ -14,6 +14,9 @@ the box but wrote nothing to it. The Operator runs § The placement as `deploy` 
 Operator action at the end. **No consumer moves in Story 4-4**: every application keeps its current
 database until its own story (4.7, 4.8, 4.10) runs § Moving a consumer.
 
+**Amended 2026-09-30: § The placement ran on the box** that evening, recorded under § Placement run,
+2026-09-30. No consumer has moved.
+
 ## What runs today
 
 **Observed 2026-09-30T10:59:09Z over SSH as `deploy`, read-only** (`docker ps`, `docker inspect` with a
@@ -289,6 +292,30 @@ Operator action 1). Set `P='docker compose -f ops/postgres/compose.yml'` first; 
 
 Nothing else changes: every application keeps its current database, and the old containers keep
 serving.
+
+## Placement run, 2026-09-30
+
+**Observed 2026-09-30 on the box (`177.7.52.248`) as `deploy`, run by the orchestrator with the Operator
+present.** Preconditions: PR #88 merged `dev` into `main` as `f9ea578` at 21:27Z, Deploy run
+36779534561 succeeded, and the box checkout read `f9ea578`.
+
+- **Step 1**, 22:15:44Z: load average `0.21, 0.20, 0.18`.
+- **Step 2.** `ops/postgres/.env` did not exist, so it was written at mode 600 with the five names
+  `POSTGRES_PASSWORD`, `UMAMI_DB_PASSWORD`, `CUATRO_TRACKER_DB_PASSWORD`, `CS_TRACKER_DB_PASSWORD` and
+  `CUATRO_FINANCE_DB_PASSWORD`, each value generated on the box by `openssl rand -hex 24` and never
+  printed. `git check-ignore` printed `ignored`.
+- **Step 3.** `$P up -d`; `postgres-estate-postgres-1` read `healthy` after 8 seconds.
+- **Step 4.** The query printed exactly `cs_tracker cs_tracker 25`, `cuatro_finance cuatro_finance 10`,
+  `cuatro_tracker cuatro_tracker 20`, `umami umami 25`. The init's log carried
+  `10-consumers.sh: database and role cuatro_tracker, connection limit 20` and the same line for
+  `cs_tracker` (25) and `cuatro_finance` (10); `umami`'s line had scrolled out of the tail that was read,
+  and the query above shows its database and limit. Then `database system is ready to accept connections`
+  at 22:16:04Z.
+- **Step 5**, 22:16:07Z: load average `0.96, 0.38, 0.24`. The one-minute figure is the init's own work;
+  the fifteen-minute figure stayed under the 0.60 threshold (`ops/capacity-threshold.md`). `docker stats`
+  for `postgres-estate-postgres-1`: 0.04 % CPU, 30.52 MiB.
+
+No consumer moved: § Moving a consumer has not run for any of them.
 
 ## Moving a consumer
 
@@ -622,9 +649,9 @@ moved, roll every moved consumer back first, one by one, then the same.
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| 1 | **Merge the commit carrying `ops/postgres/` into `main`** and let the Deploy run | The box checkout is `main`; nothing here reaches the box another way | _not done_ |
-| 2 | **Confirm or overrule the decisions above**: PostgreSQL `18.6-trixie`, a stack beside the Anchor's, `max_connections=100` and the budget, `umami` keeping its name, finance included, the tournament staying on Supabase, and no move before Story 4.5 | The spec's Design Notes carry the reasoning | _not done_ |
-| 3 | **Run § The placement, steps 1 to 5** | Nothing moves; only a fourth Postgres starts | _not done_ |
+| 1 | **Merge the commit carrying `ops/postgres/` into `main`** and let the Deploy run | The box checkout is `main`; nothing here reaches the box another way. PR #88 merged `dev` as `f9ea578`; Deploy run 36779534561 succeeded; the box checkout read `f9ea578` | 2026-09-30T21:27Z |
+| 2 | **Confirm or overrule the decisions above**: PostgreSQL `18.6-trixie`, a stack beside the Anchor's, `max_connections=100` and the budget, `umami` keeping its name, finance included, the tournament staying on Supabase, and no move before Story 4.5 | The spec's Design Notes carry the reasoning. The Operator was present for the placement on 2026-09-30 and overruled nothing; an explicit word is awaited, so the row stays open | _not done_ |
+| 3 | **Run § The placement, steps 1 to 5** | Nothing moves; only a fourth Postgres starts. Done: § Placement run, 2026-09-30 | 2026-09-30T22:16:07Z |
 | 4 | **Confirm or overrule Story 4-7's decisions** in § Moving Umami: 3.4.0 by release and digest, the freeze, data before hostname, the override-file rollback, the page views written after step 10 not carried back by R2 (kept in `umami-after-r2.dump` only), the runbook here | The Story 4-7 spec's Design Notes carry the reasoning | _not done_ |
 | 5 | **Merge the commit carrying Story 4-7 into `main`** and let the Deploy run | It rolls the Hub alone; the running Umami is untouched until § Moving Umami step 5 | _not done_ |
 | 6 | **Run § Moving Umami steps 1 to 14**, after action 3 here and `ops/postgres-backup.md` § Install and first run; steps 12 and 13 also after `ops/traefik-cutover.md` actions 1 to 4 and the Origin Rules token | Step 14 amends `ops/routing-inventory.md` | _not done_ |

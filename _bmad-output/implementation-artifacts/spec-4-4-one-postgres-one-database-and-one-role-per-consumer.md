@@ -2,7 +2,7 @@
 title: 'Story 4-4: One Postgres, one database and one role per consumer'
 type: 'feature'
 created: '2026-09-30'
-status: 'awaiting-operator'
+status: 'done'
 baseline_commit: '988fecd422fbc00c3fed69c0f3614ef9ac048201'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -73,6 +73,8 @@ context:
 - Review raised `umami` from 10 to 25 (sum 65 to 80) after reading the Umami 3.4.0 image: node-postgres's default pool of 10 per container, no environment knob. The whole proof was re-run on the final script and the record's quotes replaced.
 
 ## Spec Change Log
+
+- 2026-09-30: box half ran (runbook § The placement, steps 1 to 5), recorded in `ops/postgres.md` § Placement run, 2026-09-30; status `done`. Pending Operator action 2 stays open.
 
 ## Review Triage Log
 
