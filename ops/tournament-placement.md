@@ -174,13 +174,51 @@ server up across it, as Story 3-4 proved for the Hub alone.
   shared network's alias table, dated.
 - `ops/estate.md` § `cs-tournament`: the placement dated, and the identity proof.
 
+## Placement run
+
+**Observed 2026-09-30 (UTC, the evening of 2026-09-29 for the Operator) on the box as `deploy`, over
+the Operator's WSL key, with the Operator watching.** `HUB_TAG` and `TOURNAMENT_TAG` were both
+`019394ddfad3e2063847c1da047749b611fe0764`, the merge commit of PR #86 (dev at `793af18`), which the
+Deploy run 36648915282 had put on the box (gate, image / hub and deploy green) and whose Image
+(tournament) run passed both jobs on that sha.
+
+- **Step 1, no difference.** The running Hub was `hub:019394d...`; `.env.production` held 15
+  `TOURNAMENT_` lines; the shared Caddyfile had no `tournament` line; the profile listed `tournament`
+  and `tournament-worker`; no tournament container ran. Before reading, 00:11:30Z: load average
+  `0.20, 0.17, 0.11`.
+- **Step 2.** From the workstation at the same sha: `capacity gate: cs-tournament is in placements,
+  the deploy may proceed`, exit 0, and `status: open`. load15 0.11 against the 0.60 threshold.
+- **Step 3.** Both tags pulled without credentials.
+- **Step 4.** Both containers started at 00:11:55Z and read `healthy healthy` after 8 s. The worker
+  logged `worker listening on :8080 (POST /ingest/matchzy, POST /ingest/parse, POST /ingest/presign)`.
+  From `cs-tracker-caddy-1`, `http://tournament:3000/api/health` answered `{"status":"ok"}` and
+  `http://tournament-worker:8080/healthz` was unreachable, as intended.
+- **Step 5.** Backup written to `Caddyfile.bak-3-7`; the block appended from `docker/Caddyfile`;
+  `caddy validate` printed `Valid configuration` (with the standing OCSP-stapling warning for the
+  origin certificate, which every reload prints); reload exit 0 at 00:12:23Z.
+- **Step 6, from the workstation.** `/api/health` with a browser user agent: 200 `{"status":"ok"}`,
+  `cf-ray` present, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
+  `Referrer-Policy: strict-origin-when-cross-origin`; `/` 200. `GPTBot` 403; empty user agent 403 with
+  `cf-mitigated: challenge`; `UptimeRobot/2.0` 200; the registry-verification agent 200. Afterwards
+  `cuatro.dev` and `tracker.cuatro.dev` `/api/health` 200, `cs-tracker.cuatro.dev` and
+  `library.cuatro.dev` 302, `wheel.cuatro.dev` 200, `analytics.cuatro.dev/api/heartbeat` 200, as before.
+- **Step 7 (SM-C4), 00:26:57Z, fifteen minutes after step 4:** load average `0.19, 0.26, 0.19`;
+  `cuatro-portfolio-tournament-1` 0.00 % CPU, 68.45 MiB; `cuatro-portfolio-tournament-worker-1`
+  0.00 % CPU, 8.29 MiB; both `healthy`. load15 stayed under the 0.60 threshold, so the charge
+  `ops/capacity-threshold.md` made for `cs-tournament` stands.
+- **Step 8.** UptimeRobot monitor 804128109, `tournament.cuatro.dev /api/health`, HTTP, 300 s, timeout
+  30 s, SSL errors checked, alert contact 8726805, created 00:13:10Z, UP from its first check
+  (`ops/monitoring.md`).
+- **`ops/capacity-gate.yml`:** the entry's `observed` moved from 2026-09-29 to 2026-09-30, the UTC
+  day the placement ran, as § After the placement says.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| 1 | **Push `dev` and merge it into `main`** without the release, and let the Deploy run | The compose networks, the gate's placement and the build inputs reach the box and GHCR only this way. The Registry stays at 1.6.0 (`6d72963`) | |
-| 2 | **Note the green Image (tournament) run** on a `main` sha carrying it | Its sha is `TOURNAMENT_TAG` | |
-| 3 | **Run steps 1 to 8 above** | Step 1's and step 7's readings and step 6's codes go into this record | |
+| 1 | **Push `dev` and merge it into `main`** without the release, and let the Deploy run | The compose networks, the gate's placement and the build inputs reach the box and GHCR only this way. The Registry stays at 1.6.0 (`6d72963`). PR #86 merged as `019394d`; Deploy run 36648915282 green | 2026-09-29T23:58Z |
+| 2 | **Note the green Image (tournament) run** on a `main` sha carrying it | Its sha is `TOURNAMENT_TAG`. The workflow ran on the merge commit `019394d` itself, both jobs green | 2026-09-30T00:05Z |
+| 3 | **Run steps 1 to 8 above** | Step 1's and step 7's readings and step 6's codes go into this record. § Placement run | 2026-09-30T00:27Z |
 | 4 | **Sign in through Steam** on `https://tournament.cuatro.dev` as the admin | The identity proof (§ Identity) | |
 | 5 | **Release Registry 1.7.0** (step 10: the revert of `6d72963`) and merge it into `main` after step 6 answered | FR-28 | |
 

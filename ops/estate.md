@@ -519,6 +519,16 @@ already holds `cuatro-tracker` (AD-9).
 
 ### `cs-tournament`, merged on `dev` and not placed
 
+**Amended 2026-09-30:** placed. PR #86 (merge commit `019394d`) put the placement half on `main`
+and the box on 2026-09-29, and `ops/tournament-placement.md` steps 1 to 8 ran on the box between
+00:11Z and 00:27Z on 2026-09-30 (§ Placement run there): `cuatro-portfolio-tournament-1` and
+`cuatro-portfolio-tournament-worker-1` run `ghcr.io/luigiespinosa/tournament:019394d...` and
+`tournament-worker:019394d...`, the shared Caddy routes `tournament.cuatro.dev` to the server, the
+worker stays internal, the load reading after placement was load15 0.19 against the 0.60 threshold,
+and UptimeRobot monitor 804128109 watches `/api/health`. The Registry entry goes `Live` at
+`https://tournament.cuatro.dev` in Registry 1.7.0, released after the placement (FR-28). What follows
+describes the state before that evening.
+
 **Committed on `dev`, not live.** It reaches `main` at the Epic 3 merge, and even then nothing serves
 it: it has served nowhere since the Operator removed Vercel on 2026-09-24, and placing it is a new
 placement the Capacity Gate decides (AD-9), which Story 3.7 left to the Operator.

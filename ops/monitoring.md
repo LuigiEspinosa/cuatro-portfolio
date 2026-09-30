@@ -54,6 +54,7 @@ Recorded **2026-08-16** (ISO 8601 UTC).
 | 803983277 | `wheel.cuatro.dev` | HTTP | status code | **UP**, created 2026-09-13T17:38:14Z | did not exist. **UP** 2026-09-13 |
 | 804092499 | `covidmap.cuatro.dev` | HTTP | status code **2xx**, redirects **not** followed | **UP**, created 2026-09-26T01:43Z | did not exist. **UP** 2026-09-26 |
 | 804092500 | `future-vizion.cuatro.dev` | HTTP | status code **2xx**, redirects **not** followed | **UP**, created 2026-09-26T01:43Z | did not exist. **UP** 2026-09-26 |
+| 804128109 | `tournament.cuatro.dev /api/health` | HTTP | status code, `2xx` and `3xx`, redirects followed, `checkSSLErrors`, interval 300 s, timeout 30 s, region `na`, alert contact 8726805 | **UP**, created 2026-09-30T00:13:10Z by `ops/tournament-placement.md` step 8, the shape of the `wheel` monitor | did not exist. **UP** 2026-09-30 |
 
 **Row 803983277 added 2026-09-13 by Story 2-25**, which relocated `list-wheel` onto
 `wheel.cuatro.dev`. Created through the UptimeRobot API with the settings this record fixes for
