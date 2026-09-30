@@ -199,6 +199,77 @@ printed, and a repository on local disk; restic ran from `restic/restic:0.19.1`,
 (pulled `sha256:136600b6...`); restic is not installed on the host. Everything was removed afterwards (§
 Cleaned up). The outputs below are that run's, 2026-09-30T12:12:11Z to 12:13:31Z, cut only where marked.
 
+**The harness, as commands.** The run above kept no script, so this one was rebuilt from the prose and
+re-run on 2026-09-30 at 12:34Z to 12:35Z against the committed scripts. It builds the runner, seeds
+`pg45-live`, and drives the no env file night, `restic init` and two nights, the second with the writer
+committing throughout. Its summary lines matched the run above field for field
+(`offsite=not-configured ... exit=75`, then `offsite=ok-... restore=verified exit=0` twice) except
+`bytes` (15030, not 12846: the seed's column shapes are this block's, not the original's) and the
+second night's `rows` (1399, the writer's count at that instant). The other passages below reuse its
+`night` function: an unreadable env file is a `root:root 0600` copy passed as its name, and the prune's
+fixtures are files aged with `touch -d` in `/tmp/pg45proof/backups`.
+
+```
+# Run from Git Bash at the repository root. MSYS_NO_PATHCONV keeps Git Bash from rewriting /tmp paths.
+set -euo pipefail
+export MSYS_NO_PATHCONV=1
+R='docker exec pg45-runner'
+
+# 1. The live instance, seeded.
+docker run -d --name pg45-live -e POSTGRES_PASSWORD="$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')" postgres:18.6-trixie
+until docker exec pg45-live pg_isready -q -U postgres -h 127.0.0.1; do sleep 1; done
+docker exec pg45-live psql -X -q -U postgres -v ON_ERROR_STOP=1 -c 'CREATE DATABASE cuatro_tracker' -c 'CREATE DATABASE umami'
+docker exec pg45-live psql -X -q -U postgres -d cuatro_tracker -v ON_ERROR_STOP=1 \
+  -c 'CREATE EXTENSION pg_trgm' \
+  -c 'CREATE TABLE public.media (id serial PRIMARY KEY, title text NOT NULL)' \
+  -c "INSERT INTO public.media (title) SELECT 'title ' || g FROM generate_series(1, 1000) g" \
+  -c 'CREATE INDEX media_title_trgm ON public.media USING gin (title gin_trgm_ops)' \
+  -c 'CREATE TABLE public."user" (id serial PRIMARY KEY, name text NOT NULL)' \
+  -c "INSERT INTO public.\"user\" (name) VALUES ('a'), ('b')"
+docker exec pg45-live psql -X -q -U postgres -d umami -v ON_ERROR_STOP=1 \
+  -c 'CREATE TABLE public.website_event (id bigserial PRIMARY KEY, at timestamptz NOT NULL DEFAULT now())' \
+  -c 'INSERT INTO public.website_event SELECT FROM generate_series(1, 250)' \
+  -c 'CREATE SCHEMA analytics' \
+  -c 'CREATE TABLE analytics.session (id serial PRIMARY KEY)' \
+  -c 'INSERT INTO analytics.session SELECT FROM generate_series(1, 3)' \
+  -c 'CREATE PROCEDURE public.writer(n int) LANGUAGE plpgsql AS $$ BEGIN FOR i IN 1..n LOOP INSERT INTO public.website_event DEFAULT VALUES; COMMIT; PERFORM pg_sleep(0.02); END LOOP; END $$'
+
+# 2. The runner: docker:29-cli as deploy (1001:1001 plus the socket's group), the proof directory at the
+#    same path in the Docker VM and in the runner, so every sibling container binds the same files.
+docker run -d --name pg45-runner -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/pg45proof:/tmp/pg45proof \
+  -v "$(pwd)/ops:/ops:ro" docker:29-cli sleep infinity
+$R apk add --no-cache -q bash coreutils util-linux
+$R sh -c 'addgroup -g 1001 deploy && adduser -D -u 1001 -G deploy -h /home/deploy deploy
+  g=$(stat -c %g /var/run/docker.sock); n=$(getent group "$g" | cut -d: -f1)
+  [ -n "$n" ] || { addgroup -g "$g" dockersock && n=dockersock; }; addgroup deploy "$n"
+  install -d -o 1001 -g 1001 -m 0700 /tmp/pg45proof/backups /tmp/pg45proof/repo
+  install -d -o root -g deploy -m 0750 /tmp/pg45proof/etc
+  umask 027; printf "RESTIC_REPOSITORY=/tmp/pg45proof/repo\nRESTIC_PASSWORD=%s\n" \
+    "$(head -c 24 /dev/urandom | od -An -tx1 | tr -d " \n")" > /tmp/pg45proof/etc/postgres-backup.env
+  chown root:deploy /tmp/pg45proof/etc/postgres-backup.env'
+
+# 3. One night in the shape cron runs it; CONFIG names the env file (or absent.env for the exit 75 night).
+night() {
+  docker exec -u deploy pg45-runner env -i HOME=/home/deploy LOGNAME=deploy PATH=/usr/bin:/bin SHELL=/bin/sh \
+    POSTGRES_BACKUP_CONTAINER=pg45-live POSTGRES_BACKUP_DIR=/tmp/pg45proof/backups \
+    POSTGRES_BACKUP_CONFIG="/tmp/pg45proof/etc/${1:-postgres-backup.env}" POSTGRES_RESTIC_LOCAL_REPO=/tmp/pg45proof/repo \
+    /ops/postgres-backup.sh || echo "exit=$?"
+}
+night absent.env
+# restic init in the runbook's form, plus the local repository's bind.
+docker exec -u deploy pg45-runner sh -c 'docker run --rm --user "$(id -u):$(id -g)" \
+  --env-file /tmp/pg45proof/etc/postgres-backup.env -v /tmp/pg45proof/repo:/tmp/pg45proof/repo \
+  restic/restic:0.19.1 --no-cache init'
+sleep 1; night
+# The writer: one committed row every 20 ms, for about 60 s, while the next night runs.
+docker exec -d pg45-live psql -X -q -U postgres -d umami -c 'CALL public.writer(3000)'
+sleep 2; night
+```
+
+Then clean up: `MSYS_NO_PATHCONV=1 docker rm -f -v pg45-live pg45-runner` and
+`MSYS_NO_PATHCONV=1 docker run --rm -v /tmp:/t docker:29-cli rm -rf /t/pg45proof` (the directory is a
+bind mount while the runner lives, so it goes after the runner).
+
 **No env file:**
 
 ```
