@@ -119,7 +119,10 @@ Every story that moves a consumer here, and every schema change after, follows A
 
 Run 2026-09-30 on the authoring host (Windows 11, Docker 29.8) with throwaway passwords in a throwaway
 `ops/postgres/.env`, removed afterwards with every container, volume and network (`docker ps -a`,
-`docker volume ls` and `docker network ls` then listed nothing of the rehearsal's).
+`docker volume ls` and `docker network ls` then listed nothing named for the rehearsal). Three anonymous
+volumes holding Postgres 16 clusters, left by `docker rm -f` without `-v` on containers of the `postgres`
+image (which declares a `VOLUME`), survived that check because their names are bare hex; a verification
+found them and they were removed the same day.
 
 **First start**, `docker compose -p cuatro-4-4-proof -f ops/postgres/compose.yml up -d`, healthy at
 2026-09-30T11:18:36Z. The image's log, the lines naming the script or `REVOKE` (psql's `CREATE ROLE` and
@@ -168,7 +171,8 @@ REVOKE
 
 **Each role against every database**, over TCP from a second `postgres:18.6-trixie` container on
 `estate-postgres`, as a consumer connects, at 2026-09-30T11:18:37Z (the client's `connection to server
-at "estate-postgres" (172.30.0.2), port 5432 failed:` prefix trimmed from each refusal):
+at "estate-postgres" (172.30.0.2), port 5432 failed:` prefix trimmed from each refusal, and the `DETAIL:  User does not have CONNECT
+privilege.` line psql prints after each `permission denied` left out):
 
 ```
 umami -> umami: umami in umami
