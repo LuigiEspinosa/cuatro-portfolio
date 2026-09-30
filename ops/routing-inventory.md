@@ -603,6 +603,18 @@ Rule since 2026-09-30T22:31Z. The zone's `http_request_origin` entrypoint (rules
 unreached, until Story 4.11; deleting the rule sends the hostname back to it. Every other hostname is still
 served by Caddy on 443. Readings in `ops/traefik-cutover.md` § Cutover run, wheel.cuatro.dev.
 
+**Amended 2026-09-30 (Story 4-6):** `www.cuatro.dev` and `cuatro.dev` are served by Traefik through
+Cloudflare Origin Rules since 2026-09-30T22:48Z. The same entrypoint (ruleset
+`518ad07108bc402fa36ad71fe1e76862`) now holds three rules: the wheel rule above,
+`a74dce8a8d774473b9ed9cca0e0643c8` (`www.cuatro.dev`, 22:48:14Z) and `7fe531a5bc864203a3ba3a234b388aa4`
+(`cuatro.dev`, 22:48:45Z), each sending `(http.host eq "<host>" and ssl)` to origin port 8443, where
+Traefik's `cuatro-portfolio` router dials `http://anchor-app:3000` and its `www` router answers the
+permanent redirect to the apex (`301` to a GET, `308` to every other method, where Caddy answered `301`).
+One CI-built deploy (run 36787729657) rolled the Hub through Traefik afterwards, leaving
+`cuatro-portfolio-anchor-app-6`, with no failed request on the probe. Caddy's `cuatro.dev` and
+`www.cuatro.dev` blocks below remain, unreached, until Story 4.11; deleting a rule sends that hostname back
+to its block. Readings in `ops/traefik-cutover.md` § Cutover run, cuatro.dev and www.
+
 ### The site blocks, as installed
 
 **Amended 2026-09-30:** an eighth block, `tournament.cuatro.dev`, was appended to

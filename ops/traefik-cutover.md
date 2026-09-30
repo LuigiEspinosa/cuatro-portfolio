@@ -593,6 +593,10 @@ Rule, with one CI-built deploy of the Hub rolled while the apex runs through Tra
 run on the box or in the zone. Written 2026-09-30, committed on `dev`.** The Operator runs it and dates
 Pending Operator actions 5 and 6 below.
 
+**Amended 2026-09-30:** the sequence below ran that evening from 22:32Z with the Operator present; Origin
+Rules have sent `www.cuatro.dev` (22:48:14Z) and `cuatro.dev` (22:48:45Z) to Traefik since. Readings in
+§ Cutover run, cuatro.dev and www.
+
 **Why here and not a new `ops/anchor-cutover.md`.** Decision, Story 4-6, the Operator may overrule. This
 record owns the per-hostname mechanism and its rollback. The Hub owns no store, so its move has no
 backup, restore or migration step, and the one thing specific to it is the deploy through Traefik; a
@@ -839,6 +843,46 @@ The same with `www.cuatro.dev` in the description for www. It takes effect at th
 the box, and step 4's `curl -sI` shows `via: 1.1 Caddy` again. Nothing on the box changed, so nothing is
 restored. To take Traefik away as well, delete both rules first, then § Rollback to Caddy, whole.
 
+### Cutover run, cuatro.dev and www
+
+**Observed 2026-09-30 from 22:32Z on the box (`deploy@177.7.52.248`) and on the workstation, run by the
+orchestrating session with the Operator present.** Steps 1 to 7 as written above; nothing differed, so
+nothing stopped the run, and the rollback was neither needed nor run. `www.cuatro.dev` and `cuatro.dev` are
+served by Traefik through Origin Rules since 22:48Z; Caddy's two blocks remain, unreached, until Story 4.11.
+
+**Preconditions.** § The sequence recorded (§ Cutover run) and § Moving wheel.cuatro.dev recorded (§ Cutover
+run, wheel.cuatro.dev); the origin-rules token on the workstation as `CF_RULES_TOKEN`, never printed. `jq`
+is not installed in Git Bash on the workstation, so `node` parsed the API's JSON where the steps name `jq`.
+
+| Step | Time | Observed |
+|---|---|---|
+| 1 | 22:32:45Z | Box: load `0.12, 0.18, 0.22`; one Hub container, `cuatro-portfolio-anchor-app-5` on `ghcr.io/luigiespinosa/hub:f9ea5789bf8d3376ef41346d57893272be02d81f`, `Up About an hour (healthy)`; Traefik `healthy`; grep count `1` for `url: http://anchor-app:3000`; every pair below equal; Traefik's `ESTABLISHED` count on 8443, the baseline, `7` (wheel's traffic). Workstation: the entrypoint (ruleset `518ad07108bc402fa36ad71fe1e76862`) held the wheel rule alone; monitors 803749849, 803756371 and 803756083 `UP`. Monitor 803756083's HTTP method set to `GET` through the UptimeRobot API at about 22:32Z, its accepted codes left at `301` and redirect following off; it read `UP` on its following intervals before step 3. `tokens.css` sha256 `dd7bf3c2ab826c8480e1fdca1ea51ba0d5377d202b4024976b9f9a6dc0e43e32`, 6226 bytes, served with `via: 1.1 Caddy` |
+| 2 | 22:48:11Z | The request loop started on the workstation and ran to 22:53:05Z: 130 lines, each three requests in turn, so a line about every 2.3 seconds |
+| 3 | 22:48:14Z | The `POST` to the ruleset added rule `a74dce8a8d774473b9ed9cca0e0643c8`, description `Story 4-6: www.cuatro.dev to Traefik on 8443`: `success` `true`, `errors` `[]`. At 22:48:27Z a HEAD of `https://www.cuatro.dev/some/path?q=1` answered `308` with `location: https://cuatro.dev/some/path?q=1` (plus the probe's own cache-buster), a GET of it `301` to the same location, and a GET of `https://www.cuatro.dev/` `301` to `https://cuatro.dev/`; no `via` on any. Box at 22:48:30Z: `ESTABLISHED` `12` (baseline `7`); load `0.50, 0.35, 0.28` |
+| 4 | 22:48:45Z | The `POST` added rule `7fe531a5bc864203a3ba3a234b388aa4`, description `Story 4-6: cuatro.dev to Traefik on 8443`: `success` `true`, `errors` `[]`. At 22:49:03Z a HEAD of `tokens.css` answered `200`, `text/css; charset=UTF-8`, `cf-cache-status: DYNAMIC` and no `via`; a GET of it printed step 1's digest, `dd7bf3c2ab826c8480e1fdca1ea51ba0d5377d202b4024976b9f9a6dc0e43e32`, 6226 bytes; `/api/health` answered `200` containing `"status":"ok"`, no `via`; a HEAD of `/` answered `200`, no `via`. Box at 22:48:59Z: `ESTABLISHED` `30`; load `0.67, 0.40, 0.30`; `cuatro-portfolio-anchor-app-5` still the one Hub container |
+| 5 | 22:49:21Z | `gh workflow run deploy.yml --ref main` dispatched run [36787729657](https://github.com/LuigiEspinosa/cuatro-portfolio/actions/runs/36787729657), head `f9ea578`: gate, image / hub and deploy `success`, report `skipped`. Box at 22:51:28Z: one Hub container, `cuatro-portfolio-anchor-app-6`, on the same image tag, `Up 49 seconds (healthy)`, so the rollout ran through Traefik with the apex already on it; `ESTABLISHED` `86`; load `0.45, 0.34, 0.28`. A HEAD of `tokens.css` answered `200`, no `via`; `/api/health` answered `200`, `{"status":"ok","version":"3.0.0","uptime":50}` |
+| 6 | 22:53:26Z | The count below. Monitors 803749849, 803756371 and 803756083 read `UP` at 22:53:30Z with no incident, their state durations (44d 14h) continuing |
+| 7 | 2026-09-30 | This record; Pending Operator actions 5 and 6 below; the dated amendments to `ops/routing-inventory.md` § Ingress and `ops/estate.md`, and the dated note on `ops/monitoring.md`'s 803756083 row |
+
+Step 1's pairs, Caddy on 443 and Traefik on 8443, each `--resolve` to `127.0.0.1`:
+
+| Request | Caddy | Traefik |
+|---|---|---|
+| `cuatro.dev/` | 200 | 200 |
+| `cuatro.dev/api/health` | 200 | 200 |
+| `cuatro.dev/contracts/tokens.css` | 200 | 200 |
+| `www.cuatro.dev/some/path?q=1` | 301 `https://cuatro.dev/some/path?q=1` | 301 `https://cuatro.dev/some/path?q=1` |
+
+Step 6's count over the loop's 130 lines:
+
+| Count | Result |
+|---|---|
+| Status triples, `awk '{print $2, $3, $4}' \| sort \| uniq -c` | `130 200 301 200`: every health check and stylesheet `200`, every www request `301`, no `000` |
+
+The loop spanned both rule moves and the deploy's rollout, 390 requests one at a time under a 5 second
+`--max-time`, and none failed or timed out. So no finding, nothing was rolled back, and the rehearsal's one
+unexplained `000` did not recur through the real edge (DW-305, closed on this count).
+
 ## Rollback to Caddy, whole
 
 While no Origin Rule points at 8443, nothing public depends on Traefik:
@@ -885,8 +929,8 @@ Once a later story has moved a hostname, delete its Origin Rule first, then the 
 | 2 | **Create a Cloudflare API token** for the `cuatro.dev` zone with Zone, DNS, Edit and Zone, Zone, Read, for step 2 | DNS-01 writes only `_acme-challenge` TXT records. The Origin Rules token of the refresh record's action 4 is a separate question, needed from Story 4.3. Done as a dedicated token, `traefik-dns01`, created by the Operator | 2026-09-30 |
 | 3 | **Confirm or overrule the decisions above**, and the certificate monitoring reading in § How certificate monitoring sees this | Each is a decision the Operator may overrule; the spec's Design Notes carry the reasoning. The monitoring reading departs from the epic's "certificate-age monitoring sees the new certificates". **2026-09-30:** the Operator was present for the run and has overruled nothing; this waits on an explicit word | _not done_ |
 | 4 | **Run steps 1 to 8 above** | Step 3 is also the refresh record's action 4, firewall half. Ran from 21:48Z: § Cutover run | 2026-09-30 |
-| 5 | **Confirm or overrule Story 4-6's decisions** in § Moving cuatro.dev and www: this record rather than a new one, no routing change (www answering `308` to non-GET methods where Caddy answers `301`), www before the apex as two rules, Story 4.4 not a precondition | The Story 4-6 spec's Design Notes carry the reasoning | _not done_ |
-| 6 | **Run § Moving cuatro.dev and www steps 1 to 7**, after actions 1 to 4 here and the refresh record's action 4 (the origin rules token) | Step 1 sets monitor 803756083 to `GET`; step 5 dispatches the Deploy workflow; step 7 amends `ops/routing-inventory.md` and `ops/estate.md` | _not done_ |
+| 5 | **Confirm or overrule Story 4-6's decisions** in § Moving cuatro.dev and www: this record rather than a new one, no routing change (www answering `308` to non-GET methods where Caddy answers `301`), www before the apex as two rules, Story 4.4 not a precondition | The Story 4-6 spec's Design Notes carry the reasoning. **2026-09-30:** the Operator was present for the run and has overruled nothing; this waits on an explicit word | _not done_ |
+| 6 | **Run § Moving cuatro.dev and www steps 1 to 7**, after actions 1 to 4 here and the refresh record's action 4 (the origin rules token) | Step 1 sets monitor 803756083 to `GET`; step 5 dispatches the Deploy workflow; step 7 amends `ops/routing-inventory.md` and `ops/estate.md`. Ran from 22:32Z, the www rule created at 22:48:14Z and the apex rule at 22:48:45Z: § Cutover run, cuatro.dev and www | 2026-09-30 |
 | 7 | **Confirm or overrule Story 4-3's decisions** in § Moving wheel.cuatro.dev: this record rather than a new one, no routing change and no change in `list-wheel`, wheel before the apex, and KV-1's `list-wheel` half left open with its closer in DW-308 | The Story 4-3 spec's Design Notes carry the reasoning. **2026-09-30:** the Operator was present for the run and has overruled nothing; this waits on an explicit word | _not done_ |
 | 8 | **Run § Moving wheel.cuatro.dev steps 1 to 5**, after actions 1 to 4 here and the refresh record's action 4 (the origin rules token), and before action 6 | Step 3 creates the origin-rules entrypoint if none exists; step 5 amends `ops/routing-inventory.md` and `ops/estate.md`. Ran from 22:21Z, the entrypoint created with the one rule at 22:31:15Z: § Cutover run, wheel.cuatro.dev | 2026-09-30 |
 

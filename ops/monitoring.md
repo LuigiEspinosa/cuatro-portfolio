@@ -49,7 +49,7 @@ Recorded **2026-08-16** (ISO 8601 UTC).
 | 803750016 | `cs-tracker.cuatro.dev` | HTTP | status code | UP | UP |
 | 803750023 | `tracker.cuatro.dev` | HTTP | status code | UP | UP |
 | 803750025 | `library.cuatro.dev` | HTTP | status code | UP | UP |
-| 803756083 | `www.cuatro.dev (301 to apex)` | HTTP | status code **301**, redirects **not** followed | **UP** | **UP** |
+| 803756083 | `www.cuatro.dev (301 to apex)` | HTTP | status code **301**, redirects **not** followed. **Amended 2026-09-30:** method `GET`, set through the API at about 22:32Z in `ops/traefik-cutover.md` § Moving cuatro.dev and www step 1 (it was unset); Traefik answers a HEAD to www with `308`, a GET with `301` | **UP** | **UP** |
 | 803750027 | **RETIRED 2026-08-17**, paused | Keyword | alerted when `"status":"ok"` was **present**. Inverted | **DOWN** | **paused** |
 | 803983277 | `wheel.cuatro.dev` | HTTP | status code | **UP**, created 2026-09-13T17:38:14Z | did not exist. **UP** 2026-09-13 |
 | 804092499 | `covidmap.cuatro.dev` | HTTP | status code **2xx**, redirects **not** followed | **UP**, created 2026-09-26T01:43Z | did not exist. **UP** 2026-09-26 |

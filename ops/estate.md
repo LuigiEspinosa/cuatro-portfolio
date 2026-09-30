@@ -329,6 +329,14 @@ its alias and its checkout are unchanged, and the box still builds it on each de
 half, open, DW-308). Caddy's `wheel.cuatro.dev` block remains, unreached, until Story 4.11. Every other box
 row is still served by Caddy. Readings in `ops/traefik-cutover.md` § Cutover run, wheel.cuatro.dev.
 
+**Amended 2026-09-30 by Story 4-6.** No row changes. `cuatro.dev` and `www.cuatro.dev` are served by
+Traefik through Cloudflare Origin Rules (ruleset `518ad07108bc402fa36ad71fe1e76862`, rules
+`7fe531a5bc864203a3ba3a234b388aa4` and `a74dce8a8d774473b9ed9cca0e0643c8`, HTTPS to origin port 8443) since
+2026-09-30T22:48Z. The Hub's container, its `anchor-app` alias and its pull-based deploy are unchanged, and
+one CI-built deploy (run 36787729657) rolled it through Traefik that evening, leaving
+`cuatro-portfolio-anchor-app-6`. Caddy's two blocks remain, unreached, until Story 4.11. Readings in
+`ops/traefik-cutover.md` § Cutover run, cuatro.dev and www.
+
 | Application | Disposition | Status | `absorbed_into` | Registry treatment |
 |---|---|---|---|---|
 | `cuatro-portfolio` | Anchor | `Live` | n/a | The Hub itself; rendered |

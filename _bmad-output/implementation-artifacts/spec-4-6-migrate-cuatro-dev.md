@@ -2,7 +2,7 @@
 title: 'Story 4-6: Migrate cuatro.dev (and www) onto Traefik'
 type: 'feature'
 created: '2026-09-30'
-status: 'awaiting-operator'
+status: 'done'
 baseline_commit: '585a4d02335e981f17449e2713b7806355885bee'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -73,6 +73,7 @@ No subagent tool in this run: implemented, and every review layer run, inline.
 ## Spec Change Log
 
 - 2026-09-30, after the independent verifier: the frozen I/O matrix row 2 (www answers 301) holds for GET only; HEAD and every other method answer 308 through Traefik. The row is human-owned and left as written; the accepted difference is in Design Notes for the Operator to confirm with Pending action 5.
+- 2026-09-30: box half ran from 22:32Z (runbook § Moving cuatro.dev and www, steps 1 to 7), recorded in `ops/traefik-cutover.md` § Cutover run, cuatro.dev and www; status `done`. Pending Operator action 5 stays open; DW-305 closed on step 6's count.
 
 ## Review Triage Log
 

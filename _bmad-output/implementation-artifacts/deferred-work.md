@@ -9314,7 +9314,13 @@ status: done
     **Owner: Story 4-6's box half.** **Trigger: § Moving cuatro.dev and www step 6.** That step's probe,
     through the real edge across both rule moves and a deploy, settles it: `200 301 200` alone closes
     this; any other line is a finding to trace against Traefik's log before the next hostname moves.
-  status: open
+
+    **Closed 2026-09-30 by Story 4-6's box half.** Step 6's probe ran 22:48:11Z to 22:53:05Z through the
+    real edge, across both Origin Rules (22:48:14Z and 22:48:45Z) and Deploy run 36787729657's rollout to
+    `cuatro-portfolio-anchor-app-6`: 130 lines, 390 requests under a 5 second `--max-time`, and the count
+    read `130 200 301 200`, no other line (`ops/traefik-cutover.md` § Cutover run, cuatro.dev and www). The
+    rehearsal's one `000` stays unexplained, and did not recur on the box.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-8-migrate-tracker-cuatro-dev.md`
   id: DW-306
   summary: >-
