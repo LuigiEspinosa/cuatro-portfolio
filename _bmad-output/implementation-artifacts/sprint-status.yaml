@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-30-2026 15:30
+last_updated: 09-30-2026 16:45
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -869,7 +869,12 @@ development_status:
   # (merge to main, the DNS-01 token, the decisions and the certificate monitoring reading, the run).
   # No hostname moves in 4-2. DW-296 to DW-299 filed.
   4-2-traefik-with-host-matched-routers-and-dns-01: awaiting-operator
-  4-3-migrate-list-wheel-the-static-first-candidate: backlog
+  # 4-3 awaiting-operator 2026-09-30: repository half built and verified on dev. No routing change and no
+  # change in list-wheel: the committed router equals Caddy's block on the list-wheel alias, now pinned in
+  # the traefik-config suite, and rehearsed with the real image. Box half is the Operator's,
+  # ops/traefik-cutover.md § Moving wheel.cuatro.dev steps 1 to 5 and Pending Operator actions 7 and 8, after
+  # 4-2's actions 1 to 4 and before 4-6's move. KV-1's list-wheel half left open, DW-308 filed.
+  4-3-migrate-list-wheel-the-static-first-candidate: awaiting-operator
   # 4-4 awaiting-operator 2026-09-30: repository half built and verified on dev (ops/postgres/compose.yml on
   # postgres:18.6-trixie, max_connections=100, the init script creating umami, cuatro_tracker, cs_tracker and
   # cuatro_finance with limits summing to 80, the postgres-init suite, the local Docker proof). Box half is

@@ -9338,3 +9338,25 @@ status: done
     word.** The same one-flag fix and its test pin in `ops/__tests__/tournament-backup.test.ts`, then the
     box's volume read and removed by the Operator once attributed.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-3-migrate-list-wheel-the-static-first-candidate.md`
+  id: DW-308
+  summary: >-
+    The box still compiles `list-wheel` on each of its deploys (KV-1's `list-wheel` half, AD-8): Story 4-3
+    moved its hostname onto Traefik and left the build, so the image-pull deploy has no story yet.
+  evidence: |-
+    Decided 2026-09-30 by Story 4-3 (Design Note 4, the Operator may overrule). `LuigiEspinosa/list-wheel`
+    on `main` at `718f194`: `docker-compose.yml` declares `build:` and `ops/deploy-remote.sh:62` runs
+    `docker compose up --build -d --remove-orphans`; the box runs image `list-wheel-list-wheel`, built
+    there (observed 2026-09-30). Retiring it is a change in that repository: a workflow that builds the
+    `Dockerfile` in GitHub Actions and pushes `ghcr.io/luigiespinosa/list-wheel:<sha>`, a compose `image:`
+    in place of `build:` (with a tag variable the deploy exports), and `ops/deploy-remote.sh` pulling that
+    tag and rolling the service with docker-rollout v0.14 as this repository's script does, its
+    `deploy-remote.test.mjs` updated, the box's GHCR read access for that package settled, and the two
+    comments that name Story 4.3 as the closer (`ops/deploy-remote.sh`, `Dockerfile`) repointed. AD-20's
+    Epic 4 reading kept it out of the hostname move.
+
+    **Owner: a story of its own in Epic 4 before Story 4.11, or 4.11 itself; the Operator confirms which.**
+    **Trigger: that story opening, or the next change to `list-wheel`'s deploy.** Closing it dates KV-1's
+    `list-wheel` half in `ops/known-violations.md` and, with the Anchor's half dated 2026-09-29, retires
+    KV-1.
+  status: open

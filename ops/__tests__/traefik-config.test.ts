@@ -154,6 +154,18 @@ describe('ops/traefik/dynamic/routes.yml', () => {
     expect(aliases).toContain(upstream);
     expect(ROUTES).not.toMatch(/contracts/);
   });
+
+  // Story 4-3: wheel.cuatro.dev moves first, onto a router that must answer what Caddy's block does: the
+  // house headers (the container's own Caddy sends none) and the alias and port the inventory's row names.
+  it('sends wheel.cuatro.dev to the alias and port the inventory names, with the house headers', () => {
+    const wheel = routers.find((r) => leadingHost(r.rule ?? '') === 'wheel.cuatro.dev');
+    expect(wheel).toMatchObject({ rule: 'Host(`wheel.cuatro.dev`)', middlewares: '[house-headers]', service: 'list-wheel' });
+    const upstream = /^ {4}list-wheel:\n {6}loadBalancer:\n {8}servers:\n {10}- url: http:\/\/([^:/]+):(\d+)$/m.exec(ROUTES)?.slice(1);
+    const row = INVENTORY.split('\n').find((l) => l.startsWith('| `wheel.cuatro.dev` | `177.7.52.248` |')) ?? '';
+    const [alias, port] = /alias `([^`]+)` \| (\d+) \|$/.exec(row)?.slice(1) ?? [];
+    expect(alias).toBeTruthy();
+    expect(upstream).toEqual([alias, port]);
+  });
 });
 
 describe('ops/traefik/traefik.yml and compose.yml', () => {

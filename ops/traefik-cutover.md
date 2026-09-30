@@ -296,6 +296,190 @@ hostname's health path, across the rule's creation: it shows 200 alone. **Rollba
 deleting its rule** (`DELETE /zones/$ZONE/rulesets/<id>/rules/<rule id>`), which takes effect at the
 edge without touching the box; Caddy still holds that hostname's site block.
 
+## Moving wheel.cuatro.dev (Story 4-3)
+
+The first hostname to move, by its own Origin Rule: `list-wheel` is static files behind its container's
+own Caddy, with no store and no server-side runtime, so a fault here is the edge, the firewall or
+Traefik and nothing else (addendum §G). **Nothing here has run on the box or in the zone. Written
+2026-09-30, committed on `dev`.** The Operator runs it and dates Pending Operator actions 7 and 8 below.
+
+**Why here and not in a record of `list-wheel`'s own.** Decision, Story 4-3, the Operator may overrule.
+This record owns the per-hostname mechanism and its rollback, and `list-wheel` owns no store, so its move
+has no backup, restore or migration step; `ops/postgres.md` and `ops/postgres-backup.md` need not have
+run. A separate record would restate the mechanism around one rule.
+
+### What serves it today
+
+**Observed 2026-09-30T16:19:11Z over SSH as `deploy`, read-only.**
+
+| Fact | Value |
+|---|---|
+| The container | `list-wheel-list-wheel-1`, image `list-wheel-list-wheel` (built on the box, 88.7 MB), `Up 5 days (healthy)` |
+| Its names on `cs-tracker_default` | Aliases `list-wheel-list-wheel-1` and `list-wheel`, address `172.18.0.10`; `list-wheel` is the compose service's own name and the one both Caddy and Traefik's `list-wheel` service dial |
+| The checkout | `/home/deploy/list-wheel` at `718f1943bbf9a8cf15c9ee718eaa08cfe719a2b5`, that repository's `main` |
+| Caddy's block | `/home/deploy/cs-tracker/Caddyfile` lines 111 to 119: `tls /data/origin-ca/origin.pem /data/origin-ca/origin.key`, `X-Content-Type-Options "nosniff"`, `X-Frame-Options "DENY"`, `Referrer-Policy "strict-origin-when-cross-origin"`, `reverse_proxy list-wheel:80` |
+| The deploy key | Its `authorized_keys` line carries the forced command (`ops/contract-serving.md` Pending action 9 is in effect) |
+| Traefik | Not yet on the box: `ss -ltn` shows nothing on 8443 |
+| Load | `0.43, 0.25, 0.20` |
+
+**Observed 2026-09-30 from the authoring machine, through the edge:** `https://wheel.cuatro.dev/`
+answered `200`, `Cache-Control: no-cache`, the three headers above, `cf-cache-status: DYNAMIC` and
+**`via: 1.1 Caddy`**, which is how step 3 tells which proxy answered (Traefik adds no `Via`, § Moving
+cuatro.dev and www); `/no/such/path` answered `200`; `/main-3S57BQZJ.js?v=<now>` answered `200`
+`text/javascript`, `cf-cache-status: MISS`, `via: 1.1 Caddy`, sha256 `4dd045eb86423b58...6093c9`.
+**Observed 2026-09-30 through the UptimeRobot API:** monitor 803983277 (`https://wheel.cuatro.dev`,
+HTTP, `2xx` and `3xx`, method unset) `UP` for 16 days 22 hours.
+
+### What the move changes, and what it leaves alone
+
+**Decisions, Story 4-3** (the spec's Design Notes; the Operator may overrule each):
+
+- **No routing change and no change in `list-wheel`.** The committed `list-wheel` router matches on the
+  one `Host` `wheel.cuatro.dev` with the house headers and dials `http://list-wheel:80`: Caddy's block,
+  header for header, on the alias the container already carries. The container's own Caddy sends no
+  security headers, so the proxy's are the only ones, on both sides. `ops/__tests__/traefik-config.test.ts`
+  now holds the router to the alias and port the inventory's `wheel.cuatro.dev` row names.
+- **Wheel before the apex.** Run this before § Moving cuatro.dev and www. It creates the zone's
+  origin-rules entrypoint if none exists, and 4-6's step 3 already adds to one that does.
+- **KV-1's `list-wheel` half stays open.** The box keeps building `list-wheel` on each of its deploys
+  (`ops/deploy-remote.sh:62` in that repository, `docker compose up --build`). Retiring it is a CI
+  image, GHCR, a compose `image:` and a pull deploy in another repository, which changes how the
+  application ships; by AD-20's Epic 4 reading a cutover is its own shipped and verified step, and this
+  one is worth running first precisely because nothing else changes. DW-308 carries the closer.
+- **Caddy keeps its block** until Story 4.11. Deleting the rule sends the hostname back to it.
+- **No capacity entry.** A routing move places nothing (AD-9), and `list-wheel` is already in
+  `placements`.
+
+### Rehearsed off the box
+
+**Observed 2026-09-30 on the authoring machine** (Docker 29.8.1), with the committed `ops/traefik/`
+files and § Rehearsed off the box's throwaway network, certificate volume, `.env` and `offline.yml`; the
+**real `list-wheel` image**, built from that repository's `main` at `718f194` (the box's commit) and run
+under alias `list-wheel`; and a stand-in of the box's Caddy, `caddy:2` (it reported v2.11.4, the box's
+version) with the block above on the same volume, published on 9443. Every request went with
+`curl --resolve wheel.cuatro.dev:<port>:127.0.0.1`. Everything was removed afterwards and
+`git status --short` showed only this story's files.
+
+To re-run it, from the repository root in Git Bash, with `L` a scratch directory:
+`git clone https://github.com/LuigiEspinosa/list-wheel.git "$L/lw"` and `docker build -t lw-rehearsal "$L/lw"`;
+then the network, volume, certificate, `.env`, `offline.yml` and `$T up -d --wait` lines of § Rehearsed off
+the box (without its `whoami` loop), and:
+
+```bash
+export MSYS_NO_PATHCONV=1
+docker run -d --name rehearsal-list-wheel --network cs-tracker_default --network-alias list-wheel lw-rehearsal
+printf 'wheel.cuatro.dev {\n\ttls /data/origin-ca/origin.pem /data/origin-ca/origin.key\n\theader {\n\t\tX-Content-Type-Options "nosniff"\n\t\tX-Frame-Options "DENY"\n\t\tReferrer-Policy "strict-origin-when-cross-origin"\n\t}\n\treverse_proxy list-wheel:80\n}\n' > "$L/Caddyfile"
+docker run -d --name rehearsal-caddy --network cs-tracker_default -p 9443:443 -v cs-tracker_caddy_data:/data -v "$(cygpath -w "$L/Caddyfile"):/etc/caddy/Caddyfile:ro" caddy:2
+for p in / /no/such/path /main-3S57BQZJ.js; do for port in 9443 8443; do
+  echo "$p $port $(curl -sk -D - -o /dev/null --resolve wheel.cuatro.dev:$port:127.0.0.1 https://wheel.cuatro.dev:$port$p | tr -d '\r' | grep -iE '^(HTTP|cache-control|x-|referrer|via)' | tr '\n' ' ')"
+done; done
+# Remove everything; `git status --short` shows nothing of this afterwards.
+docker rm -f rehearsal-caddy rehearsal-list-wheel; $T down -v; rm -f ops/traefik/.env ops/traefik/offline.yml
+docker volume rm cs-tracker_caddy_data && docker network rm cs-tracker_default
+```
+
+```
+/ caddy 200 ct=[text/html; charset=utf-8] cc=[no-cache] nosniff=[nosniff] xfo=[DENY] rp=[strict-origin-when-cross-origin] via=[1.1 Caddy] server=[Caddy] bytes=11639 sha=0d70749d63e0
+/ traefik 200 ct=[text/html; charset=utf-8] cc=[no-cache] nosniff=[nosniff] xfo=[DENY] rp=[strict-origin-when-cross-origin] via=[] server=[Caddy] bytes=11639 sha=0d70749d63e0
+/no/such/path caddy 200 ct=[text/html; charset=utf-8] cc=[no-cache] nosniff=[nosniff] xfo=[DENY] rp=[strict-origin-when-cross-origin] via=[1.1 Caddy] server=[Caddy] bytes=11639 sha=0d70749d63e0
+/no/such/path traefik 200 ct=[text/html; charset=utf-8] cc=[no-cache] nosniff=[nosniff] xfo=[DENY] rp=[strict-origin-when-cross-origin] via=[] server=[Caddy] bytes=11639 sha=0d70749d63e0
+/main-3S57BQZJ.js caddy 200 ct=[text/javascript; charset=utf-8] cc=[] nosniff=[nosniff] xfo=[DENY] rp=[strict-origin-when-cross-origin] via=[1.1 Caddy] server=[Caddy] bytes=165968 sha=4dd045eb8642
+/main-3S57BQZJ.js traefik 200 ct=[text/javascript; charset=utf-8] cc=[] nosniff=[nosniff] xfo=[DENY] rp=[strict-origin-when-cross-origin] via=[] server=[Caddy] bytes=165968 sha=4dd045eb8642
+HEAD / traefik 200
+Traefik log errors: 0
+```
+
+`/index.html` read the same as `/` on both sides. The only difference is the `via` header, which is
+Caddy's `reverse_proxy` adding itself; `server: Caddy` on both sides is the container's own server. A HEAD
+answers `200` through Traefik, so monitor 803983277 reads the same whichever method it sends. **What this
+does not prove:** the box's aliases, Cloudflare in front (its beacon rewrite of the shell, DW-92), the
+firewall, and load.
+
+### The sequence
+
+**Preconditions:** § The sequence steps 1 to 8 have run and are recorded, with step 5's pair for
+`wheel.cuatro.dev/` matching (Pending actions 1 to 4 dated); and a Cloudflare API token that may edit the
+zone's origin rules exists (`ops/settled-inputs-refresh.md` Pending action 4). No Postgres runbook is a
+precondition. Two sessions, as § Moving cuatro.dev and www sets them up (`jq` on the workstation), with
+these helpers; the token stays on the workstation and is never printed:
+
+```bash
+# Workstation. ZONE is the cuatro.dev zone id.
+read -rs CF_RULES_TOKEN && export CF_RULES_TOKEN; export ZONE=<zone id>
+CF() { curl -s -H "Authorization: Bearer $CF_RULES_TOKEN" -H 'Content-Type: application/json' "https://api.cloudflare.com/client/v4/zones/$ZONE/rulesets$1" "${@:2}"; }
+RULE='{"description":"Story 4-3: wheel.cuatro.dev to Traefik on 8443","expression":"(http.host eq \"wheel.cuatro.dev\" and ssl)","action":"route","action_parameters":{"origin":{"port":8443}}}'
+```
+
+1. **Re-read what the move stands on, and stop at the first difference.** On the box, in
+   `/home/deploy/cuatro-portfolio`:
+   ```bash
+   uptime
+   docker ps --filter name=list-wheel --format '{{.Names}} {{.Status}}'
+   docker inspect -f '{{.State.Health.Status}}' traefik-traefik-1
+   grep -c 'url: http://list-wheel:80' ops/traefik/dynamic/routes.yml
+   for p in / /no/such/path; do
+     echo "$p caddy=[$(curl -sk -o /dev/null -w '%{http_code}' --resolve wheel.cuatro.dev:443:127.0.0.1 "https://wheel.cuatro.dev$p")]" \
+          "traefik=[$(curl -sk -o /dev/null -w '%{http_code}' --resolve wheel.cuatro.dev:8443:127.0.0.1 "https://wheel.cuatro.dev:8443$p")]"
+   done
+   docker exec traefik-traefik-1 netstat -tn | grep -c ':8443 .*ESTABLISHED'
+   ```
+   `list-wheel-list-wheel-1` `(healthy)`; Traefik `healthy`; `1`; `200` on both sides for both paths; the
+   connection count is the baseline (normally `0`, or above it if § Moving cuatro.dev and www has run).
+   On the workstation: `CF /phases/http_request_origin/entrypoint | jq '.success, [.result.rules[]?.expression]'`
+   lists no rule naming `wheel.cuatro.dev`; monitor 803983277 reads `UP`;
+   `curl -sI https://wheel.cuatro.dev/ | grep -i '^via'` prints `via: 1.1 Caddy`; and record
+   `A=$(curl -s https://wheel.cuatro.dev/ | grep -o 'main-[A-Z0-9]*\.js' | head -1); echo $A; curl -s "https://wheel.cuatro.dev/$A?v=$(date +%s)" | sha256sum`.
+2. **Start the request loop on the workstation, and leave it running to step 4.** Each line is the time,
+   the shell's status (`000` when no answer came), which proxy answered it, and an unknown path's status;
+   the query string is unique per request, so the edge answers nothing from its cache:
+   ```bash
+   while :; do h=$(curl -s -D - -o /dev/null --max-time 5 "https://wheel.cuatro.dev/?probe=$(date +%s%N)" | tr -d '\r')
+     printf '%s %s %s %s\n' "$(date -u +%H:%M:%S)" "$(echo "$h" | awk 'NR==1 {c=$2} END {print c ? c : "000"}')" \
+       "$(echo "$h" | grep -qi '^via: 1.1 Caddy' && echo caddy || echo no-via)" \
+       "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "https://wheel.cuatro.dev/no/such/path?probe=$(date +%s%N)")"; sleep 1
+   done | tee wheel-cutover-probe.log
+   ```
+3. **Move `wheel.cuatro.dev`.** Read the entrypoint and look at the answer before writing:
+   ```bash
+   E=$(CF /phases/http_request_origin/entrypoint); echo "$E" | jq '.success, .errors, .result.id'
+   ```
+   If `.success` is `true`, a ruleset exists (§ Moving cuatro.dev and www may have created it): add the
+   rule to it.
+   ```bash
+   RS=$(echo "$E" | jq -r 'select(.success) | .result.id'); [ -n "$RS" ] && CF "/$RS/rules" -X POST --data "$RULE" | jq '.success, .errors'
+   ```
+   Only if `.success` is `false` **and** `.errors` says the phase has no entrypoint ruleset, create it with
+   this rule alone. Never run the `PUT` against an entrypoint that exists, or after any other error: a
+   `PUT` replaces the whole entrypoint, and with it every other hostname's rule.
+   ```bash
+   CF /phases/http_request_origin/entrypoint -X PUT --data "{\"rules\":[$RULE]}" | jq '.success, .errors'
+   ```
+   `true` and `[]`. Then, after about a minute: `curl -sI https://wheel.cuatro.dev/ | grep -iE '^(HTTP|via|cache-control)'`
+   answers `200` and `no-cache` with **no `via` line**; the step 1 asset line prints the same name and
+   digest; the probe's third column has turned from `caddy` to `no-via` and its second and fourth stay
+   `200`; and on the box, the step 1 `netstat` count is above its baseline, and `uptime`.
+4. **Stop the loop and count.** After at least one five-minute monitor interval more:
+   `awk '{print $2, $4}' wheel-cutover-probe.log | sort | uniq -c` shows `200 200` alone, and
+   `awk '{print $3}' wheel-cutover-probe.log | uniq -c` shows `caddy` lines, then `no-via` lines to the end (a mix inside the minute after the rule is created is the rule reaching every edge location; a `caddy` line after that minute is a finding).
+   Anything else is a finding: note its times against step 3 and roll back. Monitor 803983277 reads `UP`,
+   and on the box, `uptime`.
+5. **Record.** Under a "Cutover run, wheel.cuatro.dev" heading here: the date, step 1's pairs and digest,
+   each step's load, the rule id (`CF "/$RS" | jq '.result.rules[] | {id, description}'`), and step 4's
+   counts. `ops/routing-inventory.md` § Ingress and `ops/estate.md` each take a dated amendment:
+   `wheel.cuatro.dev` is served by Traefik through an Origin Rule, and Caddy's block remains, unreached,
+   until Story 4.11.
+
+**Rollback, at any step:**
+
+```bash
+RS=$(CF /phases/http_request_origin/entrypoint | jq -r 'select(.success) | .result.id')
+ID=$(CF "/$RS" | jq -r '.result.rules[] | select(.description == "Story 4-3: wheel.cuatro.dev to Traefik on 8443") | .id')
+echo "rule ${ID:-not found}"; [ -n "$RS" ] && [ -n "$ID" ] && CF "/$RS/rules/$ID" -X DELETE | jq '.success'
+```
+
+It takes effect at the edge without touching the box, and step 3's `curl -sI` shows `via: 1.1 Caddy`
+again. Nothing on the box changed, so nothing is restored.
+
 ## Moving cuatro.dev and www (Story 4-6)
 
 The first live use of § Moving a hostname: `www.cuatro.dev`, then `cuatro.dev`, each by its own Origin
@@ -595,6 +779,8 @@ Once a later story has moved a hostname, delete its Origin Rule first, then the 
 | 4 | **Run steps 1 to 8 above** | Step 3 is also the refresh record's action 4, firewall half | _not done_ |
 | 5 | **Confirm or overrule Story 4-6's decisions** in § Moving cuatro.dev and www: this record rather than a new one, no routing change (www answering `308` to non-GET methods where Caddy answers `301`), www before the apex as two rules, Story 4.4 not a precondition | The Story 4-6 spec's Design Notes carry the reasoning | _not done_ |
 | 6 | **Run § Moving cuatro.dev and www steps 1 to 7**, after actions 1 to 4 here and the refresh record's action 4 (the origin rules token) | Step 1 sets monitor 803756083 to `GET`; step 5 dispatches the Deploy workflow; step 7 amends `ops/routing-inventory.md` and `ops/estate.md` | _not done_ |
+| 7 | **Confirm or overrule Story 4-3's decisions** in § Moving wheel.cuatro.dev: this record rather than a new one, no routing change and no change in `list-wheel`, wheel before the apex, and KV-1's `list-wheel` half left open with its closer in DW-308 | The Story 4-3 spec's Design Notes carry the reasoning | _not done_ |
+| 8 | **Run § Moving wheel.cuatro.dev steps 1 to 5**, after actions 1 to 4 here and the refresh record's action 4 (the origin rules token), and before action 6 | Step 3 creates the origin-rules entrypoint if none exists; step 5 amends `ops/routing-inventory.md` and `ops/estate.md` | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.
