@@ -8641,6 +8641,13 @@ status: done
     `apps/tracker`, `apps/tournament` or `apps/finance` alone rolls the Hub and deploys nothing of the
     application it changed. A deploy path per id closes both halves; until then such a push is a no-op
     rollout of the Hub, which Story 3-4's zero-downtime rollout makes harmless but not meaningful.
+
+    **Story 4-8, 2026-09-30: still open.** The orchestrator's scope for 4-8's repository half named the
+    database move alone (the estate `DATABASE_URL`, the discrete migration, the runbook), and a deploy
+    path per id is its own change to `deploy.yml`, `ops/deploy-remote.sh` and the Capacity Gate's
+    placements. After the move the tracker still rolls by hand (`ops/tracker-cutover.md`, Later rollouts),
+    now against `cuatro_tracker`. Owner stays Epic 4; the natural home is now Story 4.11 or a story of its
+    own before it, since 4.8's remaining half is the Operator's box run.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
@@ -9016,6 +9023,8 @@ status: done
 
     **Operator ruling 2026-09-30:** no `paths-ignore` now; the fix is Epic 4's, with DW-275. Owner and
     trigger stand as the story.
+
+    **Story 4-8, 2026-09-30: still open, with DW-275** (see its note of the same date).
   status: open
 - id: DW-293
   summary: >-
@@ -9202,6 +9211,13 @@ status: done
     **Story 4-7, 2026-09-30:** `ops/postgres.md` § Moving Umami names `ops/postgres-backup.md` § Install
     and first run as a precondition; the nightly dump takes every database on the estate instance, so it
     names `umami` without a change. No backup aimed at `anchor-db` exists to repoint. Open for 4.8 and 4.10.
+
+    **Story 4-8, 2026-09-30:** `ops/tracker-cutover.md` § Moving the database onto the estate Postgres
+    names `ops/postgres-backup.md` § Install and first run as a precondition, so `cuatro_tracker` is in the
+    nightly dump from its first night. The old backup aimed at `cuatro-tracker-postgres-1`,
+    `~/cuatro-backup.sh` at 03:30, is kept, a decision the Operator may overrule: after the move it dumps
+    the frozen rollback copy, which is what the rollback restores to, and Story 4.11 retires it with the
+    container. Open for 4.10.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
   id: DW-302
@@ -9280,4 +9296,45 @@ status: done
     **Owner: Story 4-6's box half.** **Trigger: § Moving cuatro.dev and www step 6.** That step's probe,
     through the real edge across both rule moves and a deploy, settles it: `200 301 200` alone closes
     this; any other line is a finding to trace against Traefik's log before the next hostname moves.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-8-migrate-tracker-cuatro-dev.md`
+  id: DW-306
+  summary: >-
+    The tracker's Redis and qBittorrent still run in the old `cuatro-tracker` compose project after
+    Story 4-8, which Story 4.11 decommissions, and nothing yet places them anywhere else.
+  evidence: |-
+    Decided 2026-09-30 by Story 4-8 (Design Note 1, the Operator may overrule): the story moves the
+    Postgres (AD-10) and the hostname, and leaves `cuatro-tracker-redis-1` (`redis:7-alpine`, 343 keys of
+    BullMQ state, RDB only, observed that day) and `cuatro-tracker-qbittorrent-1`
+    (`linuxserver/qbittorrent:latest`, volume `cuatro-tracker_qb_config`, bind
+    `/home/deploy/cuatro-downloads`, empty) where they run. `docker-compose.yml`'s `tracker` and
+    `tracker-worker` reach both by container name over `cuatro-tracker_default`. Story 4.11 may delete
+    nothing it has not recreated or recorded as dropped, so these two need a home before it: services of
+    this project's compose, images pinned (DW-191), Redis's data carried or its loss accepted (BullMQ
+    repeatable jobs re-register when the worker starts, which is to be read, not assumed), qBittorrent's
+    WebUI credentials settled (DW-190), and the Registry's `Redis` declaration's offsite backup question
+    (AD-10) answered.
+
+    **Owner: Story 4.11, before it removes the `cuatro-tracker` project, or a story of its own ahead of
+    it.** **Trigger: Story 4.11 opening.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-8-migrate-tracker-cuatro-dev.md`
+  id: DW-307
+  summary: >-
+    `ops/tournament-restore-verify.sh` removes its throwaway Postgres without `--volumes`, so each run
+    leaves the restored copy of the tournament's data behind as an anonymous volume, the defect Story 4-8
+    fixed in `ops/tracker-restore-verify.sh`.
+  evidence: |-
+    Found 2026-09-30 by Story 4-8. `ops/tracker-restore-verify.sh` ran `docker rm --force` on a
+    `postgres` container, whose image declares a `VOLUME`; two local runs left two dangling volumes, and
+    the box holds one created 2026-09-29T21:05:53Z, the second the tracker cutover's verification ran.
+    Story 4-8 added `--volumes` and made `ops/__tests__/tracker-backup.test.ts` require it; the box's
+    volume is `ops/tracker-cutover.md` Pending action 7. `ops/tournament-restore-verify.sh:46` has the
+    same `docker rm --force "${SCRATCH}"`; the box holds a second dangling volume created
+    2026-09-30T08:04:07Z, not attributed (read-only listing, contents not read). `ops/postgres-restore-verify.sh`
+    already passes `--volumes`.
+
+    **Owner: the next change to the tournament's backup path.** **Trigger: that change, or the Operator's
+    word.** The same one-flag fix and its test pin in `ops/__tests__/tournament-backup.test.ts`, then the
+    box's volume read and removed by the Operator once attributed.
   status: open

@@ -294,17 +294,36 @@ describe('the finance services', () => {
 
 // Story 3-6: the tracker, merged and imaged, and started only by the Operator's cutover
 // (`ops/tracker-cutover.md`). Its server and worker sit under a profile no deploy activates, run its image
-// by the sha in TRACKER_TAG, and reach the stores the box's `cuatro-tracker` project keeps running, by
+// by the sha in TRACKER_TAG, and reach Redis and qBittorrent in the box's `cuatro-tracker` project, by
 // container name, over that project's network. The server answers to `cuatro-app`, the upstream the
-// shared Caddyfile already proxies, and its probe is the Hub's on `/api/ready`.
+// shared Caddyfile already proxies, and its probe is the Hub's on `/api/ready`. Story 4-8 moves its
+// database to `cuatro_tracker` in the estate Postgres, with the pool capped on the URL (AD-10).
 describe('the tracker services', () => {
   const service = (name: string): string => parts(compose, 2).find((part) => part.startsWith(`  ${name}:\n`)) ?? '';
   const tracker = service('tracker');
   const worker = service('tracker-worker');
   const migrate = service('tracker-migrate');
   const IMAGE = '    image: ghcr.io/luigiespinosa/tracker:${TRACKER_TAG-}';
-  const DATABASE = '      - DATABASE_URL=postgresql://tracker:${TRACKER_DB_PASS-}@cuatro-tracker-postgres-1:5432/tracker';
+  const DATABASE =
+    '      - DATABASE_URL=postgresql://cuatro_tracker:${CUATRO_TRACKER_DB_PASSWORD-}@estate-postgres:5432/cuatro_tracker?connection_limit=4';
   const READY = '/api/ready';
+  const NAMES = ['tracker', 'tracker-worker', 'tracker-migrate'];
+
+  /** Why the three services would not reach `cuatro_tracker` at estate-postgres under the pool cap. */
+  const databaseFaults = (text: string): string[] => {
+    const of = (name: string): string => parts(text, 2).find((part) => part.startsWith(`  ${name}:\n`)) ?? '';
+    const faults: string[] = [];
+    for (const name of NAMES) {
+      const part = of(name);
+      // The worker takes the server's environment through the YAML anchor, so its URL is the server's.
+      const environment = name === 'tracker-worker' ? of('tracker') : part;
+      if (!environment.split('\n').includes(DATABASE))
+        faults.push(`${name} does not reach cuatro_tracker at estate-postgres with connection_limit=4`);
+      if (!/^ {6}estate-postgres:$/m.test(part)) faults.push(`${name} does not join estate-postgres`);
+      if (part.includes('cuatro-tracker-postgres-1')) faults.push(`${name} names the old database`);
+    }
+    return faults;
+  };
 
   it('runs the image by the sha in TRACKER_TAG, the server and worker under a profile no deploy activates', () => {
     for (const part of [tracker, worker]) {
@@ -320,11 +339,36 @@ describe('the tracker services', () => {
     expect(worker).not.toContain('migrate');
   });
 
-  it('answers to cuatro-app on the shared network, and reaches its stores over the tracker project network', () => {
-    expect(tracker).toMatch(/^ {4}networks:\n {6}cuatro-tracker_default:\n {6}cs-tracker_default:\n {8}aliases:\n {10}- cuatro-app$/m);
+  it('answers to cuatro-app on the shared network, and reaches Redis and qBittorrent over the tracker project network', () => {
+    expect(tracker).toMatch(
+      /^ {4}networks:\n {6}estate-postgres:\n {6}cuatro-tracker_default:\n {6}cs-tracker_default:\n {8}aliases:\n {10}- cuatro-app$/m
+    );
+    expect(worker).toMatch(/^ {4}networks:\n {6}estate-postgres:\n {6}cuatro-tracker_default:$/m);
     expect(worker).not.toContain('cs-tracker_default');
-    expect(migrate).not.toContain('cs-tracker_default');
+    expect(migrate).toMatch(/^ {4}networks:\n {6}estate-postgres:\n {4}restart: 'no'$/m);
     expect(compose).toMatch(/^ {2}cuatro-tracker_default:\n {4}external: true$/m);
+  });
+
+  it('reaches cuatro_tracker at estate-postgres with connection_limit=4 from all three services (AD-10)', () => {
+    expect(databaseFaults(compose)).toEqual([]);
+    expect(tracker.split('\n')).toContain('      - DB_PASS=${CUATRO_TRACKER_DB_PASSWORD-}');
+  });
+
+  it('names the old database, a missing pool cap and a missing estate network', () => {
+    const unreached = (name: string): string => `${name} does not reach cuatro_tracker at estate-postgres with connection_limit=4`;
+    const old = compose.replaceAll('@estate-postgres:5432/cuatro_tracker?connection_limit=4', '@cuatro-tracker-postgres-1:5432/tracker');
+    expect(databaseFaults(old)).toEqual([
+      unreached('tracker'),
+      'tracker names the old database',
+      unreached('tracker-worker'),
+      unreached('tracker-migrate'),
+      'tracker-migrate names the old database',
+    ]);
+    expect(databaseFaults(compose.replaceAll('?connection_limit=4', ''))).toEqual(NAMES.map(unreached));
+    const migrateNetwork = /^( {4}networks:\n) {6}estate-postgres:\n( {4}restart: 'no')$/m;
+    expect(databaseFaults(compose.replace(migrate, migrate.replace(migrateNetwork, '$1      cuatro-tracker_default:\n$2')))).toEqual([
+      'tracker-migrate does not join estate-postgres',
+    ]);
   });
 
   it(`probes ${READY} with the Hub's probe, so the runs above cover its handling`, () => {

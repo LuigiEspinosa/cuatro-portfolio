@@ -305,6 +305,10 @@ cover this instance first**, since a moved database otherwise has no backup at a
 | 4.8 | `cuatro-tracker-postgres-1` | `tracker`, `tracker` | `cuatro_tracker` |
 | 4.10 | `cs-tracker-db-1` | `POSTGRES_USER`, `POSTGRES_DB` of `/home/deploy/cs-tracker/.env` | `cs_tracker` |
 
+**Story 4-8, 2026-09-30:** the tracker's move is written in `ops/tracker-cutover.md` § Moving the database
+onto the estate Postgres, the record that owns the tracker's placement; it restores the dump
+`ops/tracker-backup.sh` wrote and `ops/tracker-restore-verify.sh` proved, rather than a second one.
+
 With `SRC`, `SRC_ROLE`, `SRC_DB` and `ROLE` set from that row:
 
 1. **Freeze writes**: stop the consumer's writers (server and worker) for the window, or accept that rows

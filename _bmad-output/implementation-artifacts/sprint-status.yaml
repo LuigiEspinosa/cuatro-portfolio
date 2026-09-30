@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-30-2026 14:40
+last_updated: 09-30-2026 15:30
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -897,7 +897,16 @@ development_status:
   # Operator's, ops/postgres.md § Moving Umami steps 1 to 14 and § Pending Operator actions 4 to 6, after the
   # 4-4 placement, the 4-5 install and, for the hostname, 4-2 and 4-6. DW-179 and DW-302 closed.
   4-7-migrate-analytics-cuatro-dev-and-pin-umami: awaiting-operator
-  4-8-migrate-tracker-cuatro-dev: backlog
+  # 4-8 awaiting-operator 2026-09-30: repository half built and verified on dev. docker-compose.yml points tracker,
+  # tracker-worker and tracker-migrate at estate-postgres as cuatro_tracker with connection_limit=4 (role limit 20);
+  # Redis and qBittorrent stay in the old project (DW-306); migrate-on-boot was already off. Local proof with the
+  # box's tracker image: a Postgres 16 tracker database backed up and restore-verified on 16 and 18.6, restored
+  # into 18.6 with counts-match, tracker-migrate a no-op, rolled by docker-rollout under 667 requests all 200 and
+  # rolled back. ops/tracker-restore-verify.sh now removes its volume (the box holds one, action 7). Box half is
+  # the Operator's, ops/tracker-cutover.md § Moving the database onto the estate Postgres steps 1 to 14 and
+  # § Pending Operator actions 5 to 8, after the 4-4 placement, the 4-5 install and, for the hostname, 4-2 and
+  # 4-6. DW-275 (per-id deploy) not in this run's scope, still open.
+  4-8-migrate-tracker-cuatro-dev: awaiting-operator
   4-9-migrate-library-cuatro-dev: backlog
   4-10-migrate-cs-tracker-cuatro-dev: backlog
   4-11-retire-caddy-and-decommission-the-old-topology: backlog

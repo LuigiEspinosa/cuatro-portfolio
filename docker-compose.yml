@@ -209,10 +209,19 @@ services:
   # TRACKER_TAG is the commit sha to run (AD-3), with `-` rather than `:?` for FINANCE_TAG's reason:
   # compose interpolates every service, and an unset tag is an invalid reference Docker refuses.
   #
-  # Its data stays where it serves until Stories 4.4 and 4.8: Postgres, Redis and qBittorrent keep
-  # running in the `cuatro-tracker` project, reached over its network by container name, since
-  # `postgres` and `redis` are service names another project could also answer to. The secrets are
-  # that project's `.env` values, copied into `.env.production` with a `TRACKER_` prefix.
+  # AD-10: database and role `cuatro_tracker` in the estate's one Postgres (`ops/postgres/compose.yml`),
+  # CONNECTION LIMIT 20 on both (`ops/postgres.md` § The budget). Prisma 6 pools five per process by default
+  # and reads `connection_limit` from the URL, so 4 here holds two servers and two workers across a rollout,
+  # plus the migration, under the role's 20. Story 4-8 moves the data (`ops/tracker-cutover.md` § Moving the
+  # database onto the estate Postgres); the old `cuatro-tracker-postgres-1` stays, unreached, as its
+  # rollback until Story 4.11. CUATRO_TRACKER_DB_PASSWORD is the role's password from `ops/postgres/.env`,
+  # copied into `.env.production`, with `-` for FINANCE_TAG's reason. `lib/env.ts` requires DB_PASS and
+  # reads it nowhere else, so it carries the same value.
+  #
+  # Redis and qBittorrent keep running in the `cuatro-tracker` project until a later move (DW-306),
+  # reached over its network by container name, since `redis` is a service name another project could
+  # also answer to. The other secrets are that project's `.env` values, copied into `.env.production`
+  # with a `TRACKER_` prefix.
   #
   # On `cs-tracker_default` the service answers to `cuatro-app`, the upstream the shared Caddyfile
   # proxies tracker.cuatro.dev to, so the cutover edits no Caddyfile: while the old and the new
@@ -221,8 +230,8 @@ services:
     image: ghcr.io/luigiespinosa/tracker:${TRACKER_TAG-}
     profiles: [tracker]
     environment: &tracker-environment
-      - DATABASE_URL=postgresql://tracker:${TRACKER_DB_PASS-}@cuatro-tracker-postgres-1:5432/tracker
-      - DB_PASS=${TRACKER_DB_PASS-}
+      - DATABASE_URL=postgresql://cuatro_tracker:${CUATRO_TRACKER_DB_PASSWORD-}@estate-postgres:5432/cuatro_tracker?connection_limit=4
+      - DB_PASS=${CUATRO_TRACKER_DB_PASSWORD-}
       - REDIS_URL=redis://cuatro-tracker-redis-1:6379
       - NEXTAUTH_SECRET=${TRACKER_NEXTAUTH_SECRET-}
       - NEXTAUTH_URL=${TRACKER_NEXTAUTH_URL-}
@@ -239,6 +248,7 @@ services:
       - DOWNLOAD_PATH=${TRACKER_DOWNLOAD_PATH-}
       - LOG_LEVEL=${TRACKER_LOG_LEVEL:-info}
     networks:
+      estate-postgres:
       cuatro-tracker_default:
       cs-tracker_default:
         aliases:
@@ -261,6 +271,7 @@ services:
     command: ['node', 'node_modules/tsx/dist/cli.mjs', 'worker.ts']
     environment: *tracker-environment
     networks:
+      estate-postgres:
       cuatro-tracker_default:
     restart: unless-stopped
 
@@ -270,9 +281,9 @@ services:
     profiles: [migrate]
     command: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy']
     environment:
-      - DATABASE_URL=postgresql://tracker:${TRACKER_DB_PASS-}@cuatro-tracker-postgres-1:5432/tracker
+      - DATABASE_URL=postgresql://cuatro_tracker:${CUATRO_TRACKER_DB_PASSWORD-}@estate-postgres:5432/cuatro_tracker?connection_limit=4
     networks:
-      cuatro-tracker_default:
+      estate-postgres:
     restart: 'no'
 
   # The tournament (`apps/tournament`, Story 3-7): merged into the Anchor and imaged by
@@ -356,7 +367,8 @@ networks:
   # that joins it, so the Hub's commands never need it.
   cuatro-tracker_default:
     external: true
-  # The estate's one Postgres (`ops/postgres/compose.yml`, Story 4-4) owns it. Only Umami's services join it.
+  # The estate's one Postgres (`ops/postgres/compose.yml`, Story 4-4) owns it. Umami's and the tracker's
+  # services join it.
   estate-postgres:
     external: true
 
