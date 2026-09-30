@@ -8215,7 +8215,11 @@ status: done
     **Trigger reached 2026-09-28 by Story 3-3's Build run,** whose ECC layer ran
     `corepack pnpm --filter hub build`, the command `AGENTS.md` verifies, as Story 3-2's did. The
     customization file still names the retired one, and the fix is still the Operator's.
-  status: open
+
+    **Closed 2026-09-30 (Epic 3 retrospective action 5, finding M5).** `a162232` (2026-09-29) changed
+    the one line: `_bmad/custom/bmad-build.toml:93` now hands the ECC layer
+    `corepack pnpm --filter hub build`, the command `AGENTS.md` verifies, and names DW-259 beside it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-3-build-the-hub-image-in-ci-and-push-to-ghcr.md`
   id: DW-260
@@ -8398,7 +8402,13 @@ status: done
     that run.
 
     **Owner: the Operator, at the Epic 3 merge.** **Trigger: that merge.**
-  status: open
+
+    **Closed 2026-09-30 (Epic 3 retrospective action 5, finding M5).** The trigger came at the Epic 3
+    merge (PR #84, merge commit `5117673`): Deploy run 36627621601 passed `gate` and `image / hub`, so
+    GitHub honoured the `workflow_call` and the token grants, and its deploy job failed at `HUB_TAG` as
+    designed (DW-264, the box's Epic 2 script having reset the checkout first); the dispatch, run
+    36627964371, then went green end to end (the 3-4 row in `sprint-status.yaml`).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
   id: DW-267
@@ -8581,7 +8591,13 @@ status: done
 
     **Owner: the Operator, at `ops/tracker-cutover.md` step 1, whose output closes this.** **Trigger:
     that step.**
-  status: open
+
+    **Closed 2026-09-30 (Epic 3 retrospective action 5, finding M5).** `ops/tracker-cutover.md` § Cutover
+    run, step 1 (2026-09-29) read all three on the box and found no difference from the inventory; it
+    records the override's full text and `~/cuatro-redeploy.sh` (592 bytes, dated 2026-07-30, which would
+    have rebuilt and restarted the old project), and step 8 retired that script as
+    `~/cuatro-redeploy.sh.retired-2026-09-29`.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
   id: DW-275
@@ -8610,6 +8626,13 @@ status: done
     the checkout on the box (`ops/tournament-placement.md`), and no deploy activates its profile, so a
     deploy path per id now owes `tournament` and `tournament-worker` as well as the tracker's two. The
     gate's `cs-tournament` entry has the same id question as `cuatro-tracker`'s. Still Epic 4's.
+
+    **Widened 2026-09-30 by the Epic 3 retrospective (finding L1, action 6).** The Hub rolls on pushes
+    that change no part of it: `deploy.yml` triggers on every push to `main` with `paths-ignore: '**.md'`
+    alone, and its chain builds `hub` and rolls `anchor-app` (`ops/deploy-remote.sh`), so a change under
+    `apps/tracker`, `apps/tournament` or `apps/finance` alone rolls the Hub and deploys nothing of the
+    application it changed. A deploy path per id closes both halves; until then such a push is a no-op
+    rollout of the Hub, which Story 3-4's zero-downtime rollout makes harmless but not meaningful.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
@@ -8963,4 +8986,62 @@ status: done
     **Owner: the next story that touches the tournament's deploy path (DW-275 in Epic 4 is the
     natural home).** **Trigger: the next migration added under `apps/tournament/supabase/migrations`,
     or DW-275, whichever comes first.**
+  status: open
+- id: DW-292
+  summary: >-
+    A push to `main` that changes only a merged application (`apps/*`) builds and rolls the Hub, whose
+    deploy it does not change, and deploys nothing of the application it changed.
+  evidence: |-
+    Found 2026-09-30 by the Epic 3 retrospective (finding L1), filed by its action 6.
+    `.github/workflows/deploy.yml` runs on every push to `main` except one that changes only Markdown
+    (`paths-ignore: '**.md'`), and its one chain is gate, `image / hub`, then `ops/deploy-remote.sh`
+    with `SERVICE=anchor-app`. AD-7 has a deploy name exactly one id. The tracker and the tournament
+    roll by hand from the checkout (`ops/tracker-cutover.md`, `ops/tournament-placement.md`
+    § Later rollouts). Harmless today, since `docker-rollout` keeps the Hub up, but every such push
+    spends a Hub build and a rollout, and reads in the Actions history as a deploy of the change.
+    DW-275 carries the same fact as its widening of 2026-09-30.
+
+    **Owner: DW-275's story in Epic 4 (Story 4.8), whose deploy path per id is the fix; a
+    `paths-ignore` for `apps/tracker/**`, `apps/tournament/**` and `apps/finance/**` alone would do it
+    sooner, and must then be removed by that story.** **Trigger: that story, or the Operator's word to
+    add the `paths-ignore` now.**
+  status: open
+- id: DW-293
+  summary: >-
+    The application image workflows gate no merge: `image-tracker.yml`, `image-tournament.yml`,
+    `image-finance.yml` and `image.yml` are not required checks on `main`, while the tracker's and the
+    tournament's images run live from hand-picked tags.
+  evidence: |-
+    Found 2026-09-30 by the Epic 3 retrospective (finding L2), filed by its action 6. The eight
+    required checks on `main` are `test`, `tokens-contract`, `fonts-contract`, `contract-purity`,
+    `registry-schema`, `rendered-output`, `literal-conformance` and `lighthouse` (`gh api
+    .../branches/main/protection/required_status_checks`, strict false). The applications' unit
+    suites do run in the required `test` job (`ci.yml`), so what goes ungated is the image build and
+    its probe: a merge that breaks `apps/tracker/Dockerfile` lands green and is found only when the
+    Operator next picks a tag. Making them required was the Operator's optional item from Story 3-3,
+    and the retrospective's open question. All four run on push to every branch with no path filter
+    (`image.yml` excludes `main`, where the Deploy chain calls it), so the push run on a pull request's
+    head sha is there to be required; the cost is a full image build of all four applications before
+    every merge, which is today's cost already, since they run anyway.
+
+    **Owner: the Operator (ruling), then the story that wires the application deploys (DW-275).**
+    **Trigger: the Operator's ruling, or the next image failure found after a merge.**
+  status: open
+- id: DW-294
+  summary: >-
+    Image (tracker) fetches Google Fonts over the network at build (`next/font/google`), and that
+    fetch failed twice in Epic 3, each time passing on a rerun; nothing retries it and nothing pins it.
+  evidence: |-
+    Found 2026-09-30 by the Epic 3 retrospective (finding L2), filed by its action 6. Recorded on the
+    3-8 row of `sprint-status.yaml`: at `0bd5f82` Image (tracker) passed on a rerun after a
+    `next/font` Google Fonts fetch failed at build, and at `2974ceb` run 36639121642 went green on
+    attempt 2 after the same transient failure. A build that depends on a third party answering is a
+    flake source in the one pipeline that produces the tracker's live image. Two fixes, either
+    sufficient: serve the faces locally (`next/font/local` over files in the repository, which also
+    ends the build's network dependency), or retry the build step once in `image-tracker.yml`. The
+    first matches the estate's direction (the Hub self-hosts its faces from `contracts/`, AD-14);
+    the tracker's token adoption would bring the contract's fonts with it.
+
+    **Owner: the tracker's Epic 8 restyle and token adoption, or any story that next edits
+    `image-tracker.yml`.** **Trigger: a third failure, or either of those stories.**
   status: open

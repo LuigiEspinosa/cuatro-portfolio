@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-30-2026 02:05
+last_updated: 09-30-2026 02:24
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1227,7 +1227,7 @@ action_items:
     action: "Close DW-259, DW-266 and DW-274 in deferred-work.md with dated notes
       citing a162232, run 36627621601 and ops/tracker-cutover.md step 1."
     owner: "Cuatro"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-09-30.md"
   - id: "epic-3-retro-item-34-file-the-unledgered-hazards-the-applicat"
     epic: 3
@@ -1235,7 +1235,7 @@ action_items:
       merge while two of their images run live, and Image (tracker)'s next/font fetch
       failed twice; note on DW-275 that a push changing only apps/* rolls the Hub."
     owner: "Cuatro"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-09-30.md"
   - id: "epic-3-retro-item-35-process-a-placement-checks-its-store-s-s"
     epic: 3
