@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-30-2026 17:07
+last_updated: 09-30-2026 18:40
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -919,7 +919,15 @@ development_status:
   # Operator's, ops/backup-digital-library.md § Moving library.cuatro.dev onto Traefik steps 1 to 7 and § Pending
   # Operator actions 10 and 11, after 4-2's runbook; the Registry's tech array already declares SQLite and Redis.
   4-9-migrate-library-cuatro-dev: awaiting-operator
-  4-10-migrate-cs-tracker-cuatro-dev: backlog
+  # 4-10 awaiting-operator 2026-09-30: repository half built and verified on dev. New record
+  # ops/cs-tracker-cutover.md: the cs-tracker compose change (migrate under a profile, off app's depends_on, both on
+  # estate-postgres) as an exact diff for the Operator to land there, and the move: dump of cs_tracker_prod restored
+  # into cs_tracker with counts, DATABASE_URL and POOL_SIZE=10 in .env, migrate, docker rollout, then the Origin
+  # Rule. Rehearsed locally with the real image; it found the cs-tracker router answering the LiveView socket 301
+  # (Traefik forwards wss), fixed with forwarded-proto-https in ops/traefik/. Caddy stays up in that project until
+  # 4-11. Box half is the Operator's, § The sequence steps 1 to 13 and § Pending Operator actions 1 to 4, after the
+  # 4-4 placement, the 4-5 install and, for the hostname, 4-2 and 4-6. DW-309 filed, DW-301 noted.
+  4-10-migrate-cs-tracker-cuatro-dev: awaiting-operator
   4-11-retire-caddy-and-decommission-the-old-topology: backlog
   epic-4-retrospective: optional
 

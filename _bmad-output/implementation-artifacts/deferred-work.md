@@ -9229,6 +9229,13 @@ status: done
     `~/cuatro-backup.sh` at 03:30, is kept, a decision the Operator may overrule: after the move it dumps
     the frozen rollback copy, which is what the rollback restores to, and Story 4.11 retires it with the
     container. Open for 4.10.
+
+    **Story 4-10, 2026-09-30:** `ops/cs-tracker-cutover.md` § The sequence names `ops/postgres-backup.md`
+    § Install and first run as a precondition, so `cs_tracker` is in the nightly dump from its first
+    night. No backup of `cs-tracker-db-1` exists to repoint (`crontab -l` read that day names none); the
+    move's own dump, copied off the box in its step 4, is that database's first backup and is kept until
+    Story 4.11. With the three stories written, what remains is box-side: each move's record confirming
+    4.5 ran before it. **Trigger for closing:** the last of the three moves recorded.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
   id: DW-302
@@ -9370,4 +9377,24 @@ status: done
     **Trigger: that story opening, or the next change to `list-wheel`'s deploy.** Closing it dates KV-1's
     `list-wheel` half in `ops/known-violations.md` and, with the Anchor's half dated 2026-09-29, retires
     KV-1.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-10-migrate-cs-tracker-cuatro-dev.md`
+  id: DW-309
+  summary: >-
+    Traefik forwards a WebSocket upgrade with `X-Forwarded-Proto: wss` where Caddy sends `https`, and only
+    the `cs-tracker` router corrects it; no other hostname's upstream was checked for reading that header
+    on an upgrade.
+  evidence: |-
+    Found 2026-09-30 by Story 4-10's rehearsal (`ops/cs-tracker-cutover.md` § What the move changes):
+    through the committed `cs-tracker` router, `cs-tracker`'s LiveView socket answered `301` to
+    `https://...`, because its Plug.SSL reads only `https` from that header, while `/` answered its `302`.
+    The router now sets the header (`forwarded-proto-https`), and the socket answered `101`. The other
+    routers were written by Stories 4-2, 4-3 and 4-6 to 4-9 and none of their rehearsals is recorded as
+    opening a socket; an upstream that trusts the header and serves an upgrade would fail the same way,
+    and only once its hostname moves.
+
+    **Owner: Story 4.11, which accounts every hostname on the new topology before Caddy goes.**
+    **Trigger: that story opening, or any moved hostname's application reporting a failed socket.** For
+    each router's upstream: does it serve a WebSocket, and does it read `X-Forwarded-Proto` on it? If
+    so, the same middleware on its router, with a case in `ops/__tests__/traefik-config.test.ts`.
   status: open

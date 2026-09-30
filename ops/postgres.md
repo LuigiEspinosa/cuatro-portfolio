@@ -309,6 +309,11 @@ cover this instance first**, since a moved database otherwise has no backup at a
 onto the estate Postgres, the record that owns the tracker's placement; it restores the dump
 `ops/tracker-backup.sh` wrote and `ops/tracker-restore-verify.sh` proved, rather than a second one.
 
+**Story 4-10, 2026-09-30:** `cs-tracker`'s move is written in `ops/cs-tracker-cutover.md` § The sequence,
+a record of its own, since no record here owned how `cs-tracker` runs. It counts every table but Oban's
+queue, which the serving application writes throughout, and makes the migration discrete in
+`cs-tracker`'s compose, whose `app` started `migrate` through `depends_on`.
+
 With `SRC`, `SRC_ROLE`, `SRC_DB` and `ROLE` set from that row:
 
 1. **Freeze writes**: stop the consumer's writers (server and worker) for the window, or accept that rows

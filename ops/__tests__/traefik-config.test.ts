@@ -187,6 +187,21 @@ describe('ops/traefik/dynamic/routes.yml', () => {
     expect(ROUTES).toContain(['    library-headers:', '      headers:', '        contentTypeNosniff: true', '        customFrameOptionsValue: SAMEORIGIN', '        referrerPolicy: strict-origin-when-cross-origin'].join('\n'));
     expect(ROUTES).toContain(['    library-api-headers:', '      headers:', '        contentTypeNosniff: true', '        customFrameOptionsValue: SAMEORIGIN', '    www-to-apex:'].join('\n'));
   });
+
+  // Story 4-10: Traefik forwards a WebSocket upgrade as `X-Forwarded-Proto: wss`, which cs-tracker's
+  // Plug.SSL does not read as HTTPS, so its LiveView socket was answered 301 in the rehearsal until the
+  // router set the header to `https`, as Caddy sends it. No headers beyond that one, as Caddy's block.
+  it('sends cs-tracker.cuatro.dev to the alias and port the inventory names, forwarding the scheme as https', () => {
+    const cs = routers.find((r) => leadingHost(r.rule ?? '') === 'cs-tracker.cuatro.dev');
+    expect(cs).toMatchObject({ rule: 'Host(`cs-tracker.cuatro.dev`)', middlewares: '[forwarded-proto-https]', service: 'cs-tracker' });
+    const upstream = /^ {4}cs-tracker:\n {6}loadBalancer:\n {8}servers:\n {10}- url: http:\/\/([^:/]+):(\d+)$/m.exec(ROUTES)?.slice(1);
+    const row = INVENTORY.split('\n').find((l) => l.startsWith('| `cs-tracker.cuatro.dev` | `177.7.52.248` |')) ?? '';
+    const [alias, port] = /alias `([^`]+)` \| (\d+) \|$/.exec(row)?.slice(1) ?? [];
+    expect(alias).toBeTruthy();
+    expect(upstream).toEqual([alias, port]);
+    expect(ROUTES).toContain(['    forwarded-proto-https:', '      headers:', '        customRequestHeaders:', '          X-Forwarded-Proto: https', ''].join('\n'));
+    expect(routers.filter((r) => r.middlewares?.includes('forwarded-proto-https')).map((r) => r.name)).toEqual(['cs-tracker']);
+  });
 });
 
 describe('ops/traefik/traefik.yml and compose.yml', () => {

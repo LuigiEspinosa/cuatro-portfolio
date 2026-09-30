@@ -1176,6 +1176,20 @@ PASS  cs-tracker's tree is unchanged: 5 file(s) were planted inside it for the s
 # finished 2026-09-30T08:31:54.950Z
 ```
 
+## Re-run 2026-09-30, before the cs-tracker move
+
+**Observed 2026-09-30** on the same host and checkout (`cs-tracker` at
+`2519fe379251e0e4d8c1a4ae2e8ddfb028fc49b8`, the commit the box runs, read that day), from this
+repository at `65e762f`, reading the Hub build output already in the tree (not rebuilt for this run), by Story 4-10 before writing `ops/cs-tracker-cutover.md`,
+whose step 10 re-runs it after the database move. The probe reads the checkout, not the live host; the
+live stylesheet was read beside it: `https://cs-tracker.cuatro.dev/assets/css/app.css` answered `200
+text/css` with 12 distinct `--token-*` roles, sha256
+`1fa1740f30a65d4c961c39daaba43bc68e7d5f81c4b62d4edf1ccd0d30b6dcf5`, at 18:09Z.
+
+| Started (UTC) | Shell | Exit | Cases | Elapsed |
+|---|---|---|---|---|
+| `2026-09-30T18:09:47Z` | Git Bash, `NO_COLOR` unset | **0** | 19, 19 PASS | 14.0s |
+
 ## Pending Operator actions
 
 This file hands the Operator work Story 1-19 may not do, in the shape `ops/token-contract.md`,

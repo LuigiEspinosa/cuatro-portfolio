@@ -34,9 +34,11 @@ http:
       service: analytics
       tls: {}
     # Caddy's cs-tracker block sends no security headers (`ops/routing-inventory.md`); carried over as is.
+    # The one middleware makes the forwarded scheme what Caddy sends (Story 4-10, `forwarded-proto-https`).
     cs-tracker:
       rule: Host(`cs-tracker.cuatro.dev`)
       entryPoints: [websecure]
+      middlewares: [forwarded-proto-https]
       service: cs-tracker
       tls: {}
     cuatro-tracker:
@@ -116,6 +118,14 @@ http:
         regex: ^https?://www\.cuatro\.dev(?::\d+)?(.*)$
         replacement: https://cuatro.dev${1}
         permanent: true
+    # Traefik forwards a WebSocket upgrade with `X-Forwarded-Proto: wss`, and Caddy with `https`.
+    # cs-tracker's Plug.SSL trusts that header and knows only `https` (`rewrite_on: [:x_forwarded_proto]`),
+    # so without this every LiveView socket is answered 301 and the page never goes live (Story 4-10's
+    # rehearsal, `ops/cs-tracker-cutover.md`). Set, not appended: websecure is TLS only, so `https` is true.
+    forwarded-proto-https:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: https
     # The htpasswd line comes from TRAEFIK_DASHBOARD_USERS in the gitignored `.env`; nothing here holds it.
     dashboard-auth:
       basicAuth:
