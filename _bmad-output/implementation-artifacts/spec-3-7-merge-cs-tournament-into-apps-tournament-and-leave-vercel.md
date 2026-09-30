@@ -84,6 +84,11 @@ placement, keeps every gate green, and is an Operator item):
    are the placement's (DW item), as finance's auth URL is (DW-269).
 10. **The source's own delivery files stay as merged** (`.claude/`, `_bmad/`, `_bmad-output/`,
     `docs/`, `vercel.json`, `eslint.config.mjs`), inert here, filed as DW-276 filed the tracker's.
+    **Amended 2026-09-30 (Epic 3 retrospective, finding M2, Operator ruling):** not all of it was
+    inert. `apps/tournament/.claude/`, `_bmad/` and `_bmad-output/` (346 tracked files) and
+    `apps/tracker/CLAUDE.md` loaded in this repository as directory-scoped skills and instructions
+    carrying the standalone repositories' commands. The Operator ruled to remove them, and one commit
+    on 2026-09-30 deleted all four trees; the applications' own histories keep them.
 
 ## I/O & Edge-Case Matrix
 

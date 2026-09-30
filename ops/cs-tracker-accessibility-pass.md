@@ -840,6 +840,43 @@ FAIL  No interactive element transitions its outline: 38 element(s) carry a tran
 | **The re-run was at `32a466a`, not `8adb8e2`** | The Operator's `32a466a` landed on `cs-tracker`'s `main` between the first run and the re-run; the two commits differ in this story's `AGENTS.md` bullet and that `mix.exs` change only. The measured surface is the same; the commit is named so the transcript's header line is not read as a discrepancy | **Observed 2026-08-27** |
 | **Nothing in CI runs this** | It needs a Postgres, a seeded database, a running Phoenix application and a Chromium, none of which is on a runner (AD-21 is about gates that exist). Its pure parts, the cookie, the inputs, the verdicts, the classifier, the transition reader and the summary, carry 44 unit cases at this record's date (the suite's `it` count, which grows with every review) under the blocking `test` job in `ops/__tests__/cs-tracker-accessibility-probe.test.ts` | **Decision** |
 
+## Re-run 2026-09-30, the Epic 4 refresh
+
+**Observed 2026-09-30** on the Windows 11 development host, from this repository's root at `f4f9935`,
+against `cs-tracker` at `2519fe3` (`main`, with uncommitted edits to its `AGENTS.md` and `CLAUDE.md`
+only, and `git status --porcelain` identical before and after). It is the run AD-22's refresh schedule
+asks for before Epic 4 (Story 4-1, `ops/settled-inputs-refresh.md`); the re-runs Pending Operator
+action 2 keys on Story 8.1 and on a Tailwind or daisyUI bump are not this one, and none has happened.
+
+The six commands of § How to re-run it, with the seed script extracted from § The seed script
+unchanged: a throwaway `postgres:16` container `cuatro-4-1-pg` on `127.0.0.1:5432` in Docker 29.8.1,
+`mix ecto.create`, `mix ecto.migrate` and `mix assets.build` under `MIX_ENV=dev`
+(`priv/static/assets/css/app.css` at 131,336 bytes, the figure Contract 2.0.0's re-vendor gave on
+2026-09-24), the seed printing `seeded 12 items, 4 inventory entries, 3 wishlist entries, 1 ownership
+mark, 3 price snapshots; first item id 1`, `mix phx.server` with `STEAM_ID=76561198000000000` and
+`KILL_SWITCH=true`, ready when the failure page answered 401, then the probe. The server was stopped
+and the container removed afterwards; `docker ps -a` lists no `cuatro-4-1` container.
+
+| Started (UTC) | Exit | Cases | Findings | Elapsed |
+|---|---|---|---|---|
+| `2026-09-30T08:33:02.518Z` | **1** | 13, 6 PASS, 7 FAIL | 74 under the hit-target floor (F-1 to F-74), 38 transitioned rings (T-1 to T-38) | 22.4s |
+
+**It reproduced the 2026-08-27 transcript above in every measurement.** Its stdout was compared with
+that transcript by `diff`, timestamps and the elapsed figure normalised. Three kinds of line differ,
+none a reading: the `# cs-tracker:` line names `2519fe3` where it named `32a466a`; the six `Hit
+targets on` lines lack a trailing count that repeated the one before it; and F-38's label carries
+the character the transcript writes as `[U+2014]`. Every per-route count, every finding's selector
+and size, the three focus-ring readings (11.73:1, 11.24:1, 10.47:1 on the planted control) and the
+38 transition findings are the same. **Exit 1 is the standing findings, not a regression**: they are
+Story 8.1's, by the Operator's ruling of 2026-09-24 (`ops/contract-adoption.md` action 3). Its closing
+lines, verbatim:
+
+```
+# 13 cases, 6 PASS, 7 FAIL
+# elapsed 22.4s
+# finished 2026-09-30T08:33:24.955Z
+```
+
 ## Pending Operator actions
 
 Mirrored as actions 3 and 4 of `ops/contract-adoption.md`; completing one completes both.
@@ -847,7 +884,7 @@ Mirrored as actions 3 and 4 of `ops/contract-adoption.md`; completing one comple
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
 | 1 | **Decide the disposition of the 74 hit-target findings and the 38 transition findings** | Operator | The geometry is Story 8.1's restyle (`RESTYLE-SPEC.md` § Family A), 18 findings from daisyUI's defaults and 56 from the application's own markup. The two causes behind the transition findings are not geometry: Tailwind v4's `transition-colors` names `outline-color` at 150 ms on 35 controls, and the application's own `transition-all` on the three quick-link cards names `all`, so the ring's colour animates on 38 controls against S-2's never-transitioned rule. Both alternatives cost something a story must decide: excluding `outline-color` from the transition at the `:focus-visible` rule, or dropping `transition-colors` from the shell | **2026-09-24.** Operator ruling 2026-09-24, recorded as `ops/contract-adoption.md` action 3, this row's mirror: the 74 hit-target findings and the 38 transition findings all go to Story 8.1, and nothing is fixed in `cs-tracker` now. `epics.md` Story 8.1 carries the dated note. Action 2's re-run after that story is the check |
-| 2 | **Re-run `node ops/cs-tracker-accessibility-probe.mjs` after Story 8.1, after any Tailwind or daisyUI bump reaching `cs-tracker`, and on AD-22's refresh schedule**, and add this probe to that scope beside the two sibling probes | Operator | The six commands above are the whole setup. The probe exits 1 while any finding remains, so the run is the check | **Scope half 2026-09-25**; the re-run half _not done_. Operator ruling 2026-09-24: AD-22's refresh scope names this probe and this record from 2026-09-25 (`2ec24c1`), beside the two adoption probes, with this row's two narrower triggers. The re-run waits on Story 8.1 or a Tailwind or daisyUI bump reaching `cs-tracker`; date this cell with it. Mirrored in `ops/contract-adoption.md` action 4 |
+| 2 | **Re-run `node ops/cs-tracker-accessibility-probe.mjs` after Story 8.1, after any Tailwind or daisyUI bump reaching `cs-tracker`, and on AD-22's refresh schedule**, and add this probe to that scope beside the two sibling probes | Operator | The six commands above are the whole setup. The probe exits 1 while any finding remains, so the run is the check | **Scope half 2026-09-25**; the re-run half _not done_. Operator ruling 2026-09-24: AD-22's refresh scope names this probe and this record from 2026-09-25 (`2ec24c1`), beside the two adoption probes, with this row's two narrower triggers. The re-run waits on Story 8.1 or a Tailwind or daisyUI bump reaching `cs-tracker`; date this cell with it. **2026-09-30**: the AD-22 refresh run before Epic 4 exited 1 on the same 74 and 38 findings (§ Re-run 2026-09-30, the Epic 4 refresh); the Story 8.1 and bump re-runs are still _not done_. Mirrored in `ops/contract-adoption.md` action 4 |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC completion date and leave the row in place. When the pass is re-run, add a new headline row

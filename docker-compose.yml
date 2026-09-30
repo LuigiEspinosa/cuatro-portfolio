@@ -70,28 +70,59 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  # Umami, the estate's self-hosted analytics (analytics.cuatro.dev). Story 4-7 moves it onto the estate's
+  # one Postgres (`ops/postgres.md` § Moving Umami): database and role `umami`, CONNECTION LIMIT 25 on
+  # both. Umami 3.4.0 pools node-postgres's default of ten per container and reads no pool option from the
+  # environment, so the role's limit is the cap: two containers across a rollout, plus the migration.
+  #
+  # The image is the exact release and its registry digest (DW-191, the spine's pinning rule): 3.4.0 was
+  # the latest stable on 2026-09-30 and the digest is the one `postgresql-latest` then resolved to. A
+  # version change is an edit to both lines below, the server's and the migration's, in one commit.
+  #
+  # UMAMI_DB_PASSWORD is `umami`'s password from `ops/postgres/.env`, copied into `.env.production`. It
+  # carries `-` rather than `:?` for FINANCE_TAG's reason: compose interpolates every service whatever
+  # command runs, and a `:?` here would fail every Hub deploy on a box without it.
   anchor-umami:
-    image: ghcr.io/umami-software/umami:postgresql-latest
+    image: ghcr.io/umami-software/umami:3.4.0@sha256:85909afc45bdcda1917394594a087421fdbb05610fded0fa9f6fb861abb2f367
     environment:
-      # `anchor-db`, never `db`. See the naming note above.
-      - DATABASE_URL=postgresql://umami:${POSTGRES_PASSWORD}@anchor-db:5432/umami
+      - DATABASE_URL=postgresql://umami:${UMAMI_DB_PASSWORD-}@estate-postgres:5432/umami
       - DATABASE_TYPE=postgresql
       - APP_SECRET=${UMAMI_APP_SECRET}
-    depends_on:
-      # `service_started` is not enough. On a fresh volume Postgres runs a
-      # bootstrap pass before the role exists, and Umami crash-loops on 28P01
-      # until it finishes. Gate on the healthcheck instead.
-      anchor-db:
-        condition: service_healthy
+      # AD-23: the image's start script runs `prisma migrate deploy` unless this is set
+      # (`scripts/check-db.js`). The migration is `anchor-umami-migrate`, run before the server starts.
+      - SKIP_DB_MIGRATION=1
     networks:
-      # `default` is how Umami reaches the database. `cs-tracker_default` is how
-      # the shared Caddy reaches Umami.
-      default:
+      # `estate-postgres` is how Umami reaches its database. `cs-tracker_default` is how the shared Caddy,
+      # and Traefik beside it, reach Umami.
+      estate-postgres:
       cs-tracker_default:
         aliases:
           - anchor-umami
+    healthcheck:
+      # The image sets HOSTNAME=0.0.0.0, so its server listens on every address and loopback answers,
+      # unlike the Next servers above. `/api/heartbeat` answers 200 without touching the database.
+      test: ['CMD', 'curl', '-fsS', '-o', '/dev/null', 'http://127.0.0.1:3000/api/heartbeat']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
+  # AD-23: Umami's migrations run here, as a discrete step before the server starts or rolls, never on its
+  # boot. The same image as the server, always.
+  anchor-umami-migrate:
+    image: ghcr.io/umami-software/umami:3.4.0@sha256:85909afc45bdcda1917394594a087421fdbb05610fded0fa9f6fb861abb2f367
+    profiles: [migrate]
+    command: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy']
+    environment:
+      - DATABASE_URL=postgresql://umami:${UMAMI_DB_PASSWORD-}@estate-postgres:5432/umami
+    networks:
+      estate-postgres:
+    restart: 'no'
+
+  # Umami's database until Story 4-7's move, and kept until Story 4.11 as that move's rollback
+  # (`ops/postgres.md` § Moving Umami). Nothing in this file reads it after the move but finance, which is
+  # placed nowhere (DW-300). Never `down -v`: the volume is the only copy of what Umami held before.
   anchor-db:
     image: postgres:16-alpine
     environment:
@@ -178,10 +209,19 @@ services:
   # TRACKER_TAG is the commit sha to run (AD-3), with `-` rather than `:?` for FINANCE_TAG's reason:
   # compose interpolates every service, and an unset tag is an invalid reference Docker refuses.
   #
-  # Its data stays where it serves until Stories 4.4 and 4.8: Postgres, Redis and qBittorrent keep
-  # running in the `cuatro-tracker` project, reached over its network by container name, since
-  # `postgres` and `redis` are service names another project could also answer to. The secrets are
-  # that project's `.env` values, copied into `.env.production` with a `TRACKER_` prefix.
+  # AD-10: database and role `cuatro_tracker` in the estate's one Postgres (`ops/postgres/compose.yml`),
+  # CONNECTION LIMIT 20 on both (`ops/postgres.md` § The budget). Prisma 6 pools five per process by default
+  # and reads `connection_limit` from the URL, so 4 here holds two servers and two workers across a rollout,
+  # plus the migration, under the role's 20. Story 4-8 moves the data (`ops/tracker-cutover.md` § Moving the
+  # database onto the estate Postgres); the old `cuatro-tracker-postgres-1` stays, unreached, as its
+  # rollback until Story 4.11. CUATRO_TRACKER_DB_PASSWORD is the role's password from `ops/postgres/.env`,
+  # copied into `.env.production`, with `-` for FINANCE_TAG's reason. `lib/env.ts` requires DB_PASS and
+  # reads it nowhere else, so it carries the same value.
+  #
+  # Redis and qBittorrent keep running in the `cuatro-tracker` project until a later move (DW-306),
+  # reached over its network by container name, since `redis` is a service name another project could
+  # also answer to. The other secrets are that project's `.env` values, copied into `.env.production`
+  # with a `TRACKER_` prefix.
   #
   # On `cs-tracker_default` the service answers to `cuatro-app`, the upstream the shared Caddyfile
   # proxies tracker.cuatro.dev to, so the cutover edits no Caddyfile: while the old and the new
@@ -190,8 +230,8 @@ services:
     image: ghcr.io/luigiespinosa/tracker:${TRACKER_TAG-}
     profiles: [tracker]
     environment: &tracker-environment
-      - DATABASE_URL=postgresql://tracker:${TRACKER_DB_PASS-}@cuatro-tracker-postgres-1:5432/tracker
-      - DB_PASS=${TRACKER_DB_PASS-}
+      - DATABASE_URL=postgresql://cuatro_tracker:${CUATRO_TRACKER_DB_PASSWORD-}@estate-postgres:5432/cuatro_tracker?connection_limit=4
+      - DB_PASS=${CUATRO_TRACKER_DB_PASSWORD-}
       - REDIS_URL=redis://cuatro-tracker-redis-1:6379
       - NEXTAUTH_SECRET=${TRACKER_NEXTAUTH_SECRET-}
       - NEXTAUTH_URL=${TRACKER_NEXTAUTH_URL-}
@@ -208,6 +248,7 @@ services:
       - DOWNLOAD_PATH=${TRACKER_DOWNLOAD_PATH-}
       - LOG_LEVEL=${TRACKER_LOG_LEVEL:-info}
     networks:
+      estate-postgres:
       cuatro-tracker_default:
       cs-tracker_default:
         aliases:
@@ -230,6 +271,7 @@ services:
     command: ['node', 'node_modules/tsx/dist/cli.mjs', 'worker.ts']
     environment: *tracker-environment
     networks:
+      estate-postgres:
       cuatro-tracker_default:
     restart: unless-stopped
 
@@ -239,9 +281,9 @@ services:
     profiles: [migrate]
     command: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy']
     environment:
-      - DATABASE_URL=postgresql://tracker:${TRACKER_DB_PASS-}@cuatro-tracker-postgres-1:5432/tracker
+      - DATABASE_URL=postgresql://cuatro_tracker:${CUATRO_TRACKER_DB_PASSWORD-}@estate-postgres:5432/cuatro_tracker?connection_limit=4
     networks:
-      cuatro-tracker_default:
+      estate-postgres:
     restart: 'no'
 
   # The tournament (`apps/tournament`, Story 3-7): merged into the Anchor and imaged by
@@ -324,6 +366,10 @@ networks:
   # The box's `cuatro-tracker` project owns it. Compose checks an external network only for a service
   # that joins it, so the Hub's commands never need it.
   cuatro-tracker_default:
+    external: true
+  # The estate's one Postgres (`ops/postgres/compose.yml`, Story 4-4) owns it. Umami's and the tracker's
+  # services join it.
+  estate-postgres:
     external: true
 
 volumes:

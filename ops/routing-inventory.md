@@ -348,6 +348,7 @@ not what a client resolves: a client resolving a proxied name gets Cloudflare an
 | `tracker.cuatro.dev` | `177.7.52.248` | A + AAAA, both proxied | **Cloudflare edge** | Cloudflare Origin CA | `cuatro-tracker` | `cuatro-tracker-app-1`, alias `cuatro-app` | 3000 |
 | `library.cuatro.dev` | `177.7.52.248` | A + AAAA, both proxied | **Cloudflare edge** | Cloudflare Origin CA | `digital-library`, split by path | `digital-library-api-1` (alias `library-api`) for `/api/*` and `/files/*`; `digital-library-web-1` (alias `library-web`) for everything else | 4000, 3000 |
 | `wheel.cuatro.dev` | `177.7.52.248` | A, proxied | **Cloudflare edge** | Cloudflare Origin CA | `list-wheel`, static files behind the container's own Caddy. **Row added 2026-09-13** by Story 2-25 | `list-wheel-list-wheel-1`, alias `list-wheel` | 80 |
+| `tournament.cuatro.dev` | `177.7.52.248` | A, proxied | **Cloudflare edge** | Cloudflare Origin CA | `cs-tournament`, the Next.js server. **Row added 2026-09-30** by Story 4-2 from § What Story 3-7 changes and `ops/tournament-placement.md`, placed 2026-09-30 | `cuatro-portfolio-tournament-1`, alias `tournament` | 3000 |
 | `covidmap.cuatro.dev` | **not this box.** `216.198.79.65` observed | CNAME, DNS-only | **Vercel** | n/a, TLS is not terminated on any box of ours | A Vercel deployment | **unknown.** Not on this box and no console access | **unknown** |
 | `future-vizion.cuatro.dev` | **not this box** | CNAME, DNS-only | **Vercel** | n/a | A Vercel deployment | **unknown** | **unknown** |
 | `_domainconnect.cuatro.dev` | **not this box** | CNAME, proxied | **unknown.** Squarespace scaffolding, not probed as an application | n/a | Nothing of ours | **unknown** | **unknown** |
@@ -1143,7 +1144,7 @@ is an HTTPS clone of a public repository, and a rebuild recreates it with one `g
 one `docker compose up --build`. The deploy is a second build on the serving box by the same
 mechanism as the Anchor's, which is what widens KV-1: see
 [Where the deploy goes](#where-the-deploy-goes). *(Amended 2026-09-28: the Anchor's deploy stops
-building at the Epic 3 merge, Story 3-4, committed on `dev`; this one builds until Story 4-3.)*
+building at the Epic 3 merge, Story 3-4, committed on `dev`; this one builds until Story 4-3.)* *(Amended 2026-09-30: Story 4-3 moved the hostname and left the build; it builds until the change that closes DW-308.)*
 
 ### Image identity, so the rebuild is reproducible
 

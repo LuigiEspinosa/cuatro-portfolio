@@ -610,6 +610,281 @@ that was truncated or mistyped would have left every nightly run green while the
 unopenable. This check is the only one that can see that divergence, and it now says there is none.
 **Named limit 5 is closed.**
 
+## Moving library.cuatro.dev onto Traefik (Story 4-9)
+
+`library.cuatro.dev` moves from the shared Caddy to Traefik by its own Cloudflare Origin Rule, the
+mechanism `ops/traefik-cutover.md` § Moving a hostname, and moving it back sets. **The store does not
+move.** The SQLite tree stays the bind mount `/home/deploy/digital-library/data`, the cache stays the
+volume `digital-library_redis_data`, and no `digital-library` container is stopped, restarted or
+recreated. What makes this more than a routing move is that the estate's one declared non-Postgres
+store (AD-10) is proven backed up and restorable immediately before the rule exists, and its nightly job
+is read green the night after. **Nothing here has run on the box or in the zone. Written 2026-09-30,
+committed on `dev`.** The Operator runs it and dates Pending Operator actions 10 and 11 below.
+
+**Why here and not in `ops/traefik-cutover.md` or a new `ops/library-cutover.md`.** Decision, Story
+4-9, the Operator may overrule. This record is the only one that owns `digital-library`'s operations:
+its store, its backup job, its restore procedure and the cron line the move is verified against. The
+routing mechanism is `ops/traefik-cutover.md`'s and is referenced, not restated; a third record would
+split one application's runbook across two files.
+
+### What serves it today
+
+**Observed 2026-09-30T17:03:36Z over SSH as `deploy`, read-only.**
+
+| Fact | Value |
+|---|---|
+| Containers | `digital-library-web-1`, `digital-library-api-1`, `digital-library-redis-1`, all `Up 2 months (healthy)`; the first two run images built on the box (DW-185) |
+| Their names on `cs-tracker_default` | `digital-library-api-1`: `api`, `library-api`; `digital-library-web-1`: `web`, `library-web`. Both from the untracked `docker-compose.override.yml` (DW-187), on the network Traefik's stack joins |
+| The checkout | `/home/deploy/digital-library` at `46d6e5f2adbcfb33c9f7488973ccbc2b3e6f3cc2`, that repository's `main`; `git status --porcelain` lists the override alone |
+| The stores | `api` mounts `bind /home/deploy/digital-library/data /data`; `redis` mounts volume `digital-library_redis_data` at `/data`. `redis-cli DBSIZE` answered `0`. The data tree holds `library.db` (4096 bytes, `Jul 30 06:09`), `library.db-wal` (152472, `Aug 14 09:16`), `library.db-shm` and the three media directories, as on 2026-08-24 |
+| Caddy's block | `library.cuatro.dev` in `/home/deploy/cs-tracker/Caddyfile`: the Origin CA pair, `X-Content-Type-Options "nosniff"`, `X-Frame-Options "SAMEORIGIN"`, `Referrer-Policy "strict-origin-when-cross-origin"`, `handle /api/*` and `handle /files/*` to `library-api:4000`, everything else to `library-web:3000`; the block `ops/routing-inventory.md` § The site blocks quotes |
+| The backup job | `45 3 * * * /usr/local/sbin/library-backup.sh >> /home/deploy/backups/digital-library/backup.log 2>&1` in `deploy`'s crontab, and the night's line below |
+| Installed scripts | The three digests in the Installed column above, unchanged since 2026-08-24; action 9 is still open |
+| Traefik | Not yet on the box: `ss -ltn` shows nothing on 8443 |
+| Load | `0.07, 0.18, 0.19` |
+
+```
+library-backup ts=2026-09-30T03:45:01Z snapshot=ok own=ok integrity=ok objects=23 archive=library-20260930T034501Z.tar.gz.gpg tar=first-attempt bytes=3351 encrypt=aes256 size=within-ceiling redis=empty offsite=ok-digital-library/library-20260930T034501Z.tar.gz.gpg roundtrip=sha256-match restore=verified prune=removed-1-aged-over-14-whole-days exit=0
+```
+
+**Observed 2026-09-30 from the authoring machine, through the edge:** `/` answered `302` to `/login`;
+`/login` `200` `text/html`; `/api/health` `200` with `{"status":"ok","version":"0.0.1",...,"book_count":0}`;
+`/files/x` `404` JSON; every one with **`via: 1.1 Caddy`**. On `/api/health` and `/files/x` each of the
+three headers came **twice**, Caddy's value first and the API's own second, so `Referrer-Policy` read
+`strict-origin-when-cross-origin` then `no-referrer`, and a browser applies the last valid one,
+`no-referrer`. **Observed 2026-09-30 through the UptimeRobot API:** monitor 803750025
+(`https://library.cuatro.dev`, HTTP, every 300 seconds) `UP` for 45 days 7 hours; it accepts `2xx` and
+`3xx` (`ops/monitoring.md`), so `/`'s `302` reads `UP`. The Registry's `digital-library` entry declares
+`SQLite` and `Redis` in `tech`, in `contracts/registry.json` and as `https://cuatro.dev/contracts/registry.json`
+serves it (read the same day); nothing here changes it.
+
+### What the move changes, and what it leaves alone
+
+**Decisions, Story 4-9** (the spec's Design Notes; the Operator may overrule each):
+
+- **No compose change and no `digital-library` diff.** Traefik dials `library-web:3000` and
+  `library-api:4000`, the aliases the containers already carry on `cs-tracker_default`; the stores,
+  their mounts and the backup job's paths are untouched, so the job reads exactly what it read before.
+- **Two corrections to Story 4-2's stack, both from the rehearsal below.** The API router now takes
+  `library-api-headers`, which sets `nosniff` and `SAMEORIGIN` and no `Referrer-Policy`: Traefik
+  replaces an upstream header where Caddy adds one beside it, so the API's `no-referrer` would otherwise
+  have become `strict-origin-when-cross-origin`. And `websecure` sets `readTimeout: 0`: Traefik 3 cut
+  a slow upload at 60 seconds that Caddy read whole (DW-297, closed). Both reach the box with the merge
+  that carries this section; the static one takes a Traefik recreate if Traefik started before it
+  (step 1).
+- **Only Story 4-2's runbook is a precondition.** `digital-library` has no Postgres and its offsite
+  path is this record's own, so `ops/postgres.md` and `ops/postgres-backup.md` need not have run.
+  Action 9 is not a precondition either: the move needs one green run of whichever copy is installed.
+- **Caddy keeps its block** until Story 4.11; deleting the rule sends the hostname back to it. **No
+  capacity entry**: a routing move places nothing (AD-9).
+- **Left alone:** the box still builds the two images (DW-185), the override is still untracked
+  (DW-187), and Redis is still outside the archive on the evidence in § The Redis verdict. None of the
+  three changes with the hostname's proxy.
+
+### Rehearsed off the box
+
+**Observed 2026-09-30 between 17:05Z and 17:25Z on the authoring machine** (Docker 29.8.1), with the
+committed `ops/traefik/` files and `ops/traefik-cutover.md` § Rehearsed off the box's throwaway
+network, certificate volume, `.env` and `offline.yml`; the **real `digital-library` images**, built from
+that repository's `main` at `46d6e5f` (the box's commit) with its two Dockerfiles, run with the
+compose file's environment on an empty data volume, `api` and `web` on a project network and on
+`cs-tracker_default` under the box's four aliases, beside `redis:7-alpine`; and a stand-in of the box's
+Caddy, `caddy:2` (v2.11.4, the box's version) with the block above, published on 9443. Every request
+went with `curl --resolve library.cuatro.dev:<port>:127.0.0.1`. Everything, the two built images
+included, was removed afterwards, and `git status --short` showed only this story's files.
+
+To re-run it, from the repository root in Git Bash, with `L` a scratch directory:
+`git clone https://github.com/LuigiEspinosa/digital-library.git "$L/dl"`, then
+`docker build -t dl-api -f "$L/dl/apps/api/Dockerfile" "$L/dl"` and the same for `apps/web` as
+`dl-web`; then the network, volume, certificate, `.env`, `offline.yml` and `$T up -d --wait` lines of
+`ops/traefik-cutover.md` § Rehearsed off the box (without its `whoami` loop), and:
+
+```bash
+export MSYS_NO_PATHCONV=1
+docker network create dl_default && docker volume create dl-data
+docker run -d --name rh-redis --network dl_default --network-alias redis redis:7-alpine
+docker create --name rh-api --network dl_default --network-alias api -v dl-data:/data -e NODE_ENV=production -e PORT=4000 -e HOST=0.0.0.0 -e DATABASE_PATH=/data/library.db -e WEB_ORIGIN=https://library.cuatro.dev -e REDIS_URL=redis://redis:6379 dl-api
+docker create --name rh-web --network dl_default --network-alias web -e NODE_ENV=production -e PUBLIC_API_URL=http://api:4000 -e ORIGIN=https://library.cuatro.dev dl-web
+docker network connect --alias api --alias library-api cs-tracker_default rh-api
+docker network connect --alias web --alias library-web cs-tracker_default rh-web
+docker start rh-api rh-web
+printf 'library.cuatro.dev {\n\ttls /data/origin-ca/origin.pem /data/origin-ca/origin.key\n\theader {\n\t\tX-Content-Type-Options "nosniff"\n\t\tX-Frame-Options "SAMEORIGIN"\n\t\tReferrer-Policy "strict-origin-when-cross-origin"\n\t}\n\thandle /api/* {\n\t\treverse_proxy library-api:4000\n\t}\n\thandle /files/* {\n\t\treverse_proxy library-api:4000\n\t}\n\thandle {\n\t\treverse_proxy library-web:3000\n\t}\n}\n' > "$L/Caddyfile"
+docker run -d --name rh-caddy --network cs-tracker_default -p 9443:443 -v cs-tracker_caddy_data:/data -v "$(cygpath -w "$L/Caddyfile"):/etc/caddy/Caddyfile:ro" caddy:2
+for p in / /login /api/health /files/missing.epub /api /apix /files /api/books; do for port in 9443 8443; do
+  echo "$p $port $(curl -sk -D - -o /dev/null --resolve library.cuatro.dev:$port:127.0.0.1 https://library.cuatro.dev:$port$p | tr -d '\r' | grep -iE '^(HTTP|content-type|location|x-frame|x-content|referrer|via)' | tr '\n' ' ')"
+done; done
+head -c 90000 /dev/zero | tr '\0' a > "$L/slow.bin"
+for port in 9443 8443; do ( s=$(date +%s); r=$(curl -sk -o /dev/null -w '%{http_code} up=%{size_upload}' --limit-rate 1000 -X POST --data-binary @"$L/slow.bin" --resolve library.cuatro.dev:$port:127.0.0.1 https://library.cuatro.dev:$port/api/health); echo "$port $r secs=$(( $(date +%s)-s ))" ) & done; wait
+# Remove everything; `git status --short` shows nothing of this afterwards.
+docker rm -f rh-caddy rh-web rh-api rh-redis; $T down -v; rm -f ops/traefik/.env ops/traefik/offline.yml
+docker volume rm dl-data cs-tracker_caddy_data && docker network rm dl_default cs-tracker_default; docker rmi dl-api dl-web
+```
+
+On the committed files, condensed to one line per request (a header a response carried twice is joined
+with a comma; bodies compared by sha256 prefix, with the health body's `uptime` value blanked):
+
+```
+/                   caddy   302 loc=/login  xfo=SAMEORIGIN            rp=strict-origin-when-cross-origin              via=1.1 Caddy
+/                   traefik 302 loc=/login  xfo=SAMEORIGIN            rp=strict-origin-when-cross-origin              via=
+/login              caddy   200 text/html   xfo=SAMEORIGIN            rp=strict-origin-when-cross-origin              via=1.1 Caddy  body=12e3e38dbe02
+/login              traefik 200 text/html   xfo=SAMEORIGIN            rp=strict-origin-when-cross-origin              via=           body=12e3e38dbe02
+/api/health         caddy   200 json        xfo=SAMEORIGIN,SAMEORIGIN rp=strict-origin-when-cross-origin,no-referrer  via=1.1 Caddy  body=bf5a288c5203
+/api/health         traefik 200 json        xfo=SAMEORIGIN            rp=no-referrer                                  via=           body=bf5a288c5203
+/files/missing.epub caddy   404 json        xfo=SAMEORIGIN,SAMEORIGIN rp=strict-origin-when-cross-origin,no-referrer  via=1.1 Caddy  body=ba60f02f0c27
+/files/missing.epub traefik 404 json        xfo=SAMEORIGIN            rp=no-referrer                                  via=           body=ba60f02f0c27
+/api, /apix, /files  both   404 text/html   xfo=SAMEORIGIN            rp=strict-origin-when-cross-origin              (library-web's page on both sides, body=9cdd3fdc2024)
+/api/books          caddy   401 json        xfo=SAMEORIGIN,SAMEORIGIN rp=strict-origin-when-cross-origin,no-referrer  via=1.1 Caddy  body=c03071045748
+/api/books          traefik 401 json        xfo=SAMEORIGIN            rp=no-referrer                                  via=           body=c03071045748
+POST /login (a wrong password, Origin set)   caddy 200 body=bd65066c406c   traefik 200 body=bd65066c406c
+slow upload, 90000 bytes at 1000 per second  9443 404 up=90000 secs=90     8443 404 up=90000 secs=90
+Traefik log errors other than offline.yml's deliberate ACME failure: 0
+```
+
+**Before the two corrections**, the same run on Story 4-2's files differed in two places and nowhere
+else: the API paths answered `rp=strict-origin-when-cross-origin` alone through Traefik, so the policy a
+browser applies would have loosened from `no-referrer`; and the slow upload read `8443 404 up=60000
+secs=60`, cut at Traefik's default 60 second read timeout. Encoded paths (`/files/a%20b.epub`,
+`/files/a%2Fb.epub`, `/files/%25.epub`, `/files/a%3Bb`) and `/api/books?q=a%2Fb` answered the same
+status on both sides. The `/api`, `/apix` and `/files` rows show the split is Caddy's exactly: a bare
+prefix with no slash stays on `library-web`. The API's other headers (`Strict-Transport-Security`,
+`Cross-Origin-*`, `Access-Control-Allow-*` and the rest) passed through Traefik unchanged; the one other
+difference is Caddy's own `Alt-Svc: h3` line. **What this does not prove:** the box's containers and
+aliases, a real book upload, Cloudflare in front (including whether it buffers a request body before the
+origin reads it), the firewall, and load. Local note: on this Docker Desktop host Traefik's file watcher
+did not see an edit to the bind-mounted `dynamic/`, so each change was read after a Traefik restart; the
+box's Linux bind mount is the case `ops/traefik-cutover.md` relies on.
+
+### The sequence
+
+**Preconditions:** `ops/traefik-cutover.md` § The sequence steps 1 to 8 have run and are recorded, with
+step 5's `library.cuatro.dev/` and `library.cuatro.dev/api/health` pairs matching (that record's
+Pending actions 1 to 4 dated); the merge to `main` carrying this section has deployed, so the box's
+checkout holds both corrections; and a Cloudflare API token that may edit the zone's origin rules
+exists (`ops/settled-inputs-refresh.md` Pending action 4). Not between 03:40 and 04:00 UTC, when the
+nightly job holds its lock. Two sessions, as `ops/traefik-cutover.md` § Moving wheel.cuatro.dev sets
+them up (`jq` on the workstation), with its `CF` helper and this rule; the token stays on the
+workstation and is never printed:
+
+```bash
+# Workstation. ZONE is the cuatro.dev zone id.
+read -rs CF_RULES_TOKEN && export CF_RULES_TOKEN; export ZONE=<zone id>
+CF() { curl -s -H "Authorization: Bearer $CF_RULES_TOKEN" -H 'Content-Type: application/json' "https://api.cloudflare.com/client/v4/zones/$ZONE/rulesets$1" "${@:2}"; }
+RULE='{"description":"Story 4-9: library.cuatro.dev to Traefik on 8443","expression":"(http.host eq \"library.cuatro.dev\" and ssl)","action":"route","action_parameters":{"origin":{"port":8443}}}'
+```
+
+1. **Re-read what the move stands on, and stop at the first difference.** On the box, in
+   `/home/deploy/cuatro-portfolio`:
+   ```bash
+   uptime
+   docker ps --filter name=digital-library --format '{{.Names}} {{.Status}}'
+   docker inspect -f '{{.State.Health.Status}}' traefik-traefik-1
+   grep -c 'middlewares: \[library-api-headers\]' ops/traefik/dynamic/routes.yml
+   sha256sum ops/traefik/traefik.yml; docker exec traefik-traefik-1 sha256sum /etc/traefik/traefik.yml
+   ```
+   Three `digital-library` containers `(healthy)`; Traefik `healthy`; `1`. **If the two digests differ**,
+   Traefik started before the merge and still reads the old static file (a single-file bind keeps the
+   old inode, `ops/traefik/compose.yml`): recreate it with
+   `docker compose -f ops/traefik/compose.yml up -d --force-recreate`, wait for `healthy`, and re-read
+   both digests. Any hostname already moved onto Traefik answers nothing for the seconds that takes, so
+   read `uptime` and do it in a quiet minute. Then, still on the box:
+   ```bash
+   for p in / /login /api/health /files/missing.epub /apix; do
+     echo "$p caddy=[$(curl -sk -o /dev/null -w '%{http_code}' --resolve library.cuatro.dev:443:127.0.0.1 "https://library.cuatro.dev$p")]" \
+          "traefik=[$(curl -sk -o /dev/null -w '%{http_code}' --resolve library.cuatro.dev:8443:127.0.0.1 "https://library.cuatro.dev:8443$p")]"
+   done
+   curl -sk -D - -o /dev/null --resolve library.cuatro.dev:8443:127.0.0.1 https://library.cuatro.dev:8443/api/health | tr -d '\r' | grep -i '^referrer-policy'
+   docker exec traefik-traefik-1 netstat -tn | grep -c ':8443 .*ESTABLISHED'
+   ```
+   `302`, `200`, `200`, `404`, `404` on both sides; `Referrer-Policy: no-referrer` alone; the connection
+   count is the baseline. On the workstation: `CF /phases/http_request_origin/entrypoint | jq '.success, [.result.rules[]?.expression]'`
+   lists no rule naming `library.cuatro.dev`; monitor 803750025 reads `UP`; and
+   `curl -sI https://library.cuatro.dev/login | grep -i '^via'` prints `via: 1.1 Caddy`.
+2. **Prove the backup and the restore, against the live counts, before anything moves.** On the box, as
+   `deploy`, in the shape cron runs it (action 6):
+   ```bash
+   env -i HOME=/home/deploy LOGNAME=deploy PATH=/usr/bin:/bin SHELL=/bin/sh /usr/local/sbin/library-backup.sh; echo "exit=$?"
+   env -i HOME=/home/deploy LOGNAME=deploy PATH=/usr/bin:/bin SHELL=/bin/sh /usr/local/sbin/library-restore-verify.sh > /tmp/library-verify.log 2>&1; echo "exit=$?"
+   grep '^library-restore-verify: table ' /tmp/library-verify.log | sed 's/^library-restore-verify: //' > /tmp/library-restored-counts
+   DB=/home/deploy/digital-library/data/library.db
+   sudo sqlite3 -readonly -cmd '.timeout 30000' "$DB" "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name;" | while IFS= read -r t; do
+     echo "table $t: $(sudo sqlite3 -readonly -cmd '.timeout 30000' "$DB" "SELECT count(*) FROM \"$t\";") rows"; done > /tmp/library-live-counts
+   tail -1 /tmp/library-verify.log; diff /tmp/library-live-counts /tmp/library-restored-counts && echo counts-match
+   rm -f /tmp/library-verify.log /tmp/library-restored-counts /tmp/library-live-counts
+   ```
+   The backup's summary line must read `redis=empty`, `offsite=ok-digital-library/...`,
+   `roundtrip=sha256-match`, `restore=verified` and `exit=0`, and the shell `exit=0`; the second run
+   verifies that same object from the bucket again and prints `exit=0`, its last line reading
+   `restore verified from the bucket for digital-library/library-<ts>.tar.gz.gpg: 23 schema objects across 11 tables`
+   (fewer is a finding); and `counts-match` prints. The live read is `-readonly` and changes nothing, and waits up to thirty seconds on a lock as `library-backup.sh` does; a
+   difference means the application wrote between the two reads, so run step 2 again rather than going
+   on. Record the object key: it and the local archive beside it are the copies this move stands on,
+   kept 30 and 15 days by the windows in § Retention. Anything else stops the move here, with nothing
+   yet changed.
+3. **Start the request loop on the workstation, and leave it running to step 5.** Each line is the time,
+   `/login`'s status (`000` when no answer came), which proxy answered it, `/api/health`'s status and a
+   missing file's status; every URL is unique, so the edge answers nothing from its cache:
+   ```bash
+   while :; do h=$(curl -s -D - -o /dev/null --max-time 5 "https://library.cuatro.dev/login?probe=$(date +%s%N)" | tr -d '\r')
+     printf '%s %s %s %s %s\n' "$(date -u +%H:%M:%S)" "$(echo "$h" | awk 'NR==1 {c=$2} END {print c ? c : "000"}')" \
+       "$(echo "$h" | grep -qi '^via: 1.1 Caddy' && echo caddy || echo no-via)" \
+       "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "https://library.cuatro.dev/api/health?probe=$(date +%s%N)")" \
+       "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "https://library.cuatro.dev/files/probe-$(date +%s%N).epub")"; sleep 1
+   done | tee library-cutover-probe.log
+   ```
+4. **Move `library.cuatro.dev`.** Read the entrypoint and look at the answer before writing:
+   ```bash
+   E=$(CF /phases/http_request_origin/entrypoint); echo "$E" | jq '.success, .errors, .result.id'
+   ```
+   If `.success` is `true`, a ruleset exists (an earlier hostname's move created it): add the rule to it.
+   ```bash
+   RS=$(echo "$E" | jq -r 'select(.success) | .result.id'); [ -n "$RS" ] && CF "/$RS/rules" -X POST --data "$RULE" | jq '.success, .errors'
+   ```
+   Only if `.success` is `false` **and** `.errors` says the phase has no entrypoint ruleset, create it with
+   this rule alone. Never run the `PUT` against an entrypoint that exists, or after any other error: a
+   `PUT` replaces the whole entrypoint, and with it every other hostname's rule.
+   ```bash
+   CF /phases/http_request_origin/entrypoint -X PUT --data "{\"rules\":[$RULE]}" | jq '.success, .errors'
+   ```
+   `true` and `[]`. Then, after about a minute, on the workstation:
+   `curl -sI https://library.cuatro.dev/login | grep -iE '^(HTTP|via)'` answers `200` with **no `via`
+   line**; `curl -sI https://library.cuatro.dev/ | grep -iE '^(HTTP|location)'` answers `302` and
+   `location: /login`; `curl -s -D - https://library.cuatro.dev/api/health | tr -d '\r' | grep -ioE '^referrer-policy.*|"book_count":[0-9]+'`
+   prints `referrer-policy: no-referrer` once and the same `book_count` as before; the probe's third
+   column has turned from `caddy` to `no-via` while the second, fourth and fifth stay `200`, `200` and
+   `404`. On the box, the step 1 `netstat` count is above its baseline, and `uptime`.
+5. **Stop the loop and count.** After at least one five-minute monitor interval more:
+   `awk '{print $2, $4, $5}' library-cutover-probe.log | sort | uniq -c` shows `200 200 404` alone, and
+   `awk '{print $3}' library-cutover-probe.log | uniq -c` shows `caddy` lines, then `no-via` lines to the
+   end (a mix inside the minute after the rule is created is the rule reaching every edge location; a
+   `caddy` line after that minute is a finding). Anything else is a finding: note its times against
+   step 4 and roll back. Monitor 803750025 reads `UP`, and on the box, `uptime`.
+6. **The night after, the backup is still green.** After 03:45 UTC the next day, as `deploy`:
+   `grep "^library-backup ts=$(date -u +%F)T03:4" /home/deploy/backups/digital-library/backup.log`
+   prints one line reading `redis=empty`, `offsite=ok-...`, `roundtrip=sha256-match`,
+   `restore=verified` and `exit=0`. The move changed nothing the job reads, so this confirms rather than
+   tests a change; a red line is still a finding against this move until it is explained. Monitor
+   803750025 still reads `UP`.
+7. **Record.** Under a "Cutover run, library.cuatro.dev" heading here: the date, step 1's pairs and
+   whether Traefik was recreated, step 2's summary line, object key and `counts-match`, each step's load,
+   the rule id (`CF "/$RS" | jq '.result.rules[] | {id, description}'`), step 5's counts and step 6's
+   line. `ops/routing-inventory.md` § Ingress and `ops/estate.md` each take a dated amendment:
+   `library.cuatro.dev` is served by Traefik through an Origin Rule, both of its paths through its own
+   routers, and Caddy's block remains, unreached, until Story 4.11.
+
+**Rollback, at any step after 4:**
+
+```bash
+RS=$(CF /phases/http_request_origin/entrypoint | jq -r 'select(.success) | .result.id')
+ID=$(CF "/$RS" | jq -r '.result.rules[] | select(.description == "Story 4-9: library.cuatro.dev to Traefik on 8443") | .id')
+echo "rule ${ID:-not found}"; [ -n "$RS" ] && [ -n "$ID" ] && CF "/$RS/rules/$ID" -X DELETE | jq '.success'
+```
+
+It takes effect at the edge without touching the box, and step 4's `curl -sI` shows `via: 1.1 Caddy`
+again. The store was never touched, so nothing is restored; step 2's archive and object are an ordinary
+night's pair, kept by the usual windows. A Traefik recreate in step 1 needs no rollback: the old static
+file differed only in the read timeout. Should the store itself ever need recovering, which no step here
+can cause, § The restore procedure applies, and it never unpacks over the live tree.
+
 ## Named limits
 
 Written down because a coverage claim with an unstated hole reads as coverage.
@@ -697,6 +972,8 @@ them from the evidence each cell names. Row 9 is new, from the same review.
 | 7 | **Prove the passphrase from somewhere that is not the box.** On your own machine, download one object from the bucket through the Cloudflare dashboard, then decrypt it using the passphrase **as stored in the password manager**, typed or pasted from there rather than copied off the box: `gpg --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt --output restored.tar.gz <object>` and then `tar -tzf restored.tar.gz`. Delete both files afterwards | This is the only check that can catch a passphrase mistyped into the password manager. Encryption and verification on the box both read the same value from the same file, so every nightly run would stay green while the copy of record was unopenable by anybody. It is also the only thing that makes the 1 hour RTO an estimate rather than a hope | 2026-08-27. `ops/verify-backup-passphrase.ps1` with the manager's copy (named limit 5) |
 | 8 | **Record the result.** Paste action 6's summary line into this file under a new "First offsite run" heading with its UTC date, replace the projected object size in "The destination and its cost" with the measured one, note action 7's outcome, and change named limits 1, 2 and 5 to describe the state that now holds | The record is the artifact. A backup path nobody wrote down is one nobody can audit | 2026-08-27. "First offsite run", the measured size and named limits 1, 2 and 5 |
 | 9 | **Install the 2026-09-24 scripts on the box.** After the `dev` into `main` merge that carries them has deployed, as `deploy` on `177.7.52.248`, in the checkout the deploy maintains. (1) `cd /home/deploy/cuatro-portfolio && sha256sum ops/s3-object.sh ops/library-backup.sh ops/library-restore-verify.sh` must print the Committed column above; stop here if it does not. (2) Keep the installed copies, never overwriting one a retry already kept: `for f in s3-object.sh library-backup.sh library-restore-verify.sh; do [ -e /usr/local/sbin/$f.pre-2026-09-24 ] \|\| sudo cp -p /usr/local/sbin/$f /usr/local/sbin/$f.pre-2026-09-24; done`. (3) Install all three or stop at the first failure: `( set -e; for f in s3-object.sh library-backup.sh library-restore-verify.sh; do sudo install -o root -g root -m 0755 ops/$f /usr/local/sbin/$f; done )`. (4) `sha256sum /usr/local/sbin/s3-object.sh /usr/local/sbin/library-backup.sh /usr/local/sbin/library-restore-verify.sh` must print the same three. (5) `/usr/local/sbin/s3-object.sh selftest` must end `matches byte for byte`. (6) One run in the cron shape of action 6 must exit **0** with `roundtrip=sha256-match` and `restore=verified`. **If any of steps 3 to 6 fails**, put all three old copies back with `for f in s3-object.sh library-backup.sh library-restore-verify.sh; do sudo install -o root -g root -m 0755 /usr/local/sbin/$f.pre-2026-09-24 /usr/local/sbin/$f; done`, confirm with `sha256sum` that the box again matches the Installed column, and record the failure here | The cold review of Story 1-8 changed all three in the repository (see "What is installed on the box"): the signing no longer puts key material in argv, and the two timeouts a config sets now reach the object client, and a zero is refused. Until this row is done the box runs the 2026-08-24 install. Afterwards, write the three installed digests and the date into the Installed column, paste the run's summary line under a dated heading, date this cell, and delete the `.pre-2026-09-24` copies | _not done_ |
+| 10 | **Move `library.cuatro.dev` onto Traefik.** Run § Moving library.cuatro.dev onto Traefik (Story 4-9) steps 1 to 5 as written, after its preconditions: `ops/traefik-cutover.md` Pending actions 1 to 4 dated, the merge carrying Story 4-9 deployed, and the origin-rules token of `ops/settled-inputs-refresh.md` Pending action 4. Step 2 must print the green summary line and `counts-match` before step 4 creates the rule | A routing move: no step writes to the store, and deleting the rule (the section's rollback) sends the hostname back to Caddy | _not done_ |
+| 11 | **Read the next night's backup and record the move.** Step 6 after 03:45 UTC the following day, then step 7: the "Cutover run, library.cuatro.dev" heading here, and the dated amendments to `ops/routing-inventory.md` § Ingress and `ops/estate.md`. Date rows 10 and 11 | The nightly line is the proof that the backup path still works after the move, which is Story 4.9's acceptance intent | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace the cell with the ISO 8601 UTC
 completion date and leave the row in place. Deletion is not used: which part of the path was

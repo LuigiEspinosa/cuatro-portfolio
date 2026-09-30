@@ -38,7 +38,9 @@ STARTED=0
 
 finish() {
   local code=$?
-  [ "${STARTED}" -eq 1 ] && docker rm --force "${SCRATCH}" > /dev/null 2>&1
+  # `--volumes` too: the image declares a VOLUME for its data directory, so without it the restored copy
+  # outlives the container as an anonymous volume (Story 4-8 found the 2026-09-29 run's on the box).
+  [ "${STARTED}" -eq 1 ] && docker rm --force --volumes "${SCRATCH}" > /dev/null 2>&1
   printf '%s sha256=%s restore=%s tables=%s rows=%s migrations=%s exit=%s\n' \
     "${PROGRAM}" "${v_sha256}" "${v_restore}" "${v_tables}" "${v_rows}" "${v_migrations}" "${code}"
 }

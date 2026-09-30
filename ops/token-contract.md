@@ -311,7 +311,7 @@ published prose as CSS.
 | Property | Value | Nature |
 |---|---|---|
 | Generator | `packages/tokens/build.mjs` | **Decision.** AD-1: generators live in `packages/` and are never published |
-| Tool | `style-dictionary` pinned exactly at `5.5.2` in `packages/tokens/package.json` | **Decision.** 5.5.1 patched a prototype-pollution defect in `convertTokenData` and `DESIGN.md:1023` sets it as the floor. The pin is exact, no caret, matching the convention Story 1-10 set for a version-coupled tool |
+| Tool | `style-dictionary` pinned exactly at `5.5.5` in `packages/tokens/package.json` | **Decision.** 5.5.1 patched a prototype-pollution defect in `convertTokenData` and `DESIGN.md:1023` set it as the floor; two advisories patched only in 5.5.5 raised the spine's floor to 5.5.5 on 2026-09-30, and the pin moved there the same day (DW-295). The pin is exact, no caret, matching the convention Story 1-10 set for a version-coupled tool |
 | Transforms | `name/kebab`, and nothing else | **Decision.** Every value transform mangles at least one authored value, as the spike above shows |
 | References | `outputReferences` on, implemented in the format | **Decision.** A role is published as the `var()` the design authored, not as the palette value it resolves to today. AD-14 depends on the role layer being a reference |
 | Version | Read from `packages/tokens/package.json` at build time | **Decision** |

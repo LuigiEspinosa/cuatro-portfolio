@@ -1145,6 +1145,51 @@ PASS  cs-tracker's tree is unchanged: 5 file(s) were planted inside it for the s
 **So Pending Operator action 2 is closed.** AD-22 names the probe and its two triggers, and the
 re-run it asks for exits 0 from a plain shell.
 
+## Re-run 2026-09-30, the Epic 4 refresh
+
+**Observed 2026-09-30** on the Windows 11 development host, from this repository's root at `f4f9935`
+with the Hub built from it by `corepack pnpm --filter hub build` first, against `cs-tracker` at
+`2519fe379251e0e4d8c1a4ae2e8ddfb028fc49b8`, read by
+`git -C ../cs-tracker-workspace/cs-tracker rev-parse HEAD`. That checkout carried uncommitted edits
+to its `AGENTS.md` and `CLAUDE.md` only, and its `git status --porcelain` was identical before and
+after the run, which the probe's own last case also asserts. The run is AD-22's refresh check before
+Epic 4 (Story 4-1, `ops/settled-inputs-refresh.md`), from Git Bash with `NO_COLOR` unset.
+
+| Started (UTC) | Shell | Exit | Cases | Elapsed |
+|---|---|---|---|---|
+| `2026-09-30T08:31:41.849Z` | Git Bash, `NO_COLOR` unset | **0** | 19, 19 PASS | 13.1s |
+
+**It reproduced the 2026-09-24 run line for line.** Its stdout was compared with the verbatim
+transcript above by `diff`, with the timestamps, the scratch directory name, the elapsed figure and the
+Hub chunk's hashed file name normalised. One line differs, and it is a path rather than a reading:
+`# hub css:` now names `apps\hub\.next\static\chunks\0gs22kdgso-7q.css`, the Hub having moved under
+`apps/hub/` in Story 3-2. Every PASS line, the FR-18 side by side at 25 of 25 equal, the contrast
+block, the diagnostics (131,336 compiled bytes, two Preflights) and Chromium 151.0.7922.34 are
+unchanged. Its closing lines, verbatim:
+
+```
+PASS  cs-tracker's tree is unchanged: 5 file(s) were planted inside it for the scan and control builds and 5 were removed, and git status --porcelain is byte-identical to what it was before the run
+# scratch tree removed: C:\Users\NUMCUA~1\AppData\Local\Temp\cuatro-cs-tracker-adoption-KXeBFR (exists afterwards: false)
+
+# 19 cases, 19 PASS, 0 FAIL
+# elapsed 13.1s
+# finished 2026-09-30T08:31:54.950Z
+```
+
+## Re-run 2026-09-30, before the cs-tracker move
+
+**Observed 2026-09-30** on the same host and checkout (`cs-tracker` at
+`2519fe379251e0e4d8c1a4ae2e8ddfb028fc49b8`, the commit the box runs, read that day), from this
+repository at `65e762f`, reading the Hub build output already in the tree (not rebuilt for this run), by Story 4-10 before writing `ops/cs-tracker-cutover.md`,
+whose step 10 re-runs it after the database move. The probe reads the checkout, not the live host; the
+live stylesheet was read beside it: `https://cs-tracker.cuatro.dev/assets/css/app.css` answered `200
+text/css` with 12 distinct `--token-*` roles, sha256
+`1fa1740f30a65d4c961c39daaba43bc68e7d5f81c4b62d4edf1ccd0d30b6dcf5`, at 18:09Z.
+
+| Started (UTC) | Shell | Exit | Cases | Elapsed |
+|---|---|---|---|---|
+| `2026-09-30T18:09:47Z` | Git Bash, `NO_COLOR` unset | **0** | 19, 19 PASS | 14.0s |
+
 ## Pending Operator actions
 
 This file hands the Operator work Story 1-19 may not do, in the shape `ops/token-contract.md`,

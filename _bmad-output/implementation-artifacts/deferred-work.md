@@ -845,7 +845,15 @@ the next free id, one above the highest in the file, and a status line.
     something rolls that service. It stays open for the ruling above: add the healthcheck, record the
     breach, or stop `ARCHITECTURE-SPINE.md` claiming it is true. Epic 4's rebuild is the next point at
     which a rollout could reach it.
-  status: open
+
+    **Closed 2026-09-30 by Story 4-7, repository half.** `anchor-umami` carries a healthcheck on
+    `/api/heartbeat` (curl on loopback: the image sets `HOSTNAME=0.0.0.0`), held by
+    `docker/__tests__/compose.test.ts` § the Umami services, and reported `healthy` against Postgres 18.6
+    in the story's local proof (`ops/postgres.md` § Moving Umami, Rehearsed off the box). Every service in
+    `docker-compose.yml` that serves traffic or holds data now declares one (the one-shot migrations and
+    `tracker-worker` serve nothing), so the spine's claim holds in the file; the box runs it once the
+    Operator runs § Moving Umami step 10.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-9-record-the-build-on-the-box-violation-as-a-tracked-item.md`
   id: DW-180
@@ -8107,7 +8115,11 @@ status: done
 
     **Owner: the `/bmad-project-context` refresh the board schedules before Epic 4**, or whichever story
     next edits that block. **Trigger: either.**
-  status: open
+
+    **Closed 2026-09-30 by the `/bmad-project-context` refresh before Epic 4.** The managed block's
+    turbo line now says `<dir>` goes outside the repository, such as the session's scratchpad, and
+    names the six shims it writes.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-2-move-the-hub-to-apps-hub.md`
   id: DW-256
@@ -8211,7 +8223,11 @@ status: done
     **Trigger reached 2026-09-28 by Story 3-3's Build run,** whose ECC layer ran
     `corepack pnpm --filter hub build`, the command `AGENTS.md` verifies, as Story 3-2's did. The
     customization file still names the retired one, and the fix is still the Operator's.
-  status: open
+
+    **Closed 2026-09-30 (Epic 3 retrospective action 5, finding M5).** `a162232` (2026-09-29) changed
+    the one line: `_bmad/custom/bmad-build.toml:93` now hands the ECC layer
+    `corepack pnpm --filter hub build`, the command `AGENTS.md` verifies, and names DW-259 beside it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-3-build-the-hub-image-in-ci-and-push-to-ghcr.md`
   id: DW-260
@@ -8394,7 +8410,13 @@ status: done
     that run.
 
     **Owner: the Operator, at the Epic 3 merge.** **Trigger: that merge.**
-  status: open
+
+    **Closed 2026-09-30 (Epic 3 retrospective action 5, finding M5).** The trigger came at the Epic 3
+    merge (PR #84, merge commit `5117673`): Deploy run 36627621601 passed `gate` and `image / hub`, so
+    GitHub honoured the `workflow_call` and the token grants, and its deploy job failed at `HUB_TAG` as
+    designed (DW-264, the box's Epic 2 script having reset the checkout first); the dispatch, run
+    36627964371, then went green end to end (the 3-4 row in `sprint-status.yaml`).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
   id: DW-267
@@ -8577,7 +8599,13 @@ status: done
 
     **Owner: the Operator, at `ops/tracker-cutover.md` step 1, whose output closes this.** **Trigger:
     that step.**
-  status: open
+
+    **Closed 2026-09-30 (Epic 3 retrospective action 5, finding M5).** `ops/tracker-cutover.md` § Cutover
+    run, step 1 (2026-09-29) read all three on the box and found no difference from the inventory; it
+    records the override's full text and `~/cuatro-redeploy.sh` (592 bytes, dated 2026-07-30, which would
+    have rebuilt and restarted the old project), and step 8 retired that script as
+    `~/cuatro-redeploy.sh.retired-2026-09-29`.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
   id: DW-275
@@ -8606,6 +8634,20 @@ status: done
     the checkout on the box (`ops/tournament-placement.md`), and no deploy activates its profile, so a
     deploy path per id now owes `tournament` and `tournament-worker` as well as the tracker's two. The
     gate's `cs-tournament` entry has the same id question as `cuatro-tracker`'s. Still Epic 4's.
+
+    **Widened 2026-09-30 by the Epic 3 retrospective (finding L1, action 6).** The Hub rolls on pushes
+    that change no part of it: `deploy.yml` triggers on every push to `main` with `paths-ignore: '**.md'`
+    alone, and its chain builds `hub` and rolls `anchor-app` (`ops/deploy-remote.sh`), so a change under
+    `apps/tracker`, `apps/tournament` or `apps/finance` alone rolls the Hub and deploys nothing of the
+    application it changed. A deploy path per id closes both halves; until then such a push is a no-op
+    rollout of the Hub, which Story 3-4's zero-downtime rollout makes harmless but not meaningful.
+
+    **Story 4-8, 2026-09-30: still open.** The orchestrator's scope for 4-8's repository half named the
+    database move alone (the estate `DATABASE_URL`, the discrete migration, the runbook), and a deploy
+    path per id is its own change to `deploy.yml`, `ops/deploy-remote.sh` and the Capacity Gate's
+    placements. After the move the tracker still rolls by hand (`ops/tracker-cutover.md`, Later rollouts),
+    now against `cuatro_tracker`. Owner stays Epic 4; the natural home is now Story 4.11 or a story of its
+    own before it, since 4.8's remaining half is the Operator's box run.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
@@ -8615,6 +8657,10 @@ status: done
     nothing here runs: its `.github/workflows/ci.yml`, `docker/` and three compose files, two ESLint
     configurations, a Playwright e2e suite, a `CLAUDE.md`, and a Prisma seed that needs `tsx` on PATH.
   evidence: |-
+    **Amended 2026-09-30:** the `CLAUDE.md` was not inert: it loaded here as instructions for work
+    under `apps/tracker/` (Epic 3 retrospective, finding M2). On the Operator's ruling it was removed
+    on 2026-09-30, with the tournament's `.claude/`, `_bmad/` and `_bmad-output/` trees; the rest of
+    this entry stands.
     Observed 2026-09-29 by Story 3-6. GitHub runs workflows from the repository root only, so
     `apps/tracker/.github/workflows/ci.yml` is inert; its unit half now runs in the Anchor's `ci.yml`
     (with a Redis service), and its e2e half (Playwright 1.60 against Postgres, Redis and a worker) runs
@@ -8912,7 +8958,12 @@ status: done
     `ops/tournament-placement.md` beside `ops/tracker-cutover.md`.
 
     **Owner: the `/bmad-project-context` refresh before Epic 4.** **Trigger: that refresh.**
-  status: open
+
+    **Closed 2026-09-30 by the `/bmad-project-context` refresh before Epic 4.** The managed block's
+    orientation says the tracker serves `tracker.cuatro.dev` since the cutover of 2026-09-29 and the
+    tournament serves `tournament.cuatro.dev` since the placement of 2026-09-30, and § Where things
+    are names `ops/tournament-placement.md` beside `ops/tracker-cutover.md`.
+  status: done
 - id: DW-290
   summary: >-
     The tournament's viewer surface shows no signed-in state: `apps/tournament/app/(viewer)/page.tsx`
@@ -8950,4 +9001,400 @@ status: done
     **Owner: the next story that touches the tournament's deploy path (DW-275 in Epic 4 is the
     natural home).** **Trigger: the next migration added under `apps/tournament/supabase/migrations`,
     or DW-275, whichever comes first.**
+  status: open
+- id: DW-292
+  summary: >-
+    A push to `main` that changes only a merged application (`apps/*`) builds and rolls the Hub, whose
+    deploy it does not change, and deploys nothing of the application it changed.
+  evidence: |-
+    Found 2026-09-30 by the Epic 3 retrospective (finding L1), filed by its action 6.
+    `.github/workflows/deploy.yml` runs on every push to `main` except one that changes only Markdown
+    (`paths-ignore: '**.md'`), and its one chain is gate, `image / hub`, then `ops/deploy-remote.sh`
+    with `SERVICE=anchor-app`. AD-7 has a deploy name exactly one id. The tracker and the tournament
+    roll by hand from the checkout (`ops/tracker-cutover.md`, `ops/tournament-placement.md`
+    § Later rollouts). Harmless today, since `docker-rollout` keeps the Hub up, but every such push
+    spends a Hub build and a rollout, and reads in the Actions history as a deploy of the change.
+    DW-275 carries the same fact as its widening of 2026-09-30.
+
+    **Owner: DW-275's story in Epic 4 (Story 4.8), whose deploy path per id is the fix; a
+    `paths-ignore` for `apps/tracker/**`, `apps/tournament/**` and `apps/finance/**` alone would do it
+    sooner, and must then be removed by that story.** **Trigger: that story, or the Operator's word to
+    add the `paths-ignore` now.**
+
+    **Operator ruling 2026-09-30:** no `paths-ignore` now; the fix is Epic 4's, with DW-275. Owner and
+    trigger stand as the story.
+
+    **Story 4-8, 2026-09-30: still open, with DW-275** (see its note of the same date).
+  status: open
+- id: DW-293
+  summary: >-
+    The application image workflows gate no merge: `image-tracker.yml`, `image-tournament.yml`,
+    `image-finance.yml` and `image.yml` are not required checks on `main`, while the tracker's and the
+    tournament's images run live from hand-picked tags.
+  evidence: |-
+    Found 2026-09-30 by the Epic 3 retrospective (finding L2), filed by its action 6. The eight
+    required checks on `main` are `test`, `tokens-contract`, `fonts-contract`, `contract-purity`,
+    `registry-schema`, `rendered-output`, `literal-conformance` and `lighthouse` (`gh api
+    .../branches/main/protection/required_status_checks`, strict false). The applications' unit
+    suites do run in the required `test` job (`ci.yml`), so what goes ungated is the image build and
+    its probe: a merge that breaks `apps/tracker/Dockerfile` lands green and is found only when the
+    Operator next picks a tag. Whether to make them required is the retrospective's open question. All four run on push to every branch with no path filter
+    (`image.yml` excludes `main`, where the Deploy chain calls it), so the push run on a pull request's
+    head sha is there to be required; the cost is a full image build of all four applications before
+    every merge, which is today's cost already, since they run anyway.
+
+    **Owner: the Operator (ruling), then the story that wires the application deploys (DW-275).**
+    **Trigger: the Operator's ruling, or the next image failure found after a merge.**
+
+    **Closed 2026-09-30 by Operator ruling:** the five image jobs (`hub`, `finance`, `tracker`,
+    `tournament`, `tournament-worker`) joined `main`'s required status checks that day through the
+    branch protection API, beside the eight of DW-172, thirteen in all, `strict` still false. A pull
+    request into `main` now waits for every image it ships to build and answer its probe.
+  status: done
+- id: DW-294
+  summary: >-
+    Image (tracker) fetches Google Fonts over the network at build (`next/font/google`), and that
+    fetch failed twice in Epic 3, each time passing on a rerun; nothing retries it and nothing pins it.
+  evidence: |-
+    Found 2026-09-30 by the Epic 3 retrospective (finding L2), filed by its action 6. Recorded on the
+    3-8 row of `sprint-status.yaml`: at `0bd5f82` Image (tracker) passed on a rerun after a
+    `next/font` Google Fonts fetch failed at build, and at `2974ceb` run 36639121642 went green on
+    attempt 2 after the same transient failure. A build that depends on a third party answering is a
+    flake source in the one pipeline that produces the tracker's live image. Two fixes, either
+    sufficient: serve the faces locally (`next/font/local` over files in the repository, which also
+    ends the build's network dependency), or retry the build step once in `image-tracker.yml`. The
+    first matches the estate's direction (the Hub self-hosts its faces from `contracts/`, AD-14);
+    the tracker's token adoption would bring the contract's fonts with it.
+
+    **Owner: the tracker's Epic 8 restyle and token adoption, or any story that next edits
+    `image-tracker.yml`.** **Trigger: a third failure, or either of those stories.**
+  status: open
+- id: DW-295
+  summary: >-
+    `packages/tokens` pins Style Dictionary 5.5.2, below the security floor AD-22's refresh raised to
+    5.5.5 on 2026-09-30.
+  evidence: |-
+    Found 2026-09-30 by Story 4-1's refresh (`ops/settled-inputs-refresh.md`). Two high advisories
+    published 2026-09-20 are patched only in 5.5.5: GHSA-cr3w-v879-f973 (prototype pollution in
+    `convertTokenData` through nested `constructor.prototype` and `__proto__` keys) and
+    GHSA-5pgh-4v89-hfqj (the GHSA-vj5c-m527-mpff fix incomplete in 5.4.4 and 5.5.0), read by
+    `gh api repos/style-dictionary/style-dictionary/security-advisories`. `packages/tokens/package.json`
+    and `pnpm-lock.yaml` hold 5.5.2. The spine's Stack row now states the floor as 5.5.5. The exposure
+    is narrow: Style Dictionary runs only at `tokens:build` on token sources this repository authors,
+    so the polluting input would have to be committed here; it is still a stated floor the pin is
+    under. Not bumped by Story 4-1, whose scope is the refresh record: the bump is a dependency change
+    that needs its own review, a `corepack pnpm tokens:build` whose output the `tokens-contract` drift
+    job must find byte-identical, and the suite.
+
+    **Owner: the Operator (ruling), then a `fix(dw-295)` commit.** **Trigger: the Operator's ruling,
+    or the next story that touches `packages/tokens`.**
+
+    **Closed 2026-09-30 by Operator ruling, landed as a security patch on one condition: the published
+    contract stays byte-identical.** `packages/tokens/package.json` and `pnpm-lock.yaml` now pin 5.5.5,
+    written by `corepack pnpm --filter @cuatro/tokens add -D -E style-dictionary@5.5.5`, whose
+    re-resolution also deduplicated five transitive entries onto versions the lockfile already held
+    (`qs` 6.15.0 to 6.15.3, `side-channel-list` 1.0.0 to 1.0.1, `side-channel` under `internal-slot`
+    1.1.0 to 1.1.1, `lru-cache` under `path-scurry` to 11.3.6, and one `eslint-module-utils` snapshot
+    key; amended 2026-09-30 by verification, which found the fifth). `corepack pnpm tokens:build` rewrote
+    `contracts/tokens.css` and `contracts/tailwind.css`, and every file under `contracts/` hashed
+    equal to `HEAD` by sha256 with `git status` clean there. Typecheck, the Hub build and the full
+    suite (75 files, 1832 passed, 1 skipped) passed. The releases between: 5.5.3 limits nested
+    composite token expansion to the configured type filters and preserves alpha precision in
+    `color/css`; 5.5.4 widens its `@bundled-es-modules/glob` range to `^13.0.6-hotfix.0` to take a hotfix build
+    for a transitive `qs` advisory, but under semver 13.0.6 ranks above 13.0.6-hotfix.0, so pnpm
+    still resolves 13.0.6 (published 2026-03-02) and this repository does not carry that fix (an
+    upstream range defect, build-time only, filed as DW-304); 5.5.5 fixes
+    GHSA-cr3w-v879-f973 in `convertTokenData`'s object output mode.
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
+  id: DW-296
+  summary: >-
+    Traefik reads the Origin CA pair from the shared Caddy's volume `cs-tracker_caddy_data`, so retiring
+    Caddy must not remove that volume until the pair has moved.
+  evidence: |-
+    Found 2026-09-30 by Story 4-2. `ops/traefik/compose.yml` mounts `cs-tracker_caddy_data` read-only
+    with `subpath: origin-ca`, the exact files the shared Caddy serves today (eight
+    `tls /data/origin-ca/origin.pem /data/origin-ca/origin.key` lines, read 2026-09-30), declared
+    `external`. A `docker compose down -v` in `/home/deploy/cs-tracker`, or a volume prune after Caddy
+    stops, would take the certificate from under Traefik, and every moved hostname would then fail Full
+    (strict) with a 526. A second copy of the pair sits in `/home/deploy/origin-ca/` (observed by `ls`
+    the same day; `ops/traefik-cutover.md` step 1 compares the two digests).
+
+    **Owner: Story 4.11 (retire Caddy).** **Trigger: that story.** Move the pair to a volume or path the
+    Traefik stack owns, repoint the mount, then retire the old volume.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
+  id: DW-297
+  summary: >-
+    Traefik 3.7's entrypoints default to a 60-second `readTimeout`, where the shared Caddy sets none, so
+    a slow upload may be cut off once its hostname moves.
+  evidence: |-
+    Found 2026-09-30 by Story 4-2 in Traefik v3.7.13's loaded static configuration (`DEBUG` start on the
+    authoring machine): `"respondingTimeouts":{"idleTimeout":"3m0s","readTimeout":"1m0s"}` on every
+    entrypoint. `ops/traefik/traefik.yml` leaves it at the default, since no hostname moves in 4-2 and no
+    upload size or duration for any application is recorded. `library.cuatro.dev` takes file uploads
+    through `/api/*`, and the tracker writes downloads, so either may carry a request body longer than
+    a minute on a slow client.
+
+    **Owner: each hostname's migration story, first Story 4.9 (library).** **Trigger: that hostname's
+    move.** Measure the longest legitimate request, then set
+    `entryPoints.websecure.transport.respondingTimeouts.readTimeout` only if it exceeds the default.
+
+    **Closed 2026-09-30 by Story 4-9, repository half.** Measured on the authoring machine with the real
+    `digital-library` images (`main` at `46d6e5f`, the box's checkout) behind the committed Traefik and a
+    `caddy:2` v2.11.4 stand-in with the box's block: a 90000 byte POST sent at 1000 bytes a second was
+    cut after 60 seconds at 60000 bytes through Traefik and read whole in 90 through Caddy. Book uploads
+    run through `library-web`'s form action, the API accepts 500 MB, and Cloudflare's plan admits 100 MB,
+    so a legitimate upload on a slow uplink exceeds the default. `ops/traefik/traefik.yml` now sets
+    `readTimeout: 0` on `websecure`, as Caddy has; the same run then read all 90000 bytes in 90 seconds
+    through Traefik, and `ops/__tests__/traefik-config.test.ts` pins it. One setting serves every
+    hostname, so the tracker's case needs nothing more. On the box it takes a Traefik recreate
+    (`ops/backup-digital-library.md` § Moving library.cuatro.dev onto Traefik, step 1).
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
+  id: DW-298
+  summary: >-
+    AGENTS.md says `ops/` holds 31 records; Story 4-2's `ops/traefik-cutover.md` makes it 32, and the
+    list beside the count does not name it.
+  evidence: |-
+    Found 2026-09-30 by Story 4-2's review. `ls ops/*.md | wc -l` printed 32 with the runbook present;
+    AGENTS.md line 37 reads "holds 31 records". An agent-context file, so not edited by the story (the
+    build's review routes such a fix to the ledger).
+
+    **Amended 2026-09-30 by Story 4-4:** `ops/postgres.md` makes it 33, and the list names neither
+    new record.
+
+    **Owner: the next `bmad-project-context` refresh.** **Trigger: that refresh, or Epic 4's close.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
+  id: DW-299
+  summary: >-
+    No CI job starts Traefik, so a routing file that is well formed text but that Traefik rejects, or
+    routes wrongly, passes every gate and reaches the box at the next deploy.
+  evidence: |-
+    Found 2026-09-30 by Story 4-2's review (verification-gap layer). `ops/__tests__/traefik-config.test.ts`
+    reads `ops/traefik/dynamic/routes.yml` as text: it proves every hostname has a Host-led router and no
+    secret is committed, but not that Traefik loads the file or that a request reaches the right alias.
+    That was proven once, locally (`ops/traefik-cutover.md` § Rehearsed off the box). The box resets its
+    checkout to `main` on every deploy and Traefik watches `dynamic/`, so a merged change goes live
+    without a Traefik start anywhere in between. Until a hostname has an Origin Rule nothing public
+    depends on it; from Story 4.3 on, something does. Closing it is a CI job that runs
+    `traefik:v3.7.13` with the committed files against whoami stand-ins, as the local proof did, and a
+    new job is a change to both suites that pin `ci.yml`'s job names.
+
+    **Owner: Story 4.3 (the first hostname to move).** **Trigger: that story.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
+  id: DW-300
+  summary: >-
+    Finance's database and role are `cuatro_finance` in the estate's one Postgres (AD-3), while
+    `apps/finance/prisma/provision.sql`, `image-finance.yml` and both finance services in
+    `docker-compose.yml` still name `finance` in `anchor-db`.
+  evidence: |-
+    Found 2026-09-30 by Story 4-4. `ops/postgres/init/10-consumers.sh` creates `cuatro_finance` with
+    CONNECTION LIMIT 10 (AD-3 derives Postgres names from the Registry id `cuatro-finance`), and
+    `ops/postgres.md` § The budget lists it. Finance is placed nowhere, so nothing reads either name
+    today, and `anchor-db`, its current target, goes when Umami moves (Story 4.7). The application side
+    was left alone by the story's scope (no application's connection string changes in 4.4).
+
+    **Owner: finance's placement (DW-269).** **Trigger: that placement, or Story 4.7 retiring
+    `anchor-db`, whichever comes first.** Point `DATABASE_URL` in `finance` and `finance-migrate` at
+    `estate-postgres:5432/cuatro_finance`, join `estate-postgres`, and move or retire `provision.sql`
+    and the workflow step that runs it.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
+  id: DW-301
+  summary: >-
+    No consumer should move onto the estate's one Postgres before Story 4.5's `pg_dump` and restic
+    offsite copy cover it, and the epic's dependency order does not say so: 4.7, 4.8 and 4.10 depend on
+    4.4 and 4.6, not on 4.5.
+  evidence: |-
+    Found 2026-09-30 by Story 4-4. The tracker's nightly `cuatro-backup.sh` and `ops/tracker-backup.sh`
+    dump `cuatro-tracker-postgres-1`; nothing backs up Umami's or `cs-tracker`'s database today
+    (`ops/routing-inventory.md` § Backup coverage). Once a consumer moves, the old container stops
+    receiving its writes, so any backup still aimed at it silently covers stale data. `ops/postgres.md`
+    § Moving a consumer states the precondition as a decision the Operator may overrule (its Pending
+    Operator action 2).
+
+    **Owner: Stories 4.7, 4.8 and 4.10, each before its move.** **Trigger: the first of them to open.**
+    Confirm 4.5 is done and its dump names the moved database, and repoint or retire the old backup.
+
+    **Story 4-7, 2026-09-30:** `ops/postgres.md` § Moving Umami names `ops/postgres-backup.md` § Install
+    and first run as a precondition; the nightly dump takes every database on the estate instance, so it
+    names `umami` without a change. No backup aimed at `anchor-db` exists to repoint. Open for 4.8 and 4.10.
+
+    **Story 4-8, 2026-09-30:** `ops/tracker-cutover.md` § Moving the database onto the estate Postgres
+    names `ops/postgres-backup.md` § Install and first run as a precondition, so `cuatro_tracker` is in the
+    nightly dump from its first night. The old backup aimed at `cuatro-tracker-postgres-1`,
+    `~/cuatro-backup.sh` at 03:30, is kept, a decision the Operator may overrule: after the move it dumps
+    the frozen rollback copy, which is what the rollback restores to, and Story 4.11 retires it with the
+    container. Open for 4.10.
+
+    **Story 4-10, 2026-09-30:** `ops/cs-tracker-cutover.md` § The sequence names `ops/postgres-backup.md`
+    § Install and first run as a precondition, so `cs_tracker` is in the nightly dump from its first
+    night. No backup of `cs-tracker-db-1` exists to repoint (`crontab -l` read that day names none); the
+    move's own dump, copied off the box in its step 4, is that database's first backup and is kept until
+    Story 4.11. With the three stories written, what remains is box-side: each move's record confirming
+    4.5 ran before it. **Trigger for closing:** the last of the three moves recorded.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
+  id: DW-302
+  summary: >-
+    Umami migrates its database on container start, against AD-23, and pools up to ten connections per
+    container with no environment knob, which `ops/estate.md` records as Prisma's default of five.
+  evidence: |-
+    Found 2026-09-30 by Story 4-4's review, read in `ghcr.io/umami-software/umami:postgresql-latest`
+    pulled that day (Umami 3.4.0, Prisma 7.10.0, digest `sha256:85909afc...`). Its command,
+    `scripts/start-docker.sh`, runs `node scripts/check-db.js`, which runs `prisma migrate deploy` unless
+    `SKIP_DB_MIGRATION` is set, before `exec node server.js`. The server builds its client as
+    `new PrismaPg({connectionString})`, so node-postgres's default `max` of 10 applies and a
+    `connection_limit` URL parameter does nothing. The box runs the 2026-08-12 digest
+    `sha256:87312d33...` (`ops/routing-inventory.md` § Image identity, so the rebuild is reproducible), whose version was not read.
+    `ops/postgres.md` § The budget sizes `umami` at 25 for that reason, and § Migration discipline names
+    the boot migration. Neither is in `ops/known-violations.md`, and `ops/estate.md`'s finance data note
+    still says Umami pools five.
+
+    **Owner: Story 4.7 (migrate analytics and pin Umami).** **Trigger: that story.** Pin the version, set
+    `SKIP_DB_MIGRATION` on the server and run `prisma migrate deploy` from the same image as a one-shot
+    before the roll, re-read the pool size of the pinned version against the `umami` limit, and correct
+    the estate note.
+
+    **Closed 2026-09-30 by Story 4-7, repository half.** `docker-compose.yml` pins
+    `3.4.0@sha256:85909afc...` (the same digest read above), sets `SKIP_DB_MIGRATION=1` on the server and
+    runs `prisma migrate deploy` as `anchor-umami-migrate` under the `migrate` profile. The pool reading
+    stands for the pinned digest (ten per container, the role's 25 the cap) and `ops/estate.md`'s note
+    carries a dated correction. The box's digest `sha256:87312d33...` is GHCR's `3.3.0` manifest
+    (registry API, 2026-09-30). The box runs it from `ops/postgres.md` § Moving Umami.
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-5-pg-dump-on-cron-plus-restic-offsite.md`
+  id: DW-303
+  summary: >-
+    `ops/__tests__/postgres-backup.test.ts` spawns WSL's bash like the three suites AGENTS.md names for the
+    DW-135 flake, and shows the same shape on this host, but AGENTS.md's Running and verifying section
+    lists only three files (four with `tournament-backup.test.ts`, which also shows it).
+  evidence: |-
+    Found 2026-09-30 by Story 4-5. Two full-suite runs on the final tree each failed one
+    `postgres-backup.test.ts` case after about 30 seconds with empty output (29963 ms in the second),
+    beside the same shape in `deploy-remote`, `library-backup`, `tournament-backup` and
+    `tracker-backup`; the third run passed 75 of 75 files. The suite passed 21 of 21 (one skipped on
+    Windows) alone and three times concurrently. CI runs a native bash and never sees it.
+
+    **Owner: the next AGENTS.md context refresh (with DW-298).** **Trigger: that refresh.** Name every
+    suite that spawns WSL's bash in the DW-135 pitfall, not three. Not edited here: AGENTS.md is
+    agent context, which this story does not touch.
+  status: open
+- id: DW-304
+  summary: >-
+    Style Dictionary 5.5.4's `@bundled-es-modules/glob` range `^13.0.6-hotfix.0` still resolves 13.0.6,
+    so the transitive `qs` fix that release meant to take is not in this repository.
+  evidence: |-
+    Found 2026-09-30 by the verification of DW-295. `npm view style-dictionary@5.5.5 dependencies` gives
+    `'@bundled-es-modules/glob': '^13.0.6-hotfix.0'`; `npm view @bundled-es-modules/glob time` gives
+    13.0.6 on 2026-03-02 and 13.0.6-hotfix.0 on 2026-09-18. Under semver 13.0.6 ranks above its own
+    prerelease, so the range admits 13.0.6 and pnpm takes it: `pnpm-lock.yaml` holds
+    `'@bundled-es-modules/glob@13.0.6'`, the build that predates the hotfix. An upstream range defect.
+    Exposure is build-time only, at `tokens:build`, on token sources this repository authors.
+
+    **Owner: the next change that touches `packages/tokens`.** **Trigger: a Style Dictionary release
+    whose range excludes 13.0.6, or a glob release above 13.0.6.** Re-read the lockfile then; forcing the
+    prerelease with a `pnpm.overrides` entry is a dependency change that needs its own ruling.
+  status: open
+- id: DW-305
+  summary: >-
+    One request through a throwaway Traefik timed out, unexplained, in Story 4-6's rollout rehearsal on
+    the authoring machine, while no container was starting or stopping.
+  evidence: |-
+    Found 2026-09-30 by Story 4-6 (`ops/traefik-cutover.md` § Rehearsed off the box: a rollout under the
+    alias, through Traefik). Run 1 answered 236 of 237 requests 200; the last, started 13:17:32Z after
+    both rollouts had finished, hit curl's 10 second `--max-time`. Runs 2 to 4 (18 rollouts, 1,585
+    requests, run 4 in run 1's shape) answered every request 200. Unverified severity medium if it is
+    Traefik's (a stalled request on the flagship), low if it is Docker Desktop's port forwarding, the
+    one candidate named and not proven.
+
+    **Owner: Story 4-6's box half.** **Trigger: § Moving cuatro.dev and www step 6.** That step's probe,
+    through the real edge across both rule moves and a deploy, settles it: `200 301 200` alone closes
+    this; any other line is a finding to trace against Traefik's log before the next hostname moves.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-8-migrate-tracker-cuatro-dev.md`
+  id: DW-306
+  summary: >-
+    The tracker's Redis and qBittorrent still run in the old `cuatro-tracker` compose project after
+    Story 4-8, which Story 4.11 decommissions, and nothing yet places them anywhere else.
+  evidence: |-
+    Decided 2026-09-30 by Story 4-8 (Design Note 1, the Operator may overrule): the story moves the
+    Postgres (AD-10) and the hostname, and leaves `cuatro-tracker-redis-1` (`redis:7-alpine`, 343 keys of
+    BullMQ state, RDB only, observed that day) and `cuatro-tracker-qbittorrent-1`
+    (`linuxserver/qbittorrent:latest`, volume `cuatro-tracker_qb_config`, bind
+    `/home/deploy/cuatro-downloads`, empty) where they run. `docker-compose.yml`'s `tracker` and
+    `tracker-worker` reach both by container name over `cuatro-tracker_default`. Story 4.11 may delete
+    nothing it has not recreated or recorded as dropped, so these two need a home before it: services of
+    this project's compose, images pinned (DW-191), Redis's data carried or its loss accepted (BullMQ
+    repeatable jobs re-register when the worker starts, which is to be read, not assumed), qBittorrent's
+    WebUI credentials settled (DW-190), and the Registry's `Redis` declaration's offsite backup question
+    (AD-10) answered.
+
+    **Owner: Story 4.11, before it removes the `cuatro-tracker` project, or a story of its own ahead of
+    it.** **Trigger: Story 4.11 opening.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-8-migrate-tracker-cuatro-dev.md`
+  id: DW-307
+  summary: >-
+    `ops/tournament-restore-verify.sh` removes its throwaway Postgres without `--volumes`, so each run
+    leaves the restored copy of the tournament's data behind as an anonymous volume, the defect Story 4-8
+    fixed in `ops/tracker-restore-verify.sh`.
+  evidence: |-
+    Found 2026-09-30 by Story 4-8. `ops/tracker-restore-verify.sh` ran `docker rm --force` on a
+    `postgres` container, whose image declares a `VOLUME`; two local runs left two dangling volumes, and
+    the box holds one created 2026-09-29T21:05:53Z, the second the tracker cutover's verification ran.
+    Story 4-8 added `--volumes` and made `ops/__tests__/tracker-backup.test.ts` require it; the box's
+    volume is `ops/tracker-cutover.md` Pending action 7. `ops/tournament-restore-verify.sh:46` has the
+    same `docker rm --force "${SCRATCH}"`; the box holds a second dangling volume created
+    2026-09-30T08:04:07Z, not attributed (read-only listing, contents not read). `ops/postgres-restore-verify.sh`
+    already passes `--volumes`.
+
+    **Owner: the next change to the tournament's backup path.** **Trigger: that change, or the Operator's
+    word.** The same one-flag fix and its test pin in `ops/__tests__/tournament-backup.test.ts`, then the
+    box's volume read and removed by the Operator once attributed.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-3-migrate-list-wheel-the-static-first-candidate.md`
+  id: DW-308
+  summary: >-
+    The box still compiles `list-wheel` on each of its deploys (KV-1's `list-wheel` half, AD-8): Story 4-3
+    moved its hostname onto Traefik and left the build, so the image-pull deploy has no story yet.
+  evidence: |-
+    Decided 2026-09-30 by Story 4-3 (Design Note 4, the Operator may overrule). `LuigiEspinosa/list-wheel`
+    on `main` at `718f194`: `docker-compose.yml` declares `build:` and `ops/deploy-remote.sh:62` runs
+    `docker compose up --build -d --remove-orphans`; the box runs image `list-wheel-list-wheel`, built
+    there (observed 2026-09-30). Retiring it is a change in that repository: a workflow that builds the
+    `Dockerfile` in GitHub Actions and pushes `ghcr.io/luigiespinosa/list-wheel:<sha>`, a compose `image:`
+    in place of `build:` (with a tag variable the deploy exports), and `ops/deploy-remote.sh` pulling that
+    tag and rolling the service with docker-rollout v0.14 as this repository's script does, its
+    `deploy-remote.test.mjs` updated, the box's GHCR read access for that package settled, and the two
+    comments that name Story 4.3 as the closer (`ops/deploy-remote.sh`, `Dockerfile`) repointed. AD-20's
+    Epic 4 reading kept it out of the hostname move.
+
+    **Owner: a story of its own in Epic 4 before Story 4.11, or 4.11 itself; the Operator confirms which.**
+    **Trigger: that story opening, or the next change to `list-wheel`'s deploy.** Closing it dates KV-1's
+    `list-wheel` half in `ops/known-violations.md` and, with the Anchor's half dated 2026-09-29, retires
+    KV-1.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-10-migrate-cs-tracker-cuatro-dev.md`
+  id: DW-309
+  summary: >-
+    Traefik forwards a WebSocket upgrade with `X-Forwarded-Proto: wss` where Caddy sends `https`, and only
+    the `cs-tracker` router corrects it; no other hostname's upstream was checked for reading that header
+    on an upgrade.
+  evidence: |-
+    Found 2026-09-30 by Story 4-10's rehearsal (`ops/cs-tracker-cutover.md` § What the move changes):
+    through the committed `cs-tracker` router, `cs-tracker`'s LiveView socket answered `301` to
+    `https://...`, because its Plug.SSL reads only `https` from that header, while `/` answered its `302`.
+    The router now sets the header (`forwarded-proto-https`), and the socket answered `101`. The other
+    routers were written by Stories 4-2, 4-3 and 4-6 to 4-9 and none of their rehearsals is recorded as
+    opening a socket; an upstream that trusts the header and serves an upgrade would fail the same way,
+    and only once its hostname moves.
+
+    **Owner: Story 4.11, which accounts every hostname on the new topology before Caddy goes.**
+    **Trigger: that story opening, or any moved hostname's application reporting a failed socket.** For
+    each router's upstream: does it serve a WebSocket, and does it read `X-Forwarded-Proto` on it? If
+    so, the same middleware on its router, with a case in `ops/__tests__/traefik-config.test.ts`.
   status: open

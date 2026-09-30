@@ -175,6 +175,84 @@ describe("the Hub's healthcheck probe, run (DW-262)", () => {
   });
 });
 
+// Story 4-7: Umami, the estate's analytics, on the estate's one Postgres (`ops/postgres.md` § Moving Umami).
+// Its image is an exact release and registry digest, never the floating `postgresql-latest` it ran before
+// (DW-191). The image's start script migrates unless SKIP_DB_MIGRATION is set, so the server sets it and
+// the migration is its own one-off under the `migrate` profile, from the same image (AD-23, DW-302). Both
+// reach database and role `umami` at `estate-postgres` and never `anchor-db`, which stays only as the
+// move's rollback. The server's healthcheck lets the move's `up` report healthy and a rollout roll it
+// (AD-8, DW-179).
+describe('the Umami services', () => {
+  const PINNED = /^ {4}image: (ghcr\.io\/umami-software\/umami:\d+\.\d+\.\d+@sha256:[0-9a-f]{64})$/m;
+  const DATABASE = '      - DATABASE_URL=postgresql://umami:${UMAMI_DB_PASSWORD-}@estate-postgres:5432/umami';
+  const MIGRATE = "    command: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy']";
+
+  /** Why Umami's two services would not run pinned, migrate discretely and reach the estate database. */
+  const umamiFaults = (text: string): string[] => {
+    const service = (name: string): string => parts(text, 2).find((part) => part.startsWith(`  ${name}:\n`)) ?? '';
+    const server = service('anchor-umami');
+    const migrate = service('anchor-umami-migrate');
+    if (server === '') return ['no anchor-umami service'];
+    const faults: string[] = [];
+    const image = PINNED.exec(server)?.[1];
+    if (image === undefined) faults.push('the server image is not an exact release and digest');
+    if (migrate === '') return [...faults, 'no anchor-umami-migrate service'];
+    if (PINNED.exec(migrate)?.[1] !== image) faults.push("the migration does not run the server's pinned image");
+    if (!server.split('\n').includes('      - SKIP_DB_MIGRATION=1')) faults.push('the server migrates on boot');
+    const lines = migrate.split('\n');
+    if (!lines.includes('    profiles: [migrate]') || !lines.includes(MIGRATE) || !lines.includes("    restart: 'no'"))
+      faults.push('the migration is not a one-off prisma migrate deploy under the migrate profile');
+    for (const [name, part] of [['anchor-umami', server], ['anchor-umami-migrate', migrate]]) {
+      if (!part.split('\n').includes(DATABASE) || !/^ {6}estate-postgres:$/m.test(part))
+        faults.push(`${name} does not reach umami at estate-postgres`);
+      if (part.includes('anchor-db')) faults.push(`${name} names anchor-db`);
+    }
+    const check = parts(server, 4).find((part) => part.startsWith('    healthcheck:'));
+    if (check === undefined || !check.includes('/api/heartbeat') || /^ {6}disable:\s*true\b/m.test(check))
+      faults.push('the server has no healthcheck on /api/heartbeat');
+    return faults;
+  };
+
+  it('pins an exact release and digest, migrates as a one-off from it, and reaches umami at estate-postgres', () => {
+    expect(umamiFaults(compose)).toEqual([]);
+  });
+
+  it('declares estate-postgres external, since the estate Postgres stack owns it', () => {
+    const networks = parts(compose, 0).find((part) => part.startsWith('networks:'));
+    expect(networks).toMatch(/^ {2}estate-postgres:\n {4}external: true$/m);
+  });
+
+  it('names a floating tag, a boot migration, a missing one-off, the old database and a missing healthcheck', () => {
+    const image = /^( {4}image: ghcr\.io\/umami-software\/umami:)\S+$/m;
+    for (const floating of ['postgresql-latest', '3.4.0', '3', 'latest@sha256:0']) {
+      expect(umamiFaults(compose.replace(image, `$1${floating}`))[0], floating).toBe(
+        'the server image is not an exact release and digest'
+      );
+    }
+    const migrateImage = /^( {4}image: ghcr\.io\/umami-software\/umami:)\S+(\n {4}profiles: \[migrate\])$/m;
+    expect(umamiFaults(compose.replace(migrateImage, `$1${'3.3.0@sha256:' + '0'.repeat(64)}$2`))).toEqual([
+      "the migration does not run the server's pinned image",
+    ]);
+    expect(umamiFaults(compose.replace('      - SKIP_DB_MIGRATION=1\n', ''))).toEqual(['the server migrates on boot']);
+    expect(umamiFaults(compose.replace('  anchor-umami-migrate:', '  anchor-umami-migrated:'))).toEqual([
+      'no anchor-umami-migrate service',
+    ]);
+    const profile = /^( {4}image: ghcr\.io\/umami-software\/umami:\S+\n {4}profiles: )\[migrate\]$/m;
+    expect(umamiFaults(compose.replace(profile, '$1[umami]'))).toEqual([
+      'the migration is not a one-off prisma migrate deploy under the migrate profile',
+    ]);
+    expect(umamiFaults(compose.replace('@estate-postgres:5432/umami', '@anchor-db:5432/umami'))).toEqual([
+      'anchor-umami does not reach umami at estate-postgres',
+      'anchor-umami names anchor-db',
+    ]);
+    expect(umamiFaults(compose.replace('/api/heartbeat', '/'))).toEqual(['the server has no healthcheck on /api/heartbeat']);
+    const probe = "    healthcheck:\n      test: ['CMD', 'curl'";
+    expect(umamiFaults(compose.replace(probe, probe.replace('healthcheck:', 'healthcheck:\n      disable: true')))).toEqual([
+      'the server has no healthcheck on /api/heartbeat',
+    ]);
+  });
+});
+
 // Story 3-5: the finance application, merged and imaged but not placed. Its two services sit under
 // profiles no deploy activates, run its image by the sha in FINANCE_TAG, and reach database and role
 // `finance` in `anchor-db` (AD-10). The migration is its own one-off service under the `migrate` profile,
@@ -216,17 +294,36 @@ describe('the finance services', () => {
 
 // Story 3-6: the tracker, merged and imaged, and started only by the Operator's cutover
 // (`ops/tracker-cutover.md`). Its server and worker sit under a profile no deploy activates, run its image
-// by the sha in TRACKER_TAG, and reach the stores the box's `cuatro-tracker` project keeps running, by
+// by the sha in TRACKER_TAG, and reach Redis and qBittorrent in the box's `cuatro-tracker` project, by
 // container name, over that project's network. The server answers to `cuatro-app`, the upstream the
-// shared Caddyfile already proxies, and its probe is the Hub's on `/api/ready`.
+// shared Caddyfile already proxies, and its probe is the Hub's on `/api/ready`. Story 4-8 moves its
+// database to `cuatro_tracker` in the estate Postgres, with the pool capped on the URL (AD-10).
 describe('the tracker services', () => {
   const service = (name: string): string => parts(compose, 2).find((part) => part.startsWith(`  ${name}:\n`)) ?? '';
   const tracker = service('tracker');
   const worker = service('tracker-worker');
   const migrate = service('tracker-migrate');
   const IMAGE = '    image: ghcr.io/luigiespinosa/tracker:${TRACKER_TAG-}';
-  const DATABASE = '      - DATABASE_URL=postgresql://tracker:${TRACKER_DB_PASS-}@cuatro-tracker-postgres-1:5432/tracker';
+  const DATABASE =
+    '      - DATABASE_URL=postgresql://cuatro_tracker:${CUATRO_TRACKER_DB_PASSWORD-}@estate-postgres:5432/cuatro_tracker?connection_limit=4';
   const READY = '/api/ready';
+  const NAMES = ['tracker', 'tracker-worker', 'tracker-migrate'];
+
+  /** Why the three services would not reach `cuatro_tracker` at estate-postgres under the pool cap. */
+  const databaseFaults = (text: string): string[] => {
+    const of = (name: string): string => parts(text, 2).find((part) => part.startsWith(`  ${name}:\n`)) ?? '';
+    const faults: string[] = [];
+    for (const name of NAMES) {
+      const part = of(name);
+      // The worker takes the server's environment through the YAML anchor, so its URL is the server's.
+      const environment = name === 'tracker-worker' ? of('tracker') : part;
+      if (!environment.split('\n').includes(DATABASE))
+        faults.push(`${name} does not reach cuatro_tracker at estate-postgres with connection_limit=4`);
+      if (!/^ {6}estate-postgres:$/m.test(part)) faults.push(`${name} does not join estate-postgres`);
+      if (part.includes('cuatro-tracker-postgres-1')) faults.push(`${name} names the old database`);
+    }
+    return faults;
+  };
 
   it('runs the image by the sha in TRACKER_TAG, the server and worker under a profile no deploy activates', () => {
     for (const part of [tracker, worker]) {
@@ -242,11 +339,36 @@ describe('the tracker services', () => {
     expect(worker).not.toContain('migrate');
   });
 
-  it('answers to cuatro-app on the shared network, and reaches its stores over the tracker project network', () => {
-    expect(tracker).toMatch(/^ {4}networks:\n {6}cuatro-tracker_default:\n {6}cs-tracker_default:\n {8}aliases:\n {10}- cuatro-app$/m);
+  it('answers to cuatro-app on the shared network, and reaches Redis and qBittorrent over the tracker project network', () => {
+    expect(tracker).toMatch(
+      /^ {4}networks:\n {6}estate-postgres:\n {6}cuatro-tracker_default:\n {6}cs-tracker_default:\n {8}aliases:\n {10}- cuatro-app$/m
+    );
+    expect(worker).toMatch(/^ {4}networks:\n {6}estate-postgres:\n {6}cuatro-tracker_default:$/m);
     expect(worker).not.toContain('cs-tracker_default');
-    expect(migrate).not.toContain('cs-tracker_default');
+    expect(migrate).toMatch(/^ {4}networks:\n {6}estate-postgres:\n {4}restart: 'no'$/m);
     expect(compose).toMatch(/^ {2}cuatro-tracker_default:\n {4}external: true$/m);
+  });
+
+  it('reaches cuatro_tracker at estate-postgres with connection_limit=4 from all three services (AD-10)', () => {
+    expect(databaseFaults(compose)).toEqual([]);
+    expect(tracker.split('\n')).toContain('      - DB_PASS=${CUATRO_TRACKER_DB_PASSWORD-}');
+  });
+
+  it('names the old database, a missing pool cap and a missing estate network', () => {
+    const unreached = (name: string): string => `${name} does not reach cuatro_tracker at estate-postgres with connection_limit=4`;
+    const old = compose.replaceAll('@estate-postgres:5432/cuatro_tracker?connection_limit=4', '@cuatro-tracker-postgres-1:5432/tracker');
+    expect(databaseFaults(old)).toEqual([
+      unreached('tracker'),
+      'tracker names the old database',
+      unreached('tracker-worker'),
+      unreached('tracker-migrate'),
+      'tracker-migrate names the old database',
+    ]);
+    expect(databaseFaults(compose.replaceAll('?connection_limit=4', ''))).toEqual(NAMES.map(unreached));
+    const migrateNetwork = /^( {4}networks:\n) {6}estate-postgres:\n( {4}restart: 'no')$/m;
+    expect(databaseFaults(compose.replace(migrate, migrate.replace(migrateNetwork, '$1      cuatro-tracker_default:\n$2')))).toEqual([
+      'tracker-migrate does not join estate-postgres',
+    ]);
   });
 
   it(`probes ${READY} with the Hub's probe, so the runs above cover its handling`, () => {

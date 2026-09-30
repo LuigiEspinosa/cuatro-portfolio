@@ -1,0 +1,68 @@
+# Traefik's static configuration (Story 4-2). Read once at start; a change here needs a restart.
+# Routers, services, middlewares and certificates are in `dynamic/`, which is watched.
+
+# The box never phones home: versions are re-read by AD-22's refresh, not by Traefik.
+global:
+  checkNewVersion: false
+
+# `aliasHeadersStrategy: delete` on every entrypoint: a request header whose name aliases one Traefik
+# manages (X_Forwarded_For for X-Forwarded-For) is dropped rather than forwarded, so a backend that reads
+# header names loosely cannot be handed a spoofed one. Traefik 3.7 warns at start until this is set.
+entryPoints:
+  # Every public hostname, over TLS with the Origin CA certificate. Cloudflare connects here once a
+  # hostname's Origin Rule sets destination port 8443.
+  websecure:
+    address: ':8443'
+    # Traefik 3 stops reading a request body after 60 seconds by default; the shared Caddy sets no limit. A
+    # 90 KB body sent slowly to library.cuatro.dev, whose book uploads can take longer than a minute, was
+    # cut at 60 seconds through this entrypoint and read whole through Caddy (Story 4-9's rehearsal,
+    # `ops/backup-digital-library.md`), so 0, no limit, as Caddy has.
+    # The origin firewall admits Cloudflare alone, which holds every client connection itself.
+    transport:
+      respondingTimeouts:
+        readTimeout: 0
+    http:
+      tls: {}
+      aliasHeadersStrategy: delete
+  # The dashboard's own entrypoint, published on the box's loopback only (compose.yml).
+  traefik:
+    address: ':8080'
+    http:
+      aliasHeadersStrategy: delete
+  # The healthcheck's, never published.
+  ping:
+    address: ':8082'
+    http:
+      aliasHeadersStrategy: delete
+
+ping:
+  entryPoint: ping
+
+api:
+  dashboard: true
+  # The insecure mode serves the dashboard on `traefik` with no router and no auth. Off: the dashboard
+  # router in `dynamic/routes.yml` puts basic auth in front of it.
+  insecure: false
+
+providers:
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+log:
+  level: INFO
+
+certificatesResolvers:
+  # DNS-01 through Cloudflare (AD-26). Used ONLY by the scratch hostname in `dynamic/routes.yml`, which
+  # has no DNS record and so is never proxied: no ACME runs for a proxied hostname. The token is
+  # CF_DNS_API_TOKEN from the gitignored `.env`.
+  cloudflare:
+    acme:
+      # No contact address: Let's Encrypt registers the account without one (observed 2026-09-30 against
+      # its staging directory) and has sent no expiry mail since 2025, so an address would add nothing.
+      storage: /acme/acme.json
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - '1.1.1.1:53'
+          - '1.0.0.1:53'

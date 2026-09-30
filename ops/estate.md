@@ -470,7 +470,11 @@ it: merging is not placing.
   consumer is Umami, whose `umami` role carries no limit and whose URL names no `connection_limit`,
   so it pools Prisma's documented default of twice the core count plus one (five on the two-core
   box; a documented default, not an observed figure). With Postgres' three reserved superuser slots
-  that is at most 18 of 100.
+  that is at most 18 of 100. **Corrected 2026-09-30 (Story 4-7, DW-302):** Umami 3.4.0 pools
+  node-postgres's default of ten per container, not Prisma's five, and no environment option changes it
+  (read in the image, `ops/postgres.md` § The budget). Story 4-7 moves Umami to the estate's one Postgres
+  as role `umami` with limit 25 (`ops/postgres.md` § Moving Umami), after which finance is `anchor-db`'s
+  only named consumer.
 - **Tokens (AD-14).** Adoption is deferred whole, not half-applied: `apps/finance/app/tokens.css` keeps
   its own palette, and `app/layout.tsx` its own fonts (DW-267). The application is `In progress` and
   unrendered, and AD-25 gives it no restyle until it renders.
@@ -574,6 +578,14 @@ Observations below were made by the Operator and the orchestrator and relayed; t
   as the tournament's store with its offsite backup the Operator's, on Supabase's side; the demos stay in
   Cloudflare R2. Nothing moves and `anchor-db` gains nothing. The project was paused when first probed;
   the Operator restored it, and its auth endpoint answers 401 (alive) from the box and elsewhere.
+  **Amended 2026-09-30 (Epic 3 retrospective action 4, finding M4):** what Supabase's side keeps was never
+  confirmed, so the store now has a copy off Supabase's side, a nightly `pg_dump` from the box, `ops/tournament-backup.sh`
+  at 03:45 UTC into `/home/deploy/backups/cs-tournament`, fourteen days kept, proved by
+  `ops/tournament-restore-verify.sh` (`ops/tournament-placement.md` § Backup). **Running since
+  2026-09-30T08:04Z:** the first dump (19 tables, 31 rows, 477,822 bytes, the ledger at 29) restored
+  and verified, and the cron line is installed (`ops/tournament-placement.md` § First backup run). Its limit: one copy, on the box, so losing the box
+  and Supabase together loses both. **Operator ruling 2026-09-30:** that copy meets AD-10's offsite
+  requirement, being off Supabase's side; retrospective action 4 closed on it.
 - **The pooler, a decision.** `TOURNAMENT_DATABASE_URL` is Supabase's session pooler
   (`postgres.<ref>@aws-0-us-east-1.pooler.supabase.com:5432`, `sslmode=require`), because the direct host
   `db.<ref>.supabase.co` answers on IPv6 only and `cuatro-portfolio_default` has no IPv6 (`EnableIPv6`

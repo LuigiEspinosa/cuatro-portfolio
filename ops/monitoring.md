@@ -852,6 +852,17 @@ relative rather than a fixed day count before the threshold can be carried over.
 belongs to Story 4.2 and is recorded in the deferred-work ledger. AD-26 narrows it further:
 proxied hosts stop renewing on the origin altogether.
 
+**Amended 2026-09-30 by Story 4-2.** Confirmed relative, within limits: Traefik v3.7.13 logged
+`Attempt to renew certificates "720h0m0s" before expiry and check every "24h0m0s"` at its default
+`certificatesDuration` of 2160 hours, and its documented table keys that period to the configured
+duration, not to each certificate's own lifetime. Thirty days before expiry is before two thirds of
+age at 90, 64 and 45 days (day 60, 34 and 15), so the threshold carries over. The only certificate
+Traefik renews is the DNS-01 scratch one, which no monitor sees; proxied hosts keep the Origin CA.
+That no monitor sees it departs from Story 4.2's wording and waits on the Operator's confirmation
+(Pending action 3 there). A forced renewal against a throwaway Pebble server replaced the served
+certificate without a restart (§ Rehearsed off the box).
+`ops/traefik-cutover.md` § How certificate monitoring sees this.
+
 ### Why the threshold is not exactly two thirds
 
 Caddy renews when less than one third of a certificate's lifetime remains. Two thirds of
