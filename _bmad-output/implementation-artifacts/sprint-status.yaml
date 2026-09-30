@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-30-2026 12:15
+last_updated: 09-30-2026 13:45
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -882,7 +882,13 @@ development_status:
   # run steps 1 to 7 and § Pending Operator actions 1 to 5, after ops/postgres.md § The placement. PITR deferred;
   # the library's path unchanged.
   4-5-pg_dump-on-cron-plus-restic-offsite: awaiting-operator
-  4-6-migrate-cuatro-dev: backlog
+  # 4-6 awaiting-operator 2026-09-30: repository half built and verified on dev. No routing change: the apex and
+  # www routers in ops/traefik/ already match Caddy's blocks and contracts/ stays the Hub's (ruling 2026-09-24);
+  # the traefik-config suite now pins the apex upstream to anchor-app's compose alias. Local proof: the real Hub
+  # image rolled 20 times by docker-rollout v0.14 behind the committed Traefik, 1,821 of 1,822 requests 200, one
+  # unexplained timeout filed as DW-305. Box half is the Operator's, ops/traefik-cutover.md § Moving cuatro.dev
+  # and www steps 1 to 7 and § Pending Operator actions 5 and 6, after actions 1 to 4 and the origin rules token.
+  4-6-migrate-cuatro-dev: awaiting-operator
   4-7-migrate-analytics-cuatro-dev-and-pin-umami: backlog
   4-8-migrate-tracker-cuatro-dev: backlog
   4-9-migrate-library-cuatro-dev: backlog

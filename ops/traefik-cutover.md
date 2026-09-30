@@ -296,6 +296,236 @@ hostname's health path, across the rule's creation: it shows 200 alone. **Rollba
 deleting its rule** (`DELETE /zones/$ZONE/rulesets/<id>/rules/<rule id>`), which takes effect at the
 edge without touching the box; Caddy still holds that hostname's site block.
 
+## Moving cuatro.dev and www (Story 4-6)
+
+The first live use of § Moving a hostname: `www.cuatro.dev`, then `cuatro.dev`, each by its own Origin
+Rule, with one CI-built deploy of the Hub rolled while the apex runs through Traefik. **Nothing here has
+run on the box or in the zone. Written 2026-09-30, committed on `dev`.** The Operator runs it and dates
+Pending Operator actions 5 and 6 below.
+
+**Why here and not a new `ops/anchor-cutover.md`.** Decision, Story 4-6, the Operator may overrule. This
+record owns the per-hostname mechanism and its rollback. The Hub owns no store, so its move has no
+backup, restore or migration step, and the one thing specific to it is the deploy through Traefik; a
+separate record would restate the mechanism around one step.
+
+### What serves them today
+
+**Observed 2026-09-30T13:15:14Z over SSH as `deploy`, read-only.**
+
+| Fact | Value |
+|---|---|
+| The Hub | `cuatro-portfolio-anchor-app-4`, `ghcr.io/luigiespinosa/hub:373e33d8e36e4ce92efb58ca8289157c42656b1e`, `Up 12 hours (healthy)`. The `-4` is docker-rollout's: each deploy's container takes the next number |
+| Its names on `cs-tracker_default` | Aliases `cuatro-portfolio-anchor-app-4` and `anchor-app`; only `anchor-app` outlives a deploy, and it is the name both Caddy and Traefik's `cuatro-portfolio` service dial |
+| The checkout | `/home/deploy/cuatro-portfolio` at `373e33d8e36e4ce92efb58ca8289157c42656b1e`, no `ops/traefik/` yet; nothing listens on 8443 |
+| Load | `0.03, 0.08, 0.13` |
+
+**Observed 2026-09-30 through the UptimeRobot API:** 803749849 (`cuatro.dev` root), 803756371
+(`/api/health` keyword) and 803756083 (`www` 301) all `UP`, for 44 days. **Observed 2026-09-30 from the
+authoring machine:** `https://www.cuatro.dev/some/path?q=1` answered `301` with
+`location: https://cuatro.dev/some/path?q=1`; `https://cuatro.dev/contracts/tokens.css` answered `200`,
+`Content-Type: text/css; charset=UTF-8`, `Cache-Control: public, max-age=14400` and **`via: 1.1 Caddy`**.
+Caddy's `reverse_proxy` adds that `Via` header and Traefik v3.7.13 adds none (observed 2026-09-30 on
+the authoring machine: a throwaway Traefik in front of `traefik/whoami` returned no `Via` header, and
+sent none upstream). Its absence on an apex response the edge did not cache
+is how step 4 tells which proxy answered.
+
+### What the move changes, and what it leaves alone
+
+**Decisions, Story 4-6** (the spec's Design Notes; the Operator may overrule each):
+
+- **No routing change.** The `cuatro-portfolio` and `www` routers in `dynamic/routes.yml` already match
+  Caddy's two blocks: the house headers, `anchor-app:3000`, and a permanent redirect keeping path and
+  query. `ops/__tests__/traefik-config.test.ts` now also holds the apex upstream to an alias
+  `docker-compose.yml` gives `anchor-app`, never a container name.
+- **`contracts/` stays the Hub's.** The Operator's ruling of 2026-09-24: Traefik does not serve
+  `contracts/`. It reaches the Hub through the apex router like any other path, and the suite refuses a
+  routing file that names it.
+- **www first, then the apex, two rules.** www only answers a redirect, so it puts Traefik under live
+  traffic at the least cost, and its monitor asserts the 301. Two rules rather than one, so each rolls
+  back alone (eight hostnames against the Free plan's ten rules).
+- **Story 4.4 does not bind this move.** The epic lists it as a dependency, but the Hub has no database
+  (Umami's store moves in Story 4.7), so `ops/postgres.md` and `ops/postgres-backup.md` need not have run.
+- **Caddy keeps both blocks** until Story 4.11. Deleting a rule sends the hostname back to them.
+- **No capacity entry.** A routing move places nothing (AD-9).
+
+### Rehearsed off the box: a rollout under the alias, through Traefik
+
+**Observed 2026-09-30 between 13:16Z and 13:23Z on the authoring machine** (Docker 29.8.1), with the
+committed `ops/traefik/` files and § Rehearsed off the box's throwaway network, certificate volume,
+`.env` and `offline.yml`; the **real Hub image the box runs**, pulled from GHCR; the **real
+`docker-compose.yml`** (a byte-identical copy, sha256 `24495620...95bece0`, run from a scratch directory
+with an empty `.env.production`); and **docker-rollout v0.14**, the release asset whose sha256 matched
+`ops/deploy-remote.sh`'s pin, installed as the Docker CLI plugin in a `docker:29-cli` container on the
+host's socket, which is how the deploy runs it. Everything was removed afterwards and `git status --short`
+printed nothing.
+
+To re-run it, from the repository root in Git Bash, after the setup lines of the block under § Rehearsed
+off the box (the network, the volume and its certificate, the `.env`, `offline.yml`, then
+`$T up -d --wait`); `W` is a scratch directory holding the `docker-compose.yml` copy, an empty
+`.env.production` and the downloaded `docker-rollout`:
+
+```bash
+export MSYS_NO_PATHCONV=1 TAG=373e33d8e36e4ce92efb58ca8289157c42656b1e
+R() { docker run --rm -e HUB_TAG=$TAG -v /var/run/docker.sock:/var/run/docker.sock -v "$W:/w" -w /w docker:29-cli \
+  sh -c "apk add -q bash && mkdir -p /root/.docker/cli-plugins && cp /w/docker-rollout /root/.docker/cli-plugins/ && chmod +x /root/.docker/cli-plugins/docker-rollout && $1"; }
+R 'docker compose --env-file .env.production up -d --wait anchor-app'
+( i=0; p=(/ /api/health /contracts/tokens.css); while [ ! -e stop ]; do u=${p[$((i++%3))]}
+    echo "$(date -u +%T) $u $(curl -sk -o /dev/null -w '%{http_code} %{time_total}' --max-time 10 --resolve cuatro.dev:8443:127.0.0.1 https://cuatro.dev:8443$u)"
+  done > probe.log ) &
+for n in 1 2 3 4 5; do R 'docker rollout --env-file .env.production --timeout 120 anchor-app'; sleep 3; done
+touch stop; wait; awk '{print $2, $3}' probe.log | sort | uniq -c
+# Then remove the Hub's containers with the rest:
+docker rm -f $(docker ps -aq --filter label=com.docker.compose.project=cuatro-portfolio); rm -f stop probe.log
+```
+
+Before the first rollout, through Traefik on 8443 with `--resolve`:
+
+```
+traefik / 200 text/html; charset=utf-8
+traefik /api/health 200 application/json
+traefik /contracts/tokens.css 200 text/css; charset=UTF-8
+www 301
+Referrer-Policy: strict-origin-when-cross-origin
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+```
+
+The three headers are the apex stylesheet's. The `www` line's `%{redirect_url}` printed empty for
+`https://www.cuatro.dev:8443/contracts/tokens.css?q=1`; the response's own header, read afterwards, was
+`Location: https://cuatro.dev/contracts/tokens.css?q=1`, with the same three headers. Each rollout
+printed docker-rollout's three lines and left one container, numbered one higher:
+
+```
+==> Scaling 'anchor-app' to '2' instances
+==> Waiting for new containers to be healthy (timeout: 120 seconds)
+==> Stopping and removing old containers
+--- after rollout 1: cuatro-portfolio-anchor-app-2 Up 6 seconds (healthy)
+```
+
+Back-to-back requests, one at a time, three paths in turn, across four runs:
+
+| Run | Rollouts | Requests | Answered 200 | Other | Slowest 200 |
+|---|---|---|---|---|---|
+| 1, from a fresh `up` | 2 | 237 | 236 | **1 `000`** | not recorded |
+| 2 | 5 | 446 | 446 | none | 0.118 s |
+| 3 | 10 | 866 | 866 | none | 0.109 s |
+| 4, from a fresh `up`, run 1's shape | 3 | 273 | 273 | none | 0.129 s |
+
+**The one `000` is not explained, and is stated rather than dropped (DW-305).** It was run 1's last request,
+started at 13:17:32Z, after both rollouts had finished and the script's 5 second pause after them had
+run out; it hit curl's 10 second `--max-time` (the script's closing `date` read 13:17:42Z). No container
+was starting or stopping then, and runs 2 to 4 (18 rollouts, 1,585 requests) did not reproduce it, run 4
+in run 1's own shape. Docker Desktop's port forwarding on the authoring host is one candidate and is not
+proven. On the box, step 5's probe is the check: a non-200 there during the deploy is a finding.
+
+**What this does not prove:** the box's engine, network and load; Cloudflare in front; concurrent
+requests (the probe sends one at a time, seven to nine a second); and a long request in flight at the
+moment the old container stops. Step 5 covers the first two with the real edge.
+
+### The sequence
+
+**Preconditions:** § The sequence steps 1 to 8 have run and are recorded, with step 5's pairs matching
+for `cuatro.dev/api/health` and `www.cuatro.dev` (Pending actions 1 to 4 dated); and a Cloudflare API
+token that may edit the zone's origin rules exists (`ops/settled-inputs-refresh.md` Pending action 4).
+Two sessions: one on the box as `deploy` in `/home/deploy/cuatro-portfolio`, one on the workstation (WSL,
+with `curl` and `jq`; `gh` may run from any workstation shell). **`jq` is not installed in the authoring
+machine's WSL** (observed 2026-09-30, `jq: command not found`): `sudo apt-get install -y jq` there first.
+The filters below were checked with `jq` 1.8.1 against sample answers of both shapes. The token stays on
+the workstation and is never printed:
+
+```bash
+# Workstation. ZONE is the cuatro.dev zone id.
+read -rs CF_RULES_TOKEN && export CF_RULES_TOKEN; export ZONE=<zone id>
+CF() { curl -s -H "Authorization: Bearer $CF_RULES_TOKEN" -H 'Content-Type: application/json' "https://api.cloudflare.com/client/v4/zones/$ZONE/rulesets$1" "${@:2}"; }
+rule() { printf '{"description":"Story 4-6: %s to Traefik on 8443","expression":"(http.host eq \\"%s\\" and ssl)","action":"route","action_parameters":{"origin":{"port":8443}}}' "$1" "$1"; }
+```
+
+1. **Re-read what the move stands on, and stop at the first difference.** On the box:
+   ```bash
+   uptime
+   docker ps --filter label=com.docker.compose.service=anchor-app --format '{{.Names}} {{.Image}} {{.Status}}'
+   docker inspect -f '{{.State.Health.Status}}' traefik-traefik-1
+   grep -c 'url: http://anchor-app:3000' ops/traefik/dynamic/routes.yml
+   for u in cuatro.dev/ cuatro.dev/api/health cuatro.dev/contracts/tokens.css 'www.cuatro.dev/some/path?q=1'; do
+     h=${u%%/*}; p=/${u#*/}
+     echo "$u caddy=[$(curl -sk -o /dev/null -w '%{http_code} %{redirect_url}' --resolve "$h:443:127.0.0.1" "https://$h$p")]" \
+          "traefik=[$(curl -sk -o /dev/null -w '%{http_code} %{redirect_url}' --resolve "$h:8443:127.0.0.1" "https://$h:8443$p")]"
+   done
+   docker exec traefik-traefik-1 netstat -tn | grep -c ':8443 .*ESTABLISHED'
+   ```
+   One Hub container, healthy; Traefik `healthy`; `1`; every pair's status equal (200, 200, 200, and 301
+   on both sides; § The sequence step 5 read the redirect targets); the connection count is the
+   baseline, normally `0`. On the workstation:
+   `CF /phases/http_request_origin/entrypoint | jq '.success, [.result.rules[]?.expression]'` lists no
+   rule for either hostname, and the UptimeRobot dashboard shows 803749849, 803756371 and 803756083 `UP`.
+   Record `curl -s "https://cuatro.dev/contracts/tokens.css?v=$(date +%s)" | sha256sum`.
+2. **Start the request loop on the workstation, and leave it running to step 6.**
+   ```bash
+   while :; do printf '%s %s %s %s\n' "$(date -u +%H:%M:%S)" \
+     "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 https://cuatro.dev/api/health)" \
+     "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 https://www.cuatro.dev/)" \
+     "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "https://cuatro.dev/contracts/tokens.css?probe=$(date +%s%N)")"; sleep 1
+   done | tee anchor-cutover-probe.log
+   ```
+   The query string is unique per request, so the edge cannot answer the stylesheet from its cache.
+3. **Move `www.cuatro.dev`.** Read the entrypoint again and look at the answer before writing:
+   ```bash
+   E=$(CF /phases/http_request_origin/entrypoint); echo "$E" | jq '.success, .errors, .result.id'
+   ```
+   If `.success` is `true`, a ruleset exists (Story 4.3 may have created it): add the rule to it.
+   ```bash
+   RS=$(echo "$E" | jq -r 'select(.success) | .result.id'); [ -n "$RS" ] && CF "/$RS/rules" -X POST --data "$(rule www.cuatro.dev)" | jq '.success, .errors'
+   ```
+   Only if `.success` is `false` **and** `.errors` says the phase has no entrypoint ruleset, create it
+   with this rule alone. Never run the `PUT` against an entrypoint that exists, or after any other error
+   (a token without read access looks the same as a missing ruleset to a script): a `PUT` replaces the
+   whole entrypoint, and with it every other hostname's rule.
+   ```bash
+   CF /phases/http_request_origin/entrypoint -X PUT --data "{\"rules\":[$(rule www.cuatro.dev)]}" | jq '.success, .errors'
+   ```
+   `true` and `[]`. Then, after about a minute: `curl -sI 'https://www.cuatro.dev/some/path?q=1'` answers
+   `301` and `location: https://cuatro.dev/some/path?q=1`; on the box, the step 1 `netstat` count is above
+   its baseline (Cloudflare now holds connections to Traefik), and `uptime`. The probe's second column
+   stays `301`.
+4. **Move `cuatro.dev`.** The same, with the apex, into the ruleset step 3 left:
+   ```bash
+   RS=$(CF /phases/http_request_origin/entrypoint | jq -r 'select(.success) | .result.id'); [ -n "$RS" ] && CF "/$RS/rules" -X POST --data "$(rule cuatro.dev)" | jq '.success, .errors'
+   ```
+   Then, after about a minute:
+   `curl -sI "https://cuatro.dev/contracts/tokens.css?v=$(date +%s)" | grep -iE '^(HTTP|content-type|via|cf-cache-status)'`
+   answers `200`, `text/css`, **no `via: 1.1 Caddy` line**, and a `cf-cache-status` other than `HIT`;
+   `curl -s "https://cuatro.dev/contracts/tokens.css?v=$(date +%s)" | sha256sum` prints step 1's digest;
+   `curl -s https://cuatro.dev/api/health` contains `"status":"ok"`; and on the box, `uptime`.
+5. **Roll one CI-built deploy through Traefik.** On the workstation:
+   `gh workflow run deploy.yml --ref main -R LuigiEspinosa/cuatro-portfolio`; then
+   `gh run list -R LuigiEspinosa/cuatro-portfolio -w deploy.yml -e workflow_dispatch -L 1` until its line is
+   the run just dispatched (its age reads seconds, not an earlier dispatch), and
+   `gh run watch --exit-status -R LuigiEspinosa/cuatro-portfolio <its id>` until it ends green. It builds `main`'s image, and the box pulls it and runs
+   `docker rollout ... anchor-app` (a Markdown-only push to `main` deploys nothing, which is why this
+   dispatches). On the box afterwards: the step 1 `docker ps` line shows one container, numbered one
+   higher, healthy, on `main`'s sha; `uptime`; and the step 4 `curl -sI` still shows no `via` line.
+6. **Stop the loop and count.** After a minute more:
+   `awk '{print $2, $3, $4}' anchor-cutover-probe.log | sort | uniq -c` must show `200 301 200` alone.
+   Anything else is a finding: note its times against steps 3 to 5, and roll back the hostname it names.
+   Then, after at least one five-minute monitor interval, the three monitors of step 1 read `UP`.
+7. **Record.** Under a "Cutover run, cuatro.dev and www" heading here: the date, step 1's pairs and
+   digest, each step's load, the two rule ids (`CF "/$RS" | jq '.result.rules[] | {id, description}'`),
+   step 5's run id and the container it left, and step 6's counts. `ops/routing-inventory.md` § Ingress and
+   `ops/estate.md` each take a dated amendment: `cuatro.dev` and `www.cuatro.dev` are served by Traefik
+   through an Origin Rule, and Caddy's two blocks remain, unreached, until Story 4.11.
+
+**Rollback, at any step, one hostname at a time, apex first:**
+
+```bash
+RS=$(CF /phases/http_request_origin/entrypoint | jq -r 'select(.success) | .result.id')
+ID=$(CF "/$RS" | jq -r '.result.rules[] | select(.description == "Story 4-6: cuatro.dev to Traefik on 8443") | .id')
+echo "rule ${ID:-not found}"; [ -n "$RS" ] && [ -n "$ID" ] && CF "/$RS/rules/$ID" -X DELETE | jq '.success'
+```
+
+The same with `www.cuatro.dev` in the description for www. It takes effect at the edge without touching
+the box, and step 4's `curl -sI` shows `via: 1.1 Caddy` again. Nothing on the box changed, so nothing is
+restored. To take Traefik away as well, delete both rules first, then § Rollback to Caddy, whole.
+
 ## Rollback to Caddy, whole
 
 While no Origin Rule points at 8443, nothing public depends on Traefik:
@@ -342,6 +572,8 @@ Once a later story has moved a hostname, delete its Origin Rule first, then the 
 | 2 | **Create a Cloudflare API token** for the `cuatro.dev` zone with Zone, DNS, Edit and Zone, Zone, Read, for step 2 | DNS-01 writes only `_acme-challenge` TXT records. The Origin Rules token of the refresh record's action 4 is a separate question, needed from Story 4.3 | _not done_ |
 | 3 | **Confirm or overrule the decisions above**, and the certificate monitoring reading in § How certificate monitoring sees this | Each is a decision the Operator may overrule; the spec's Design Notes carry the reasoning. The monitoring reading departs from the epic's "certificate-age monitoring sees the new certificates" | _not done_ |
 | 4 | **Run steps 1 to 8 above** | Step 3 is also the refresh record's action 4, firewall half | _not done_ |
+| 5 | **Confirm or overrule Story 4-6's decisions** in § Moving cuatro.dev and www: this record rather than a new one, no routing change, www before the apex as two rules, Story 4.4 not a precondition | The Story 4-6 spec's Design Notes carry the reasoning | _not done_ |
+| 6 | **Run § Moving cuatro.dev and www steps 1 to 7**, after actions 1 to 4 here and the refresh record's action 4 (the origin rules token) | Step 5 dispatches the Deploy workflow; step 7 amends `ops/routing-inventory.md` and `ops/estate.md` | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.

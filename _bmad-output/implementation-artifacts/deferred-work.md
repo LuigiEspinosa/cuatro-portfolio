@@ -9246,3 +9246,19 @@ status: done
     whose range excludes 13.0.6, or a glob release above 13.0.6.** Re-read the lockfile then; forcing the
     prerelease with a `pnpm.overrides` entry is a dependency change that needs its own ruling.
   status: open
+- id: DW-305
+  summary: >-
+    One request through a throwaway Traefik timed out, unexplained, in Story 4-6's rollout rehearsal on
+    the authoring machine, while no container was starting or stopping.
+  evidence: |-
+    Found 2026-09-30 by Story 4-6 (`ops/traefik-cutover.md` § Rehearsed off the box: a rollout under the
+    alias, through Traefik). Run 1 answered 236 of 237 requests 200; the last, started 13:17:32Z after
+    both rollouts had finished, hit curl's 10 second `--max-time`. Runs 2 to 4 (18 rollouts, 1,585
+    requests, run 4 in run 1's shape) answered every request 200. Unverified severity medium if it is
+    Traefik's (a stalled request on the flagship), low if it is Docker Desktop's port forwarding, the
+    one candidate named and not proven.
+
+    **Owner: Story 4-6's box half.** **Trigger: § Moving cuatro.dev and www step 6.** That step's probe,
+    through the real edge across both rule moves and a deploy, settles it: `200 301 200` alone closes
+    this; any other line is a finding to trace against Traefik's log before the next hostname moves.
+  status: open

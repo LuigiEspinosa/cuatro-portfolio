@@ -142,6 +142,18 @@ describe('ops/traefik/dynamic/routes.yml', () => {
     expect(ROUTES).toContain('certFile: /etc/traefik/origin-ca/origin.pem');
     expect(ROUTES).toContain('keyFile: /etc/traefik/origin-ca/origin.key');
   });
+
+  // Story 4-6: docker-rollout names each new Hub container `cuatro-portfolio-anchor-app-<n>`, so only the
+  // compose alias names whichever containers run, through the rollout overlap (`ops/traefik-cutover.md`). And
+  // the Operator's ruling of 2026-09-24 keeps `contracts/` on the Hub, behind the apex router.
+  it('sends the apex to the alias anchor-app declares, and routes no contracts/ path itself', () => {
+    expect(routers.find((r) => r.name === 'cuatro-portfolio')?.service).toBe('cuatro-portfolio');
+    const upstream = /^ {4}cuatro-portfolio:\n {6}loadBalancer:\n {8}servers:\n {10}- url: http:\/\/([^:/]+):3000$/m.exec(ROUTES)?.[1];
+    const hub = read(resolve(ROOT, 'docker-compose.yml')).split('\n  anchor-app:\n')[1]?.split(/\n {2}\S/)[0] ?? '';
+    const aliases = /\n {6}cs-tracker_default:\n {8}aliases:\n((?: {10}- \S+\n)+)/.exec(hub)?.[1].match(/\S+$/gm) ?? [];
+    expect(aliases).toContain(upstream);
+    expect(ROUTES).not.toMatch(/contracts/);
+  });
 });
 
 describe('ops/traefik/traefik.yml and compose.yml', () => {
