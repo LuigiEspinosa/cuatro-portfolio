@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-30-2026 03:04
+last_updated: 09-30-2026 03:53
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -854,8 +854,15 @@ development_status:
   # build-on-the-box deploy, so the orientation, paths, and the AD-8 pitfall line
   # in the AGENTS.md block all change.
 
-  epic-4: backlog
-  4-1-refresh-the-settled-inputs-and-choose-the-rebuild-topology: backlog
+  epic-4: in-progress
+  # 4-1 done 2026-09-30: AD-22's refresh before Epic 4, recorded in ops/settled-inputs-refresh.md.
+  # Moved: Traefik v3.7.13, the Style Dictionary floor to 5.5.5 (pin 5.5.2 under it, DW-295). Decided,
+  # the Operator may overrule: PostgreSQL 18 (19 at Beta 4), in place on the one box, and Traefik beside
+  # Caddy on 8443 with one Cloudflare Origin Rule per hostname as Story 4.2's NFR-2 mechanism. Probes:
+  # daisyUI 0, adoption 0, accessibility 1 on the standing 74 and 38; Registry verification dispatch
+  # 36690453047 green. No box half. Operator items 1 to 4 in the record (zone re-read, the three
+  # decisions, DW-295, 4.2's firewall and token prerequisites).
+  4-1-refresh-the-settled-inputs-and-choose-the-rebuild-topology: done
   4-2-traefik-with-host-matched-routers-and-dns-01: backlog
   4-3-migrate-list-wheel-the-static-first-candidate: backlog
   4-4-one-postgres-one-database-and-one-role-per-consumer: backlog

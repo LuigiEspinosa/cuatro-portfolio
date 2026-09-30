@@ -370,6 +370,7 @@ daisyUI does not name 5.0.35, so these two are enforced rather than merely recor
 | Phoenix, required | `~> 1.8.7` | the scratch `mix.exs`, which `phx_new-1.8.7` generated, matching `cs-tracker/mix.exs` |
 | Phoenix, resolved | **1.8.13** in the scratch application, against **1.8.7** in `cs-tracker/mix.lock` | both `mix.lock` files. The difference cannot reach the observation: `mix tailwind` shells out to the standalone Tailwind binary and Phoenix contributes nothing to CSS compilation |
 | Phoenix, resolved, re-read 2026-09-23 | **1.8.14** in that day's scratch application, against **1.8.7** still in `cs-tracker/mix.lock` at `ae34619` | the probe's `# versions` block and `cs-tracker/mix.lock`. **Observed 2026-09-23.** The one figure in this table that moved, and the row above says why it cannot reach the observation: every computed value reproduced |
+| Phoenix, resolved, re-read 2026-09-30 | **1.8.15** in that day's scratch application, against **1.8.7** still in `cs-tracker/mix.lock` at `2519fe3` | the probe's `# versions` block and `cs-tracker/mix.lock`. **Observed 2026-09-30**, the Epic 4 refresh (`ops/settled-inputs-refresh.md`). Moved again, and again it cannot reach the observation: every computed value and byte count reproduced |
 | `phx_new` archive | `phx_new-1.8.7` | `mix archive` |
 | Elixir and OTP | `Elixir 1.19.5`, `Erlang/OTP 28` | `elixir --version` |
 | Asset profile args | `--input=assets/css/app.css --output=priv/static/assets/css/app.css` | the scratch `config.exs`, matching `cs-tracker/config/config.exs:212-215` |
@@ -659,6 +660,56 @@ And its closing lines, verbatim:
 # 7 cases, 7 PASS, 0 FAIL
 # elapsed 73.0s
 # finished 2026-09-24T17:02:18.410Z
+```
+
+## Re-run 2026-09-30, the Epic 4 refresh
+
+**Observed 2026-09-30** on the Windows 11 development host, from this repository's root at `f4f9935`,
+against `cs-tracker` at `2519fe379251e0e4d8c1a4ae2e8ddfb028fc49b8`, read by
+`git -C ../cs-tracker-workspace/cs-tracker rev-parse HEAD`. That checkout carried uncommitted edits
+to its `AGENTS.md` and `CLAUDE.md` only, and its `git status --porcelain` was identical before and
+after the run. The run is AD-22's refresh check before Epic 4 (Story 4-1,
+`ops/settled-inputs-refresh.md`), from Git Bash with `NO_COLOR` unset.
+
+| Started (UTC) | Shell | Exit | Cases | Elapsed |
+|---|---|---|---|---|
+| `2026-09-30T08:29:53.244Z` | Git Bash, `NO_COLOR` unset | **0** | 7, 7 PASS | 83.1s |
+
+**It reproduced the 2026-09-24 run.** The same verdict line, the same seven PASS lines, Chromium
+151.0.7922.34, and the five compiled byte counts 18131, 18174, 18173, 18238 and 23426, each equal to
+that run's. One `# versions` line moved, `phoenixLocked` from `1.8.14` to `1.8.15`, recorded as a new
+row in the pin table. Its versions block, verbatim:
+
+```
+# versions
+  elixir               Elixir 1.19.5
+  otp                  Erlang/OTP 28
+  phxNew               phx_new-1.8.7
+  phoenixRequired      ~> 1.8.7
+  phoenixLocked        1.8.15
+  tailwindConfigured   4.1.12
+  tailwindGenerated    4.1.12
+  tailwindBanner       tailwindcss v4.1.12
+  esbuildConfigured    0.25.4
+  esbuildGenerated     0.25.4
+  daisyui              5.0.35
+  profileArgs          --input=assets/css/app.css --output=priv/static/assets/css/app.css
+  playwright           1.62.1
+  node                 v24.15.0
+```
+
+Its verdict and closing lines, verbatim:
+
+```
+PASS  Verdict: plugin-var, route A and css-var, route B are live. The two routes produce the same rendered result.
+```
+
+```
+# scratch tree removed: C:\Users\NUMCUA~1\AppData\Local\Temp\cuatro-daisyui-probe-2IOCyd (exists afterwards: false)
+
+# 7 cases, 7 PASS, 0 FAIL
+# elapsed 83.1s
+# finished 2026-09-30T08:31:16.348Z
 ```
 
 ## Pending Operator actions

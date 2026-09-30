@@ -9052,3 +9052,23 @@ status: done
     **Owner: the tracker's Epic 8 restyle and token adoption, or any story that next edits
     `image-tracker.yml`.** **Trigger: a third failure, or either of those stories.**
   status: open
+- id: DW-295
+  summary: >-
+    `packages/tokens` pins Style Dictionary 5.5.2, below the security floor AD-22's refresh raised to
+    5.5.5 on 2026-09-30.
+  evidence: |-
+    Found 2026-09-30 by Story 4-1's refresh (`ops/settled-inputs-refresh.md`). Two high advisories
+    published 2026-09-20 are patched only in 5.5.5: GHSA-cr3w-v879-f973 (prototype pollution in
+    `convertTokenData` through nested `constructor.prototype` and `__proto__` keys) and
+    GHSA-5pgh-4v89-hfqj (the GHSA-vj5c-m527-mpff fix incomplete in 5.4.4 and 5.5.0), read by
+    `gh api repos/style-dictionary/style-dictionary/security-advisories`. `packages/tokens/package.json`
+    and `pnpm-lock.yaml` hold 5.5.2. The spine's Stack row now states the floor as 5.5.5. The exposure
+    is narrow: Style Dictionary runs only at `tokens:build` on token sources this repository authors,
+    so the polluting input would have to be committed here; it is still a stated floor the pin is
+    under. Not bumped by Story 4-1, whose scope is the refresh record: the bump is a dependency change
+    that needs its own review, a `corepack pnpm tokens:build` whose output the `tokens-contract` drift
+    job must find byte-identical, and the suite.
+
+    **Owner: the Operator (ruling), then a `fix(dw-295)` commit.** **Trigger: the Operator's ruling,
+    or the next story that touches `packages/tokens`.**
+  status: open

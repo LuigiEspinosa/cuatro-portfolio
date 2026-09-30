@@ -464,6 +464,16 @@ The control holds: the three pinned sources reproduce the three published faces 
 | Geist | The same 13 commits | `fonts/Geist/variable/Geist[wght].ttf` is blob `f63f0afc` at both ends | The v1.7.2 zip's `Geist[wght].ttf` gives 264 glyphs and 24,100 bytes, identical to the published face in every table but `head`'s stamps and checksum, all 225 mapped glyphs identical | No change to what renders |
 | Bricolage Grotesque | `ateliertriay/bricolage` `main` is 4 commits past `8070cdb`, all of 2023-07, the last "Minor spacing and kerning tweaks", which between them change only `sources/BricolageGrotesque.glyphs` | `fonts/variable/BricolageGrotesque[opsz,wdth,wght].ttf` is blob `9a4ca271` at both ends, and upstream publishes no release | None exists | Nothing to take |
 
+**Re-checked 2026-09-30, after 08:37Z**, for AD-22's refresh check before Epic 4 (Story 4-1,
+`ops/settled-inputs-refresh.md`), by `gh api` (the last commit touching each pinned path on the default
+branch, `compare/<pin>...main`, and the releases list) and a `curl` of each pinned path at the upstream
+head with `sha256sum`. **Nothing moved since 2026-09-25.** For all five pinned files (the three
+faces and the two licence files) the last upstream commit touching the path is still the pinned
+commit, and the file at the head has the pinned byte count and sha256. `vercel/geist-font` `main` is
+still 13 commits past `a0a06a3`, at `10dc765`, with v1.7.2 still its latest release, so the Geist
+Mono finding stays DW-240's; `ateliertriay/bricolage` `main` is still 4 past `8070cdb`, with no
+release. No regeneration was run, and none is due.
+
 ## Stated limits
 
 Naming these is the point of the section: a contract that ships is easily mistaken for a contract

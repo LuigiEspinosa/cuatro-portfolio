@@ -34,12 +34,13 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
 - Architecture invariants AD-1 to AD-26:
   `_bmad-output/planning-artifacts/architecture/architecture-cuatro-portfolio-2026-08-15/ARCHITECTURE-SPINE.md`.
   Every story in `epics.md` names its governing AD. Read that AD before starting.
-- **`ops/` holds 30 records that are the operational source of truth, not the planning
+- **`ops/` holds 31 records that are the operational source of truth, not the planning
   artifacts.** Answer an operational question from there before inferring it from code:
   `routing-inventory.md` (the real routing table), `estate.md` (every application and its
   disposition), `known-violations.md` (what is knowingly in breach, and what closes it),
   `tracker-cutover.md` and `tournament-placement.md` (how the tracker and the tournament reached the
-  box, and their by-hand later rollouts), `capacity-threshold.md`, `contract-serving.md`,
+  box, and their by-hand later rollouts), `settled-inputs-refresh.md` (AD-22's refresh before Epic 4,
+  and the rebuild's topology decisions), `capacity-threshold.md`, `contract-serving.md`,
   `cs-tracker-token-adoption.md`, `rendered-output-harness.md`, `monitoring.md`,
   `backup-digital-library.md`, `bot-mitigation.md`, `asset-budget.md` (what the build actually ships,
   weighed), `registry-schema.md` (the App Registry's shape and its blocking gate),

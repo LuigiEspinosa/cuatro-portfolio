@@ -267,13 +267,13 @@ graph TD
 
 ## Stack
 
-Verified 2026-08-15. The code owns these once it exists; AD-22 governs when they are re-checked.
+Verified 2026-08-15. The code owns these once it exists; AD-22 governs when they are re-checked. Re-checked 2026-09-30 by Story 4-1; only the three rows that moved or were decided carry that date.
 
 | Name | Version |
 | --- | --- |
 | Ubuntu (VPS) | 24.04 LTS |
-| Traefik | v3.7.10 |
-| PostgreSQL | 18.6 (19 GA expected Sept 2026; greenfield target chosen at Epic 4 under AD-22) |
+| Traefik | v3.7.13 (was v3.7.10; re-verified 2026-09-30 under AD-22, `ops/settled-inputs-refresh.md`) |
+| PostgreSQL | 18.6, the greenfield target (decided 2026-09-30 under AD-22 by Story 4-1: 19 was at Beta 4 with GA planned for October 2026; `ops/settled-inputs-refresh.md`) |
 | restic | 0.19.1 |
 | docker-rollout | v0.14 |
 | Node.js | 24 LTS (22 is maintenance-only since 2025-10-21; Node 26 becomes LTS 2026-10-28, decided under AD-22) |
@@ -286,7 +286,7 @@ Verified 2026-08-15. The code owns these once it exists; AD-22 governs when they
 | GSAP + ScrollTrigger / lenis | 3.14.2 / 1.3.18 |
 | Vitest | 4.0.18 |
 | @playwright/test | 1.62.1 |
-| Style Dictionary | ≥ 5.5.1 (security floor) |
+| Style Dictionary | ≥ 5.5.5 (security floor, raised from 5.5.1 on 2026-09-30 under AD-22 by two advisories patched only in 5.5.5; the repository pins 5.5.2, DW-295) |
 | DTCG format module | 2025.10 |
 | Tailwind CSS (cluster + Phoenix) | v4 |
 | Phoenix (`cs-tracker`) | ~> 1.8.7 |
