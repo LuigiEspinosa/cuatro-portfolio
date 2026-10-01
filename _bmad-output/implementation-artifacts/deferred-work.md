@@ -9274,7 +9274,16 @@ status: done
     move's own dump, copied off the box in its step 4, is that database's first backup and is kept until
     Story 4.11. With the three stories written, what remains is box-side: each move's record confirming
     4.5 ran before it. **Trigger for closing:** the last of the three moves recorded.
-  status: open
+
+    **Closed 2026-10-01 by Epic 4 retrospective action 7 (finding L8).** The trigger fired with
+    `ops/cs-tracker-cutover.md` § Move run, and every move ran after Story 4.5's first run: the estate
+    backup's first run ended at 22:17Z on 2026-09-30, before Umami moved at 22:54Z, the tracker at 23:53Z and
+    `cs-tracker` at 00:06Z on 2026-10-01. Every moved consumer is dumped nightly since 2026-10-01T03:15Z:
+    `ops/postgres-backup.md` § First scheduled run reads `databases=4 dumps=ok tables=46 rows=53635`,
+    `offsite=ok-39c333df` and `restore=verified`. The old `~/cuatro-backup.sh` and the old stores were retired
+    by Story 4.11 (`ops/caddy-retirement.md` § Retirement run, steps 12 to 14), so no backup is left aimed at a
+    stale copy.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
   id: DW-302
   summary: >-
@@ -9586,4 +9595,101 @@ status: done
     **Owner: the Operator.** **Trigger: a ruling.** Either raise the zone's minimum TLS version (1.2 is the
     usual floor; check the oldest client the estate means to serve first) and record the before and after
     in `ops/routing-inventory.md` § Zone settings, or record the decision to keep 1.0 and why.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md`
+  id: DW-315
+  summary: >-
+    Nothing reads the estate's three nightly backup logs, so a red line (a failed dump, a refused offsite
+    copy, a restore that does not verify) sits in a file on the box until someone happens to look.
+  evidence: |-
+    Found 2026-10-01 by the Epic 4 retrospective (finding M2, action item 3). After Story 4-11 the box runs
+    three nightly jobs that each write one greppable summary line and an honest exit status:
+    `postgres-backup.sh` at 03:15 (`ops/postgres-backup.md` § Named limits 1), `library-backup.sh` at 03:45
+    (`ops/backup-digital-library.md` named limit 3) and `tournament-backup.sh` at 03:45
+    (`ops/tournament-placement.md` § Backup, named limit 2). Each record names the same gap, and nothing
+    reads any of the three `backup.log` files. The first unattended line of each was read by hand on
+    2026-10-01, all `exit=0`; that read is the whole of the observation so far.
+
+    Two constraints shape the reader. The UptimeRobot free plan refuses heartbeat monitors (DW-85, ruled
+    2026-09-12), so the usual dead man's switch is not available. And the deploy key's forced command
+    (`ops/deploy-remote.sh`, DW-264) runs only the deploy, so a scheduled GitHub workflow cannot read the box
+    over SSH as things stand. Two options fit both: (a) each backup script posts its summary line to a
+    first-party endpoint (a Hub route that keeps the last line per job, which the scheduled Registry
+    verification or a monitor on that route then reads for staleness or a non-zero exit); or (b) the forced
+    command gains a read mode that greps the three logs for last night's lines, and the next deploy run (or
+    a scheduled workflow using that mode) fails red on a missing line or a non-zero `exit=`. (b) touches the
+    forced command, which runs one deploy late (DW-264); (a) adds a write surface to the Hub that needs its
+    own authentication.
+
+    Decided by the orchestrator on 2026-10-01 under the Operator's delegation: the gap is filed here rather
+    than accepted in writing, and no reader is built in Epic 4.
+
+    **Owner: the Operator's planned clean start of every application, or Epic 5, whichever comes first.**
+    **Trigger: a red backup line that nobody saw**, or that clean start opening. Choose (a) or (b), build it,
+    and amend the three records' named limits to name the reader.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md`
+  id: DW-316
+  summary: >-
+    Umami's compose healthcheck is liveness only: `/api/heartbeat` answers 200 without touching the
+    database, so a Umami that cannot reach or authenticate to its Postgres still reports healthy.
+  evidence: |-
+    Found 2026-10-01 by the Epic 4 retrospective (finding L3, action item 8). `docker-compose.yml`, service
+    `anchor-umami`: the healthcheck is `curl -fsS http://127.0.0.1:3000/api/heartbeat`, and its own comment
+    says the route "answers 200 without touching the database". Story 4-7's rehearsal proved it:
+    `ops/postgres.md` § Moving Umami (Story 4-7), § Rehearsed off the box, the block "heartbeat with the
+    database paused" printed `200`. `DATABASE_URL` takes `${UMAMI_DB_PASSWORD-}`, which defaults to empty, so
+    a missing or wrong password still passes `up --wait` and `docker rollout`'s health gate. The tracker's
+    probe, by contrast, answers 200 only when Postgres and Redis both answer. The monitor on
+    `analytics.cuatro.dev` probes the same route, so it would stay green too; what breaks is event ingestion.
+
+    **Owner: the next change to `anchor-umami` (the next Umami pin bump is the likely one).** **Trigger: that
+    change, or a lost day of events.** Point the healthcheck at a route that reads the database (or add a
+    second check that does), prove it red with the database paused as the rehearsal did, and make
+    `UMAMI_DB_PASSWORD` required (`${UMAMI_DB_PASSWORD:?}`) rather than defaulted.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md`
+  id: DW-317
+  summary: >-
+    Traefik reaches `cs-tracker` by the generic alias `app` on the shared ingress network, the alias that
+    collided until 2026-09-29, so any future service named `app` on that network joins its round robin
+    silently.
+  evidence: |-
+    Found 2026-10-01 by the Epic 4 retrospective (finding L4, action item 8). `ops/traefik/dynamic/routes.yml`,
+    service `cs-tracker`: `url: http://app:4000`. Compose gives every service its own name as an alias on
+    each network it joins, and `cs-tracker_default` is the shared ingress network every upstream joins.
+    `ops/routing-inventory.md` § The shared network records the name's history: from 2026-08-24 to
+    2026-09-29 both `cs-tracker-app-1` and `cuatro-tracker-app-1` answered to `app`, and the collision ended
+    only because the tracker's replacement service is named `tracker`. Nothing refuses a second `app` today;
+    the only guard is that every other project picked a distinct service name. Every other upstream is
+    dialled by a project-specific alias (`anchor-app`, `cuatro-app`, `library-api`, `library-web`,
+    `list-wheel`, `tournament`).
+
+    **Owner: the next change in `cs-tracker`'s compose file (a second repository).** **Trigger: that
+    change, or any service named `app` joining `cs-tracker_default`.** Give `cs-tracker`'s service a unique
+    alias on that network (for example `cs-tracker-app` under its default network's `aliases`), move the
+    router's `url` to it in `routes.yml` and its pin in `ops/__tests__/traefik-config.test.ts`, and amend
+    § The shared network.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md`
+  id: DW-318
+  summary: >-
+    The nightly backup jobs run from installed copies, not from the checkout, so a fix merged to `main`
+    reaches the box only when someone re-runs an install, and nothing compares the two.
+  evidence: |-
+    Found 2026-10-01 by the Epic 4 retrospective (finding L14, action item 8). `ops/postgres-backup.md`
+    § Install and first run, step 3 installs `postgres-backup.sh` and `postgres-restore-verify.sh` into
+    `/home/deploy/` and cron runs those copies; `ops/tournament-placement.md` § Backup does the same for the
+    tournament's two scripts; the library's three run from `/usr/local/sbin/`. The precedent that this
+    drifts is already on record: `ops/backup-digital-library.md` Pending Operator action 9, "Install the
+    2026-09-24 scripts on the box", is still `_not done_`. Read on the box on 2026-10-01 at about 07:22Z,
+    read-only, against its checkout at `8f33ead`: the estate's and the tournament's copies match the
+    checkout byte for byte (`cmp`), and all three library copies differ (installed 2026-08-24; for example
+    `/usr/local/sbin/library-backup.sh` lacks the `export S3_CONNECT_TIMEOUT S3_MAX_TIME` the 2026-09-24
+    change added). So the library job runs a version the repository fixed a week ago.
+
+    **Owner: the Operator's planned clean start of every application (with DW-315, the same scripts).**
+    **Trigger: that clean start, or the next change to any backup script.** Either run the cron lines from
+    the checkout the deploy maintains, or make the deploy (or DW-315's reader) compare each installed copy's
+    sha256 with the checkout's and go red on a difference; and run the library's action 9 meanwhile.
   status: open

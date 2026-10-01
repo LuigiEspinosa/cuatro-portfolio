@@ -4280,6 +4280,20 @@ report them as not-ready.**
 
 Traefik, one Postgres, `docker-rollout`, and four live subdomains that serve throughout.
 
+**Amended 2026-10-01 (Epic 4 retrospective action 1, finding M1), decided by the orchestrator on
+2026-10-01 under the Operator's delegation: no new story now.** What the epic delivered is the topology:
+Traefik as the one ingress on 80 and 443, the one Postgres with a database and role per consumer, the
+nightly `pg_dump` with restic offsite, and the move of every hostname, more than the four this line
+names: `cuatro.dev` and `www`, `analytics`, `tracker`, `library`, `cs-tracker` and `wheel` by their own
+stories, and `tournament.cuatro.dev`, which postdates this epic's writing, absorbed by Story 4.11
+(`ops/caddy-retirement.md` § Retirement run, step 2). The deploy half of the goal, every application
+deploying by pulling a CI-built image and rolling it with `docker-rollout`, was named by no story's
+acceptance intent and did not ship: `list-wheel` is still compiled on the box (DW-308, KV-1's `list-wheel`
+half), `digital-library`'s images are built on the box (DW-185), the tracker and the tournament roll by
+hand (DW-275), and the tracker's Redis and qBittorrent still run in the old `cuatro-tracker` project
+(DW-306). Those four entries carry it. Their natural home is the Operator's planned clean start of every
+application after this project, and the Operator decides then whether it becomes a story.
+
 **Governing ADs:** AD-7, AD-8, AD-10, AD-20, AD-22, AD-23
 **Blocked by:** Story 1.7 (the routing inventory, the rebuild must preserve four subdomains it
 cannot enumerate from source) and Epic 3 (a host that pulls images requires images to exist).
