@@ -363,6 +363,15 @@ after a backup and restore proved against the live counts minutes before. Caddy'
 remains, unreached, until Story 4.11. Readings in `ops/backup-digital-library.md` § Cutover run,
 library.cuatro.dev.
 
+**Amended 2026-10-01 by Story 4-10.** No row changes. `cs-tracker`'s data is in `cs_tracker` on
+`estate-postgres` since 2026-10-01T00:36Z: `cs-tracker-app-2` reaches it as role `cs_tracker` with
+`POOL_SIZE=10`, every non-Oban row of the old store carried over and counted, and `migrate` is a discrete
+step under its compose profile (`cs-tracker` commit `ca75686`). `cs-tracker.cuatro.dev` is served by Traefik
+through a Cloudflare Origin Rule (ruleset `518ad07108bc402fa36ad71fe1e76862`, rule
+`86b7df5f45ea4c998398cc724000196d`) since 2026-10-01T00:56Z. Caddy stays up in the `cs-tracker` project;
+`cs-tracker-db-1` and Caddy's `cs-tracker.cuatro.dev` block remain, unreached, until Story 4.11. Readings in
+`ops/cs-tracker-cutover.md` § Move run, 2026-10-01.
+
 | Application | Disposition | Status | `absorbed_into` | Registry treatment |
 |---|---|---|---|---|
 | `cuatro-portfolio` | Anchor | `Live` | n/a | The Hub itself; rendered |

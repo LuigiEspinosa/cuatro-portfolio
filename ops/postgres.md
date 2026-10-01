@@ -341,7 +341,9 @@ move ran from 2026-09-30T23:53Z to 2026-10-01T00:02Z: `ops/tracker-cutover.md` �
 **Story 4-10, 2026-09-30:** `cs-tracker`'s move is written in `ops/cs-tracker-cutover.md` § The sequence,
 a record of its own, since no record here owned how `cs-tracker` runs. It counts every table but Oban's
 queue, which the serving application writes throughout, and makes the migration discrete in
-`cs-tracker`'s compose, whose `app` started `migrate` through `depends_on`.
+`cs-tracker`'s compose, whose `app` started `migrate` through `depends_on`. **Amended 2026-10-01:** the
+move ran from 00:06Z, the app onto `cs_tracker` at 00:36Z and the hostname onto Traefik at 00:56Z:
+`ops/cs-tracker-cutover.md` § Move run, 2026-10-01.
 
 With `SRC`, `SRC_ROLE`, `SRC_DB` and `ROLE` set from that row:
 

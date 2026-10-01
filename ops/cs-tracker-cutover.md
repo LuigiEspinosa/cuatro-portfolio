@@ -19,6 +19,13 @@ the box but wrote nothing to it, and wrote nothing to `LuigiEspinosa/cs-tracker`
 repository needs is § The cs-tracker change, for the Operator to land. Every box step is a Pending
 Operator action at the end.
 
+**Amended 2026-10-01:** the sequence ran on the box from 00:06Z (§ Move run, 2026-10-01 below), run by the
+orchestrator over the `deploy` user's key with the Operator present, and § The cs-tracker change landed on
+`LuigiEspinosa/cs-tracker` `main` as `ca75686d23162fd32f79f5e1cd8b41c24e25bf92`, pushed by the orchestrator
+on the Operator's explicit go, so the claim above that nothing was written to that repository no longer
+holds. Since 00:36Z `cs-tracker-app-2` serves from `cs_tracker` on `estate-postgres`, and since 00:56Z
+Traefik serves `cs-tracker.cuatro.dev` through an Origin Rule.
+
 ## What serves it today
 
 **Observed 2026-09-30 between 18:05Z and 18:10Z, read-only, over SSH as `deploy`** (`docker ps`,
@@ -504,14 +511,84 @@ printed. `$Q` counts every table but Oban's (decision 1); the old side's `conns`
 **Later rollouts** after the move take the compose file's header: `docker compose build app`,
 `docker compose run --rm migrate`, `docker rollout -w 20 app`, each migration expand-only (AD-23).
 
+### Move run, 2026-10-01
+
+**Observed from 00:06Z to 02:16Z on 2026-10-01 on the box as `deploy`, run by the orchestrator with the
+Operator present; the Operator did the Steam sign-ins and gave the go for the `cs-tracker` push.**
+Preconditions, each recorded: `ops/postgres.md` § Placement run, 2026-09-30 (step 4 printed
+`cs_tracker cs_tracker 25`, and the network `estate-postgres` exists); `ops/postgres-backup.md` § First run;
+`ops/traefik-cutover.md` § Cutover run and § Cutover run, cuatro.dev and www; `main` at `f9ea578` carrying
+Story 4-10's commits (`93949a2`, `ed8c210`), Deploy run 36779534561, so the box's
+`ops/traefik/dynamic/routes.yml` has the `forwarded-proto-https` middleware; the Origin Rules token on the
+workstation. Run outside 02:45 to 03:15. `jq` is not in the workstation's Git Bash, so `node` parsed the
+JSON of step 11.
+
+- **Step 1**, 00:06:24Z: load average `0.38, 0.37, 0.34`. `cs-tracker-app-1 Up 5 days`,
+  `cs-tracker-migrate-1 Exited (0) 5 days ago`, `cs-tracker-caddy-1 Up 2 months`, `cs-tracker-db-1 Up 2
+  months (healthy)`, no other `app` container; the source's migrations `10 20260622181145`; `0` public
+  tables in the target; `estate 0`, `old 12`; `docker-rollout version v0.14`. The checkout at `2519fe3`
+  with ` M Caddyfile` and the `Caddyfile.bak-*` files; the network `estate-postgres` present; the source
+  database 37 MB.
+- **Pending action 2**, about 00:33Z: the patch extracted from this file with the action's `awk` line,
+  112 lines, `sha256` `58cadec9c03b9ddc067d5254cadb38dfeb1933f5e1fab77cd1b8c7b29955ede7`, the recorded
+  value. It applied cleanly to a fresh clone of `LuigiEspinosa/cs-tracker` at `main` `2519fe3` (the branch
+  unprotected, no `.github/workflows`) and was committed and pushed to `main` as
+  **`ca75686d23162fd32f79f5e1cd8b41c24e25bf92`**, "chore: migrate as a discrete step and join
+  estate-postgres for the estate Postgres move", by the orchestrator on the Operator's explicit go.
+- **Step 2**, 00:35:07Z: `git pull --ff-only` brought `ca75686` (2 files changed, 39 insertions, 21
+  deletions); `docker compose config --services` printed `app caddy db`; `app`'s `depends_on` count `0`;
+  `git status --short` unchanged (` M Caddyfile` and the `Caddyfile.bak-*` files); load average `0.36,
+  0.27, 0.23`.
+- **Step 3**: the request loop ran on the workstation from 00:35:54Z to 00:37:02Z, 48 lines. It started
+  five seconds after step 4's dump, so it covers steps 5 to 10; the dump only read the old store.
+- **Step 4**, 00:35:49Z: **`DUMP=/home/deploy/pg-move/cs_tracker-20261001T003549Z.dump`**, `exit=0`,
+  1261786 bytes. Its counts, every table but Oban's: `catalog_sync_state 1`, `inventory_entries 113`,
+  `items 1974`, `ownership_marks 0`, `price_snapshots 21119`, `schema_migrations 10`,
+  `steam_rate_limit_state 1`, `wishlist_entries 0`. Load average `0.31, 0.27, 0.23` at 00:35:50Z. Both
+  files were copied to the workstation by `scp`, and the dump's sha256 matched there (prefix
+  `c3c48ffb11a32a82`).
+- **Step 5**: `pg_restore` `exit=0`.
+- **Step 6**: `counts-match`, `counts-match-dump`, `0` foreign-owned objects, `pg_trgm cs_tracker`.
+- **Step 7**: `.env` copied to `/home/deploy/pg-move/cs-tracker.env.pre-4-10`; the rewrite under `umask
+  077` counted `1` and `1` (`POOL_SIZE=10` appended).
+- **Step 8**: `docker compose run --rm migrate` printed `00:35:52.940 [info] Migrations already up`, exit
+  0; `estate 0`, `old 12`; load average `0.36, 0.28, 0.23` at 00:35:53Z.
+- **Step 9**: `docker rollout -w 20 app` exit 0 ("Stopping and removing old containers"). Then
+  `cs-tracker-app-2 Up 22 seconds`, `cs-tracker-migrate-1 Exited (0) 5 days ago`, `cs-tracker-caddy-1 Up
+  2 months`, `cs-tracker-db-1 Up 2 months (healthy)`; the app's environment `POOL_SIZE=10` and
+  `@estate-postgres:5432/cs_tracker`. After 10 seconds `estate 11`, `old 1`; `old-unchanged`; log errors
+  `0`; load average `0.32, 0.28, 0.23` at 00:36:26Z.
+- **Step 10**, 00:37:22Z: the 48 probe lines counted `302` alone. From the workstation the socket upgrade
+  answered `101` through Caddy. `node ops/cs-tracker-adoption-probe.mjs` exited 0; `/assets/css/app.css`
+  held 12 `--token-*` roles; `/` answered `302` to `https://cs-tracker.cuatro.dev/auth/steam`; the monitor
+  803750016 read `UP`. The Operator signed in with Steam and reported the page looked fine.
+- **Step 11**, 00:55:34Z: Traefik on 8443 answered `/` with `302`; the `forwarded-proto-https` line count
+  `1`; load average `0.07, 0.23, 0.23`. The request loop ran from 00:55:46Z to 00:57:51Z, 85 lines. The rule
+  was added to ruleset `518ad07108bc402fa36ad71fe1e76862` at **`MOVED=2026-10-01T00:56:08Z`**: rule
+  **`86b7df5f45ea4c998398cc724000196d`**, "Story 4-10: cs-tracker.cuatro.dev to Traefik on 8443", `true`
+  and `[]`. The ruleset then held seven rules: wheel, www, apex, analytics, tracker, library and
+  cs-tracker. At 00:56:22Z: `/` `HEAD` and `GET` `302` to `/auth/steam` with no `via` line;
+  `/assets/css/app.css` 200 with 12 tokens and no `via` line; the socket upgrade through Traefik answered
+  `101`. On the box at 00:56:23Z: load average `0.03, 0.19, 0.21`, and Traefik's `ESTABLISHED` count 11.
+- **Step 12**, 00:58:11Z: the 85 probe lines counted `302` alone. The Operator signed in with Steam again,
+  through the new path, and reported it done. The monitor 803750016 read `UP` at 02:16Z (in that state 36d
+  3h, no new incident). On the box at 02:16:44Z: load average `0.26, 0.47, 0.35`; `cs-tracker-app-2 Up 2
+  hours`; `pg_stat_activity` `cs_tracker 11`, `cuatro_tracker 2`; Traefik's `ESTABLISHED` count 13;
+  `docker stats` `traefik` 26.07 MiB, `caddy` 20.56 MiB, `estate-postgres` 124 MiB.
+
+Rollbacks R1 and R2 were not needed and not run. `/home/deploy/pg-move` keeps the dump and its `.counts`,
+`cs-tracker.env.pre-4-10`, `cst-migrate.log` and `cst-rollout.log` until Story 4.11. Caddy stays up in the
+`cs-tracker` project; its `cs-tracker.cuatro.dev` block and `cs-tracker-db-1` with its volume remain,
+unreached, until Story 4.11.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| 1 | **Confirm or overrule Story 4-10's decisions**: no freeze with the Oban tables left out of the count, the migration made discrete in `cs-tracker`'s compose, `POOL_SIZE=10` written into `.env`, the `.env` copy outside the checkout, data before hostname, the router's `forwarded-proto-https` middleware, this record | The Story 4-10 spec's Design Notes carry the reasoning | _not done_ |
-| 2 | **Land § The cs-tracker change on `LuigiEspinosa/cs-tracker` `main`**: extract the diff from this file with its line endings made LF, `awk '{sub(/\r$/,"")} /^```diff$/{f=1;next} /^```$/{f=0} f' ops/cs-tracker-cutover.md > cs-tracker-4-10.patch` (checked on an LF and a CRLF copy), check `sha256sum cs-tracker-4-10.patch` prints `58cadec9c03b9ddc067d5254cadb38dfeb1933f5e1fab77cd1b8c7b29955ede7`, then in a clean `cs-tracker` checkout at `2519fe3` or later: `git apply cs-tracker-4-10.patch && git add docker-compose.yml docs/deployment.md && git commit -m "chore: migrate as a discrete step and join estate-postgres for the estate Postgres move" && git push origin main` | No CI runs there and no deploy fires; the box takes it at step 2 | _not done_ |
-| 3 | **Merge the commit carrying Story 4-10 into `main`** and let the Deploy run | It rolls the Hub alone and brings the router's middleware to the box's watched `ops/traefik/dynamic/`; nothing routes to it until step 11 | _not done_ |
-| 4 | **Run § The sequence, steps 1 to 13**, after `ops/postgres.md` action 3, `ops/postgres-backup.md` § Install and first run and action 2 here; steps 11 and 12 also after `ops/traefik-cutover.md` actions 4 and 6, action 3 here and the origin rules token | Step 13 amends `ops/routing-inventory.md`, `ops/estate.md` and `ops/cs-tracker-token-adoption.md` | _not done_ |
+| 1 | **Confirm or overrule Story 4-10's decisions**: no freeze with the Oban tables left out of the count, the migration made discrete in `cs-tracker`'s compose, `POOL_SIZE=10` written into `.env`, the `.env` copy outside the checkout, data before hostname, the router's `forwarded-proto-https` middleware, this record | The Story 4-10 spec's Design Notes carry the reasoning. The Operator was present for the move on 2026-10-01 and overruled nothing; an explicit word is awaited, so the row stays open | _not done_ |
+| 2 | **Land § The cs-tracker change on `LuigiEspinosa/cs-tracker` `main`**: extract the diff from this file with its line endings made LF, `awk '{sub(/\r$/,"")} /^```diff$/{f=1;next} /^```$/{f=0} f' ops/cs-tracker-cutover.md > cs-tracker-4-10.patch` (checked on an LF and a CRLF copy), check `sha256sum cs-tracker-4-10.patch` prints `58cadec9c03b9ddc067d5254cadb38dfeb1933f5e1fab77cd1b8c7b29955ede7`, then in a clean `cs-tracker` checkout at `2519fe3` or later: `git apply cs-tracker-4-10.patch && git add docker-compose.yml docs/deployment.md && git commit -m "chore: migrate as a discrete step and join estate-postgres for the estate Postgres move" && git push origin main` | No CI runs there and no deploy fires; the box takes it at step 2. The patch's sha256 matched, it applied cleanly to a fresh clone at `2519fe3`, and it was pushed as `ca75686d23162fd32f79f5e1cd8b41c24e25bf92` by the orchestrator on the Operator's explicit go (§ Move run, 2026-10-01) | 2026-10-01T00:33Z |
+| 3 | **Merge the commit carrying Story 4-10 into `main`** and let the Deploy run | It rolls the Hub alone and brings the router's middleware to the box's watched `ops/traefik/dynamic/`; nothing routes to it until step 11. PR #88 merged as `f9ea578`, carrying `93949a2` and `ed8c210`, and Deploy run 36779534561 ran; the box's `routes.yml` counted the middleware `1` at step 11 | 2026-09-30T21:27Z |
+| 4 | **Run § The sequence, steps 1 to 13**, after `ops/postgres.md` action 3, `ops/postgres-backup.md` § Install and first run and action 2 here; steps 11 and 12 also after `ops/traefik-cutover.md` actions 4 and 6, action 3 here and the origin rules token | Step 13 amends `ops/routing-inventory.md`, `ops/estate.md` and `ops/cs-tracker-token-adoption.md`. Done: § Move run, 2026-10-01, from 00:06Z, the hostname moved at 00:56:08Z | 2026-10-01 |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.

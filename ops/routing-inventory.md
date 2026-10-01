@@ -640,6 +640,16 @@ split Caddy's block makes. The ruleset now holds six rules (wheel, www, apex, an
 Caddy's `library.cuatro.dev` block below remains, unreached, until Story 4.11; deleting the rule sends the
 hostname back to it. Readings in `ops/backup-digital-library.md` § Cutover run, library.cuatro.dev.
 
+**Amended 2026-10-01 (Story 4-10):** `cs-tracker.cuatro.dev` is served by Traefik through a Cloudflare
+Origin Rule since 2026-10-01T00:56Z. The same entrypoint (ruleset `518ad07108bc402fa36ad71fe1e76862`) gained
+rule `86b7df5f45ea4c998398cc724000196d` at 00:56:08Z, sending `(http.host eq "cs-tracker.cuatro.dev" and ssl)`
+to origin port 8443, where Traefik's `cs-tracker` router dials `http://app:4000` (now `cs-tracker-app-2`), the
+upstream Caddy's block names, with `forwarded-proto-https` so the LiveView socket answers `101`. The
+ruleset now holds seven rules (wheel, www, apex, analytics, tracker, library, cs-tracker). Of Caddy's eight
+blocks below, seven are unreached until Story 4.11; `tournament.cuatro.dev` has no Origin Rule and is still
+served by Caddy on 443. Deleting a rule sends that hostname back to its block. Readings in
+`ops/cs-tracker-cutover.md` § Move run, 2026-10-01.
+
 ### The site blocks, as installed
 
 **Amended 2026-09-30:** an eighth block, `tournament.cuatro.dev`, was appended to

@@ -984,7 +984,16 @@ development_status:
   # (Traefik forwards wss), fixed with forwarded-proto-https in ops/traefik/. Caddy stays up in that project until
   # 4-11. Box half is the Operator's, § The sequence steps 1 to 13 and § Pending Operator actions 1 to 4, after the
   # 4-4 placement, the 4-5 install and, for the hostname, 4-2 and 4-6. DW-309 filed, DW-301 noted.
-  4-10-migrate-cs-tracker-cuatro-dev: awaiting-operator
+  # 4-10 done 2026-10-01: box half ran from 00:06Z with the Operator present. Action 2 landed the patch (sha256
+  # matched) on cs-tracker main as ca75686 on the Operator's go. Dump cs_tracker-20261001T003549Z.dump exit=0,
+  # 1261786 bytes, pg_restore exit=0, counts-match and counts-match-dump, migrate "Migrations already up";
+  # docker rollout put cs-tracker-app-2 on estate-postgres/cs_tracker with POOL_SIZE=10, estate 11 and old 1,
+  # old-unchanged, the 48 line probe 302 alone, the socket 101. Origin Rule 86b7df5f45ea4c998398cc724000196d moved
+  # cs-tracker.cuatro.dev onto Traefik at 00:56:08Z (seven rules now); the 85 line probe 302 alone, socket 101,
+  # Steam sign-in on both paths, monitor 803750016 UP at 02:16Z. Readings in ops/cs-tracker-cutover.md § Move run,
+  # 2026-10-01; Pending actions 2 to 4 dated. Action 1 (confirm or overrule the decisions) stays open: nothing
+  # overruled, an explicit word awaited. DW-310 closed. tournament.cuatro.dev is the one hostname still on Caddy.
+  4-10-migrate-cs-tracker-cuatro-dev: done
   4-11-retire-caddy-and-decommission-the-old-topology: backlog
   epic-4-retrospective: optional
 

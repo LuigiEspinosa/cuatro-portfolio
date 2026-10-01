@@ -9423,7 +9423,16 @@ status: done
     other 4-x runbooks (the tracker's in `ops/tracker-cutover.md`, `cs-tracker`'s in
     `ops/cs-tracker-cutover.md`, the library's) for a compose command against this checkout's
     `docker-compose.yml` without `HUB_TAG` exported, and fix any before it runs.
-  status: open
+
+    **Closed 2026-10-01 by Story 4-10's box half, found already clear.** The tracker's runbook
+    (`ops/tracker-cutover.md` § Moving the database onto the estate Postgres) exports `HUB_TAG` before its
+    compose commands, and its move ran clean on 2026-09-30. `cs-tracker`'s compose commands run in
+    `/home/deploy/cs-tracker` against that project's own compose file, never this checkout's
+    `docker-compose.yml`, so they need none; its move ran clean on 2026-10-01
+    (`ops/cs-tracker-cutover.md` § Move run, 2026-10-01). The library's move
+    (`ops/backup-digital-library.md`) has no compose command against `docker-compose.yml`; its one compose
+    command names `ops/traefik/compose.yml`, which interpolates no `HUB_TAG`. No runbook needed a fix.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-8-migrate-tracker-cuatro-dev.md`
   id: DW-311
   summary: >-
