@@ -119,6 +119,13 @@ under AD-20's Epic 4 reading, and nothing in retiring Caddy depends on it. The A
 (2026-09-29T20:41:37Z); `Status` stays `Open` on the `list-wheel` half. The `digital-library` and
 `cs-tracker` images are built on the box too, observed and not ruled (DW-185), outside this entry's scope.
 
+**Amended 2026-10-01 (Story 4-11, box half):** the old topology is gone. `ops/caddy-retirement.md`
+§ Retirement run retired the shared Caddy, the 8443 Traefik instance, every Origin Rule and the three
+Postgres 16 stores the moves left, and `wheel.cuatro.dev` is served by `traefik-ingress-1` on 443 since
+05:22:22Z. None of that touches this entry: `list-wheel`'s deploy still runs `--build` on the box. The
+Anchor's half stays retired (2026-09-29T20:41:37Z); the `list-wheel` half stays open, its closer DW-308;
+`Status` stays `Open`.
+
 ### Why it is tolerated rather than fixed now
 
 Fixing it early means building the CI-to-GHCR path twice: once against today's single-app

@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-01-2026 03:22
+last_updated: 10-01-2026 06:30
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -854,7 +854,15 @@ development_status:
   # build-on-the-box deploy, so the orientation, paths, and the AD-8 pitfall line
   # in the AGENTS.md block all change.
 
-  epic-4: in-progress
+  # 2026-10-01: done. All eleven stories done, 4-1 to 4-11, the box halves run on 2026-09-30 and 2026-10-01
+  # with the Operator present. The box end state: Traefik v3.7.13 as traefik-ingress-1 alone on 80 and 443 (the
+  # Origin CA pair from traefik-origin-ca, dashboard on loopback 8081), no Cloudflare Origin Rule, 8443 closed;
+  # Caddy, the 8443 instance and the three Postgres 16 stores retired after offsite dumps; one Postgres,
+  # postgres-estate-postgres-1 (18.6), holding umami, cuatro_tracker, cs_tracker and cuatro_finance, backed up
+  # nightly at 03:15 to restic in R2; the cs-tracker project running app alone, cuatro-tracker redis and
+  # qbittorrent alone. Every decisions row confirmed by the Operator's word of 2026-10-01. Open, gating no
+  # story: DW-275, DW-306, DW-307, DW-308 (KV-1's list-wheel half), DW-311, DW-312, DW-313, DW-314.
+  epic-4: done
   # 4-1 done 2026-09-30: AD-22's refresh before Epic 4, recorded in ops/settled-inputs-refresh.md.
   # Moved: Traefik v3.7.13, the Style Dictionary floor to 5.5.5 (pin 5.5.2 under it, DW-295). Decided,
   # the Operator may overrule: PostgreSQL 18 (19 at Beta 4), in place on the one box, and Traefik beside
@@ -1006,7 +1014,18 @@ development_status:
   # retired-4-11) and verified; two cs-tracker diffs with sha256 and subjects. Inventory, estate and KV-1 revised
   # as dated revisions. DW-309 closed, DW-312 filed; DW-308, 185, 187, 275, 306, 311 left open by decision. Box
   # half is the Operator's: ops/caddy-retirement.md § The sequence steps 1 to 16, § Pending Operator actions 1 to 7.
-  4-11-retire-caddy-and-decommission-the-old-topology: awaiting-operator
+  # 4-11 done 2026-10-01: box half ran from 05:02Z to 06:12Z with the Operator present, recorded in
+  # ops/caddy-retirement.md § Retirement run. tournament.cuatro.dev moved onto Traefik by rule
+  # 24428c40a067407983ee72b4abf32016 at 05:03:24Z; PR #89 merged as 50fde81 (Deploy 36819206014); the pair into
+  # traefik-origin-ca; traefik-ingress-1 took 80 and 443 at 05:21:41Z; the eight rules deleted 05:22:22Z to
+  # 05:30:12Z (the empty ruleset stays); traefik-traefik-1 stopped 05:33:24Z and removed; 8443 closed at the
+  # firewall 05:56:00Z; Caddy archived offsite (7850bacb) and retired with cs-tracker 9a5a4be; anchor-db,
+  # cuatro-tracker-postgres-1 and cs-tracker-db-1 each dumped, copied offsite (fd14edeb, 0b5d5e60, a4032342) and
+  # removed with their volumes, cs-tracker bde2b3f dropping db; the 03:30 cuatro-backup.sh line retired; the move
+  # leftovers archived (4a4f714a). Probes: 91 and 264 lines, no 000; Steam sign-in and cuatro.dev fine; eight
+  # monitors UP. Every decisions row in the Epic 4 records closed on the Operator's word of 2026-10-01; actions
+  # 6 and 7 here deferred to the clean start. DW-296 closed; DW-312 half taken; DW-313 and DW-314 filed.
+  4-11-retire-caddy-and-decommission-the-old-topology: done
   epic-4-retrospective: optional
 
   epic-5: backlog

@@ -9148,7 +9148,13 @@ status: done
     (`ops/__tests__/traefik-config.test.ts` holds both). `ops/caddy-retirement.md` step 3 fills that volume
     from `/home/deploy/origin-ca/`, compared byte for byte with Caddy's copy, and step 11 retires the old
     volume after archiving it offsite. Closes when that runbook's step 11 is recorded.
-  status: open
+
+    **Closed 2026-10-01 by Story 4-11's box half** (`ops/caddy-retirement.md` § Retirement run). Step 3
+    filled `traefik-origin-ca` at 05:21:13Z (`pair-equal`, `origin.key` `-rw-------`), `traefik-ingress-1`
+    has served the pair from it on 443 since 05:21:41Z (`CN = CloudFlare Origin Certificate`, notAfter
+    2041-08-13), and step 11 archived `cs-tracker_caddy_data` offsite (restic snapshot `7850bacb`) before
+    removing it at 05:57Z. Nothing reads the old volume, which no longer exists.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
   id: DW-297
   summary: >-
@@ -9534,4 +9540,50 @@ status: done
     **Owner: the next AGENTS.md context refresh (with DW-298 and DW-303), after `ops/caddy-retirement.md`
     step 16 is recorded.** **Trigger: that record.** Delete `docker/Caddyfile` and the comment naming it,
     and say in AGENTS.md that Traefik in `ops/traefik/` is the box's ingress on 80 and 443.
+
+    **2026-10-01: the trigger fired, half taken.** Step 16 was recorded the same day
+    (`ops/caddy-retirement.md` § Retirement run), and `docker/Caddyfile` now describes a proxy that is gone.
+    The same documentation-only commit amended AGENTS.md's lines about the box that had become false: the
+    `docker/Caddyfile` pitfall now says Caddy is retired and Traefik in `ops/traefik/` is the ingress on 80
+    and 443 (no other AGENTS.md line named Caddy, 8443 or the old stores). Still due, and not documentation: delete
+    `docker/Caddyfile` and the comment naming it at `packages/contracts-serve/publish.mjs:9`, in a commit that
+    goes through a PR; and the `ops/` count ("30 records") at the next context refresh. Owner and trigger
+    otherwise unchanged.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-11-retire-caddy-and-decommission-the-old-topology.md`
+  id: DW-313
+  summary: >-
+    Two finance tamper cases can pass their own tamper as a no-op, so CI fails on them about one run in 256
+    each with nothing changed.
+  evidence: |-
+    Found 2026-10-01 by Story 4-11's box half (`ops/caddy-retirement.md` § Retirement run, Pending action
+    2). PR #89's CI run on `da3d82f` (36812668126) failed once on `apps/finance/lib/__tests__/crypto.test.ts`,
+    "throws CryptoError when auth tag is modified", though `da3d82f` changed documentation only after
+    `5b324ba`'s green run; the failed job re-run passed. The case builds its tamper as
+    `payload.tag.slice(0, -2) + "ff"`: it overwrites the hex tag's last byte with `ff`, and when that byte
+    already is `ff` (one encryption in 256, the tag being random) the payload is unchanged, `decrypt`
+    succeeds, and the expected `CryptoError` never comes. "throws CryptoError when IV is modified" builds
+    its tamper the same way on `payload.iv` (read 2026-10-01), so it carries the same odds.
+
+    **Owner: the next change under `apps/finance`.** **Trigger: that change, or any red CI on either
+    case.** Make the tamper deterministic, flipping a bit of the last byte (XOR with `0x01`) rather than
+    overwriting it, so the payload always differs; the test still proves the code's behaviour, not its
+    implementation.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-11-retire-caddy-and-decommission-the-old-topology.md`
+  id: DW-314
+  summary: >-
+    The zone's edge still accepts TLS 1.0, read again on 2026-10-01, and nobody has ruled on it.
+  evidence: |-
+    Found 2026-10-01 by the zone re-read that closed `ops/settled-inputs-refresh.md` Pending Operator action
+    1 at 04:58:21Z, with the zone token: `min_tls_version` `1.0`, beside `ssl` `strict` and
+    `always_use_https` `off`. DW-167 first named the reading on Story 1-3 as one of two worth acting on
+    separately, inside a wider sweep of proxy defaults; `ops/routing-inventory.md` § Zone settings records
+    it as unchanged since. It is an edge setting, so it touches every proxied hostname at once and no
+    origin: Traefik on the box negotiates with Cloudflare, not with the visitor. Not changed on 2026-10-01:
+    Story 4-11 retired the origin topology and changed no zone setting.
+
+    **Owner: the Operator.** **Trigger: a ruling.** Either raise the zone's minimum TLS version (1.2 is the
+    usual floor; check the oldest client the estate means to serve first) and record the before and after
+    in `ops/routing-inventory.md` § Zone settings, or record the decision to keep 1.0 and why.
   status: open

@@ -163,10 +163,10 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   image merges unnoticed: read them on the pushed sha before a merge. Image (tracker) has failed on a
   transient `next/font` Google Fonts fetch with nothing under `apps/tracker` changed; re-run it before
   debugging.
-- `docker/Caddyfile` is the Anchor's fragment of the one shared Caddyfile on the box
-  (`/home/deploy/cs-tracker/Caddyfile`), and no process here reads it: editing it changes nothing
-  live, and the box's copy is not in git. Read `ops/routing-inventory.md` for the real routing
-  table.
+- `docker/Caddyfile` describes a proxy that is gone: since 2026-10-01 (`ops/caddy-retirement.md`
+  § Retirement run) the box's ingress is Traefik from `ops/traefik/`, `traefik-ingress-1` on 80 and
+  443, and the shared Caddy and its Caddyfile are retired. No process reads that file, so editing it
+  changes nothing (DW-312 deletes it). Read `ops/routing-inventory.md` for the real routing table.
 - Adding an application to `deploy.yml` trips the Capacity Gate (AD-9), which refuses any id
   not in `placements` in `ops/capacity-gate.yml` (six today, `cs-tournament` the latest). The gate is
   open on a measured threshold (load15 0.60). Read `ops/capacity-threshold.md` before editing

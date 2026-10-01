@@ -26,6 +26,15 @@ service `ingress`, and `ops/caddy-retirement.md` takes the box there. Commands b
 written for the 8443 `traefik` service and name `ingress` once Story 4-11's commit is merged: § Rollback to
 Caddy, whole says what that changes.
 
+**Amended 2026-10-01 (Story 4-11, box half):** `ops/caddy-retirement.md` § Retirement run ran from 05:02Z to
+06:12Z. Traefik serves every hostname as `traefik-ingress-1` on 80 and 443, no Origin Rule remains (the
+entrypoint ruleset `518ad07108bc402fa36ad71fe1e76862` stays, empty), 8443 is closed at the firewall, and the
+8443 instance `traefik-traefik-1` and Caddy are removed. This file's sequences are history from then on.
+**The dashboard tunnel is `ssh -N -L 8080:127.0.0.1:8081 deploy@177.7.52.248`**, then
+`http://localhost:8080/dashboard/` as before: `traefik-ingress-1` publishes its dashboard on loopback 8081,
+read at that run's step 5 (`401` without credentials, `200` with). Moving a hostname by Origin Rule no
+longer applies: a new hostname is one router in `ops/traefik/dynamic/routes.yml`.
+
 ## What serves today
 
 **Observed 2026-09-30T09:45:54Z over SSH as `deploy`, read-only.**
@@ -897,6 +906,12 @@ commands names the new instance: `$T up -d` would start it on 80 and 443, where 
 `docker stop traefik-traefik-1` from then on, and the whole retirement, with its rollbacks, is
 `ops/caddy-retirement.md`. The block below is as Story 4-2 wrote it.
 
+**Retired 2026-10-01 by `ops/caddy-retirement.md` § Retirement run.** There is no Caddy to roll back to:
+its container, Caddyfile, compose service and volumes were removed at that run's step 11, after an offsite
+archive (restic snapshot `7850bacb`, tag `retired-4-11`). The block below would now take away the only
+ingress. Undoing the retirement is that runbook's step 11 rollback, from the archive; nothing in this
+section applies.
+
 While no Origin Rule points at 8443, nothing public depends on Traefik:
 
 ```bash
@@ -939,11 +954,11 @@ Once a later story has moved a hostname, delete its Origin Rule first, then the 
 |---|---|---|---|
 | 1 | **Merge the commit carrying `ops/traefik/` into `main`** and let the Deploy run | The box checkout is `main`; nothing here reaches the box another way. Done by PR #88 (merge `f9ea578`, 21:27Z) and Deploy run 36779534561 | 2026-09-30 |
 | 2 | **Create a Cloudflare API token** for the `cuatro.dev` zone with Zone, DNS, Edit and Zone, Zone, Read, for step 2 | DNS-01 writes only `_acme-challenge` TXT records. The Origin Rules token of the refresh record's action 4 is a separate question, needed from Story 4.3. Done as a dedicated token, `traefik-dns01`, created by the Operator | 2026-09-30 |
-| 3 | **Confirm or overrule the decisions above**, and the certificate monitoring reading in § How certificate monitoring sees this | Each is a decision the Operator may overrule; the spec's Design Notes carry the reasoning. The monitoring reading departs from the epic's "certificate-age monitoring sees the new certificates". **2026-09-30:** the Operator was present for the run and has overruled nothing; this waits on an explicit word | _not done_ |
+| 3 | **Confirm or overrule the decisions above**, and the certificate monitoring reading in § How certificate monitoring sees this | Each is a decision the Operator may overrule; the spec's Design Notes carry the reasoning. The monitoring reading departs from the epic's "certificate-age monitoring sees the new certificates". **2026-09-30:** the Operator was present for the run and has overruled nothing; this waits on an explicit word. **2026-10-01:** the Operator's word, given before Story 4-11's retirement run, "We can do whatever you recommend for each item", recorded as confirmation of every decision as written | 2026-10-01 |
 | 4 | **Run steps 1 to 8 above** | Step 3 is also the refresh record's action 4, firewall half. Ran from 21:48Z: § Cutover run | 2026-09-30 |
-| 5 | **Confirm or overrule Story 4-6's decisions** in § Moving cuatro.dev and www: this record rather than a new one, no routing change (www answering `308` to non-GET methods where Caddy answers `301`), www before the apex as two rules, Story 4.4 not a precondition | The Story 4-6 spec's Design Notes carry the reasoning. **2026-09-30:** the Operator was present for the run and has overruled nothing; this waits on an explicit word | _not done_ |
+| 5 | **Confirm or overrule Story 4-6's decisions** in § Moving cuatro.dev and www: this record rather than a new one, no routing change (www answering `308` to non-GET methods where Caddy answers `301`), www before the apex as two rules, Story 4.4 not a precondition | The Story 4-6 spec's Design Notes carry the reasoning. **2026-09-30:** the Operator was present for the run and has overruled nothing; this waits on an explicit word. **2026-10-01:** the Operator's word, given before Story 4-11's retirement run, "We can do whatever you recommend for each item", recorded as confirmation of every decision as written | 2026-10-01 |
 | 6 | **Run § Moving cuatro.dev and www steps 1 to 7**, after actions 1 to 4 here and the refresh record's action 4 (the origin rules token) | Step 1 sets monitor 803756083 to `GET`; step 5 dispatches the Deploy workflow; step 7 amends `ops/routing-inventory.md` and `ops/estate.md`. Ran from 22:32Z, the www rule created at 22:48:14Z and the apex rule at 22:48:45Z: § Cutover run, cuatro.dev and www | 2026-09-30 |
-| 7 | **Confirm or overrule Story 4-3's decisions** in § Moving wheel.cuatro.dev: this record rather than a new one, no routing change and no change in `list-wheel`, wheel before the apex, and KV-1's `list-wheel` half left open with its closer in DW-308 | The Story 4-3 spec's Design Notes carry the reasoning. **2026-09-30:** the Operator was present for the run and has overruled nothing; this waits on an explicit word | _not done_ |
+| 7 | **Confirm or overrule Story 4-3's decisions** in § Moving wheel.cuatro.dev: this record rather than a new one, no routing change and no change in `list-wheel`, wheel before the apex, and KV-1's `list-wheel` half left open with its closer in DW-308 | The Story 4-3 spec's Design Notes carry the reasoning. **2026-09-30:** the Operator was present for the run and has overruled nothing; this waits on an explicit word. **2026-10-01:** the Operator's word, given before Story 4-11's retirement run, "We can do whatever you recommend for each item", recorded as confirmation of every decision as written | 2026-10-01 |
 | 8 | **Run § Moving wheel.cuatro.dev steps 1 to 5**, after actions 1 to 4 here and the refresh record's action 4 (the origin rules token), and before action 6 | Step 3 creates the origin-rules entrypoint if none exists; step 5 amends `ops/routing-inventory.md` and `ops/estate.md`. Ran from 22:21Z, the entrypoint created with the one rule at 22:31:15Z: § Cutover run, wheel.cuatro.dev | 2026-09-30 |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
