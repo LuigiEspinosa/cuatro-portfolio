@@ -9444,6 +9444,13 @@ status: done
     installed `/home/deploy/tournament-restore-verify.sh` still has the old line (read 2026-10-01) until it
     is reinstalled from the checkout, which is DW-318's; cron runs only `tournament-backup.sh`, which does
     not call the verifier, so no scheduled run leaves a volume meanwhile.
+
+    **Box copy reinstalled 2026-10-01T08:09Z (orchestrator, under the Operator's delegation).** From the
+    checkout at `d7e19ef` (`main` after PR #91): `install -m 0700` then `cmp`, installed sha256 prefix
+    `3b4017b1715a4638`, equal to the repository file. The proof run from the checkout on
+    `tournament-20261001T034501Z.dump` ended `restore=ok ... migrations=29-applied-0-pending exit=0`, and
+    afterwards `docker volume ls -f dangling=true` counted 0 and no verify container remained
+    (`ops/tournament-placement.md` § First backup run, amendment of 2026-10-01).
   status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-3-migrate-list-wheel-the-static-first-candidate.md`
   id: DW-308
@@ -9749,4 +9756,11 @@ status: done
     **Trigger: that clean start, or the next change to any backup script.** Either run the cron lines from
     the checkout the deploy maintains, or make the deploy (or DW-315's reader) compare each installed copy's
     sha256 with the checkout's and go red on a difference; and run the library's action 9 meanwhile.
+
+    **Amended 2026-10-01: the library evidence is resolved.** Action 9 ran from 07:58Z to 07:59:02Z from the
+    checkout at `8f33ead`: all three `/usr/local/sbin/` copies now equal the committed files (the Installed
+    column of `ops/backup-digital-library.md` § What is installed on the box), and a cron-shaped run exited
+    0 with `roundtrip=sha256-match restore=verified`. At 08:09Z the tournament's verifier was reinstalled
+    after DW-307's fix (`ops/tournament-placement.md`), so every installed backup script matches the
+    checkout today. The entry stays open: nothing yet compares the two, so the next fix drifts the same way.
   status: open
