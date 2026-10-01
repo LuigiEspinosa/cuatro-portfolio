@@ -2,7 +2,7 @@
 title: 'Story 4-11: Retire Caddy and decommission the old topology'
 type: 'feature'
 created: '2026-10-01'
-status: 'awaiting-operator'
+status: 'done'
 baseline_commit: '04ab44803db611d7eeae10a9e98007ce96375379'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -74,6 +74,8 @@ context:
 - Local cleanup verified: no container, volume or network of the proofs remains, `ops/traefik/.env` removed (`git status` shows only the tracked edits).
 
 ## Spec Change Log
+
+- 2026-10-01: box half ran from 05:02Z to 06:12Z (runbook `ops/caddy-retirement.md` § The sequence, steps 1 to 16), recorded in that file's § Retirement run; status `done`. The tournament moved onto Traefik by rule `24428c40a067407983ee72b4abf32016`, `traefik-ingress-1` took 80 and 443, the eight rules were deleted, 8443 closed, Caddy and the 8443 instance removed, and the three old stores retired after offsite dumps; `cs-tracker` changes A and B landed as `9a5a4be` (under a different subject, content identical) and `bde2b3f`. Pending Operator actions 1 to 5 dated, 6 and 7 deferred to the Operator's clean start. DW-296 closed; DW-313 and DW-314 filed; DW-312 half taken.
 
 ## Review Triage Log
 

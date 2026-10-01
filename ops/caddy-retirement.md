@@ -14,6 +14,12 @@ two are never presented as the same kind of fact (NFR-9). Times are UTC.
 `LuigiEspinosa/cs-tracker`: the two changes that repository needs are § The cs-tracker changes, for the
 Operator to land. Every box step is a Pending Operator action at the end.
 
+**Amended 2026-10-01: § The sequence ran**, steps 1 to 15 from 05:02Z to 06:12Z, by the orchestrator with the
+Operator present, recorded under § Retirement run, and step 16 is this record's amendments. Both `cs-tracker`
+changes landed on that repository's `main` (`9a5a4be`, `bde2b3f`). Caddy, the 8443 instance, every Origin
+Rule and the three old Postgres stores are gone; `traefik-ingress-1` holds 80 and 443. The sections above
+keep the tense they were written in: "today" in them is before the run.
+
 **Why a record of its own.** Decision, Story 4-11, the Operator may overrule. It retires stores as well as
 a proxy: `ops/traefik-cutover.md` owns the per-hostname mechanism and its rollback, which step 2 and step 6
 reference rather than restate, and `ops/postgres.md` owns the estate instance, which this file only reads.
@@ -747,11 +753,14 @@ environment, so neither is typed or printed; `NEWQ` connects as `postgres`, whic
 8. **Prove 443 for every hostname.** After at least one five-minute monitor interval past step 7: the eight
    monitors read `UP`. From the workstation:
    ```bash
-   curl -s -o /dev/null -w '%{http_code}\n' -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' \
+   curl -s -o /dev/null -w '%{http_code}\n' --http1.1 -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' \
      -H "Sec-WebSocket-Key: $(openssl rand -base64 16)" -H 'Origin: https://cs-tracker.cuatro.dev' 'https://cs-tracker.cuatro.dev/live/websocket?vsn=2.0.0' --max-time 5
    gh workflow run deploy.yml --ref main -R LuigiEspinosa/cuatro-portfolio
    ```
-   The socket `101` (DW-309: the only upstream that serves an upgrade through the origin). Watch the
+   The socket `101` (DW-309: the only upstream that serves an upgrade through the origin). **Amended
+   2026-10-01 after the run:** `--http1.1` added, as `ops/cs-tracker-cutover.md` step 10 has it. Without it
+   curl negotiates HTTP/2 with the edge, where a `Connection: Upgrade` request is invalid, and the line
+   prints `400` whatever the origin does; the run read `400` without the flag and `101` with it. Watch the
    dispatched run to green as `ops/traefik-cutover.md` § Moving cuatro.dev and www step 5 does; it rolls the
    Hub through `ingress`, and on the box afterwards one Hub container, numbered one higher, healthy. Then stop
    the loop: `awk '{$1=""; print}' retire-probe-4.log | sort | uniq -c` shows the first line's eight codes and
@@ -920,19 +929,183 @@ environment, so neither is typed or printed; `NEWQ` connects as `postgres`, whic
 
 ## Retirement run
 
-_Not run._ Step 16 writes it.
+**Observed from 05:02Z to 06:12Z on 2026-10-01, on the box as `deploy` and from the workstation, run by the
+orchestrator with the Operator present; the Operator merged PR #89, did the Steam sign-in and gave the go
+for both `cs-tracker` pushes.** Preconditions, each recorded: Story 4-9 done (`ops/backup-digital-library.md`
+§ Cutover run, library.cuatro.dev, the 03:45Z `library-backup` line read at 03:49Z); PR #89 merged `dev`
+`da3d82f` into `main` as `50fde81` at about 05:19Z, between steps 2 and 3 as § Why two instances at once
+requires, and Deploy run 36819206014 green (gate, image / hub, deploy); `CF_RULES_TOKEN` on the workstation,
+never printed; run outside 02:45 to 03:50. `jq` is not on the workstation, so `node` parsed the JSON in
+every workstation helper, one clause each. Every box script was written to a file on the box before it ran,
+so stdin stayed free for `docker compose` and `docker rollout`. Times are UTC.
+
+- **Step 1**, 05:02Z: ruleset `518ad07108bc402fa36ad71fe1e76862`; seven rules, `a186cf20`, `a74dce8a`,
+  `7fe531a5`, `71197cf5`, `1ee043e4`, `041740b5`, `86b7df5f` (the table's ids), each port `8443`. The
+  `via: 1.1 Caddy` count `0` for every hostname but `tournament.cuatro.dev`, `1`. DoH: `covidmap`
+  `[0,["b1f36414641d604e.vercel-dns-017.com."]]`, `future-vizion` `[0,["75207fd2296392d3.vercel-dns-017.com."]]`,
+  `_domainconnect` `[0,[]]`, `dns01-probe.scratch` `[3,[]]`. The eight monitors `UP`. On the box at 05:02:49Z:
+  load average `0.26, 0.30, 0.28`; listeners `0.0.0.0:443`, `:8443`, `:80`, `127.0.0.1:8080` and the three
+  IPv6; `traefik-traefik-1 Up 7 hours (healthy)`, `cs-tracker-caddy-1 Up 2 months`; every pair equal (`200`,
+  `301`, `200`, `302`, `200`, `302`, `200`, `200`, `200`); the tournament `url` line count `1`;
+  `est traefik-traefik-1 8443` baseline `9`; the checkout at `f9ea578`.
+- **Step 2**: the probe `retire-probe-2` ran from 05:03:18Z to 05:09:28Z, 91 lines. The rule was added at
+  **`MOVED=2026-10-01T05:03:24Z`**: rule **`24428c40a067407983ee72b4abf32016`**, `true` and `[]`, the eighth
+  in the ruleset. At 05:03:33Z `tournament.cuatro.dev/api/health` answered `HEAD` `200` and `GET` `200`
+  `{"status":"ok"}`, neither with a `via` line. On the box at 05:03:29Z: load average `0.13, 0.26, 0.26`,
+  `est traefik-traefik-1 8443` `39`. Monitor 804128109 read `UP` after its interval (read 05:10Z). The
+  count: the tournament column `200` alone, and every line the same nine values,
+  `200 301 200 302 200 200 200 200 308`. No rollback.
+- **Pending action 2**: PR #89 opened at about 05:10Z. Its CI run on `da3d82f` (36812668126) had failed once
+  on `apps/finance` `lib/__tests__/crypto.test.ts`, "throws CryptoError when auth tag is modified": the case
+  overwrites the tag's last byte with `ff`, a no-op one run in 256, and `da3d82f` changed documentation only
+  after `5b324ba`'s green run (DW-313). The failed job re-run passed, every check was green, and the Operator
+  merged; `main` `50fde81`, Deploy 36819206014 success.
+- **Step 3**, 05:21:13Z: the checkout at `50fde815ba1e0c4359b3b3b333ca500e0eba75bd`; the compose volume line
+  count `1`; `traefik-traefik-1` running, healthy, `restarts=0`. The volume `traefik-origin-ca` created; the
+  container printed `pair-equal`, `origin.key` `-rw-------` 1704 bytes and `origin.pem` `-rw-r--r--` 1663
+  bytes. Load average `0.20, 0.28, 0.26`.
+- **Step 4**, 05:21:41Z: the probe `retire-probe-4` started at 05:21:25Z. `docker stop cs-tracker-caddy-1`,
+  then `$T up -d --wait`: `traefik-ingress-1` `Started`, `Waiting`, `Healthy`. Then `traefik-ingress-1 Up 5
+  seconds (healthy)` on `0.0.0.0:80`, `:443` and `127.0.0.1:8081`, and `traefik-traefik-1` still `Up 7 hours
+  (healthy)` on 8443 and `127.0.0.1:8080`. Compose's orphan warning was not captured: the command's output
+  was read through `tail`. Listeners 443, 8443, 80, 8080 and 8081; load average `0.34, 0.30, 0.27`.
+- **Step 5**, 05:21:41Z: every pair, the 8443 instance against `ingress` on 443, equal (`200`, `301`, `200`,
+  `302`, `200`, `302`, `200`, `200`, `200`). Plain HTTP on 80: `GET 301`, `-I 308`, `-X POST 308`, each to
+  `https://cuatro.dev/some/path?q=1`. 443 served `CN = CloudFlare Origin Certificate`,
+  `notAfter=Aug 13 17:15:00 2041 GMT`; the scratch name served issuer Let's Encrypt `YR2`,
+  `notAfter=Dec 29 20:53:46 2026 GMT`. Ingress log error lines `0`; `est` 8443 `36`, 443 `0`. The dashboard
+  over the tunnel to 8081 answered `401` without credentials and `200` with the Operator's.
+- **Step 6**: `del` for each hostname of `$HOSTS`, a minute apart, each answered `true`. After each, the
+  hostname's status, then `est traefik-traefik-1 8443` and `est traefik-ingress-1 443`:
+
+  | Hostname | Deleted | Status after | 8443 | 443 |
+  |---|---|---|---|---|
+  | `wheel.cuatro.dev` | 05:22:22Z | `200` | 51 | 4 |
+  | `www.cuatro.dev` | 05:23:29Z | `301` | 54 | 12 |
+  | `cuatro.dev` | 05:24:36Z | `200` | 51 | 20 |
+  | `analytics.cuatro.dev` | 05:25:44Z | `403`, the edge's challenge to a bare `curl` | 46 | 26 |
+  | `tracker.cuatro.dev` | 05:26:51Z | `307` for `/`, its sign-in redirect | 35 | 33 |
+  | `library.cuatro.dev` | 05:27:58Z | `302` | 27 | 43 |
+  | `cs-tracker.cuatro.dev` | 05:29:04Z | `302` | 23 | 51 |
+  | `tournament.cuatro.dev` | 05:30:12Z | `200` | 14 | 50 |
+
+  Afterwards the entrypoint read `success` `true` with `0` rules, `[true,0,[]]`; the empty ruleset stays. The
+  script's own "rules left" line printed blank, because its helper could not parse the empty ruleset; the
+  direct read above is the reading.
+- **Step 7**: `est traefik-traefik-1 8443` reached `0` after 95 seconds; `docker stop traefik-traefik-1` at
+  05:33:24Z; listeners on 8443 and 8080 `0`; load average `0.71, 0.41, 0.33`; `traefik-ingress-1 Up 11
+  minutes (healthy)`, `traefik-traefik-1 Exited (0)`; `est` 443 `52`. The probe showed no `000` at the stop:
+  the rehearsal's unexplained line did not recur.
+- **Step 8**: the socket upgrade through 443 answered `101` with `--http1.1` and `400` without it (curl
+  negotiates HTTP/2 with the edge, where the upgrade is invalid); the runbook line lacked the flag, fixed in
+  step 8 above. The Deploy was dispatched at 05:33:50Z: run 36820359454 success on `50fde81` (gate, image /
+  hub, deploy). On the box at 05:35:43Z: `cuatro-portfolio-anchor-app-8` on
+  `ghcr.io/luigiespinosa/hub:50fde815ba1e0c4359b3b3b333ca500e0eba75bd` `Up 40 seconds (healthy)`, load
+  average `0.21, 0.31, 0.30`, `est` 443 `57`, ingress log error lines `0`. The probe stopped at 05:39:22Z:
+  264 lines from 05:21:25Z to 05:38:59Z, 260 reading `200 301 200 302 200 200 200 200 301` and 4 reading
+  `200 301 200 302 200 200 200 200 308` (before step 4), and no `000` in any column. All eight monitors
+  `UP` at 05:40Z with no new incident. The Operator signed in with Steam at `https://cs-tracker.cuatro.dev`
+  and loaded `https://cuatro.dev`: both fine.
+- **Step 9**, 05:56:00Z: the script copied to `cf-origin-firewall.sh.bak-4-11`, the `.bak-4-2` copy restored,
+  the service active. `DOCKER-USER` `16` and `8` lines on `--dports 80,443`; 8443 lines `0` and `0`; `ufw`
+  8443 lines `0`, `80,443/tcp` lines `22`. Load average `0.25, 0.24, 0.27`. From the workstation
+  `https://177.7.52.248:8443/` and `https://177.7.52.248/` both timed out (curl exit 28), and `cuatro.dev`,
+  `wheel.cuatro.dev` and `tournament.cuatro.dev` answered `200`.
+- **Step 10**: `traefik-traefik-1` `exited`, removed; `traefik-ingress-1 Up 34 minutes (healthy)` alone in the
+  project.
+- **Step 11.1**, 05:56:55Z: both volumes used by `cs-tracker-caddy-1` alone. The seven files copied;
+  `Caddyfile.box.diff` 110 lines; `cs-tracker_caddy_data.tar.gz` 47 entries, `cs-tracker_caddy_config.tar.gz`
+  3. The digests, first 16 hex: `Caddyfile` `0a3a92f7a1f3bca4`, `bak-1-21` `a4b8f383d0263ad1`, `bak-1-3`
+  `ca2a976442141d3b`, `bak-2-25` `47578600e2cbd035`, `bak-3-7` `4de4bc19955852cc`, `bak-library-`
+  `e568267f2e7295bb`, `bak-ops1` `4ccdb29875101529`. **All seven match** the values read before the run:
+  the Caddyfile's the first 16 of § What serves today's full digest, and each backup's the 8 hex § What Story
+  1.7 found records. `offsite`: snapshot **`7850bacb`** saved, restore `14 files/dirs`, `offsite-match 10
+  files`. Load average `0.17, 0.22, 0.26`.
+- **Step 11.2**, change A: extracted with Pending action 3's `awk`, sha256
+  `0616f33a026398f9e58da9c85121f6a712688e170c11e0f9cb08168663f9affd`, the recorded value; applied to a clean
+  clone at `ca75686`, committed and pushed to `cs-tracker` `main` as
+  **`9a5a4be2c6916f71624ecb98ce1f51294097c1ff`**. On the box: `git checkout -- Caddyfile`, then the pull
+  brought `9a5a4be` (`delete mode 100644 Caddyfile`); `caddyfile-gone`; services `app db`; the six
+  `Caddyfile.bak-*` files removed; `git status --short` empty.
+- **Step 11.3**: `cs-tracker-caddy-1` removed.
+- **Step 11.4**: `cs-tracker_caddy_config` and `cs-tracker_caddy_data` removed; no Caddy volume left. Load
+  average `0.46, 0.27, 0.28` at 05:57:36Z; `cs-tracker.cuatro.dev` through `ingress` `302`.
+- **Step 12**, 05:58Z, `SRC=cuatro-portfolio-anchor-db-1`: events after `FROZE` `0`; connections `1`; `cmpq`
+  every line `ok`, the estate ahead where it differs (`_prisma_migrations` 23 against 26, `event_data` 5
+  against 8, `session` 47 against 48, `website_event` 88 against 99). Final dump
+  **`umami-anchor-db-20261001T055804Z.dump`**, 68577 bytes, 25 tables, sha256
+  `0ca0a9c49621b6b8050d4af04014f795a88224c56fb873564231ad9d2fe8b149`. `offsite`: snapshot **`fd14edeb`**,
+  `offsite-match 13 files`. The container `cuatro-portfolio-anchor-db-1` stopped and removed; the volume
+  `cuatro-portfolio_postgres_data` removed. Umami's heartbeat `{"ok":true}`. Load average
+  `0.49, 0.29, 0.28` at 05:58:09Z.
+- **Change B**: sha256 `c25aad24f55235de01d02dd7d9576bfbaf0a46ed77980005c15d6988ef00b041`, the recorded value;
+  pushed to `cs-tracker` `main` as **`bde2b3fff2ec9842d5f89c4dcef23c76403b81f5`** with the recorded subject,
+  between steps 12 and 13, before step 14's checks; the box pulled it in step 14.
+- **Step 13**, 06:10Z, `SRC=cuatro-tracker-postgres-1`: `old-unchanged`; connections `1`; `cmpq` every line
+  `ok` (9 tables, all equal). Final dump **`tracker-cuatro-tracker-postgres-20261001T061043Z.dump`**, 22310
+  bytes, 9 tables, sha256 `f75814cb5a2a4107526636515a30a290f7dda359c7174befc54e70ae4f4ddd85`. The crontab saved
+  to `$R/crontab.before-4-11`. `offsite`: snapshot **`0b5d5e60`**, `offsite-match 17 files`. The project
+  showed `app`, `worker` and `migrate` exited, `postgres`, `redis` and `qbittorrent` up. The 03:30
+  `cuatro-backup.sh` line removed; three jobs remain (03:15 `postgres-backup.sh`, 03:45 `library-backup.sh`,
+  03:45 `tournament-backup.sh`); the script moved to `cuatro-backup.sh.retired-2026-10-01`. `postgres`
+  stopped and the four containers removed, exactly `cuatro-tracker-postgres-1`, `cuatro-tracker-app-1`,
+  `cuatro-tracker-worker-1` and `cuatro-tracker-migrate-1`; the volume `cuatro-tracker_pg_data` removed;
+  `redis` and `qbittorrent` still `Up`. Load average `0.41, 0.26, 0.25` at 06:10:49Z; the tracker's
+  `/api/ready` through `ingress` `200`, `db` ok, `redis` ok.
+- **Step 14**, 06:11Z, `SRC=cs-tracker-db-1`: `old-unchanged` (Oban's tables apart); connections `1`; `cmpq`
+  every line `ok`, the estate ahead where it differs (`inventory_entries` 113 against 130, `price_snapshots`
+  21119 against 21183). Final dump **`cs-tracker-db-20261001T061118Z.dump`**, 1261712 bytes, 10 tables,
+  sha256 `f1c36ff498a56fb142fc68ebcc56707390e61714910ba07c1854b7c4560882fb`. `offsite`: snapshot
+  **`a4032342`**, `offsite-match 20 files`. The pull brought `bde2b3f` (2 files changed, 2 insertions, 35
+  deletions); services `app`. Exactly `cs-tracker-db-1` and `cs-tracker-migrate-1` removed; the volume
+  `cs-tracker_pgdata` removed; `cs-tracker-app-2 Up 6 hours` alone in the project. Load average
+  `0.49, 0.30, 0.27` at 06:11:24Z; `cs-tracker.cuatro.dev` through `ingress` `302`.
+- **Step 15**, 06:11:56Z: the `pg-move` manifest 14 files (`CST_DUMP`, `FROZE`, `TRACKER_DUMP`,
+  `TRACKER_FROZE`, `cs_tracker-20261001T003549Z.dump` and its `.counts`, `cst-migrate.log`, `cst-rollout.log`,
+  `migrate.log`, `tracker-backup.out`, `tracker-migrate.log`, `tracker-rollout.log`, `tracker-verify.out`,
+  `umami.dump`); the `backups-cuatro-tracker` manifest 22 files. `offsite`: snapshot **`4a4f714a`**, restore
+  `65 files/dirs`, `offsite-match 58 files`. The three rollback files shredded (`cs-tracker.env.pre-4-10`,
+  `umami-rollback.yml`, `tracker-rollback.yml`); `/home/deploy/pg-move` and
+  `/home/deploy/backups/cuatro-tracker` removed by manifest, both `rmdir` succeeded.
+  `/home/deploy/retired-4-11` stays, mode `700`, 58 files, 3.2M. The containers then:
+  `cs-tracker-app-2`, `cuatro-portfolio-anchor-app-8`, `cuatro-portfolio-anchor-umami-1`,
+  `cuatro-portfolio-tournament-1`, `cuatro-portfolio-tournament-worker-1`, `cuatro-portfolio-tracker-2`,
+  `cuatro-portfolio-tracker-worker-1`, `cuatro-tracker-qbittorrent-1`, `cuatro-tracker-redis-1`,
+  `digital-library-api-1`, `digital-library-redis-1`, `digital-library-web-1`, `list-wheel-list-wheel-1`,
+  `postgres-estate-postgres-1`, `traefik-ingress-1`. The volumes: `4fc208dc...` (DW-307's, left),
+  `cuatro-tracker_qb_config`, `cuatro-tracker_redis_data`, `digital-library_redis_data`, `postgres_pgdata`,
+  `traefik-origin-ca`, `traefik_acme`. Load average `0.27, 0.27, 0.26`; disk 22G of 96G used (23%).
+- **Step 16**: this record, the Pending Operator actions below, and the amendments the step names, written
+  2026-10-01 on `dev`.
+
+The five `retired-4-11` snapshots, in order: `7850bacb` (Caddy), `fd14edeb` (Umami's store), `0b5d5e60` (the
+tracker's), `a4032342` (`cs-tracker`'s), `4a4f714a` (the move leftovers). No rollback was needed and none
+ran.
+
+**Deviations, each recorded rather than corrected.**
+
+- **Change A's subject.** It was committed as "chore: retire caddy and the Caddyfile now that Traefik serves
+  cs-tracker.cuatro.dev", not the recorded "chore: retire caddy and the Caddyfile now that the estate's
+  Traefik holds 80 and 443". The content is identical (the patch's sha256 matched); `cs-tracker`'s published
+  history was not rewritten to change a subject.
+- **Step 8's socket line** lacked `--http1.1` and printed `400`; with the flag it printed `101`. The runbook
+  line is fixed above, with the reason.
+- **Step 13's first attempt** was refused by the workstation's permission classifier before any command
+  reached the box; it was re-run unchanged in manual mode at 06:10Z.
+- **Step 4's orphan warning** was not captured (the output was read through `tail`); `docker ps` showed
+  both instances as expected.
 
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| 1 | **Confirm or overrule Story 4-11's decisions**: this record; Traefik on 80 and 443 with the rules deleted and 8443 closed, against 8443 and the rules kept; two instances at once, the service `ingress` and the dashboard on loopback 8081; the plain HTTP redirect answering 301 to a GET; the pair in `traefik-origin-ca`; the offsite snapshots under `retired-4-11`, Caddy's volume and so the Origin CA key among them; the rollback files shredded; `anchor-db`'s declaration kept for finance; and § What this story leaves open | The Story 4-11 spec's Design Notes carry the reasoning | _not done_ |
-| 2 | **Merge the commit carrying this record and `ops/traefik/`'s 443 version into `main`**, and let the Deploy run, right before step 3 | The box checkout is `main`. The Deploy rolls the Hub alone; Traefik and Caddy keep running as they are until step 4 | _not done_ |
-| 3 | **Land change A on `LuigiEspinosa/cs-tracker` `main`**, at step 11.2: extract it with LF endings, `awk '{sub(/\r$/,"")} /^```diff$/{n++; if (n==1) {f=1; next}} /^```$/{f=0} f' ops/caddy-retirement.md > cs-tracker-4-11-caddy.patch`, check `sha256sum cs-tracker-4-11-caddy.patch` prints `0616f33a026398f9e58da9c85121f6a712688e170c11e0f9cb08168663f9affd`, then in a clean checkout at `ca75686`: `git apply cs-tracker-4-11-caddy.patch && git rm -q Caddyfile && git add docker-compose.yml docs/deployment.md && git commit -m "chore: retire caddy and the Caddyfile now that the estate's Traefik holds 80 and 443" && git push origin main` | No CI runs there and no deploy fires | _not done_ |
-| 4 | **Land change B** the same way at step 14, with `n==2` in the `awk`, sha256 `c25aad24f55235de01d02dd7d9576bfbaf0a46ed77980005c15d6988ef00b041`, on top of change A: `git apply cs-tracker-4-11-db.patch && git add docker-compose.yml docs/deployment.md && git commit -m "chore: retire the db service now that the data lives on the estate Postgres" && git push origin main` | The same | _not done_ |
-| 5 | **Run § The sequence, steps 1 to 16**, after action 2 (for step 3 on) and the preconditions | Steps 1 and 2 need nothing merged | _not done_ |
-| 6 | **Decide the dead `.env` lines**: `ACME_EMAIL`, `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` in `/home/deploy/cs-tracker/.env`, and `POSTGRES_PASSWORD` in `/home/deploy/cuatro-portfolio/.env.production` once finance no longer names `anchor-db` (DW-300) | Unread after steps 11 and 14; removing a secret's line is the Operator's edit | _not done_ |
-| 7 | **Prune the images nothing runs**, after step 15: `caddy:2`, `postgres:16`, `postgres:16-alpine`, `cuatro-tracker-app`, `cuatro-tracker-worker`, `cuatro-tracker-migrate` (`docker image rm`, each by name) | Images hold no data; disk only. Or leave them to the clean start | _not done_ |
+| 1 | **Confirm or overrule Story 4-11's decisions**: this record; Traefik on 80 and 443 with the rules deleted and 8443 closed, against 8443 and the rules kept; two instances at once, the service `ingress` and the dashboard on loopback 8081; the plain HTTP redirect answering 301 to a GET; the pair in `traefik-origin-ca`; the offsite snapshots under `retired-4-11`, Caddy's volume and so the Origin CA key among them; the rollback files shredded; `anchor-db`'s declaration kept for finance; and § What this story leaves open | The Story 4-11 spec's Design Notes carry the reasoning. **2026-10-01:** the Operator's word, given before the retirement run, "We can do whatever you recommend for each item", recorded as confirmation of every decision as written | 2026-10-01 |
+| 2 | **Merge the commit carrying this record and `ops/traefik/`'s 443 version into `main`**, and let the Deploy run, right before step 3 | The box checkout is `main`. The Deploy rolls the Hub alone; Traefik and Caddy keep running as they are until step 4. PR #89 merged `da3d82f` as `50fde81` after one re-run of a flaky finance case (DW-313); Deploy run 36819206014 green; the checkout read `50fde81` at step 3 | 2026-10-01T05:19Z |
+| 3 | **Land change A on `LuigiEspinosa/cs-tracker` `main`**, at step 11.2: extract it with LF endings, `awk '{sub(/\r$/,"")} /^```diff$/{n++; if (n==1) {f=1; next}} /^```$/{f=0} f' ops/caddy-retirement.md > cs-tracker-4-11-caddy.patch`, check `sha256sum cs-tracker-4-11-caddy.patch` prints `0616f33a026398f9e58da9c85121f6a712688e170c11e0f9cb08168663f9affd`, then in a clean checkout at `ca75686`: `git apply cs-tracker-4-11-caddy.patch && git rm -q Caddyfile && git add docker-compose.yml docs/deployment.md && git commit -m "chore: retire caddy and the Caddyfile now that the estate's Traefik holds 80 and 443" && git push origin main` | No CI runs there and no deploy fires. Landed at step 11.2 as `9a5a4be2c6916f71624ecb98ce1f51294097c1ff`, the sha256 matching, under a different subject (§ Retirement run, Deviations) | 2026-10-01 |
+| 4 | **Land change B** the same way at step 14, with `n==2` in the `awk`, sha256 `c25aad24f55235de01d02dd7d9576bfbaf0a46ed77980005c15d6988ef00b041`, on top of change A: `git apply cs-tracker-4-11-db.patch && git add docker-compose.yml docs/deployment.md && git commit -m "chore: retire the db service now that the data lives on the estate Postgres" && git push origin main` | The same. Landed between steps 12 and 13 as `bde2b3fff2ec9842d5f89c4dcef23c76403b81f5`, the sha256 and subject as recorded; the box pulled it at step 14 | 2026-10-01 |
+| 5 | **Run § The sequence, steps 1 to 16**, after action 2 (for step 3 on) and the preconditions | Steps 1 and 2 need nothing merged. Done: § Retirement run, steps 1 to 15 from 05:02Z to 06:12Z, step 16 the same day | 2026-10-01T06:12Z |
+| 6 | **Decide the dead `.env` lines**: `ACME_EMAIL`, `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` in `/home/deploy/cs-tracker/.env`, and `POSTGRES_PASSWORD` in `/home/deploy/cuatro-portfolio/.env.production` once finance no longer names `anchor-db` (DW-300) | Unread after steps 11 and 14; removing a secret's line is the Operator's edit. **2026-10-01, decided: deferred** to the Operator's planned clean start of every application after this project, on the same word as action 1; the lines stay, unread, and nothing was done today | _not done, deferred to the clean start_ |
+| 7 | **Prune the images nothing runs**, after step 15: `caddy:2`, `postgres:16`, `postgres:16-alpine`, `cuatro-tracker-app`, `cuatro-tracker-worker`, `cuatro-tracker-migrate` (`docker image rm`, each by name) | Images hold no data; disk only. Or leave them to the clean start. **2026-10-01, decided: deferred** to the Operator's planned clean start of every application after this project, on the same word as action 1; disk read 22G of 96G used after step 15, and nothing was pruned today | _not done, deferred to the clean start_ |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.

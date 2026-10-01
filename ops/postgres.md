@@ -17,7 +17,22 @@ database until its own story (4.7, 4.8, 4.10) runs § Moving a consumer.
 **Amended 2026-09-30: § The placement ran on the box** that evening, recorded under § Placement run,
 2026-09-30. No consumer has moved.
 
+**Amended 2026-10-01 (Story 4-11, box half): the three old stores are retired.** Every consumer moved
+(Umami 2026-09-30, the tracker 2026-09-30, `cs-tracker` 2026-10-01), and `ops/caddy-retirement.md`
+§ Retirement run removed the three instances the table below lists, each after a precondition check against
+the estate copy (every table `ok`), a final dump in `/home/deploy/retired-4-11/stores/` and a restic snapshot
+tagged `retired-4-11`, restored and compared by sha256: `cuatro-portfolio-anchor-db-1` and its volume
+`cuatro-portfolio_postgres_data` at 05:58Z (dump `umami-anchor-db-20261001T055804Z.dump`, snapshot
+`fd14edeb`), `cuatro-tracker-postgres-1` and `cuatro-tracker_pg_data` at 06:10Z
+(`tracker-cuatro-tracker-postgres-20261001T061043Z.dump`, `0b5d5e60`), and `cs-tracker-db-1` and
+`cs-tracker_pgdata` at 06:11Z (`cs-tracker-db-20261001T061118Z.dump`, `a4032342`). `postgres-estate-postgres-1`
+is the box's one Postgres since. `anchor-db` stays declared in `docker-compose.yml` for finance (DW-300);
+started now, it would create an empty database. The rollbacks this file's move sections describe onto the
+old stores no longer apply.
+
 ## What runs today
+
+**Superseded 2026-10-01:** the three containers below were retired (above); the reading is kept as taken.
 
 **Observed 2026-09-30T10:59:09Z over SSH as `deploy`, read-only** (`docker ps`, `docker inspect` with a
 format naming no environment, `free -m`, `nproc`, `uptime`).
@@ -726,9 +741,9 @@ moved, roll every moved consumer back first, one by one, then the same.
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
 | 1 | **Merge the commit carrying `ops/postgres/` into `main`** and let the Deploy run | The box checkout is `main`; nothing here reaches the box another way. PR #88 merged `dev` as `f9ea578`; Deploy run 36779534561 succeeded; the box checkout read `f9ea578` | 2026-09-30T21:27Z |
-| 2 | **Confirm or overrule the decisions above**: PostgreSQL `18.6-trixie`, a stack beside the Anchor's, `max_connections=100` and the budget, `umami` keeping its name, finance included, the tournament staying on Supabase, and no move before Story 4.5 | The spec's Design Notes carry the reasoning. The Operator was present for the placement on 2026-09-30 and overruled nothing; an explicit word is awaited, so the row stays open | _not done_ |
+| 2 | **Confirm or overrule the decisions above**: PostgreSQL `18.6-trixie`, a stack beside the Anchor's, `max_connections=100` and the budget, `umami` keeping its name, finance included, the tournament staying on Supabase, and no move before Story 4.5 | The spec's Design Notes carry the reasoning. The Operator was present for the placement on 2026-09-30 and overruled nothing; an explicit word is awaited, so the row stays open. **2026-10-01:** the Operator's word, given before Story 4-11's retirement run, "We can do whatever you recommend for each item", recorded as confirmation of every decision as written | 2026-10-01 |
 | 3 | **Run § The placement, steps 1 to 5** | Nothing moves; only a fourth Postgres starts. Done: § Placement run, 2026-09-30 | 2026-09-30T22:16:07Z |
-| 4 | **Confirm or overrule Story 4-7's decisions** in § Moving Umami: 3.4.0 by release and digest, the freeze, data before hostname, the override-file rollback, the page views written after step 10 not carried back by R2 (kept in `umami-after-r2.dump` only), the runbook here | The Story 4-7 spec's Design Notes carry the reasoning. The Operator was present for the move on 2026-09-30 and overruled nothing; an explicit word is awaited, so the row stays open | _not done_ |
+| 4 | **Confirm or overrule Story 4-7's decisions** in § Moving Umami: 3.4.0 by release and digest, the freeze, data before hostname, the override-file rollback, the page views written after step 10 not carried back by R2 (kept in `umami-after-r2.dump` only), the runbook here | The Story 4-7 spec's Design Notes carry the reasoning. The Operator was present for the move on 2026-09-30 and overruled nothing; an explicit word is awaited, so the row stays open. **2026-10-01:** the Operator's word, given before Story 4-11's retirement run, "We can do whatever you recommend for each item", recorded as confirmation of every decision as written | 2026-10-01 |
 | 5 | **Merge the commit carrying Story 4-7 into `main`** and let the Deploy run | It rolls the Hub alone; the running Umami is untouched until § Moving Umami step 5. Done by PR #88, merged as `f9ea578`, which includes `6bb4c14` and `ec9d76e`; Deploy run 36779534561 | 2026-09-30T21:27Z |
 | 6 | **Run § Moving Umami steps 1 to 14**, after action 3 here and `ops/postgres-backup.md` § Install and first run; steps 12 and 13 also after `ops/traefik-cutover.md` actions 1 to 4 and the Origin Rules token | Step 14 amends `ops/routing-inventory.md`. Done: § Umami move run, 2026-09-30, after a first attempt that failed at step 9 on the missing `HUB_TAG` and a retry from step 3 | 2026-09-30T23:51:55Z |
 

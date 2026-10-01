@@ -382,6 +382,18 @@ verified. Until that runbook's § Retirement run is written, the 2026-10-01 stat
 each application's deploy as it is: `list-wheel` and `digital-library` still build on the box (DW-308,
 DW-185), and the tracker's Redis and qBittorrent stay in the `cuatro-tracker` project (DW-306).
 
+**Amended 2026-10-01 by Story 4-11, box half.** No row changes. `ops/caddy-retirement.md` § Retirement run
+ran from 05:02Z to 06:12Z with the Operator present, and the old topology is gone: every box row is served
+by Traefik v3.7.13 as `traefik-ingress-1` on 80 and 443 with the Origin CA pair from its own volume
+`traefik-origin-ca`, no Origin Rule remains, 8443 is closed at the origin firewall, and Caddy
+(`cs-tracker-caddy-1`, its Caddyfile, its two volumes and its compose service) is retired, as are the
+8443 instance `traefik-traefik-1` and the three Postgres 16 stores `anchor-db`, `cuatro-tracker-postgres-1`
+and `cs-tracker-db-1`, each after a final dump copied offsite and verified by restore. Every application's
+data is on `estate-postgres` but the tournament's (Supabase) and `digital-library`'s (SQLite on its bind
+mount). The `cs-tracker` project runs `app` alone, the `cuatro-tracker` project `redis` and `qbittorrent`
+alone. Still open, each application's own deploy: `list-wheel` and `digital-library` build on the box
+(DW-308, DW-185), and DW-275 and DW-306 stand.
+
 | Application | Disposition | Status | `absorbed_into` | Registry treatment |
 |---|---|---|---|---|
 | `cuatro-portfolio` | Anchor | `Live` | n/a | The Hub itself; rendered |
