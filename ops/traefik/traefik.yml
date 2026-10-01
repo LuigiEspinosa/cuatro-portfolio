@@ -1,4 +1,4 @@
-# Traefik's static configuration (Story 4-2). Read once at start; a change here needs a restart.
+# Traefik's static configuration (Stories 4-2 and 4-11). Read once at start; a change here needs a restart.
 # Routers, services, middlewares and certificates are in `dynamic/`, which is watched.
 
 # The box never phones home: versions are re-read by AD-22's refresh, not by Traefik.
@@ -9,10 +9,22 @@ global:
 # manages (X_Forwarded_For for X-Forwarded-For) is dropped rather than forwarded, so a backend that reads
 # header names loosely cannot be handed a spoofed one. Traefik 3.7 warns at start until this is set.
 entryPoints:
-  # Every public hostname, over TLS with the Origin CA certificate. Cloudflare connects here once a
-  # hostname's Origin Rule sets destination port 8443.
+  # Plain HTTP. Cloudflare's `always_use_https` is off, so a plaintext request reaches the origin, and this
+  # entrypoint answers it with a permanent redirect to the same host and path over https, as the shared
+  # Caddy's port 80 did until Story 4-11. Caddy answered 308 to every method; Traefik answers 301 to GET and
+  # 308 to the rest (`ops/caddy-retirement.md` § Plain HTTP and TLS once Caddy is gone). No router uses it.
+  web:
+    address: ':80'
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+      aliasHeadersStrategy: delete
+  # Every public hostname, over TLS with the Origin CA certificate. Cloudflare connects here on 443.
   websecure:
-    address: ':8443'
+    address: ':443'
     # Traefik 3 stops reading a request body after 60 seconds by default; the shared Caddy sets no limit. A
     # 90 KB body sent slowly to library.cuatro.dev, whose book uploads can take longer than a minute, was
     # cut at 60 seconds through this entrypoint and read whole through Caddy (Story 4-9's rehearsal,
@@ -24,7 +36,7 @@ entryPoints:
     http:
       tls: {}
       aliasHeadersStrategy: delete
-  # The dashboard's own entrypoint, published on the box's loopback only (compose.yml).
+  # The dashboard's own entrypoint, published on the box's loopback only (compose.yml, host port 8081).
   traefik:
     address: ':8080'
     http:

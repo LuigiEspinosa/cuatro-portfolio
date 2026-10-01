@@ -2,7 +2,7 @@
 title: 'Story 4-2: Traefik with Host-matched routers and DNS-01'
 type: 'feature'
 created: '2026-09-30'
-status: 'awaiting-operator'
+status: 'done'
 baseline_commit: 'f8319a80a5406923b254312b045bc264bd763d26'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -78,6 +78,8 @@ context:
 - Every throwaway container, volume, network, `.env` and scratch file removed; `docker ps -a` and `docker volume ls` show none.
 
 ## Spec Change Log
+
+- 2026-09-30: box half ran from 21:48Z (runbook steps 1 to 8), recorded in `ops/traefik-cutover.md` § Cutover run; status `done`. Pending Operator action 3 stays open.
 
 ## Review Triage Log
 

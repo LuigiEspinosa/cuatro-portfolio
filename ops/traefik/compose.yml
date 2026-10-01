@@ -1,49 +1,52 @@
-# Traefik, the estate's next proxy (Story 4-2, AD-7, AD-26). It runs BESIDE the shared Caddy, not in its
-# place: Caddy keeps 80 and 443 for the whole epic, and Traefik publishes 8443, the port each hostname's
-# Cloudflare Origin Rule sends traffic to when a later story moves that hostname
-# (`ops/settled-inputs-refresh.md` § Decision: how NFR-2 holds on one 80/443 pair). Until a rule exists,
-# nothing public reaches it except `https://<hostname>:8443`, which the edge proxies anyway.
+# Traefik, the estate's proxy (Stories 4-2 and 4-11, AD-7, AD-26). It holds 80 and 443 itself: 443 for every
+# public hostname over TLS with the Origin CA certificate, 80 for plain HTTP, which it redirects to https.
+# Story 4-11 retires the shared Caddy that held those two ports before it, and the Cloudflare Origin Rules
+# that sent each hostname to 8443 while the two ran side by side (`ops/caddy-retirement.md`). Until that
+# runbook's step 4 starts this file's service, the box runs Story 4-2's 8443 instance.
 #
 # Not a service of the Anchor's `docker-compose.yml`: that file's suite forbids published ports, and this
-# stack is started by hand from `ops/traefik-cutover.md`, never by a deploy. Run from the checkout:
+# stack is started by hand from `ops/caddy-retirement.md`, never by a deploy. Run from the checkout:
 #   docker compose -f ops/traefik/compose.yml up -d
+#
+# The service is `ingress`, not `traefik`: Story 4-2's 8443 instance was this project's `traefik` service, and
+# the new one had to run beside it while the Origin Rules were deleted one at a time, so the two needed
+# different names (`ops/caddy-retirement.md` § Why two instances at once).
 #
 # No Docker socket is mounted. Routing is the file provider alone, `dynamic/`, so a container cannot
 # change what Traefik routes and Traefik cannot read or start containers.
 name: traefik
 
 services:
-  traefik:
+  ingress:
     # Exact patch pinned: v3.7.13 was current on 2026-09-30 (`gh api repos/traefik/traefik/releases`,
     # re-read by Story 4-2 after Story 4-1's refresh).
     image: traefik:v3.7.13
     ports:
-      # 8443 on every address: the origin firewall admits Cloudflare's ranges only, once
-      # `ops/traefik-cutover.md` step 1 has widened it. Host and container port are the same number on
-      # purpose: `DOCKER-USER` matches the port after DNAT, which is the container's.
-      - '8443:8443'
-      # The dashboard, on loopback only, reached over an SSH tunnel. Never published publicly.
-      - '127.0.0.1:8080:8080'
+      # Every address, both families. The origin firewall admits Cloudflare's ranges only on 80 and 443
+      # (`/usr/local/sbin/cf-origin-firewall.sh`). Host and container port are the same number on purpose:
+      # `DOCKER-USER` matches the port after DNAT, which is the container's.
+      - '80:80'
+      - '443:443'
+      # The dashboard, on loopback only, reached over an SSH tunnel. Never published publicly. 8081 on the
+      # host because the 8443 instance held 127.0.0.1:8080 while this one started beside it.
+      - '127.0.0.1:8081:8080'
     env_file:
-      # Gitignored (`.env` anywhere). Names only here; values are the Operator's (the runbook's step 2).
+      # Gitignored (`.env` anywhere). Names only here; values are the Operator's (`ops/traefik-cutover.md`
+      # step 2).
       - .env
     volumes:
       - ./traefik.yml:/etc/traefik/traefik.yml:ro
       # A directory, not a file: `git reset --hard` on deploy replaces files by rename, and a single-file
       # bind would keep serving the old inode. Traefik watches this directory.
       - ./dynamic:/etc/traefik/dynamic:ro
-      # The Cloudflare Origin CA certificate and key, from the volume the shared Caddy serves them from
-      # today (`tls /data/origin-ca/origin.pem /data/origin-ca/origin.key`, read 2026-09-30).
-      - type: volume
-        source: cs-tracker_caddy_data
-        target: /etc/traefik/origin-ca
-        read_only: true
-        volume:
-          subpath: origin-ca
+      # The Cloudflare Origin CA certificate and key, from Traefik's own volume, which
+      # `ops/caddy-retirement.md` fills from the box's `/home/deploy/origin-ca/` copy. External, so no
+      # `down -v` of this project can remove it.
+      - origin-ca:/etc/traefik/origin-ca:ro
       # The DNS-01 resolver's account and certificates.
       - acme:/acme
     networks:
-      # Every upstream answers here under the alias the shared Caddyfile already proxies.
+      # Every upstream answers here under the alias `ops/routing-inventory.md` § The shared network names.
       - cs-tracker_default
     healthcheck:
       test: ['CMD', 'traefik', 'healthcheck', '--ping']
@@ -58,6 +61,7 @@ networks:
     external: true
 
 volumes:
-  cs-tracker_caddy_data:
+  origin-ca:
     external: true
+    name: traefik-origin-ca
   acme:

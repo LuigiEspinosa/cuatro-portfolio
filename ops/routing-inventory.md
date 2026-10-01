@@ -8,6 +8,16 @@ This file follows the pattern `ops/estate.md` and `ops/monitoring.md` set: every
 marked as either a decision or an observation, and the two are never presented as the same
 kind of fact (NFR-9). Dates and times are ISO 8601 UTC.
 
+**Revised 2026-10-01 by Story 4-11.** Four sections this file owns now lead with the estate as it
+stands on 2026-10-01, Traefik in front of every hostname but one, and with the end state
+`ops/caddy-retirement.md` reaches, which is pending until that runbook's § Retirement run is written:
+[Every hostname in the zone](#every-hostname-in-the-zone), [Ingress](#ingress),
+[The shared network](#the-shared-network), and [Backup coverage, per project](#backup-coverage-per-project).
+The one shared Caddy those sections described is kept below each lead as a dated reading, never as the
+current one; the 2026-08-24 hostname table moved to its own heading,
+[Every hostname in the zone, as gathered 2026-08-24](#every-hostname-in-the-zone-as-gathered-2026-08-24).
+The rest of the file is unchanged and keeps the dates it carries.
+
 ## Contents
 
 1. [What would invalidate this record](#what-would-invalidate-this-record)
@@ -16,12 +26,13 @@ kind of fact (NFR-9). Dates and times are ISO 8601 UTC.
 4. [The box](#the-box)
 5. [The whole zone, all 26 records](#the-whole-zone-all-26-records)
 6. [Zone settings and rules at the edge](#zone-settings-and-rules-at-the-edge)
-7. [Every hostname in the zone](#every-hostname-in-the-zone)
+7. [Every hostname in the zone](#every-hostname-in-the-zone), on 2026-10-01, and
+   [as gathered 2026-08-24](#every-hostname-in-the-zone-as-gathered-2026-08-24)
 8. [Observed from outside, 2026-08-24](#observed-from-outside-2026-08-24)
 9. [AD-3: hostname against application id](#ad-3-hostname-against-application-id), including the
    reverse pass from every application id back to a hostname
-10. [Ingress: one shared Caddy, and nothing else](#ingress-one-shared-caddy-and-nothing-else),
-    including the site blocks, the running-config comparison, ACME and the origin firewall
+10. [Ingress](#ingress): Traefik on 2026-10-01, and the one shared Caddy before it, including the
+    routers, the site blocks, the running-config comparison, ACME and the origin firewall
 11. [Nothing outside Docker reaches a hostname](#nothing-outside-docker-reaches-a-hostname),
     including port 22
 12. [What each compose project actually runs](#what-each-compose-project-actually-runs),
@@ -335,9 +346,42 @@ Origin SSL Certificate Authority, L = San Francisco, ST = California`, notBefore
 
 ## Every hostname in the zone
 
-One row per hostname, per resolving address. The origin address column is where the origin is,
-not what a client resolves: a client resolving a proxied name gets Cloudflare anycast.
-**Observed 2026-08-24.**
+One row per hostname. The origin address column is where the origin is, not what a client resolves: a
+client resolving a proxied name gets Cloudflare anycast. **Observed 2026-10-01T02:33Z** on the box,
+read-only (`docker ps`, `docker network inspect cs-tracker_default` with each container's aliases), and
+from the Origin Rule ids the Epic 4 move records give; the zone was not re-enumerated, so the DNS column
+is the 2026-08-24 reading with the two records added since (`wheel` 2026-09-13, `tournament` 2026-09-29).
+**The ingress column is what serves each hostname today; the next is where `ops/caddy-retirement.md` puts
+it, pending until that runbook's § Retirement run is written.** Plain HTTP to every box hostname reaches
+port 80: Caddy's redirect, 308 to the same path over https, today; `traefik-ingress-1`'s `web` entrypoint,
+301 to a GET and 308 to the rest, after.
+
+| Hostname | Origin address | DNS record | Terminates TLS | Ingress, 2026-10-01 | After `ops/caddy-retirement.md` | Serves it | Container or process | Port |
+|---|---|---|---|---|---|---|---|---|
+| `cuatro.dev` | `177.7.52.248` | A, proxied | **Cloudflare edge**; the origin presents the Origin CA certificate | Traefik, `traefik-traefik-1` on 8443, Origin Rule `7fe531a5bc864203a3ba3a234b388aa4` | `traefik-ingress-1` on 443, no rule | `cuatro-portfolio` (the Hub), router `cuatro-portfolio` | `cuatro-portfolio-anchor-app-6`, alias `anchor-app` | 3000 |
+| `www.cuatro.dev` | `177.7.52.248` | A, proxied | **Cloudflare edge** | Traefik on 8443, rule `a74dce8a8d774473b9ed9cca0e0643c8` | `traefik-ingress-1` on 443 | 301 to the apex (308 to methods other than GET), router `www`. No application behind it | none. Traefik answers from the `www-to-apex` middleware | n/a |
+| `analytics.cuatro.dev` | `177.7.52.248` | A, proxied | **Cloudflare edge** | Traefik on 8443, rule `71197cf5c82d48ca80bddc5d5a89d23a` | `traefik-ingress-1` on 443 | Umami 3.4.0, router `analytics` | `cuatro-portfolio-anchor-umami-1`, alias `anchor-umami` | 3000 |
+| `cs-tracker.cuatro.dev` | `177.7.52.248` | A + AAAA, both proxied | **Cloudflare edge** | Traefik on 8443, rule `86b7df5f45ea4c998398cc724000196d` | `traefik-ingress-1` on 443 | `cs-tracker` (Phoenix / Elixir), router `cs-tracker` with `forwarded-proto-https` | `cs-tracker-app-2`, alias `app` | 4000 |
+| `tracker.cuatro.dev` | `177.7.52.248` | A + AAAA, both proxied | **Cloudflare edge** | Traefik on 8443, rule `1ee043e45b2d46619c9881d2ae005902` | `traefik-ingress-1` on 443 | `cuatro-tracker`, merged as `apps/tracker`, router `cuatro-tracker` | `cuatro-portfolio-tracker-2`, alias `cuatro-app` | 3000 |
+| `library.cuatro.dev` | `177.7.52.248` | A + AAAA, both proxied | **Cloudflare edge** | Traefik on 8443, rule `041740b5be6f41e588bbbc41f2af4e81` | `traefik-ingress-1` on 443 | `digital-library`, split by path, routers `digital-library` and `digital-library-api` | `digital-library-api-1` (alias `library-api`) for `/api/*` and `/files/*`; `digital-library-web-1` (alias `library-web`) for everything else | 4000, 3000 |
+| `wheel.cuatro.dev` | `177.7.52.248` | A, proxied | **Cloudflare edge** | Traefik on 8443, rule `a186cf20b402453fa147ec4b0626c50b` | `traefik-ingress-1` on 443 | `list-wheel`, static files behind the container's own Caddy, router `list-wheel` | `list-wheel-list-wheel-1`, alias `list-wheel` | 80 |
+| `tournament.cuatro.dev` | `177.7.52.248` | A, proxied | **Cloudflare edge** | **Caddy**, `cs-tracker-caddy-1` on 443, no rule: the one hostname no Epic 4 story moved | Traefik on 8443 by its own Origin Rule at the runbook's step 2, then `traefik-ingress-1` on 443 | `cs-tournament`, the Next.js server, router `cs-tournament` | `cuatro-portfolio-tournament-1`, alias `tournament` | 3000 |
+| `dns01-probe.scratch.cuatro.dev` | **no DNS record** | none, by design (AD-26) | its own Let's Encrypt certificate, by DNS-01 (`ops/traefik-cutover.md` step 7) | Traefik's `dns01-probe` router, reached by SNI on the box only | the same on `traefik-ingress-1`, the certificate read from the shared `traefik_acme` | nothing; it proves a hostname could leave the proxy | none | n/a |
+| `covidmap.cuatro.dev` | **not this box** | CNAME, DNS-only | **Vercel** | Vercel | unchanged (KV-7) | A Vercel deployment, Registry `covidmap` | **unknown** | **unknown** |
+| `future-vizion.cuatro.dev` | **not this box** | CNAME, DNS-only | **Vercel** | Vercel | unchanged (KV-7) | A Vercel deployment, Registry `future-vizion` | **unknown** | **unknown** |
+| `_domainconnect.cuatro.dev` | **not this box** | CNAME, proxied | **unknown**, Squarespace scaffolding | n/a | unchanged | Nothing of ours | **unknown** | **unknown** |
+| `google._domainkey.cuatro.dev` | n/a | TXT only | n/a | n/a | n/a | Nothing. Not a serving hostname | n/a | n/a |
+| `_vercel.cuatro.dev` | n/a | TXT only | n/a | n/a | n/a | Nothing. Not a serving hostname | n/a | n/a |
+
+**Every box hostname has one router in `ops/traefik/dynamic/routes.yml`**, and
+`ops/__tests__/traefik-config.test.ts` holds that set equal to this table's box rows plus the scratch
+hostname, each upstream to the alias and port its row names.
+
+## Every hostname in the zone, as gathered 2026-08-24
+
+**The reading this file was built on, kept as it was gathered, with the rows added later dated on them.**
+Its ingress, the one shared Caddy, is the one Story 4-11 retires; the table above is the current one.
+One row per hostname, per resolving address. **Observed 2026-08-24.**
 
 | Hostname | Origin address | DNS record | Terminates TLS | Origin certificate | Serves it | Container or process | Port |
 |---|---|---|---|---|---|---|---|
@@ -569,9 +613,32 @@ hostname.
 **Amended 2026-09-26:** one place since Operator ruling 2026-09-25, `analytics.cuatro.dev`, which is
 infrastructure outside the Registry by decision; the other two are Estate rows and Registry entries.
 
-## Ingress: one shared Caddy, and nothing else
+## Ingress
 
-**`cs-tracker-caddy-1` (image `caddy:2`) is the only container on the box publishing ports.**
+**On 2026-10-01 two proxies publish ports, and Traefik serves seven of the eight hostnames.** **Observed
+2026-10-01T02:33Z**, read-only (`docker ps`, `ss -ltn`, `sudo iptables -S DOCKER-USER`, `sudo ufw status`).
+
+| Proxy | Container | Publishes | Serves |
+|---|---|---|---|
+| Traefik v3.7.13, compose project `traefik` from `ops/traefik/` (Story 4-2) | `traefik-traefik-1`, healthy | `0.0.0.0:8443` and `[::]:8443`; the dashboard on `127.0.0.1:8080` | `wheel`, `www`, the apex, `analytics`, `tracker`, `library` and `cs-tracker`, each sent to 8443 by its own Cloudflare Origin Rule in ruleset `518ad07108bc402fa36ad71fe1e76862` (seven rules, § Every hostname in the zone) |
+| Caddy 2, the `caddy` service of the `cs-tracker` compose project | `cs-tracker-caddy-1` | `0.0.0.0` and `[::]` on 80 and 443 | `tournament.cuatro.dev` over HTTPS, and plain HTTP to every hostname (a 308 to https); its seven other site blocks are unreached |
+
+Both read the same Cloudflare Origin CA pair, `cuatro.dev` and `*.cuatro.dev`, notAfter
+2041-08-13T17:15:00Z: Caddy from `/data/origin-ca/` in its volume `cs-tracker_caddy_data`, Traefik from the
+same volume's `origin-ca` subpath, read-only. The origin firewall admits 80, 443 and 8443 for Cloudflare's
+ranges only (§ The origin is firewalled to Cloudflare).
+
+**The end state, pending until `ops/caddy-retirement.md` § Retirement run is written.** One proxy:
+Traefik as `traefik-ingress-1`, the `ingress` service of the same project, publishes 80 and 443 (`web`
+redirects plain HTTP to https, `websecure` serves every hostname with the Origin CA pair from its own volume,
+`traefik-origin-ca`) and its dashboard on `127.0.0.1:8081`; no Origin Rule remains, 8443 is closed at the
+firewall, and Caddy, its Caddyfile, its two volumes and its compose service are gone. The decision and the
+alternative it was weighed against (8443 and the rules kept) are in that runbook, § Plain HTTP and TLS once
+Caddy is gone. Its step 16 replaces this paragraph's "pending" with the date it ran.
+
+### Before Epic 4: one shared Caddy, observed 2026-08-24
+
+**`cs-tracker-caddy-1` (image `caddy:2`) was the only container on the box publishing ports.**
 **Observed 2026-08-24.**
 
 | Field | Value |
@@ -587,7 +654,106 @@ infrastructure outside the Registry by decision; the other two are Estate rows a
 | Admin API | `127.0.0.1:2019`, IPv4 only. `caddy reload` works; a probe to `localhost` fails because it resolves to `::1` first |
 | Network | `cs-tracker_default`, aliases `cs-tracker-caddy-1` and `caddy`, address `172.18.0.4` |
 
-### The site blocks, as installed
+### How Epic 4 moved each hostname, as amended at the time
+
+**Amended 2026-09-30 (Story 4-2):** Caddy is no longer the only container publishing ports. Traefik
+v3.7.13 (`traefik-traefik-1`, compose project `traefik`, from `ops/traefik/`) runs beside it since
+2026-09-30T21:52Z, publishing `0.0.0.0:8443` and `[::]:8443` and the dashboard on loopback
+`127.0.0.1:8080` only. It serves no public request until an Origin Rule sends a hostname's HTTPS to
+8443; Caddy keeps 80 and 443 and every public request until then. The origin firewall
+(`/usr/local/sbin/cf-origin-firewall.sh`, `DOCKER-USER`, and `ufw` in step) admits 8443 for Cloudflare's
+ranges only, as it does 80 and 443. Readings in `ops/traefik-cutover.md` § Cutover run.
+
+**Amended 2026-09-30 (Story 4-3):** `wheel.cuatro.dev` is served by Traefik through a Cloudflare Origin
+Rule since 2026-09-30T22:31Z. The zone's `http_request_origin` entrypoint (ruleset
+`518ad07108bc402fa36ad71fe1e76862`) holds one rule, `a186cf20b402453fa147ec4b0626c50b`, which sends
+`(http.host eq "wheel.cuatro.dev" and ssl)` to origin port 8443, where Traefik's `list-wheel` router dials
+`http://list-wheel:80`, the upstream Caddy's block names. Caddy's `wheel.cuatro.dev` block below remains,
+unreached, until Story 4.11; deleting the rule sends the hostname back to it. Every other hostname is still
+served by Caddy on 443. Readings in `ops/traefik-cutover.md` § Cutover run, wheel.cuatro.dev.
+
+**Amended 2026-09-30 (Story 4-6):** `www.cuatro.dev` and `cuatro.dev` are served by Traefik through
+Cloudflare Origin Rules since 2026-09-30T22:48Z. The same entrypoint (ruleset
+`518ad07108bc402fa36ad71fe1e76862`) now holds three rules: the wheel rule above,
+`a74dce8a8d774473b9ed9cca0e0643c8` (`www.cuatro.dev`, 22:48:14Z) and `7fe531a5bc864203a3ba3a234b388aa4`
+(`cuatro.dev`, 22:48:45Z), each sending `(http.host eq "<host>" and ssl)` to origin port 8443, where
+Traefik's `cuatro-portfolio` router dials `http://anchor-app:3000` and its `www` router answers the
+permanent redirect to the apex (`301` to a GET, `308` to every other method, where Caddy answered `301`).
+One CI-built deploy (run 36787729657) rolled the Hub through Traefik afterwards, leaving
+`cuatro-portfolio-anchor-app-6`, with no failed request on the probe. Caddy's `cuatro.dev` and
+`www.cuatro.dev` blocks below remain, unreached, until Story 4.11; deleting a rule sends that hostname back
+to its block. Readings in `ops/traefik-cutover.md` § Cutover run, cuatro.dev and www.
+
+**Amended 2026-09-30 (Story 4-7):** `analytics.cuatro.dev` is served by Traefik through a Cloudflare
+Origin Rule since 2026-09-30T23:36Z. The same entrypoint (ruleset `518ad07108bc402fa36ad71fe1e76862`)
+gained rule `71197cf5c82d48ca80bddc5d5a89d23a` at 23:36:34Z, sending
+`(http.host eq "analytics.cuatro.dev" and ssl)` to origin port 8443, where Traefik's `analytics` router
+dials `anchor-umami:3000`, the upstream Caddy's block names. Caddy's `analytics.cuatro.dev` block below
+remains, unreached, until Story 4.11; deleting the rule sends the hostname back to it. Readings in
+`ops/postgres.md` § Umami move run, 2026-09-30.
+
+**Amended 2026-10-01 (Story 4-8):** `tracker.cuatro.dev` is served by Traefik through a Cloudflare Origin
+Rule since 2026-10-01T00:00Z. The same entrypoint (ruleset `518ad07108bc402fa36ad71fe1e76862`) gained rule
+`1ee043e45b2d46619c9881d2ae005902` at 00:00:30Z, sending `(http.host eq "tracker.cuatro.dev" and ssl)` to
+origin port 8443, where Traefik's `cuatro-tracker` router dials `http://cuatro-app:3000`, the upstream Caddy's block
+names; the ruleset now holds five rules (wheel, www, apex, analytics, tracker). Caddy's
+`tracker.cuatro.dev` block below remains, unreached, until Story 4.11; deleting the rule sends the hostname
+back to it. Readings in `ops/tracker-cutover.md` § Estate Postgres move run, 2026-09-30.
+
+**Amended 2026-10-01 (Story 4-9):** `library.cuatro.dev` is served by Traefik through a Cloudflare Origin
+Rule since 2026-10-01T00:04Z. The same entrypoint (ruleset `518ad07108bc402fa36ad71fe1e76862`) gained rule
+`041740b5be6f41e588bbbc41f2af4e81` at 00:04:56Z, sending `(http.host eq "library.cuatro.dev" and ssl)` to
+origin port 8443, where both of the hostname's paths go through Traefik's own routers: the `/api/` and
+`/files/` prefixes to `library-api:4000` with `library-api-headers`, everything else to `library-web:3000`, the
+split Caddy's block makes. The ruleset now holds six rules (wheel, www, apex, analytics, tracker, library).
+Caddy's `library.cuatro.dev` block below remains, unreached, until Story 4.11; deleting the rule sends the
+hostname back to it. Readings in `ops/backup-digital-library.md` § Cutover run, library.cuatro.dev.
+
+**Amended 2026-10-01 (Story 4-10):** `cs-tracker.cuatro.dev` is served by Traefik through a Cloudflare
+Origin Rule since 2026-10-01T00:56Z. The same entrypoint (ruleset `518ad07108bc402fa36ad71fe1e76862`) gained
+rule `86b7df5f45ea4c998398cc724000196d` at 00:56:08Z, sending `(http.host eq "cs-tracker.cuatro.dev" and ssl)`
+to origin port 8443, where Traefik's `cs-tracker` router dials `http://app:4000` (now `cs-tracker-app-2`), the
+upstream Caddy's block names, with `forwarded-proto-https` so the LiveView socket answers `101`. The
+ruleset now holds seven rules (wheel, www, apex, analytics, tracker, library, cs-tracker). Of Caddy's eight
+blocks below, seven are unreached until Story 4.11; `tournament.cuatro.dev` has no Origin Rule and is still
+served by Caddy on 443. Deleting a rule sends that hostname back to its block. Readings in
+`ops/cs-tracker-cutover.md` § Move run, 2026-10-01.
+
+### The routers
+
+**The routing table is `ops/traefik/dynamic/routes.yml`, in git**, the file provider of every Traefik on the
+box, watched, so a change merged to `main` reaches it at the next deploy; the table below is that file read
+on 2026-10-01, and the file wins wherever the two differ. One router per hostname, each
+matching on `Host` alone (AD-7), with `library.cuatro.dev`'s second router splitting `/api/` and `/files/`
+under the same `Host`; the upstreams are the aliases of § The shared network. Each router was written to
+answer what Caddy's block below answers, and `ops/__tests__/traefik-config.test.ts` holds each to it.
+
+| Router | Rule | Middlewares | Upstream |
+|---|---|---|---|
+| `cuatro-portfolio` | `Host(cuatro.dev)` | `house-headers` | `http://anchor-app:3000` |
+| `www` | `Host(www.cuatro.dev)` | `house-headers`, `www-to-apex` | none (`noop@internal`) |
+| `analytics` | `Host(analytics.cuatro.dev)` | `house-headers` | `http://anchor-umami:3000` |
+| `cs-tracker` | `Host(cs-tracker.cuatro.dev)` | `forwarded-proto-https` | `http://app:4000` |
+| `cuatro-tracker` | `Host(tracker.cuatro.dev)` | `house-headers` | `http://cuatro-app:3000` |
+| `digital-library` | `Host(library.cuatro.dev)` | `library-headers` | `http://library-web:3000` |
+| `digital-library-api` | `Host(library.cuatro.dev) && (PathPrefix(/api/) \|\| PathPrefix(/files/))` | `library-api-headers` | `http://library-api:4000` |
+| `list-wheel` | `Host(wheel.cuatro.dev)` | `house-headers` | `http://list-wheel:80` |
+| `cs-tournament` | `Host(tournament.cuatro.dev)` | `house-headers` | `http://tournament:3000` |
+| `dns01-probe` | the scratch hostname | none; the one router naming the `cloudflare` resolver | none (`noop@internal`) |
+| `dashboard` | `Host(localhost)`, on the loopback `traefik` entrypoint only | `dashboard-auth` | `api@internal` |
+
+**Only `cs-tracker`'s upstream serves a WebSocket through the origin**, and its router sets
+`X-Forwarded-Proto: https` because Traefik forwards an upgrade as `wss` (Story 4-10). The others were
+checked on 2026-10-01 for DW-309: the Hub, Umami and `list-wheel` serve no upgrade; the tracker streams its
+import status as server-sent events (`apps/tracker/app/admin/import/[jobId]/status/ImportStatusClient.tsx`),
+an ordinary request; `digital-library`'s sources hold no WebSocket; and the tournament's live channels go
+from the browser to Supabase directly (`apps/tournament/lib/supabase/browser.ts`), never through the origin.
+
+### The site blocks, as Caddy carried them
+
+**Caddy's file, kept as the record each router above was checked against.** It routes only
+`tournament.cuatro.dev` and plain HTTP on 2026-10-01, and `ops/caddy-retirement.md` step 11 archives it
+offsite and deletes it.
 
 **Amended 2026-09-30:** an eighth block, `tournament.cuatro.dev`, was appended to
 `/home/deploy/cs-tracker/Caddyfile` at 00:12:23Z (UTC) by `ops/tournament-placement.md` step 5, copied
@@ -738,6 +904,11 @@ network namespace, so the same request from the host returns nothing at all.
 
 ### ACME is off, and the ingress holds no Cloudflare credential
 
+**Amended 2026-10-01 (Story 4-11):** ACME runs on the box for one name only, Traefik's DNS-01 scratch
+hostname, which has no DNS record and is never proxied (AD-26); its token is `traefik-dns01` in the
+gitignored `ops/traefik/.env`. Every proxied hostname is served the Origin CA pair. What follows is the
+Caddy reading of 2026-08-24.
+
 Every site block carries an explicit `tls /data/origin-ca/origin.pem /data/origin-ca/origin.key`
 directive, which is what disables automatic certificate management for that site. Applied
 2026-08-17 by Story 1.3. **Still true 2026-08-24**, confirmed by reading the file.
@@ -770,6 +941,13 @@ Disabling ACME does not free that port.
 ### The origin is firewalled to Cloudflare, and `ufw` alone did not do it
 
 Applied 2026-08-17 by Story 1.3. **Re-read 2026-08-24 and unchanged.**
+
+**Amended 2026-10-01 (Story 4-11):** since `ops/traefik-cutover.md` step 3 (2026-09-30T21:50Z) the chain
+returns `--dports 80,443,8443` for Cloudflare's 15 IPv4 and 7 IPv6 ranges, then drops (17 and 9 lines of
+`iptables -S`, read 2026-10-01T02:35Z), and `ufw` carries 22 `8443/tcp` rules beside the 22 on `80,443/tcp`.
+`ops/caddy-retirement.md` step 9 closes 8443 again by restoring the script from
+`/usr/local/sbin/cf-origin-firewall.sh.bak-4-2` and deleting those 22 rules; pending until its run is
+recorded. The table below is the 2026-08-24 reading.
 
 | Layer | State on 2026-08-24 | Effect |
 |---|---|---|
@@ -1125,7 +1303,7 @@ record was gathered. **Observed 2026-09-13T17:32:05Z** by the placing session wi
 **The one service is named for the id, `list-wheel`, and so is its alias** (AD-3). That is the
 name the `wheel.cuatro.dev` site block proxies, and it collided with nothing in the alias table
 below on 2026-09-13, which is the point of the naming: see the live `app` collision under
-[The shared network](#the-shared-network-and-a-name-collision-that-is-still-live).
+[The shared network](#the-shared-network).
 
 **What is in the image, and what it costs.** The build ran on the box inside the deploy's SSH
 step, 17:31:05Z to 17:31:32Z: `npm ci` 18.6 s, `npm run build` 6.3 s, image
@@ -1184,6 +1362,13 @@ GHCR first, and the image ids above are how a rebuild proves it got the same thi
 2026-09-28** (Story 3-4, committed on `dev`): from the Epic 3 merge the Hub runs
 `ghcr.io/luigiespinosa/hub:<sha>`, pulled from GHCR, so `cuatro-portfolio-anchor-app:latest` stops being
 used and the Hub's image leaves that set; its container's name changes with each rollout.
+
+**Amended 2026-09-30 (Story 4-7):** `cuatro-portfolio-anchor-umami-1` runs
+`ghcr.io/umami-software/umami:3.4.0@sha256:85909afc45bdcda1917394594a087421fdbb05610fded0fa9f6fb861abb2f367`
+since 22:57:25Z, pinned by digest in `docker-compose.yml`, where the row above had the floating
+`postgresql-latest` (3.3.0), and keeps its data in the `umami` database of `estate-postgres`
+(`postgres-estate-postgres-1`, `postgres:18.6-trixie`). `cuatro-portfolio-anchor-db-1` keeps Umami's old
+store, unreached, until Story 4.11. Readings in `ops/postgres.md` § Umami move run, 2026-09-30.
 
 #### `cs-tracker:latest` is built on the box, and the estate-wide claim is now exact
 
@@ -1261,10 +1446,36 @@ is missing. **Observed 2026-08-24.**
 | `qbittorrent` mounts `"${DOWNLOAD_PATH:?DOWNLOAD_PATH is required; see .env.example}:/downloads"` | `cuatro-tracker/docker-compose.yml` | The one bind mount whose host path comes from a variable. `DOWNLOAD_PATH` resolves to `/home/deploy/cuatro-downloads` |
 | `api` mounts `./data:/data` | `digital-library/docker-compose.yml` | The SQLite store is declared in source, not just observed. It is relative to the checkout, so a rebuild in a different directory moves the database |
 
-### The shared network, and a name collision that is still live
+### The shared network
 
-Only `cs-tracker` publishes ports. The other three projects, four from 2026-09-13, join
-`cs-tracker_default` under stable aliases, and the shared Caddyfile reverse-proxies those
+**`cs-tracker_default` is the ingress network, and keeps its name.** The `cs-tracker` compose project
+created it as its default network and still owns it; Traefik and every upstream join it as `external`.
+Renaming it would recreate every container on it, so the name stays after Caddy goes: `cs-tracker`'s `app`
+keeps it as that project's default network. **Observed 2026-10-01T02:37Z** with `docker network inspect`
+and each container's aliases on it, read-only.
+
+| Container | Its aliases on `cs-tracker_default` | Reached by |
+|---|---|---|
+| `traefik-traefik-1` | `traefik` | nothing; it is the 8443 ingress |
+| `cs-tracker-caddy-1` | `caddy` | nothing; it is the 80 and 443 ingress |
+| `cuatro-portfolio-anchor-app-6` | `anchor-app` | `cuatro.dev` |
+| `cuatro-portfolio-anchor-umami-1` | `anchor-umami` | `analytics.cuatro.dev` |
+| `cs-tracker-app-2` | `app` | `cs-tracker.cuatro.dev` |
+| `cuatro-portfolio-tracker-2` | `tracker`, `cuatro-app` | `tracker.cuatro.dev`, by `cuatro-app` |
+| `digital-library-api-1` | `api`, `library-api` | `library.cuatro.dev`'s `/api/` and `/files/`, by `library-api` |
+| `digital-library-web-1` | `web`, `library-web` | `library.cuatro.dev`, by `library-web` |
+| `list-wheel-list-wheel-1` | `list-wheel` | `wheel.cuatro.dev` |
+| `cuatro-portfolio-tournament-1` | `tournament` | `tournament.cuatro.dev` |
+| `cs-tracker-db-1` | `db` | nothing; the old `cs-tracker` store |
+
+Each container also answers to its own name. **After `ops/caddy-retirement.md`, pending until its run is
+recorded:** `traefik-ingress-1` (`ingress`) replaces `traefik-traefik-1` and `cs-tracker-caddy-1`, and
+`cs-tracker-db-1` leaves the network with its step 14. No alias collides: one `app` since 2026-09-29, below.
+
+#### As observed 2026-08-24, and the name collision that ended 2026-09-29
+
+Only `cs-tracker` published ports. The other three projects, four from 2026-09-13, joined
+`cs-tracker_default` under stable aliases, and the shared Caddyfile reverse-proxied those
 aliases by name.
 
 | Alias on `cs-tracker_default` | Resolves to | Reached by |
@@ -1360,6 +1571,30 @@ which is fine while the network boundary holds and is one published port away fr
 Appended to the ledger. Not changed by this pass.
 
 ## Backup coverage, per project
+
+**Every store on the box on 2026-10-01, and what backs it up.** **Observed 2026-10-01T02:33Z**:
+`docker volume ls`, the `deploy` crontab and the backup directories, read-only; the mechanisms are the
+records each row names.
+
+| Project | Store | Backed up? | Mechanism | Offsite? |
+|---|---|---|---|---|
+| The estate Postgres | `postgres_pgdata`: databases `umami`, `cuatro_tracker`, `cs_tracker`, `cuatro_finance` (empty) | **Yes** | `postgres-backup.sh`, 03:15, `pg_dump` per database in one snapshot, counted, restored from the repository every night (`ops/postgres-backup.md`) | **Yes**, restic in an R2 bucket of its own |
+| `digital-library` | bind `data/` (SQLite and the empty media directories) and `digital-library_redis_data` | **Yes** | `library-backup.sh`, 03:45 (`ops/backup-digital-library.md`) | **Yes**, R2 |
+| `cs-tournament` | Supabase Cloud, off the box | **Yes** | `tournament-backup.sh`, 03:45, a dump on the box | Off Supabase's side, which the Operator ruled sufficient on 2026-09-30 (`ops/tournament-placement.md`) |
+| `cuatro-tracker`, still running | `cuatro-tracker_redis_data` (BullMQ state) and `cuatro-tracker_qb_config`, bind `/home/deploy/cuatro-downloads` (empty) | **No** | none | **No**. DW-306 |
+| The old stores, unreached since their moves | `cuatro-portfolio_postgres_data` (`anchor-db`, Umami's to 2026-09-30T22:56:35Z), `cuatro-tracker_pg_data` (the tracker's to 23:54:51Z), `cs-tracker_pgdata` (`cs-tracker`'s to its move, 2026-10-01T00:36Z) | Each move's own dump, in `/home/deploy/pg-move` or `/home/deploy/backups/cuatro-tracker`, and `cuatro-backup.sh` at 03:30 still dumping the frozen tracker store | none further | The tracker's and `cs-tracker`'s move dumps were copied to the workstation by `scp`; Umami's was not |
+| Traefik | `traefik_acme`, the scratch hostname's certificate and account | **No** | none; Traefik issues a new one at start if it is lost | n/a |
+| The Origin CA pair | `cs-tracker_caddy_data` at `origin-ca/`, and `/home/deploy/origin-ca/` | Two copies on the box | none | **No** |
+| Caddy's own | `cs-tracker_caddy_config`, a derived copy of the Caddyfile | **No** | none | **No** |
+
+**The end state, pending until `ops/caddy-retirement.md` § Retirement run is written:** the three old
+stores, Caddy's two volumes, the move dumps and the tracker's old nightly dumps are each written into
+`/home/deploy/retired-4-11` and copied offsite as restic snapshots tagged `retired-4-11` in the estate
+repository, verified by restoring them, before each is removed; `cuatro-backup.sh` and its 03:30 line are
+retired; the Origin CA pair lives in `traefik-origin-ca` and `/home/deploy/origin-ca/`, with an encrypted
+copy offsite inside Caddy's archived volume. The rows that remain are the first four above and Traefik's.
+
+### As gathered 2026-08-24, and partly superseded since
 
 **Partly superseded on 2026-08-24 by Story 1-8. The record for `digital-library`'s backup path is
 now `ops/backup-digital-library.md`.** Three things in this section have since changed on the box:
@@ -1563,6 +1798,12 @@ from this file and because an unattended reboot would drop the `DOCKER-USER` cha
 
 This set is what a rebuild has to recreate from nothing, and it is the reason Story 1.7 exists.
 **Observed 2026-08-24.**
+
+**Amended 2026-10-01 (Story 4-11):** the routing table is in git now, `ops/traefik/dynamic/routes.yml`,
+and the box's Caddyfile routes only `tournament.cuatro.dev` and plain HTTP. Its backups are six, not five:
+`Caddyfile.bak-3-7` joined them on 2026-09-30 (Story 3-7). `ops/caddy-retirement.md` § What Story 1.7
+found, and what becomes of it gives each item below that the retirement touches its fate, recreated or
+dropped, and its step 11 archives the Caddyfile and the six backups offsite before deleting them.
 
 | What | Where | In any repository? |
 |---|---|---|

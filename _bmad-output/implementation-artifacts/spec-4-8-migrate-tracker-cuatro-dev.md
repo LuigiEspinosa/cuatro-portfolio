@@ -2,7 +2,7 @@
 title: 'Story 4-8: Migrate tracker.cuatro.dev'
 type: 'feature'
 created: '2026-09-30'
-status: 'awaiting-operator'
+status: 'done'
 baseline_commit: 'ec9d76ea8c21e01ca151df8a8a06ed1f4bcf274c'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -81,6 +81,8 @@ context:
 - DW-306 and DW-307 are the next free ids at the time of writing; a concurrent story taking either would need a renumber at merge.
 
 ## Spec Change Log
+
+- 2026-10-01: box half ran from 2026-09-30T23:53Z to 2026-10-01T00:02Z (runbook § Moving the database onto the estate Postgres, steps 1 to 14), recorded in `ops/tracker-cutover.md` § Estate Postgres move run, 2026-09-30; status `done`. Step 10 started about a minute late from an orchestration fault (the script piped into `ssh` over stdin), not a runbook defect. The Operator saw the tracker's sign-in accept any password (DW-311). Pending Operator action 5 stays open.
 
 ## Review Triage Log
 

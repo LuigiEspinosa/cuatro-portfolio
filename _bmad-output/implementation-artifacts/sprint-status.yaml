@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-30-2026 18:40
+last_updated: 10-01-2026 03:22
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -868,32 +868,65 @@ development_status:
   # Operator's, ops/traefik-cutover.md § The sequence steps 1 to 8 and § Pending Operator actions 1 to 4
   # (merge to main, the DNS-01 token, the decisions and the certificate monitoring reading, the run).
   # No hostname moves in 4-2. DW-296 to DW-299 filed.
-  4-2-traefik-with-host-matched-routers-and-dns-01: awaiting-operator
+  # 4-2 done 2026-09-30: box half ran from 21:48Z with the Operator present, after PR #88 (f9ea578) and
+  # Deploy run 36779534561. Traefik v3.7.13 healthy beside Caddy on 8443 and loopback 8080, every step 5
+  # pair matched, DNS-01 issued a Let's Encrypt YR2 certificate for dns01-probe.scratch.cuatro.dev (no DNS
+  # record), origin firewall admits 8443 for Cloudflare's ranges. Readings in ops/traefik-cutover.md
+  # § Cutover run; Pending actions 1, 2 and 4 dated. Action 3 (confirm or overrule the decisions and the
+  # certificate monitoring reading) stays open: nothing overruled, an explicit word awaited.
+  4-2-traefik-with-host-matched-routers-and-dns-01: done
   # 4-3 awaiting-operator 2026-09-30: repository half built and verified on dev. No routing change and no
   # change in list-wheel: the committed router equals Caddy's block on the list-wheel alias, now pinned in
   # the traefik-config suite, and rehearsed with the real image. Box half is the Operator's,
   # ops/traefik-cutover.md § Moving wheel.cuatro.dev steps 1 to 5 and Pending Operator actions 7 and 8, after
   # 4-2's actions 1 to 4 and before 4-6's move. KV-1's list-wheel half left open, DW-308 filed.
-  4-3-migrate-list-wheel-the-static-first-candidate: awaiting-operator
+  # 4-3 done 2026-09-30: box half ran from 22:21Z with the Operator present, after 4-2's run. No entrypoint
+  # existed, so step 3 created it with the one Origin Rule at 22:31:15Z (ruleset
+  # 518ad07108bc402fa36ad71fe1e76862, rule a186cf20b402453fa147ec4b0626c50b, wheel.cuatro.dev to 8443);
+  # the 540 line probe read 200 200 throughout and turned from caddy to no-via inside the minute after the
+  # rule; monitor 803983277 UP. wheel.cuatro.dev is served by Traefik since 22:31Z, Caddy's block unreached
+  # until Story 4.11. Readings in ops/traefik-cutover.md § Cutover run, wheel.cuatro.dev; Pending action 8
+  # dated. Action 7 (confirm or overrule the decisions) stays open: nothing overruled, an explicit word
+  # awaited. KV-1's list-wheel half stays open, as the story decided; DW-308 carries its closer.
+  4-3-migrate-list-wheel-the-static-first-candidate: done
   # 4-4 awaiting-operator 2026-09-30: repository half built and verified on dev (ops/postgres/compose.yml on
   # postgres:18.6-trixie, max_connections=100, the init script creating umami, cuatro_tracker, cs_tracker and
   # cuatro_finance with limits summing to 80, the postgres-init suite, the local Docker proof). Box half is
   # the Operator's, ops/postgres.md § The placement steps 1 to 5 and § Pending Operator actions 1 to 3.
   # No consumer moves in 4-4; the tournament stays on Supabase. DW-300 to DW-302 filed, DW-298 amended.
-  4-4-one-postgres-one-database-and-one-role-per-consumer: awaiting-operator
+  # 4-4 done 2026-09-30: box half ran from 22:15Z with the Operator present, after PR #88 (f9ea578) and
+  # Deploy run 36779534561. postgres-estate-postgres-1 healthy after 8 s, the four databases and limits
+  # exactly as expected, load15 0.24 after. Readings in ops/postgres.md § Placement run, 2026-09-30;
+  # Pending actions 1 and 3 dated. Action 2 (confirm or overrule the decisions) stays open: nothing
+  # overruled, an explicit word awaited. No consumer moved.
+  4-4-one-postgres-one-database-and-one-role-per-consumer: done
   # 4-5 awaiting-operator 2026-09-30: repository half built and verified on dev (ops/postgres-backup.sh,
   # ops/postgres-restore-verify.sh, the postgres-backup suite, the local Docker proof against Postgres 18.6 and a
   # restic 0.19.1 repository on disk). Box half is the Operator's, ops/postgres-backup.md § Install and first
   # run steps 1 to 7 and § Pending Operator actions 1 to 5, after ops/postgres.md § The placement. PITR deferred;
   # the library's path unchanged.
-  4-5-pg_dump-on-cron-plus-restic-offsite: awaiting-operator
+  # 4-5 done 2026-09-30: box half ran with the Operator present, after the 4-4 placement. R2 bucket
+  # cuatro-postgres-backups, repository 97d1ebf584, three runs 22:17Z to 22:18Z each exit=0 with
+  # restore=verified, two snapshots kept (the third run's forget deleted one), the 03:15 cron line
+  # installed, the password proved from the workstation. Readings in ops/postgres-backup.md § First run,
+  # 2026-09-30; Pending actions 1, 3, 4 and 5 dated. Action 2 (confirm or overrule the decisions) stays
+  # open: nothing overruled, an explicit word awaited.
+  4-5-pg_dump-on-cron-plus-restic-offsite: done
   # 4-6 awaiting-operator 2026-09-30: repository half built and verified on dev. No routing change: the apex and
   # www routers in ops/traefik/ already match Caddy's blocks and contracts/ stays the Hub's (ruling 2026-09-24);
   # the traefik-config suite now pins the apex upstream to anchor-app's compose alias. Local proof: the real Hub
   # image rolled 20 times by docker-rollout v0.14 behind the committed Traefik, 1,821 of 1,822 requests 200, one
   # unexplained timeout filed as DW-305. Box half is the Operator's, ops/traefik-cutover.md § Moving cuatro.dev
   # and www steps 1 to 7 and § Pending Operator actions 5 and 6, after actions 1 to 4 and the origin rules token.
-  4-6-migrate-cuatro-dev: awaiting-operator
+  # 4-6 done 2026-09-30: box half ran from 22:32Z with the Operator present, after 4-2's and 4-3's runs.
+  # Monitor 803756083 set to GET in step 1. Origin Rules added to ruleset 518ad07108bc402fa36ad71fe1e76862:
+  # www a74dce8a8d774473b9ed9cca0e0643c8 at 22:48:14Z, apex 7fe531a5bc864203a3ba3a234b388aa4 at 22:48:45Z.
+  # Deploy run 36787729657 rolled the Hub through Traefik to cuatro-portfolio-anchor-app-6; the 130 line
+  # probe read 200 301 200 alone, three monitors UP. cuatro.dev and www served by Traefik since 22:48Z,
+  # Caddy's blocks unreached until Story 4.11. Readings in ops/traefik-cutover.md § Cutover run, cuatro.dev
+  # and www; Pending action 6 dated. Action 5 (confirm or overrule the decisions) stays open: nothing
+  # overruled, an explicit word awaited. DW-305 closed on step 6's count.
+  4-6-migrate-cuatro-dev: done
   # 4-7 awaiting-operator 2026-09-30: repository half built and verified on dev. docker-compose.yml pins Umami
   # 3.4.0 by digest (the box runs 3.3.0 on the floating tag), points it at estate-postgres as umami (limit 25,
   # the role's), sets SKIP_DB_MIGRATION with anchor-umami-migrate as the discrete step, and adds the
@@ -901,7 +934,15 @@ development_status:
   # Postgres 16 and restored into 18.6, counts-match, migrated, served, and rolled back. Box half is the
   # Operator's, ops/postgres.md § Moving Umami steps 1 to 14 and § Pending Operator actions 4 to 6, after the
   # 4-4 placement, the 4-5 install and, for the hostname, 4-2 and 4-6. DW-179 and DW-302 closed.
-  4-7-migrate-analytics-cuatro-dev-and-pin-umami: awaiting-operator
+  # 4-7 done 2026-09-30: box half ran from 22:54Z with the Operator present. A first attempt failed at step 9:
+  # the runbook's compose prefix lacked HUB_TAG, so every compose command errored; no write reached either
+  # store, and the helper block now exports it (DW-310). The retry froze at 22:56:35Z, counts-match, migrated
+  # 24 to 26, and served 3.4.0 by digest on estate-postgres from 22:57:25Z (50 seconds dark). Origin Rule
+  # 71197cf5c82d48ca80bddc5d5a89d23a moved analytics.cuatro.dev onto Traefik at 23:36:34Z; the 50 line probe
+  # read 200 200 alone, and the old store took 0 events after the freeze. Readings in ops/postgres.md § Umami
+  # move run, 2026-09-30; Pending action 6 dated. Action 4 (confirm or overrule the decisions) stays open:
+  # nothing overruled, an explicit word awaited.
+  4-7-migrate-analytics-cuatro-dev-and-pin-umami: done
   # 4-8 awaiting-operator 2026-09-30: repository half built and verified on dev. docker-compose.yml points tracker,
   # tracker-worker and tracker-migrate at estate-postgres as cuatro_tracker with connection_limit=4 (role limit 20);
   # Redis and qBittorrent stay in the old project (DW-306); migrate-on-boot was already off. Local proof with the
@@ -911,14 +952,33 @@ development_status:
   # the Operator's, ops/tracker-cutover.md § Moving the database onto the estate Postgres steps 1 to 14 and
   # § Pending Operator actions 5 to 8, after the 4-4 placement, the 4-5 install and, for the hostname, 4-2 and
   # 4-6. DW-275 (per-id deploy) not in this run's scope, still open.
-  4-8-migrate-tracker-cuatro-dev: awaiting-operator
+  # 4-8 done 2026-10-01: box half ran from 2026-09-30T23:53Z to 2026-10-01T00:02Z with the Operator present.
+  # Action 7 removed the dangling volume 7f76c782... first. FROZE 23:54:51Z; tracker-backup and restore-verify exit=0
+  # (tables=9 rows=12), pg_restore exit=0, counts-match and counts-match-dump, tracker-migrate a no-op; docker rollout
+  # put cuatro-portfolio-tracker-2 on estate-postgres/cuatro_tracker?connection_limit=4, old-unchanged, the 70 line
+  # probe 200 alone. Origin Rule 1ee043e45b2d46619c9881d2ae005902 moved tracker.cuatro.dev onto Traefik at
+  # 00:00:30Z; the 80 line probe 200 alone; the monitor reading after a full interval to be confirmed. Readings in
+  # ops/tracker-cutover.md § Estate Postgres move run, 2026-09-30; Pending actions 6 to 8 dated. Action 5 (confirm
+  # or overrule the decisions) stays open: nothing overruled, an explicit word awaited. The Operator saw the
+  # sign-in accept any password: DW-311, against apps/tracker authentication, before any real user.
+  4-8-migrate-tracker-cuatro-dev: done
   # 4-9 awaiting-operator 2026-09-30: repository half built and verified on dev. A routing move: the SQLite bind
   # mount and the Redis volume stay in place, no compose change and no digital-library diff. The rehearsal with the
   # real digital-library images corrected two things in ops/traefik/: the API router keeps the API's own
   # Referrer-Policy (library-api-headers) and websecure sets readTimeout 0 (DW-297 closed). Box half is the
   # Operator's, ops/backup-digital-library.md § Moving library.cuatro.dev onto Traefik steps 1 to 7 and § Pending
   # Operator actions 10 and 11, after 4-2's runbook; the Registry's tech array already declares SQLite and Redis.
-  4-9-migrate-library-cuatro-dev: awaiting-operator
+  # 4-9 awaiting-operator 2026-10-01: steps 1 to 5 of the box half ran from 00:04Z with the Operator present, main
+  # at f9ea578, Traefik not recreated (traefik.yml digests matched). library-backup and restore-verify exit=0 in the
+  # cron shape, object digital-library/library-20261001T000413Z.tar.gz.gpg, 23 objects across 11 tables,
+  # counts-match. Origin Rule 041740b5be6f41e588bbbc41f2af4e81 moved library.cuatro.dev onto Traefik at 00:04:56Z
+  # (six rules now); the 228 line probe read 200 200 404 alone, 3 caddy then 225 no-via inside the propagation
+  # minute; monitor 803750025 UP. Readings in ops/backup-digital-library.md § Cutover run, library.cuatro.dev;
+  # Pending action 10 dated. Only step 6 remains before done: the 2026-10-01 03:45Z backup line (action 11).
+  # 4-9 done 2026-10-01: step 6 read at 03:49Z, the 03:45:01Z library-backup line green (redis=empty, offsite=ok,
+  # roundtrip=sha256-match, restore=verified, exit=0), the first scheduled run after the move; monitor 803750025 UP.
+  # Pending action 11 dated. Readings in ops/backup-digital-library.md § Cutover run, library.cuatro.dev.
+  4-9-migrate-library-cuatro-dev: done
   # 4-10 awaiting-operator 2026-09-30: repository half built and verified on dev. New record
   # ops/cs-tracker-cutover.md: the cs-tracker compose change (migrate under a profile, off app's depends_on, both on
   # estate-postgres) as an exact diff for the Operator to land there, and the move: dump of cs_tracker_prod restored
@@ -927,8 +987,26 @@ development_status:
   # (Traefik forwards wss), fixed with forwarded-proto-https in ops/traefik/. Caddy stays up in that project until
   # 4-11. Box half is the Operator's, § The sequence steps 1 to 13 and § Pending Operator actions 1 to 4, after the
   # 4-4 placement, the 4-5 install and, for the hostname, 4-2 and 4-6. DW-309 filed, DW-301 noted.
-  4-10-migrate-cs-tracker-cuatro-dev: awaiting-operator
-  4-11-retire-caddy-and-decommission-the-old-topology: backlog
+  # 4-10 done 2026-10-01: box half ran from 00:06Z with the Operator present. Action 2 landed the patch (sha256
+  # matched) on cs-tracker main as ca75686 on the Operator's go. Dump cs_tracker-20261001T003549Z.dump exit=0,
+  # 1261786 bytes, pg_restore exit=0, counts-match and counts-match-dump, migrate "Migrations already up";
+  # docker rollout put cs-tracker-app-2 on estate-postgres/cs_tracker with POOL_SIZE=10, estate 11 and old 1,
+  # old-unchanged, the 48 line probe 302 alone, the socket 101. Origin Rule 86b7df5f45ea4c998398cc724000196d moved
+  # cs-tracker.cuatro.dev onto Traefik at 00:56:08Z (seven rules now); the 85 line probe 302 alone, socket 101,
+  # Steam sign-in on both paths, monitor 803750016 UP at 02:16Z. Readings in ops/cs-tracker-cutover.md § Move run,
+  # 2026-10-01; Pending actions 2 to 4 dated. Action 1 (confirm or overrule the decisions) stays open: nothing
+  # overruled, an explicit word awaited. DW-310 closed. tournament.cuatro.dev is the one hostname still on Caddy.
+  4-10-migrate-cs-tracker-cuatro-dev: done
+  # 4-11 awaiting-operator 2026-10-01: repository half built and verified on dev. ops/traefik/ now holds the end
+  # state: service ingress on 80 (redirect to https) and 443, dashboard on loopback 8081, the Origin CA pair from
+  # its own external volume traefik-origin-ca (DW-296's repo half), proven locally beside the 8443 instance and a
+  # Caddy stand-in and held by the suite. New runbook ops/caddy-retirement.md: every hostname accounted, the
+  # tournament moved by Origin Rule, the handover with no HTTPS gap, the eight rules deleted, 8443 closed, then
+  # Caddy and the three old Postgres stores retired, each after a final dump copied offsite (restic, tag
+  # retired-4-11) and verified; two cs-tracker diffs with sha256 and subjects. Inventory, estate and KV-1 revised
+  # as dated revisions. DW-309 closed, DW-312 filed; DW-308, 185, 187, 275, 306, 311 left open by decision. Box
+  # half is the Operator's: ops/caddy-retirement.md § The sequence steps 1 to 16, § Pending Operator actions 1 to 7.
+  4-11-retire-caddy-and-decommission-the-old-topology: awaiting-operator
   epic-4-retrospective: optional
 
   epic-5: backlog

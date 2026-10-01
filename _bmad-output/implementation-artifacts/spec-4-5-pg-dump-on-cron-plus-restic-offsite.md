@@ -2,7 +2,7 @@
 title: 'Story 4-5: pg_dump on cron plus restic offsite'
 type: 'feature'
 created: '2026-09-30'
-status: 'awaiting-operator'
+status: 'done'
 baseline_commit: '955537e1f9aa632bb4dd6dcb95b58616994efa51'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -76,6 +76,8 @@ context:
 - DW-303 filed: the new suite shows the DW-135 WSL flake shape, and AGENTS.md's pitfall names three files. DW-301 is owned by 4.7, 4.8 and 4.10 and left untouched; this story is the precondition it names.
 
 ## Spec Change Log
+
+- 2026-09-30: box half ran (runbook § Install and first run, steps 1 to 7), recorded in `ops/postgres-backup.md` § First run, 2026-09-30; status `done`. Pending Operator action 2 stays open.
 
 ## Review Triage Log
 

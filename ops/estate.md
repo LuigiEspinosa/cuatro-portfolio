@@ -307,6 +307,81 @@ Operator choice**, the keep-live decision of 2026-09-25, their DNS records and V
 untouched. That is a deliberate exception to the ruling of 2026-09-24 that removed Vercel from the
 estate, and what it leaves in breach is KV-7 in `ops/known-violations.md`.
 
+**Amended 2026-09-30 by Story 4-2.** No row changes, but the box's ingress does: Traefik v3.7.13 runs
+beside the shared Caddy on 8443 and on loopback 8080 (its dashboard) since 2026-09-30T21:52Z. It serves no
+public request until an Origin Rule exists for a hostname, so every box row above is still served by
+Caddy, and the origin firewall admits 8443 for Cloudflare's ranges only. Traefik is ingress, not an
+application, and takes no row or `placements` entry. Readings in `ops/traefik-cutover.md` § Cutover run.
+
+**Amended 2026-09-30 by Stories 4-4 and 4-5.** No row changes. The estate Postgres
+(`postgres-estate-postgres-1`, `postgres:18.6-trixie`) runs on the box beside the three old instances,
+ready since 2026-09-30T22:16:04Z. Its databases `umami`, `cuatro_tracker`, `cs_tracker` and
+`cuatro_finance` are empty until each consumer's own story moves it, and every application still uses its
+old database. Its nightly dump (03:15) goes offsite by restic to the R2 bucket `cuatro-postgres-backups`,
+proved by restore on every run. It is a database, not an application, and takes no row or `placements`
+entry. Readings in `ops/postgres.md` § Placement run, 2026-09-30 and `ops/postgres-backup.md` § First run,
+2026-09-30.
+
+**Amended 2026-09-30 by Story 4-3.** No row changes. `wheel.cuatro.dev` is served by Traefik through a
+Cloudflare Origin Rule (ruleset `518ad07108bc402fa36ad71fe1e76862`, rule
+`a186cf20b402453fa147ec4b0626c50b`, HTTPS to origin port 8443) since 2026-09-30T22:31Z; the container,
+its alias and its checkout are unchanged, and the box still builds it on each deploy (KV-1's `list-wheel`
+half, open, DW-308). Caddy's `wheel.cuatro.dev` block remains, unreached, until Story 4.11. Every other box
+row is still served by Caddy. Readings in `ops/traefik-cutover.md` § Cutover run, wheel.cuatro.dev.
+
+**Amended 2026-09-30 by Story 4-6.** No row changes. `cuatro.dev` and `www.cuatro.dev` are served by
+Traefik through Cloudflare Origin Rules (ruleset `518ad07108bc402fa36ad71fe1e76862`, rules
+`7fe531a5bc864203a3ba3a234b388aa4` and `a74dce8a8d774473b9ed9cca0e0643c8`, HTTPS to origin port 8443) since
+2026-09-30T22:48Z. The Hub's container, its `anchor-app` alias and its pull-based deploy are unchanged, and
+one CI-built deploy (run 36787729657) rolled it through Traefik that evening, leaving
+`cuatro-portfolio-anchor-app-6`. Caddy's two blocks remain, unreached, until Story 4.11. Readings in
+`ops/traefik-cutover.md` § Cutover run, cuatro.dev and www.
+
+**Amended 2026-09-30 by Story 4-7.** No row changes: Umami is infrastructure, not an application. It runs
+`ghcr.io/umami-software/umami:3.4.0` pinned by digest (`sha256:85909afc...`) since 22:57:25Z, on the estate
+Postgres as database and role `umami` (limit 25), its schema migrated by the discrete
+`anchor-umami-migrate` step, every row of the old store carried over and counted. `analytics.cuatro.dev`
+is served by Traefik through a Cloudflare Origin Rule (ruleset `518ad07108bc402fa36ad71fe1e76862`, rule
+`71197cf5c82d48ca80bddc5d5a89d23a`) since 23:36Z. `anchor-db` and Caddy's `analytics.cuatro.dev` block
+remain, unreached by Umami, until Story 4.11. Readings in `ops/postgres.md` § Umami move run, 2026-09-30.
+
+**Amended 2026-10-01 by Story 4-8.** No row changes. The tracker's data is in `cuatro_tracker` on
+`estate-postgres` since 2026-09-30T23:55Z: the server (`cuatro-portfolio-tracker-2`) and the worker reach it
+as role `cuatro_tracker` with `connection_limit=4`, every row of the old store carried over and counted, and
+`tracker-migrate` is the discrete step. `tracker.cuatro.dev` is served by Traefik through a Cloudflare Origin
+Rule (ruleset `518ad07108bc402fa36ad71fe1e76862`, rule `1ee043e45b2d46619c9881d2ae005902`) since
+2026-10-01T00:00Z. Redis and qBittorrent stay in the old `cuatro-tracker` project (DW-306);
+`cuatro-tracker-postgres-1` and Caddy's `tracker.cuatro.dev` block remain, unreached, until Story 4.11.
+Readings in `ops/tracker-cutover.md` § Estate Postgres move run, 2026-09-30.
+
+**Amended 2026-10-01 by Story 4-9.** No row changes. `digital-library`'s store did not move: the SQLite tree
+is still the bind mount `/home/deploy/digital-library/data`, Redis still the volume
+`digital-library_redis_data`, and no container was touched. `library.cuatro.dev` is served by Traefik
+through a Cloudflare Origin Rule (ruleset `518ad07108bc402fa36ad71fe1e76862`, rule
+`041740b5be6f41e588bbbc41f2af4e81`) since 2026-10-01T00:04Z, both its paths through Traefik's own routers,
+after a backup and restore proved against the live counts minutes before. Caddy's `library.cuatro.dev` block
+remains, unreached, until Story 4.11. Readings in `ops/backup-digital-library.md` § Cutover run,
+library.cuatro.dev.
+
+**Amended 2026-10-01 by Story 4-10.** No row changes. `cs-tracker`'s data is in `cs_tracker` on
+`estate-postgres` since 2026-10-01T00:36Z: `cs-tracker-app-2` reaches it as role `cs_tracker` with
+`POOL_SIZE=10`, every non-Oban row of the old store carried over and counted, and `migrate` is a discrete
+step under its compose profile (`cs-tracker` commit `ca75686`). `cs-tracker.cuatro.dev` is served by Traefik
+through a Cloudflare Origin Rule (ruleset `518ad07108bc402fa36ad71fe1e76862`, rule
+`86b7df5f45ea4c998398cc724000196d`) since 2026-10-01T00:56Z. Caddy stays up in the `cs-tracker` project;
+`cs-tracker-db-1` and Caddy's `cs-tracker.cuatro.dev` block remain, unreached, until Story 4.11. Readings in
+`ops/cs-tracker-cutover.md` § Move run, 2026-10-01.
+
+**Amended 2026-10-01 by Story 4-11, repository half; the box half is pending.** No row changes: retiring
+the old topology moves no application and changes no disposition. `tournament.cuatro.dev` is the one
+hostname still on Caddy; `ops/caddy-retirement.md` moves it onto Traefik by its own Origin Rule, hands 80
+and 443 from Caddy to Traefik (`traefik-ingress-1`), deletes the eight rules, closes 8443, removes Caddy
+and its `cs-tracker` compose service, and retires the three Postgres 16 stores the moves left
+(`anchor-db`, `cuatro-tracker-postgres-1`, `cs-tracker-db-1`), each after a final dump copied offsite and
+verified. Until that runbook's § Retirement run is written, the 2026-10-01 state above stands. It leaves
+each application's deploy as it is: `list-wheel` and `digital-library` still build on the box (DW-308,
+DW-185), and the tracker's Redis and qBittorrent stay in the `cuatro-tracker` project (DW-306).
+
 | Application | Disposition | Status | `absorbed_into` | Registry treatment |
 |---|---|---|---|---|
 | `cuatro-portfolio` | Anchor | `Live` | n/a | The Hub itself; rendered |

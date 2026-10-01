@@ -1,8 +1,8 @@
 # Traefik's routing (Story 4-2, AD-7): one router per hostname the box serves, each matching on Host.
 # PathPrefix never routes between applications. It appears once, to split library.cuatro.dev between
 # digital-library's own two containers, under that hostname's Host, exactly as the shared Caddyfile's
-# library block does. Upstreams are the aliases the shared Caddyfile proxies on `cs-tracker_default`
-# (`ops/routing-inventory.md` § The site blocks, as installed; § The shared network).
+# library block does. Upstreams are the aliases on `cs-tracker_default` that the shared Caddyfile proxies
+# until `ops/caddy-retirement.md` retires it (`ops/routing-inventory.md` § The shared network).
 #
 # `ops/__tests__/traefik-config.test.ts` reads this file as indented text: routers are four spaces in,
 # their keys six, and every rule is one line. Keep that shape.
@@ -167,7 +167,7 @@ http:
           - url: http://tournament:3000
 
 # Every proxied hostname is served the Cloudflare Origin CA certificate for cuatro.dev and *.cuatro.dev
-# (AD-26), the pair the shared Caddy serves, mounted read-only from its volume.
+# (AD-26), mounted read-only from Traefik's own volume `traefik-origin-ca` (`ops/traefik/compose.yml`).
 tls:
   stores:
     default:

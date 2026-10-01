@@ -1190,6 +1190,15 @@ text/css` with 12 distinct `--token-*` roles, sha256
 |---|---|---|---|---|
 | `2026-09-30T18:09:47Z` | Git Bash, `NO_COLOR` unset | **0** | 19, 19 PASS | 14.0s |
 
+## Re-run 2026-10-01, after the cs-tracker move
+
+**Observed 2026-10-01** by `ops/cs-tracker-cutover.md` § Move run, 2026-10-01, step 10, at about 00:37Z,
+after the app rolled onto `cs_tracker` on the estate Postgres: `node ops/cs-tracker-adoption-probe.mjs`
+exited **0** on the workstation. Its start time, case count and elapsed time were not recorded. The live
+`https://cs-tracker.cuatro.dev/assets/css/app.css` held 12 distinct `--token-*` roles through Caddy at
+step 10, and again through Traefik, answering 200 with no `via` line, at 00:56:22Z after step 11 moved the
+hostname: the move rebuilt no image.
+
 ## Pending Operator actions
 
 This file hands the Operator work Story 1-19 may not do, in the shape `ops/token-contract.md`,

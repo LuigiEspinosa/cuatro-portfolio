@@ -2,7 +2,7 @@
 title: 'Story 4-10: Migrate cs-tracker.cuatro.dev'
 type: 'feature'
 created: '2026-09-30'
-status: 'awaiting-operator'
+status: 'done'
 baseline_commit: '65e762f900ef6c83a38a4cc47c6e8f7afe4360aa'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -79,6 +79,8 @@ context:
 - Local cleanup verified: no container, volume or network of the rehearsal remains; `cs-tracker:p410` and the pulled `postgres:16` removed; throwaway env files and dumps deleted from the scratchpad.
 
 ## Spec Change Log
+
+- 2026-10-01: box half ran from 00:06Z to 02:16Z (runbook `ops/cs-tracker-cutover.md` § The sequence, steps 1 to 13), recorded in that file's § Move run, 2026-10-01; status `done`. Pending action 2 landed the patch on `cs-tracker` `main` as `ca75686` on the Operator's explicit go; the app moved onto `cs_tracker` at 00:36Z and the hostname onto Traefik at 00:56:08Z (rule `86b7df5f45ea4c998398cc724000196d`). Pending Operator action 1 stays open. DW-310 closed.
 
 ## Review Triage Log
 

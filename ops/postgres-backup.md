@@ -14,6 +14,9 @@ the box (`crontab -l`, `ls /etc/cuatro`, `df`, `command -v`, `docker ps`, listin
 `/home/deploy/backups`, at 2026-09-30T11:51:43Z) and wrote nothing to it. The Operator runs § Install
 and first run as `deploy` and dates each Pending Operator action at the end.
 
+**Amended 2026-09-30: § Install and first run ran on the box** that evening, recorded under § First run,
+2026-09-30. The cron line is installed; the first unattended night is 2026-10-01T03:15Z.
+
 ## What this covers, and what it leaves alone
 
 | Store | Covered here? | Nature |
@@ -461,6 +464,54 @@ action 1) and `ops/postgres.md` § The placement has run, so `postgres-estate-po
 `crontab -l`, the `uptime` readings, and the outcome of step 7; then date Pending Operator actions 2 to
 5. **If a step fails**, record its line and stderr, leave the cron line uninstalled, and file a DW entry.
 
+## First run, 2026-09-30
+
+**Observed 2026-09-30 on the box (`177.7.52.248`) as `deploy`, run by the orchestrator with the Operator
+present**, after PR #88 merged `dev` into `main` as `f9ea578` (Deploy run 36779534561 succeeded, the box
+checkout read `f9ea578`) and after `ops/postgres.md` § Placement run, 2026-09-30. Where a step below
+gives no time, none was recorded.
+
+- **Step 1.** The Operator created the R2 bucket `cuatro-postgres-backups`, private, and an R2 API token
+  scoped to it with Object Read and Write. The repository password, 48 hex characters, is filed in the
+  password manager and in the workstation's gitignored `.env`.
+- **Step 2.** `/etc/cuatro/postgres-backup.env` is `root deploy 640`, five lines naming
+  `RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and
+  `AWS_DEFAULT_REGION`. **No editor was used, unlike step 2's form:** the file was built on the
+  workstation from the gitignored `.env`, copied with `scp` and installed with `sudo install`. No value
+  was printed.
+- **Step 3.** `installed` printed after the two `cmp` checks; `/home/deploy/backups/estate-postgres`
+  created; `restic/restic:0.19.1` pulled.
+- **Step 4.** `init` printed `created restic repository 97d1ebf584 at s3:...`: the repository id is
+  `97d1ebf584`.
+- **Step 5**, three runs in cron's shape. `uptime` before each: 22:17:33Z `0.63, 0.39, 0.26`; 22:17:47Z
+  `0.64, 0.41, 0.27`; 22:18:01Z `1.07, 0.52, 0.30`. The fifteen-minute figure stayed under the 0.60
+  threshold throughout. Each run printed first
+  `postgres-restore-verify dumps=4 sha256=match restore=ok tables=0 rows=0 exit=0`, then its summary
+  line, and each ended `exit=0`:
+  ```
+  postgres-backup ts=2026-09-30T22:17:47Z databases=4 dumps=ok tables=0 rows=0 bytes=5197 offsite=ok-2ca9fa41 forget=ok check=ok roundtrip=sha256-match restore=verified prune=removed-0-aged-over-14-whole-days exit=0
+  postgres-backup ts=2026-09-30T22:18:01Z databases=4 dumps=ok tables=0 rows=0 bytes=5197 offsite=ok-ea2a4aba forget=ok check=ok roundtrip=sha256-match restore=verified prune=removed-0-aged-over-14-whole-days exit=0
+  postgres-backup ts=2026-09-30T22:18:16Z databases=4 dumps=ok tables=0 rows=0 bytes=5197 offsite=ok-5b142502 forget=ok check=ok roundtrip=sha256-match restore=verified prune=removed-0-aged-over-14-whole-days exit=0
+  ```
+  `snapshots --compact` afterwards listed exactly two, `2ca9fa41` at 2026-09-30 22:17:36 and `5b142502`
+  at 2026-09-30 22:18:05, host and tag `estate-postgres`, 5.477 KiB each. `ea2a4aba` was removed by the
+  third run's forget, which proves the token deletes (named limit 2's delete right).
+- **Step 6.** The cron line installed; `crontab -l` lists four jobs: `30 3` `cuatro-backup.sh`, `45 3`
+  `library-backup.sh`, `45 3` `tournament-backup.sh` and `15 3` `postgres-backup.sh`. The first
+  unattended night is 2026-10-01T03:15Z, and its line lands in `backup.log`.
+- **Step 7.** From the workstation, `restic/restic:0.19.1` in Docker, with the filed password and the
+  token's keys, listed the same two snapshots, `2ca9fa41` and `5b142502`. Nothing was written.
+
+### First scheduled run, 2026-10-01
+
+The first cron-driven run, at 03:15Z, read from `backup.log`. It covers the three consumers moved onto
+the estate Postgres since the first run (46 tables, 53635 rows, against `tables=0 rows=0` above). The read
+cut the line after `prune=removed-0-aged-over`; the tail below is the wording every earlier line carries:
+
+```
+postgres-backup ts=2026-10-01T03:15:18Z databases=4 dumps=ok tables=46 rows=53635 bytes=1374035 offsite=ok-39c333df forget=ok check=ok roundtrip=sha256-match restore=verified prune=removed-0-aged-over-14-whole-days exit=0
+```
+
 ## Restoring for real
 
 A lost or corrupted consumer database, from the newest good night:
@@ -484,7 +535,8 @@ A lost or corrupted consumer database, from the newest good night:
 1. **Nothing alerts on a failing night.** The summary line is greppable and the exit status is right;
    nothing reads `backup.log`. The same gap as the library's named limit 3.
 2. **The R2 half is unobserved.** The repository form, `AWS_DEFAULT_REGION=auto` and the token's delete
-   right are proved only by § Install and first run, step 5.
+   right are proved only by § Install and first run, step 5. **Amended 2026-09-30:** step 5 ran (§ First
+   run, 2026-09-30): three offsite copies landed in the bucket and the third run's forget deleted one.
 3. **`check` reads structure, not every byte.** The nightly restore reads back the night it sent in full,
    so every snapshot is read once; older packs are not re-read. `restic check --read-data` by hand
    re-reads all of them.
@@ -497,11 +549,11 @@ A lost or corrupted consumer database, from the newest good night:
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| 1 | **Merge the commit carrying the two scripts and this record into `main`** and let the Deploy run | The box checkout is `main` | _not done_ |
-| 2 | **Confirm or overrule the decisions above**: restic from `restic/restic:0.19.1`, its own R2 bucket, the retention, 03:15, and PITR deferred | The spec's Design Notes carry the reasoning | _not done_ |
-| 3 | **§ Install and first run, steps 1 and 2**: the bucket, the token, the password filed, the env file | Console and editor | _not done_ |
-| 4 | **Steps 3 to 6**: install, `restic init`, three runs, the cron line | After `ops/postgres.md` § The placement | _not done_ |
-| 5 | **Step 7, and the record**: the password proved off the box, the "First run" heading written | | _not done_ |
+| 1 | **Merge the commit carrying the two scripts and this record into `main`** and let the Deploy run | The box checkout is `main`. PR #88 merged `dev` as `f9ea578`; Deploy run 36779534561 succeeded; the box checkout read `f9ea578` | 2026-09-30T21:27Z |
+| 2 | **Confirm or overrule the decisions above**: restic from `restic/restic:0.19.1`, its own R2 bucket, the retention, 03:15, and PITR deferred | The spec's Design Notes carry the reasoning. The Operator was present for the first run on 2026-09-30 and overruled nothing; an explicit word is awaited, so the row stays open | _not done_ |
+| 3 | **§ Install and first run, steps 1 and 2**: the bucket, the token, the password filed, the env file | Console and editor. The env file went by `scp` and `sudo install`, not an editor (§ First run, 2026-09-30). No time recorded, so the date alone | 2026-09-30 |
+| 4 | **Steps 3 to 6**: install, `restic init`, three runs, the cron line | After `ops/postgres.md` § The placement. The last run's summary reads 22:18:16Z; the cron line's install time was not recorded, so the date alone | 2026-09-30 |
+| 5 | **Step 7, and the record**: the password proved off the box, the "First run" heading written | § First run, 2026-09-30. No time recorded for step 7, so the date alone | 2026-09-30 |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.

@@ -120,9 +120,11 @@ services:
       estate-postgres:
     restart: 'no'
 
-  # Umami's database until Story 4-7's move, and kept until Story 4.11 as that move's rollback
-  # (`ops/postgres.md` § Moving Umami). Nothing in this file reads it after the move but finance, which is
-  # placed nowhere (DW-300). Never `down -v`: the volume is the only copy of what Umami held before.
+  # Umami's database until Story 4-7's move, and that move's rollback (`ops/postgres.md` § Moving Umami)
+  # until `ops/caddy-retirement.md` step 12 dumps it offsite and removes its container and volume. Nothing in
+  # this file reads it but finance, which is placed nowhere (DW-300), so from that step the declaration is
+  # finance's alone and starting it would create an empty database. Never `down -v` before that step: the
+  # volume is the only live copy of what Umami held before the move.
   anchor-db:
     image: postgres:16-alpine
     environment:
