@@ -515,9 +515,9 @@ across 11 tables, and the summary line read:
 library-backup ts=2026-10-01T07:59:00Z snapshot=ok own=ok integrity=ok objects=23 archive=library-20261001T075900Z.tar.gz.gpg tar=first-attempt bytes=3351 encrypt=aes256 size=within-ceiling redis=empty offsite=ok-digital-library/library-20261001T075900Z.tar.gz.gpg roundtrip=sha256-match restore=verified prune=removed-0-aged-over-14-whole-days exit=0
 ```
 
-The three `.pre-2026-09-24` copies were not deleted in that session and are still on the box; removing
-them is the one part of action 9's closing instruction left undone. The paragraph below describes the
-2026-08-24 install and is history from this date.
+The three `.pre-2026-09-24` copies were deleted at 2026-10-01T08:13:55Z, once step 6's cron-shaped run
+had passed, which completes action 9's closing instruction: `ls /usr/local/sbin/*.pre-2026-09-24` lists
+nothing. The paragraph below describes the 2026-08-24 install and is history from this date.
 
 **What the three changed, and what stays true on the box until action 9.** The installed
 `s3-object.sh` hands every HMAC key in the signing chain to `openssl` as an argument, beginning with
