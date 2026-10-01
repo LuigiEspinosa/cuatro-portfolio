@@ -9542,7 +9542,21 @@ status: done
     **Story 4-11, 2026-10-01: not taken.** Authentication is not topology, so retiring Caddy leaves it
     (`ops/caddy-retirement.md` § What this story leaves open). Still before any real user signs in; the
     Operator confirms whether the clean start or a story of its own takes it.
-  status: open
+
+    **Reproduced 2026-10-01 (Epic 4 retrospective action item 2), not reproduced.** From a fresh empty
+    cookie jar against the live `https://tracker.cuatro.dev`, four sign-in attempts as the seeded admin
+    `admin@tracker.local` (`apps/tracker/prisma/seed.ts`), each fetching `/api/auth/csrf` first and posting
+    the matching token to `/api/auth/callback/credentials`: a long wrong password, an empty password, a
+    one-character password, and another one-character password. Every one returned `HTTP 401`, set no
+    `next-auth.session-token` cookie, and left `/api/auth/session` returning `{}`; a `GET /` with no cookie
+    returned `307` to `/login?callbackUrl=%2F`. The credential path rejects a wrong password exactly as
+    `authorizeCredentials` reads (`bcrypt.compare`, `null` on any miss), the matcher in `middleware.ts`
+    guards the protected routes, and no session was issued without a correct password. The likely
+    explanation of the Operator's observation is a live NextAuth session cookie left in the Operator's
+    browser from an earlier sign-in, so the sign-in page redirected an already-authenticated session rather
+    than accepting the password typed. No code defect found, no change made. Closed as not reproduced,
+    decided by the orchestrator on 2026-10-01 under the Operator's delegation.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-11-retire-caddy-and-decommission-the-old-topology.md`
   id: DW-312
   summary: >-
