@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-01-2026 07:23
+last_updated: 10-01-2026 07:38
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1454,7 +1454,7 @@ action_items:
       --volumes with its test pin (then the Operator removes volume 4fc208dc), and
       DW-312's code half (docker/Caddyfile and the comment in packages/contracts-serve/publish.mjs)."
     owner: "Cuatro (agent session, Operator for the volume)"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md"
   - id: "epic-4-retro-item-42-bring-the-ledger-and-board-level-with-th"
     epic: 4

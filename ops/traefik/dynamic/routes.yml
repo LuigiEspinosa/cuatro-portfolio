@@ -94,7 +94,7 @@ http:
       service: api@internal
 
   middlewares:
-    # The estate's header set, as the shared Caddyfile sends it (`docker/Caddyfile`).
+    # The estate's header set, as the retired shared Caddyfile sent it.
     house-headers:
       headers:
         contentTypeNosniff: true

@@ -30,13 +30,17 @@ describe("non-deterministic encryption", () => {
   });
 });
 
+// XOR, never an overwrite: writing "ff" over a byte that already is ff tampers nothing, one run in 256 (DW-313).
+const flipLastByte = (hex: string): string =>
+  hex.slice(0, -2) + (parseInt(hex.slice(-2), 16) ^ 0xff).toString(16).padStart(2, "0");
+
 describe("tamper detection", () => {
   it("throws CryptoError when ciphertext is modified", async () => {
     const { encrypt, decrypt, CryptoError } = await import("../crypto");
     const payload = encrypt("sensitive-data");
     const tampered = {
       ...payload,
-      ciphertext: payload.ciphertext.slice(0, -2) + "ff",
+      ciphertext: flipLastByte(payload.ciphertext),
     };
     expect(() => decrypt(tampered)).toThrowError(CryptoError);
   });
@@ -46,7 +50,7 @@ describe("tamper detection", () => {
     const payload = encrypt("sensitive-data");
     const tampered = {
       ...payload,
-      tag: payload.tag.slice(0, -2) + "ff",
+      tag: flipLastByte(payload.tag),
     };
     expect(() => decrypt(tampered)).toThrowError(CryptoError);
   });
@@ -56,7 +60,7 @@ describe("tamper detection", () => {
     const payload = encrypt("sensitive-data");
     const tampered = {
       ...payload,
-      iv: payload.iv.slice(0, -2) + "ff",
+      iv: flipLastByte(payload.iv),
     };
     expect(() => decrypt(tampered)).toThrowError(CryptoError);
   });

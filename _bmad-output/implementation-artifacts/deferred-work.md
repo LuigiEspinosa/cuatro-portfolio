@@ -9422,7 +9422,17 @@ status: done
     `tournament-20260930T080402Z.dump` was written; `sudo ls` of its directory shows a Postgres data
     directory owned by uid 70, `postgres:*-alpine`'s. Not the old topology, so `ops/caddy-retirement.md`
     leaves it to this entry's owner.
-  status: open
+
+    **Closed 2026-10-01 (Epic 4 retrospective action item 6, decided by the orchestrator on 2026-10-01 under
+    the Operator's delegation).** `ops/tournament-restore-verify.sh` now removes its throwaway with
+    `docker rm --force --volumes`, as `ops/tracker-restore-verify.sh` does, and
+    `ops/__tests__/tournament-backup.test.ts` counts a throwaway as removed only on that form, so dropping
+    the flag fails every restore-verify case. The orchestrator removed the leftover volume `4fc208dc...` on
+    the box on 2026-10-01; a read-only listing the same day showed no anonymous volume left. The box's
+    installed `/home/deploy/tournament-restore-verify.sh` still has the old line (read 2026-10-01) until it
+    is reinstalled from the checkout, which is DW-318's; cron runs only `tournament-backup.sh`, which does
+    not call the verifier, so no scheduled run leaves a volume meanwhile.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-3-migrate-list-wheel-the-static-first-candidate.md`
   id: DW-308
   summary: >-
@@ -9558,6 +9568,14 @@ status: done
     `docker/Caddyfile` and the comment naming it at `packages/contracts-serve/publish.mjs:9`, in a commit that
     goes through a PR; and the `ops/` count ("30 records") at the next context refresh. Owner and trigger
     otherwise unchanged.
+
+    **2026-10-01: the code half taken (Epic 4 retrospective action item 6, decided by the orchestrator on
+    2026-10-01 under the Operator's delegation).** `docker/Caddyfile` is deleted; the comment in
+    `packages/contracts-serve/publish.mjs` now names Traefik's `cuatro.dev` router in
+    `ops/traefik/dynamic/routes.yml`, and that file's header-set comment no longer names the deleted file. No
+    test or workflow read it. The dated `ops/` records that cite it are history and stay. Left to the
+    context refresh that follows: AGENTS.md's `docker/Caddyfile` pitfall (the file is now gone) and the
+    `ops/` count ("30 records").
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-11-retire-caddy-and-decommission-the-old-topology.md`
   id: DW-313
@@ -9578,7 +9596,13 @@ status: done
     case.** Make the tamper deterministic, flipping a bit of the last byte (XOR with `0x01`) rather than
     overwriting it, so the payload always differs; the test still proves the code's behaviour, not its
     implementation.
-  status: open
+
+    **Closed 2026-10-01 (Epic 4 retrospective action item 6, decided by the orchestrator on 2026-10-01 under
+    the Operator's delegation).** `apps/finance/lib/__tests__/crypto.test.ts` tampers by XOR-ing the last
+    byte with `0xff` (`flipLastByte`), so the tampered value always differs. The ciphertext case built its
+    tamper the same way and carried the same odds, so it takes the same fix. `corepack pnpm --filter
+    finance test` passed, 70 tests.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-11-retire-caddy-and-decommission-the-old-topology.md`
   id: DW-314
   summary: >-
