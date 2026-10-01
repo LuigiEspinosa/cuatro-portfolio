@@ -21,6 +21,11 @@ has run beside Caddy since; readings in § Cutover run. The sections for later s
 by Traefik through an Origin Rule since 22:31Z; readings in § Cutover run, wheel.cuatro.dev. § Moving
 cuatro.dev and www has not run.
 
+**Amended 2026-10-01 (Story 4-11):** `ops/traefik/` now holds the end state, Traefik on 80 and 443 as the
+service `ingress`, and `ops/caddy-retirement.md` takes the box there. Commands below that run `$T` were
+written for the 8443 `traefik` service and name `ingress` once Story 4-11's commit is merged: § Rollback to
+Caddy, whole says what that changes.
+
 ## What serves today
 
 **Observed 2026-09-30T09:45:54Z over SSH as `deploy`, read-only.**
@@ -884,6 +889,13 @@ The loop spanned both rule moves and the deploy's rollout, 390 requests one at a
 unexplained `000` did not recur through the real edge (DW-305, closed on this count).
 
 ## Rollback to Caddy, whole
+
+**Amended 2026-10-01 (Story 4-11):** from the merge of Story 4-11's commit, `ops/traefik/compose.yml`
+declares the 443 instance `ingress` and no longer the 8443 `traefik` service, so `$T` in this file's
+commands names the new instance: `$T up -d` would start it on 80 and 443, where Caddy refuses it, and
+`$T down` leaves the running `traefik-traefik-1` alone. The 8443 instance is stopped with
+`docker stop traefik-traefik-1` from then on, and the whole retirement, with its rollbacks, is
+`ops/caddy-retirement.md`. The block below is as Story 4-2 wrote it.
 
 While no Origin Rule points at 8443, nothing public depends on Traefik:
 

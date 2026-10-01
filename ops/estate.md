@@ -372,6 +372,16 @@ through a Cloudflare Origin Rule (ruleset `518ad07108bc402fa36ad71fe1e76862`, ru
 `cs-tracker-db-1` and Caddy's `cs-tracker.cuatro.dev` block remain, unreached, until Story 4.11. Readings in
 `ops/cs-tracker-cutover.md` § Move run, 2026-10-01.
 
+**Amended 2026-10-01 by Story 4-11, repository half; the box half is pending.** No row changes: retiring
+the old topology moves no application and changes no disposition. `tournament.cuatro.dev` is the one
+hostname still on Caddy; `ops/caddy-retirement.md` moves it onto Traefik by its own Origin Rule, hands 80
+and 443 from Caddy to Traefik (`traefik-ingress-1`), deletes the eight rules, closes 8443, removes Caddy
+and its `cs-tracker` compose service, and retires the three Postgres 16 stores the moves left
+(`anchor-db`, `cuatro-tracker-postgres-1`, `cs-tracker-db-1`), each after a final dump copied offsite and
+verified. Until that runbook's § Retirement run is written, the 2026-10-01 state above stands. It leaves
+each application's deploy as it is: `list-wheel` and `digital-library` still build on the box (DW-308,
+DW-185), and the tracker's Redis and qBittorrent stay in the `cuatro-tracker` project (DW-306).
+
 | Application | Disposition | Status | `absorbed_into` | Registry treatment |
 |---|---|---|---|---|
 | `cuatro-portfolio` | Anchor | `Live` | n/a | The Hub itself; rendered |

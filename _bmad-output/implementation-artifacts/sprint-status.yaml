@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-01-2026 00:05
+last_updated: 10-01-2026 03:22
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -994,7 +994,16 @@ development_status:
   # 2026-10-01; Pending actions 2 to 4 dated. Action 1 (confirm or overrule the decisions) stays open: nothing
   # overruled, an explicit word awaited. DW-310 closed. tournament.cuatro.dev is the one hostname still on Caddy.
   4-10-migrate-cs-tracker-cuatro-dev: done
-  4-11-retire-caddy-and-decommission-the-old-topology: backlog
+  # 4-11 awaiting-operator 2026-10-01: repository half built and verified on dev. ops/traefik/ now holds the end
+  # state: service ingress on 80 (redirect to https) and 443, dashboard on loopback 8081, the Origin CA pair from
+  # its own external volume traefik-origin-ca (DW-296's repo half), proven locally beside the 8443 instance and a
+  # Caddy stand-in and held by the suite. New runbook ops/caddy-retirement.md: every hostname accounted, the
+  # tournament moved by Origin Rule, the handover with no HTTPS gap, the eight rules deleted, 8443 closed, then
+  # Caddy and the three old Postgres stores retired, each after a final dump copied offsite (restic, tag
+  # retired-4-11) and verified; two cs-tracker diffs with sha256 and subjects. Inventory, estate and KV-1 revised
+  # as dated revisions. DW-309 closed, DW-312 filed; DW-308, 185, 187, 275, 306, 311 left open by decision. Box
+  # half is the Operator's: ops/caddy-retirement.md § The sequence steps 1 to 16, § Pending Operator actions 1 to 7.
+  4-11-retire-caddy-and-decommission-the-old-topology: awaiting-operator
   epic-4-retrospective: optional
 
   epic-5: backlog

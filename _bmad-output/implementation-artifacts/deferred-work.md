@@ -1066,6 +1066,12 @@ the next free id, one above the highest in the file, and a status line.
     image on 2026-09-13, so KV-1's scope paragraph and table were widened to carry it as a
     second half, retired by Story 4-3. The three Satellites are where they were, observed
     building and ruled on by nobody, and this entry stays open on them.
+
+    **Story 4-11, 2026-10-01: still open.** Story 4-11 retires the old topology and leaves every application's deploy as
+    it is (`ops/caddy-retirement.md` § What this story leaves open, a decision the Operator may overrule):
+    `digital-library`'s two images and `list-wheel`'s are still built on the box, and `cs-tracker:latest`
+    too. Its retirement removes `cuatro-tracker`'s three box-built images' containers (step 13) and leaves
+    the images themselves to Pending action 7.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
@@ -1108,6 +1114,11 @@ the next free id, one above the highest in the file, and a status line.
     network and take `library.cuatro.dev` off the air with no error until the next
     request. One line in that repository's `.gitignore` closes it. This belongs in the
     `digital-library` repository rather than here.
+
+    **Story 4-11, 2026-10-01: still open.** The override is what puts `library-api` and `library-web` on
+    `cs-tracker_default`, the network Traefik dials them on, so the retirement keeps it
+    (`ops/caddy-retirement.md` § What Story 1.7 found); the one-line `.gitignore` fix stays
+    `digital-library`'s.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
@@ -8648,6 +8659,11 @@ status: done
     placements. After the move the tracker still rolls by hand (`ops/tracker-cutover.md`, Later rollouts),
     now against `cuatro_tracker`. Owner stays Epic 4; the natural home is now Story 4.11 or a story of its
     own before it, since 4.8's remaining half is the Operator's box run.
+
+    **Story 4-11, 2026-10-01: still open.** A deploy path per id is a change to `deploy.yml`,
+    `ops/deploy-remote.sh` and the Capacity Gate, which no part of retiring Caddy needs
+    (`ops/caddy-retirement.md` § What this story leaves open). Its home after Story 4.11 is a story of its
+    own; the Operator confirms which.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
@@ -8929,6 +8945,10 @@ status: done
 
     **Owner: the Operator, then the story that routes it.** **Trigger: the first demo upload the
     tournament needs.**
+
+    **Story 4-11, 2026-10-01: unchanged.** Moving `tournament.cuatro.dev` onto Traefik (`ops/caddy-retirement.md`
+    step 2) moves its server's router only; the worker still has no router and no alias on the shared
+    network, as ruled 2026-09-29.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-placement-tournament-on-the-box.md`
@@ -9122,6 +9142,12 @@ status: done
 
     **Owner: Story 4.11 (retire Caddy).** **Trigger: that story.** Move the pair to a volume or path the
     Traefik stack owns, repoint the mount, then retire the old volume.
+
+    **Story 4-11, 2026-10-01: repository half done.** `ops/traefik/compose.yml` mounts the pair from an external
+    volume of Traefik's own, `traefik-origin-ca`, and names `cs-tracker_caddy_data` nowhere
+    (`ops/__tests__/traefik-config.test.ts` holds both). `ops/caddy-retirement.md` step 3 fills that volume
+    from `/home/deploy/origin-ca/`, compared byte for byte with Caddy's copy, and step 11 retires the old
+    volume after archiving it offsite. Closes when that runbook's step 11 is recorded.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
   id: DW-297
@@ -9201,6 +9227,12 @@ status: done
     `anchor-db`, whichever comes first.** Point `DATABASE_URL` in `finance` and `finance-migrate` at
     `estate-postgres:5432/cuatro_finance`, join `estate-postgres`, and move or retire `provision.sql`
     and the workflow step that runs it.
+
+    **Story 4-11, 2026-10-01: noted.** `ops/caddy-retirement.md` step 12 removes `anchor-db`'s container and
+    volume after a final dump copied offsite, and keeps the service's declaration, since `finance` and
+    `finance-migrate` still name it; after that step, starting it creates an empty database, which the
+    `docker-compose.yml` comment now says. The fix stays this entry's: point finance at
+    `estate-postgres:5432/cuatro_finance`, then remove the declaration.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
   id: DW-301
@@ -9341,6 +9373,13 @@ status: done
 
     **Owner: Story 4.11, before it removes the `cuatro-tracker` project, or a story of its own ahead of
     it.** **Trigger: Story 4.11 opening.**
+
+    **Story 4-11, 2026-10-01: still open.** Story 4-11 does not remove the `cuatro-tracker` project: its step 13
+    removes only that project's Postgres and its three exited containers, and Redis and qBittorrent keep
+    serving the tracker there (`ops/caddy-retirement.md` § What this story leaves open, a decision the
+    Operator may overrule). The Operator's planned clean start, or a story of its own, gives them a home.
+    Never `docker compose up` in `/home/deploy/cuatro-tracker`: it would recreate an empty Postgres and the
+    old app.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-8-migrate-tracker-cuatro-dev.md`
   id: DW-307
@@ -9361,6 +9400,13 @@ status: done
     **Owner: the next change to the tournament's backup path.** **Trigger: that change, or the Operator's
     word.** The same one-flag fix and its test pin in `ops/__tests__/tournament-backup.test.ts`, then the
     box's volume read and removed by the Operator once attributed.
+
+    **Story 4-11, 2026-10-01: attributed by contents, not removed.** The volume `4fc208dc...` was still on the
+    box at 2026-10-01T02:33Z, no container, created 2026-09-30T08:04:07Z, the minute
+    `/home/deploy/tournament-backup.sh` and `tournament-restore-verify.sh` were installed and
+    `tournament-20260930T080402Z.dump` was written; `sudo ls` of its directory shows a Postgres data
+    directory owned by uid 70, `postgres:*-alpine`'s. Not the old topology, so `ops/caddy-retirement.md`
+    leaves it to this entry's owner.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-3-migrate-list-wheel-the-static-first-candidate.md`
   id: DW-308
@@ -9383,6 +9429,11 @@ status: done
     **Trigger: that story opening, or the next change to `list-wheel`'s deploy.** Closing it dates KV-1's
     `list-wheel` half in `ops/known-violations.md` and, with the Anchor's half dated 2026-09-29, retires
     KV-1.
+
+    **Story 4-11, 2026-10-01: still open.** Story 4-11 leaves the `list-wheel` build on the box, and KV-1's
+    `list-wheel` half with it (`ops/known-violations.md`, amended that day; `ops/caddy-retirement.md` § What
+    this story leaves open): the story retires the topology, not each application's deploy. A story of its
+    own; the Operator confirms which.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-10-migrate-cs-tracker-cuatro-dev.md`
   id: DW-309
@@ -9403,7 +9454,16 @@ status: done
     **Trigger: that story opening, or any moved hostname's application reporting a failed socket.** For
     each router's upstream: does it serve a WebSocket, and does it read `X-Forwarded-Proto` on it? If
     so, the same middleware on its router, with a case in `ops/__tests__/traefik-config.test.ts`.
-  status: open
+
+    **Story 4-11, 2026-10-01: closed by survey.** Every router's upstream was checked for a WebSocket served through
+    the origin: the Hub, Umami and `list-wheel` serve none; the tracker streams its import status as
+    server-sent events (`apps/tracker/app/admin/import/[jobId]/status/ImportStatusClient.tsx`), an ordinary
+    request whose forwarded scheme stays `https`; `digital-library`'s sources hold no WebSocket (its `apps`
+    tree at `162f14a`, `git grep`); and the tournament's realtime channels go from the browser to Supabase
+    directly (`apps/tournament/lib/supabase/browser.ts`), never through Traefik. So `cs-tracker`'s is the only
+    upgrade, and its router already sets the header. `ops/routing-inventory.md` § The routers records it, and
+    `ops/caddy-retirement.md` step 8 checks the socket's `101` on the new 443.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-7-migrate-analytics-cuatro-dev-and-pin-umami.md`
   id: DW-310
   summary: >-
@@ -9453,4 +9513,25 @@ status: done
     **Trigger: before any real user signs in to the tracker.** Reproduce with a fresh browser profile and a
     wrong password; if it signs in, find the path and fix it with a regression test in
     `apps/tracker/__tests__/`.
+
+    **Story 4-11, 2026-10-01: not taken.** Authentication is not topology, so retiring Caddy leaves it
+    (`ops/caddy-retirement.md` § What this story leaves open). Still before any real user signs in; the
+    Operator confirms whether the clean start or a story of its own takes it.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-11-retire-caddy-and-decommission-the-old-topology.md`
+  id: DW-312
+  summary: >-
+    Once `ops/caddy-retirement.md` has run, `docker/Caddyfile` describes a proxy that is gone, and AGENTS.md
+    still points at it and counts the `ops/` records as 30.
+  evidence: |-
+    Found 2026-10-01 by Story 4-11. `docker/Caddyfile` is the Anchor's fragment of the shared Caddyfile,
+    which no process reads (AGENTS.md, Known pitfalls); `packages/contracts-serve/publish.mjs:9` names it in
+    a comment. Until the runbook's step 11 retires Caddy, the fragment still mirrors live site blocks, so
+    deleting it now would be early. AGENTS.md's pitfall about it, its `ops/` paragraph ("30 records", 36
+    Markdown files on 2026-10-01 with `ops/caddy-retirement.md`), and the Traefik dashboard tunnel's port
+    (8081 from step 4) are agent context this story does not edit.
+
+    **Owner: the next AGENTS.md context refresh (with DW-298 and DW-303), after `ops/caddy-retirement.md`
+    step 16 is recorded.** **Trigger: that record.** Delete `docker/Caddyfile` and the comment naming it,
+    and say in AGENTS.md that Traefik in `ops/traefik/` is the box's ingress on 80 and 443.
   status: open

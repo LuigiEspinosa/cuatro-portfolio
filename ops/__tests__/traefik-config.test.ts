@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-// Story 4-2 (AD-7, AD-26): the Traefik stack under `ops/traefik/`. Every hostname the box serves has a
+// Story 4-2 (AD-7, AD-26), and Story 4-11, which hands it 80 and 443: the Traefik stack under `ops/traefik/`. Every hostname the box serves has a
 // router matching on Host, PathPrefix never routes between applications, the dashboard sits behind
 // basic auth on its loopback entrypoint, only the scratch hostname uses the DNS-01 resolver, and no
 // secret is committed. The files are read as indented text, on the precedent of
@@ -122,9 +122,15 @@ describe('ops/traefik/dynamic/routes.yml', () => {
     expect(leadingHost(resolving[0].rule!)).toBe(SCRATCH);
     // Also by text, so a flow-style `tls: { certResolver: ... }` the parser does not read cannot hide one.
     expect(ROUTES.match(/certResolver/g)).toHaveLength(1);
-    // AD-26: no ACME for a proxied hostname. The scratch host has no record in the inventory's zone,
+    // AD-26: no ACME for a proxied hostname. The scratch host has no record in the inventory's zone
+    // listing (Story 4-11 names it in the hostname table, as the one routed name with no DNS record),
     // and it is two labels deep so the Origin CA's `*.cuatro.dev` does not cover it.
-    expect(INVENTORY).not.toContain(SCRATCH);
+    const zone = INVENTORY.split('\n## The whole zone, all 26 records\n')[1]?.split('\n## ')[0] ?? '';
+    expect(zone).toContain('| `wheel.cuatro.dev` | A |');
+    expect(zone).not.toContain(SCRATCH);
+    const hostnames = INVENTORY.split('\n## Every hostname in the zone\n')[1]?.split('\n## ')[0] ?? '';
+    const row = hostnames.split('\n').find((l) => l.includes(SCRATCH)) ?? '';
+    expect(row).toContain('| **no DNS record** |');
     expect(SCRATCH.split('.').length).toBe(4);
   });
 
@@ -204,24 +210,49 @@ describe('ops/traefik/dynamic/routes.yml', () => {
   });
 });
 
+// Story 4-11: tournament.cuatro.dev is the last hostname to leave the shared Caddy, so its router must answer
+// what Caddy's block does: the house headers and the alias and port the inventory's row names.
+describe('the tournament router', () => {
+  it('sends tournament.cuatro.dev to the alias and port the inventory names, with the house headers', () => {
+    const t = routers.find((r) => leadingHost(r.rule ?? '') === 'tournament.cuatro.dev');
+    expect(t).toMatchObject({ rule: 'Host(`tournament.cuatro.dev`)', middlewares: '[house-headers]', service: 'cs-tournament' });
+    const upstream = /^ {4}cs-tournament:\n {6}loadBalancer:\n {8}servers:\n {10}- url: http:\/\/([^:/]+):(\d+)$/m.exec(ROUTES)?.slice(1);
+    const row = INVENTORY.split('\n').find((l) => l.startsWith('| `tournament.cuatro.dev` | `177.7.52.248` |')) ?? '';
+    const [alias, port] = /alias `([^`]+)` \| (\d+) \|$/.exec(row)?.slice(1) ?? [];
+    expect(alias).toBeTruthy();
+    expect(upstream).toEqual([alias, port]);
+  });
+});
+
 describe('ops/traefik/traefik.yml and compose.yml', () => {
   // Story 4-9: Traefik 3 cuts a request body at 60 seconds by default and Caddy never does, so a slow
-  // library upload would fail only through Traefik.
-  it('sets no read timeout on websecure, as the shared Caddy has none', () => {
-    expect(STATIC).toMatch(/^ {2}websecure:\n {4}address: ':8443'\n(?: {4}#.*\n)* {4}transport:\n {6}respondingTimeouts:\n {8}readTimeout: 0\n/m);
+  // library upload would fail only through Traefik. Story 4-11 moves websecure to 443.
+  it('serves websecure on 443 with no read timeout, as the shared Caddy had none', () => {
+    expect(STATIC).toMatch(/^ {2}websecure:\n {4}address: ':443'\n(?: {4}#.*\n)* {4}transport:\n {6}respondingTimeouts:\n {8}readTimeout: 0\n/m);
+    expect(STATIC).not.toContain(':8443');
+  });
+
+  // Story 4-11: plain HTTP reaches the origin (the edge's `always_use_https` is off), and Caddy's port 80
+  // answered it with a permanent redirect to https. The web entrypoint does the same and routes nothing.
+  it('answers plain HTTP on 80 with a permanent redirect to websecure over https', () => {
+    expect(STATIC).toContain(["  web:", "    address: ':80'", '    http:', '      redirections:', '        entryPoint:', '          to: websecure', '          scheme: https', '          permanent: true'].join('\n'));
+    expect(ROUTES).not.toMatch(/entryPoints: \[[^\]]*\bweb\b/);
   });
 
   it('keeps the insecure API off and the dashboard entrypoint on loopback', () => {
     expect(STATIC).toMatch(/^ {2}insecure: false$/m);
-    expect(COMPOSE).toContain("- '127.0.0.1:8080:8080'");
-    expect(COMPOSE).not.toMatch(/- '(0\.0\.0\.0:)?8080:8080'/);
+    expect(COMPOSE).toContain("- '127.0.0.1:8081:8080'");
+    expect(COMPOSE).not.toMatch(/- '(0\.0\.0\.0:)?808[01]:8080'/);
   });
 
-  it('publishes 8443 and never 80 or 443, which the shared Caddy holds', () => {
+  // Story 4-11: the shared Caddy is retired and Traefik holds 80 and 443 itself; 8443, where the Origin
+  // Rules sent each hostname while the two ran side by side, is closed again.
+  it('publishes 80 and 443 and never 8443, from one service', () => {
     const ports = [...COMPOSE.matchAll(/^ {6}- '([^']+)'$/gm)].map((m) => m[1]).filter((p) => /:\d+$/.test(p));
-    expect(ports.sort()).toEqual(['127.0.0.1:8080:8080', '8443:8443']);
-    // Also by text, whatever the quoting: no mapping names 80 or 443 on either side.
-    expect(COMPOSE).not.toMatch(/(?<!\d)(80|443):\d+|:(80|443)(?!\d)/);
+    expect(ports.sort()).toEqual(['127.0.0.1:8081:8080', '443:443', '80:80']);
+    // Comments name 8443 for the history; no setting may.
+    expect(COMPOSE.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n')).not.toContain('8443');
+    expect([...COMPOSE.matchAll(/^ {2}([a-z_-]+):$/gm)].map((m) => m[1])).toEqual(['ingress', 'cs-tracker_default', 'origin-ca', 'acme']);
   });
 
   it('pins an exact Traefik v3.7 patch and mounts no Docker socket', () => {
@@ -229,10 +260,14 @@ describe('ops/traefik/traefik.yml and compose.yml', () => {
     expect(COMPOSE).not.toContain('docker.sock');
   });
 
-  it('stores the resolver on a named volume and reads the certificate read-only', () => {
+  // Story 4-11 (DW-296): the Origin CA pair comes from a volume of Traefik's own, external so no `down -v`
+  // can take it, and never from the retired Caddy's `cs-tracker_caddy_data`.
+  it('stores the resolver on a named volume and reads the certificate read-only from its own volume', () => {
     expect(STATIC).toContain('storage: /acme/acme.json');
     expect(COMPOSE).toContain('- acme:/acme');
-    expect(COMPOSE).toMatch(/source: cs-tracker_caddy_data\n {8}target: \/etc\/traefik\/origin-ca\n {8}read_only: true\n {8}volume:\n {10}subpath: origin-ca/);
+    expect(COMPOSE).toMatch(/^ {6}- origin-ca:\/etc\/traefik\/origin-ca:ro$/m);
+    expect(COMPOSE).toContain(['  origin-ca:', '    external: true', '    name: traefik-origin-ca'].join('\n'));
+    expect(COMPOSE).not.toContain('cs-tracker_caddy_data');
   });
 });
 
