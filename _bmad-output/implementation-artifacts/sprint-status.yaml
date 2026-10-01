@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-01-2026 02:49
+last_updated: 10-01-2026 02:57
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1438,7 +1438,7 @@ action_items:
       the Epic 4 ones named, ops/traefik/ and ops/postgres/, the five WSL-spawning
       suites, the suite figure; close DW-298, DW-303 and DW-312's context half."
     owner: "Cuatro (agent session)"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md"
   - id: "epic-4-retro-item-40-process-a-runbook-s-box-block-stops-at-i"
     epic: 4
@@ -1446,7 +1446,7 @@ action_items:
       from a file on the box, and names only tools the workstation has; rehearse the
       helper block in the transport the run will use."
     owner: "Cuatro"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md"
   - id: "epic-4-retro-item-41-one-pr-for-three-small-fixes-dw-313-s-tw"
     epic: 4
@@ -1478,5 +1478,5 @@ action_items:
     action: "Process: every spec records the independent verifier's verdict, clean
       passes included."
     owner: "Cuatro"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md"

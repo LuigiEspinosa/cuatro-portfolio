@@ -9197,7 +9197,12 @@ status: done
     new record.
 
     **Owner: the next `bmad-project-context` refresh.** **Trigger: that refresh, or Epic 4's close.**
-  status: open
+
+    **Closed 2026-10-01 by the context refresh after Epic 4 (retrospective action item 4, decided by the
+    orchestrator on 2026-10-01 under the Operator's delegation).** `ls ops/*.md | wc -l` printed 36, and the
+    block now reads "holds 36 records" and names `traefik-cutover.md`, `postgres.md`, `postgres-backup.md`,
+    `cs-tracker-cutover.md` and `caddy-retirement.md` beside the ones it already named.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
   id: DW-299
   summary: >-
@@ -9329,7 +9334,14 @@ status: done
     **Owner: the next AGENTS.md context refresh (with DW-298).** **Trigger: that refresh.** Name every
     suite that spawns WSL's bash in the DW-135 pitfall, not three. Not edited here: AGENTS.md is
     agent context, which this story does not touch.
-  status: open
+
+    **Closed 2026-10-01 by the context refresh after Epic 4 (retrospective action item 4, decided by the
+    orchestrator on 2026-10-01 under the Operator's delegation).** The DW-135 line in Running and verifying
+    now names all six suites under `ops/__tests__/` that spawn WSL's bash: `deploy-remote`, `library-backup`,
+    `tracker-backup`, `postgres-backup`, `postgres-init` and `tournament-backup`. The refresh's own full run
+    at `a9bc0d7` failed one case in each of those six after about 30 seconds and nothing else, and the six
+    files passed together on re-run (150 passed, 1 skipped).
+  status: done
 - id: DW-304
   summary: >-
     Style Dictionary 5.5.4's `@bundled-es-modules/glob` range `^13.0.6-hotfix.0` still resolves 13.0.6,
@@ -9590,7 +9602,14 @@ status: done
     test or workflow read it. The dated `ops/` records that cite it are history and stay. Left to the
     context refresh that follows: AGENTS.md's `docker/Caddyfile` pitfall (the file is now gone) and the
     `ops/` count ("30 records").
-  status: open
+
+    **Closed 2026-10-01 by the context refresh after Epic 4 (retrospective action item 4, decided by the
+    orchestrator on 2026-10-01 under the Operator's delegation).** The block no longer names
+    `docker/Caddyfile`; its pitfall now says Traefik bind-mounts `ops/traefik/traefik.yml` and
+    `ops/traefik/dynamic/` from the box's checkout (read on the box with `docker inspect traefik-ingress-1`),
+    and Where things are names `ops/traefik/` as the box's ingress, `traefik-ingress-1` alone on 80 and 443
+    with the dashboard on loopback 8081. The `ops/` count reads 36 (DW-298). Both halves are taken.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-11-retire-caddy-and-decommission-the-old-topology.md`
   id: DW-313
   summary: >-
