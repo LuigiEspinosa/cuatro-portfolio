@@ -303,7 +303,9 @@ line and the stderr, leave the cron uninstalled, and file a DW entry.
    Supabase together loses both. `library-backup.sh` is the estate's one job with a third site. Whether
    this copy meets AD-10's offsite requirement is the Operator's ruling when action 4 closes.
 2. **RPO 24 hours**, and nothing alerts on a failing night: the log is read by hand, as for the other two
-   jobs (`ops/backup-digital-library.md` named limit 3).
+   jobs (`ops/backup-digital-library.md` named limit 3). **Amended 2026-10-01** (Epic 4 retrospective
+   action 3): the reader for all three jobs is DW-315, decided by the orchestrator on 2026-10-01 under the
+   Operator's delegation; until it lands, the log is still read by hand.
 3. **Row level security.** `pg_dump` runs with `row_security` off, so if the pooler's `postgres` user did
    not bypass the policies the dump would fail loudly rather than write a partial copy. The placement's
    pre-migration dump of `public` succeeded as that user, which answers it for the schema then; step 3
@@ -341,6 +343,19 @@ both were set to mode 0700.
 offsite backup under AD-10 (it is off Supabase's side, which is what the exception needs); no third
 site is required. Retrospective action 4 is closed on that ruling.
 
+### First scheduled run, 2026-10-01
+
+The first cron-driven run, at 03:45Z, read from `backup.log` by the orchestrator at about 07:20Z on
+2026-10-01 (Epic 4 retrospective action 3, finding M2); that read cut the line after `prune=`, and a second
+read-only `tail` of the same log at 07:21:34Z printed it whole, `exit=0` as every earlier line:
+
+```
+tournament-backup ts=2026-10-01T03:45:06Z file=/home/deploy/backups/cs-tournament/tournament-20261001T034501Z.dump dump=ok list=ok tables=19 rows=31 bytes=477822 sha256=8b268dd5b3bd0393c74ca096131fe0477caa0f2de458cc4c1bd444069a3e891f prune=removed-0-aged-over-14-whole-days exit=0
+```
+
+Same shape as the first run's line: 19 tables, 31 rows, 477,822 bytes, nothing aged out yet. The
+restore proof was not re-run; the nightly job does not run it (§ Backup, The proof).
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -351,6 +366,7 @@ site is required. Retrospective action 4 is closed on that ruling.
 | 4 | **Sign in through Steam** on `https://tournament.cuatro.dev` as the admin | The identity proof (§ Identity). Observed server side as `last_sign_in_at` with the `steamid64` and `role` claims bound (§ Placement run, step 9), after the migration catch-up | 2026-09-30T01:01:26Z |
 | 5 | **Release Registry 1.7.0** (step 10: the revert of `6d72963`) and merge it into `main` after step 6 answered | FR-28. Released as `4d467ba` on `dev`; its push's Registry verification run passed 41 of 41 with `PASS cs-tournament live: https://tournament.cuatro.dev answered 200`; the home surface's hit-target pin moved to 22 for the new live link (`ops/hit-target-floor.md`); PR #87 merged as `373e33d`, Deploy run 36655346368 green, and `https://cuatro.dev/contracts/registry.json` served `contract_version` 1.7.0 with the entry `Live` right after | 2026-09-30T01:30:33Z |
 | 6 | **Install the nightly dump and run it once** (§ Backup, steps 1 to 5) | The store's copy off Supabase's side (AD-10, retrospective action 4). Record what § Backup lists under a "First backup run" heading. Done: § First backup run, 2026-09-30 | 2026-09-30T08:04:11Z |
+| 7 | **Read the first unattended line** of the 03:45Z cron run on 2026-10-01 from `backup.log` | Added 2026-10-01 by Epic 4 retrospective action 3. Read `exit=0`: § First backup run, 2026-09-30, First scheduled run, 2026-10-01. Nothing reads the later nights yet (DW-315) | 2026-10-01T07:21Z |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.

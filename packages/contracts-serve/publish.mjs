@@ -6,7 +6,7 @@
 // is a copy of the published surface, not a second authored copy of it.
 //
 // **Why `public/` and not a proxy file server.** The Hub already owns the apex:
-// `docker/Caddyfile` gives `cuatro.dev` one site block reverse-proxying
+// Traefik's `cuatro.dev` router (`ops/traefik/dynamic/routes.yml`) reverse-proxies
 // `anchor-app:3000`, which is this application's own container. Anything the
 // Hub serves is therefore already reachable under the apex over HTTPS, so the
 // deploy that ships the contract also ships the serving, with no bind mount, no

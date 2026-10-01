@@ -244,7 +244,7 @@ describe('ops/tournament-restore-verify.sh', () => {
     const lines = readFileSync(box.log, 'utf8').split('\n');
     return {
       started: lines.filter((line) => line.startsWith('run --detach ')).map((line) => /--name (\S+)/.exec(line)?.[1] ?? ''),
-      removed: lines.filter((line) => line.startsWith('rm --force ')).map((line) => line.slice('rm --force '.length)),
+      removed: lines.filter((line) => line.startsWith('rm --force --volumes ')).map((line) => line.slice('rm --force --volumes '.length)),
     };
   };
 

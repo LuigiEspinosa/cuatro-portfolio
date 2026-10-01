@@ -9197,7 +9197,12 @@ status: done
     new record.
 
     **Owner: the next `bmad-project-context` refresh.** **Trigger: that refresh, or Epic 4's close.**
-  status: open
+
+    **Closed 2026-10-01 by the context refresh after Epic 4 (retrospective action item 4, decided by the
+    orchestrator on 2026-10-01 under the Operator's delegation).** `ls ops/*.md | wc -l` printed 36, and the
+    block now reads "holds 36 records" and names `traefik-cutover.md`, `postgres.md`, `postgres-backup.md`,
+    `cs-tracker-cutover.md` and `caddy-retirement.md` beside the ones it already named.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
   id: DW-299
   summary: >-
@@ -9274,7 +9279,16 @@ status: done
     move's own dump, copied off the box in its step 4, is that database's first backup and is kept until
     Story 4.11. With the three stories written, what remains is box-side: each move's record confirming
     4.5 ran before it. **Trigger for closing:** the last of the three moves recorded.
-  status: open
+
+    **Closed 2026-10-01 by Epic 4 retrospective action 7 (finding L8).** The trigger fired with
+    `ops/cs-tracker-cutover.md` § Move run, and every move ran after Story 4.5's first run: the estate
+    backup's first run ended at 22:17Z on 2026-09-30, before Umami moved at 22:54Z, the tracker at 23:53Z and
+    `cs-tracker` at 00:06Z on 2026-10-01. Every moved consumer is dumped nightly since 2026-10-01T03:15Z:
+    `ops/postgres-backup.md` § First scheduled run reads `databases=4 dumps=ok tables=46 rows=53635`,
+    `offsite=ok-39c333df` and `restore=verified`. The old `~/cuatro-backup.sh` and the old stores were retired
+    by Story 4.11 (`ops/caddy-retirement.md` § Retirement run, steps 12 to 14), so no backup is left aimed at a
+    stale copy.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
   id: DW-302
   summary: >-
@@ -9320,7 +9334,14 @@ status: done
     **Owner: the next AGENTS.md context refresh (with DW-298).** **Trigger: that refresh.** Name every
     suite that spawns WSL's bash in the DW-135 pitfall, not three. Not edited here: AGENTS.md is
     agent context, which this story does not touch.
-  status: open
+
+    **Closed 2026-10-01 by the context refresh after Epic 4 (retrospective action item 4, decided by the
+    orchestrator on 2026-10-01 under the Operator's delegation).** The DW-135 line in Running and verifying
+    now names all six suites under `ops/__tests__/` that spawn WSL's bash: `deploy-remote`, `library-backup`,
+    `tracker-backup`, `postgres-backup`, `postgres-init` and `tournament-backup`. The refresh's own full run
+    at `a9bc0d7` failed one case in each of those six after about 30 seconds and nothing else, and the six
+    files passed together on re-run (150 passed, 1 skipped).
+  status: done
 - id: DW-304
   summary: >-
     Style Dictionary 5.5.4's `@bundled-es-modules/glob` range `^13.0.6-hotfix.0` still resolves 13.0.6,
@@ -9413,7 +9434,17 @@ status: done
     `tournament-20260930T080402Z.dump` was written; `sudo ls` of its directory shows a Postgres data
     directory owned by uid 70, `postgres:*-alpine`'s. Not the old topology, so `ops/caddy-retirement.md`
     leaves it to this entry's owner.
-  status: open
+
+    **Closed 2026-10-01 (Epic 4 retrospective action item 6, decided by the orchestrator on 2026-10-01 under
+    the Operator's delegation).** `ops/tournament-restore-verify.sh` now removes its throwaway with
+    `docker rm --force --volumes`, as `ops/tracker-restore-verify.sh` does, and
+    `ops/__tests__/tournament-backup.test.ts` counts a throwaway as removed only on that form, so dropping
+    the flag fails every restore-verify case. The orchestrator removed the leftover volume `4fc208dc...` on
+    the box on 2026-10-01; a read-only listing the same day showed no anonymous volume left. The box's
+    installed `/home/deploy/tournament-restore-verify.sh` still has the old line (read 2026-10-01) until it
+    is reinstalled from the checkout, which is DW-318's; cron runs only `tournament-backup.sh`, which does
+    not call the verifier, so no scheduled run leaves a volume meanwhile.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-3-migrate-list-wheel-the-static-first-candidate.md`
   id: DW-308
   summary: >-
@@ -9523,7 +9554,21 @@ status: done
     **Story 4-11, 2026-10-01: not taken.** Authentication is not topology, so retiring Caddy leaves it
     (`ops/caddy-retirement.md` § What this story leaves open). Still before any real user signs in; the
     Operator confirms whether the clean start or a story of its own takes it.
-  status: open
+
+    **Reproduced 2026-10-01 (Epic 4 retrospective action item 2), not reproduced.** From a fresh empty
+    cookie jar against the live `https://tracker.cuatro.dev`, four sign-in attempts as the seeded admin
+    `admin@tracker.local` (`apps/tracker/prisma/seed.ts`), each fetching `/api/auth/csrf` first and posting
+    the matching token to `/api/auth/callback/credentials`: a long wrong password, an empty password, a
+    one-character password, and another one-character password. Every one returned `HTTP 401`, set no
+    `next-auth.session-token` cookie, and left `/api/auth/session` returning `{}`; a `GET /` with no cookie
+    returned `307` to `/login?callbackUrl=%2F`. The credential path rejects a wrong password exactly as
+    `authorizeCredentials` reads (`bcrypt.compare`, `null` on any miss), the matcher in `middleware.ts`
+    guards the protected routes, and no session was issued without a correct password. The likely
+    explanation of the Operator's observation is a live NextAuth session cookie left in the Operator's
+    browser from an earlier sign-in, so the sign-in page redirected an already-authenticated session rather
+    than accepting the password typed. No code defect found, no change made. Closed as not reproduced,
+    decided by the orchestrator on 2026-10-01 under the Operator's delegation.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-11-retire-caddy-and-decommission-the-old-topology.md`
   id: DW-312
   summary: >-
@@ -9549,7 +9594,22 @@ status: done
     `docker/Caddyfile` and the comment naming it at `packages/contracts-serve/publish.mjs:9`, in a commit that
     goes through a PR; and the `ops/` count ("30 records") at the next context refresh. Owner and trigger
     otherwise unchanged.
-  status: open
+
+    **2026-10-01: the code half taken (Epic 4 retrospective action item 6, decided by the orchestrator on
+    2026-10-01 under the Operator's delegation).** `docker/Caddyfile` is deleted; the comment in
+    `packages/contracts-serve/publish.mjs` now names Traefik's `cuatro.dev` router in
+    `ops/traefik/dynamic/routes.yml`, and that file's header-set comment no longer names the deleted file. No
+    test or workflow read it. The dated `ops/` records that cite it are history and stay. Left to the
+    context refresh that follows: AGENTS.md's `docker/Caddyfile` pitfall (the file is now gone) and the
+    `ops/` count ("30 records").
+
+    **Closed 2026-10-01 by the context refresh after Epic 4 (retrospective action item 4, decided by the
+    orchestrator on 2026-10-01 under the Operator's delegation).** The block no longer names
+    `docker/Caddyfile`; its pitfall now says Traefik bind-mounts `ops/traefik/traefik.yml` and
+    `ops/traefik/dynamic/` from the box's checkout (read on the box with `docker inspect traefik-ingress-1`),
+    and Where things are names `ops/traefik/` as the box's ingress, `traefik-ingress-1` alone on 80 and 443
+    with the dashboard on loopback 8081. The `ops/` count reads 36 (DW-298). Both halves are taken.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-11-retire-caddy-and-decommission-the-old-topology.md`
   id: DW-313
   summary: >-
@@ -9569,7 +9629,13 @@ status: done
     case.** Make the tamper deterministic, flipping a bit of the last byte (XOR with `0x01`) rather than
     overwriting it, so the payload always differs; the test still proves the code's behaviour, not its
     implementation.
-  status: open
+
+    **Closed 2026-10-01 (Epic 4 retrospective action item 6, decided by the orchestrator on 2026-10-01 under
+    the Operator's delegation).** `apps/finance/lib/__tests__/crypto.test.ts` tampers by XOR-ing the last
+    byte with `0xff` (`flipLastByte`), so the tampered value always differs. The ciphertext case built its
+    tamper the same way and carried the same odds, so it takes the same fix. `corepack pnpm --filter
+    finance test` passed, 70 tests.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-11-retire-caddy-and-decommission-the-old-topology.md`
   id: DW-314
   summary: >-
@@ -9586,4 +9652,101 @@ status: done
     **Owner: the Operator.** **Trigger: a ruling.** Either raise the zone's minimum TLS version (1.2 is the
     usual floor; check the oldest client the estate means to serve first) and record the before and after
     in `ops/routing-inventory.md` § Zone settings, or record the decision to keep 1.0 and why.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md`
+  id: DW-315
+  summary: >-
+    Nothing reads the estate's three nightly backup logs, so a red line (a failed dump, a refused offsite
+    copy, a restore that does not verify) sits in a file on the box until someone happens to look.
+  evidence: |-
+    Found 2026-10-01 by the Epic 4 retrospective (finding M2, action item 3). After Story 4-11 the box runs
+    three nightly jobs that each write one greppable summary line and an honest exit status:
+    `postgres-backup.sh` at 03:15 (`ops/postgres-backup.md` § Named limits 1), `library-backup.sh` at 03:45
+    (`ops/backup-digital-library.md` named limit 3) and `tournament-backup.sh` at 03:45
+    (`ops/tournament-placement.md` § Backup, named limit 2). Each record names the same gap, and nothing
+    reads any of the three `backup.log` files. The first unattended line of each was read by hand on
+    2026-10-01, all `exit=0`; that read is the whole of the observation so far.
+
+    Two constraints shape the reader. The UptimeRobot free plan refuses heartbeat monitors (DW-85, ruled
+    2026-09-12), so the usual dead man's switch is not available. And the deploy key's forced command
+    (`ops/deploy-remote.sh`, DW-264) runs only the deploy, so a scheduled GitHub workflow cannot read the box
+    over SSH as things stand. Two options fit both: (a) each backup script posts its summary line to a
+    first-party endpoint (a Hub route that keeps the last line per job, which the scheduled Registry
+    verification or a monitor on that route then reads for staleness or a non-zero exit); or (b) the forced
+    command gains a read mode that greps the three logs for last night's lines, and the next deploy run (or
+    a scheduled workflow using that mode) fails red on a missing line or a non-zero `exit=`. (b) touches the
+    forced command, which runs one deploy late (DW-264); (a) adds a write surface to the Hub that needs its
+    own authentication.
+
+    Decided by the orchestrator on 2026-10-01 under the Operator's delegation: the gap is filed here rather
+    than accepted in writing, and no reader is built in Epic 4.
+
+    **Owner: the Operator's planned clean start of every application, or Epic 5, whichever comes first.**
+    **Trigger: a red backup line that nobody saw**, or that clean start opening. Choose (a) or (b), build it,
+    and amend the three records' named limits to name the reader.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md`
+  id: DW-316
+  summary: >-
+    Umami's compose healthcheck is liveness only: `/api/heartbeat` answers 200 without touching the
+    database, so a Umami that cannot reach or authenticate to its Postgres still reports healthy.
+  evidence: |-
+    Found 2026-10-01 by the Epic 4 retrospective (finding L3, action item 8). `docker-compose.yml`, service
+    `anchor-umami`: the healthcheck is `curl -fsS http://127.0.0.1:3000/api/heartbeat`, and its own comment
+    says the route "answers 200 without touching the database". Story 4-7's rehearsal proved it:
+    `ops/postgres.md` § Moving Umami (Story 4-7), § Rehearsed off the box, the block "heartbeat with the
+    database paused" printed `200`. `DATABASE_URL` takes `${UMAMI_DB_PASSWORD-}`, which defaults to empty, so
+    a missing or wrong password still passes `up --wait` and `docker rollout`'s health gate. The tracker's
+    probe, by contrast, answers 200 only when Postgres and Redis both answer. The monitor on
+    `analytics.cuatro.dev` probes the same route, so it would stay green too; what breaks is event ingestion.
+
+    **Owner: the next change to `anchor-umami` (the next Umami pin bump is the likely one).** **Trigger: that
+    change, or a lost day of events.** Point the healthcheck at a route that reads the database (or add a
+    second check that does), prove it red with the database paused as the rehearsal did, and make
+    `UMAMI_DB_PASSWORD` required (`${UMAMI_DB_PASSWORD:?}`) rather than defaulted.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md`
+  id: DW-317
+  summary: >-
+    Traefik reaches `cs-tracker` by the generic alias `app` on the shared ingress network, the alias that
+    collided until 2026-09-29, so any future service named `app` on that network joins its round robin
+    silently.
+  evidence: |-
+    Found 2026-10-01 by the Epic 4 retrospective (finding L4, action item 8). `ops/traefik/dynamic/routes.yml`,
+    service `cs-tracker`: `url: http://app:4000`. Compose gives every service its own name as an alias on
+    each network it joins, and `cs-tracker_default` is the shared ingress network every upstream joins.
+    `ops/routing-inventory.md` § The shared network records the name's history: from 2026-08-24 to
+    2026-09-29 both `cs-tracker-app-1` and `cuatro-tracker-app-1` answered to `app`, and the collision ended
+    only because the tracker's replacement service is named `tracker`. Nothing refuses a second `app` today;
+    the only guard is that every other project picked a distinct service name. Every other upstream is
+    dialled by a project-specific alias (`anchor-app`, `cuatro-app`, `library-api`, `library-web`,
+    `list-wheel`, `tournament`).
+
+    **Owner: the next change in `cs-tracker`'s compose file (a second repository).** **Trigger: that
+    change, or any service named `app` joining `cs-tracker_default`.** Give `cs-tracker`'s service a unique
+    alias on that network (for example `cs-tracker-app` under its default network's `aliases`), move the
+    router's `url` to it in `routes.yml` and its pin in `ops/__tests__/traefik-config.test.ts`, and amend
+    § The shared network.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md`
+  id: DW-318
+  summary: >-
+    The nightly backup jobs run from installed copies, not from the checkout, so a fix merged to `main`
+    reaches the box only when someone re-runs an install, and nothing compares the two.
+  evidence: |-
+    Found 2026-10-01 by the Epic 4 retrospective (finding L14, action item 8). `ops/postgres-backup.md`
+    § Install and first run, step 3 installs `postgres-backup.sh` and `postgres-restore-verify.sh` into
+    `/home/deploy/` and cron runs those copies; `ops/tournament-placement.md` § Backup does the same for the
+    tournament's two scripts; the library's three run from `/usr/local/sbin/`. The precedent that this
+    drifts is already on record: `ops/backup-digital-library.md` Pending Operator action 9, "Install the
+    2026-09-24 scripts on the box", is still `_not done_`. Read on the box on 2026-10-01 at about 07:22Z,
+    read-only, against its checkout at `8f33ead`: the estate's and the tournament's copies match the
+    checkout byte for byte (`cmp`), and all three library copies differ (installed 2026-08-24; for example
+    `/usr/local/sbin/library-backup.sh` lacks the `export S3_CONNECT_TIMEOUT S3_MAX_TIME` the 2026-09-24
+    change added). So the library job runs a version the repository fixed a week ago.
+
+    **Owner: the Operator's planned clean start of every application (with DW-315, the same scripts).**
+    **Trigger: that clean start, or the next change to any backup script.** Either run the cron lines from
+    the checkout the deploy maintains, or make the deploy (or DW-315's reader) compare each installed copy's
+    sha256 with the checkout's and go red on a difference; and run the library's action 9 meanwhile.
   status: open

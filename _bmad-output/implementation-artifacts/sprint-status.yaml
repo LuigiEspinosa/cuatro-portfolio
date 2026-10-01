@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-01-2026 06:30
+last_updated: 10-01-2026 02:57
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -965,7 +965,8 @@ development_status:
   # (tables=9 rows=12), pg_restore exit=0, counts-match and counts-match-dump, tracker-migrate a no-op; docker rollout
   # put cuatro-portfolio-tracker-2 on estate-postgres/cuatro_tracker?connection_limit=4, old-unchanged, the 70 line
   # probe 200 alone. Origin Rule 1ee043e45b2d46619c9881d2ae005902 moved tracker.cuatro.dev onto Traefik at
-  # 00:00:30Z; the 80 line probe 200 alone; the monitor reading after a full interval to be confirmed. Readings in
+  # 00:00:30Z; the 80 line probe 200 alone; the monitor 803750023 read UP after a full interval, at 00:05Z and
+  # again at 05:40Z (corrected 2026-10-01 by Epic 4 retrospective action 7, ops/tracker-cutover.md step 13). Readings in
   # ops/tracker-cutover.md § Estate Postgres move run, 2026-09-30; Pending actions 6 to 8 dated. Action 5 (confirm
   # or overrule the decisions) stays open: nothing overruled, an explicit word awaited. The Operator saw the
   # sign-in accept any password: DW-311, against apps/tracker authentication, before any real user.
@@ -1026,7 +1027,7 @@ development_status:
   # monitors UP. Every decisions row in the Epic 4 records closed on the Operator's word of 2026-10-01; actions
   # 6 and 7 here deferred to the clean start. DW-296 closed; DW-312 half taken; DW-313 and DW-314 filed.
   4-11-retire-caddy-and-decommission-the-old-topology: done
-  epic-4-retrospective: optional
+  epic-4-retrospective: done
 
   epic-5: backlog
   5-1-refresh-clerk-s-pricing-and-terms: backlog
@@ -1403,5 +1404,79 @@ action_items:
       migrations before its first probe, and Epic 4's migration stories carry that
       step."
     owner: "Cuatro"
-    status: open
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-3-retro-2026-09-30.md"
+  - id: "epic-4-retro-item-36-reconcile-epic-4-s-goal-with-what-shippe"
+    epic: 4
+    action: "Reconcile Epic 4's goal with what shipped: dated amendments in epics.md
+      Epic 4 and epic-4-context.md that the topology rebuild shipped and the per-application
+      pull deploys did not (list-wheel DW-308, digital-library DW-185, tracker and
+      tournament DW-275, Redis and qBittorrent DW-306), and that tournament.cuatro.dev
+      moved in 4-11 step 2; or place that half in a story."
+    owner: "Cuatro (Operator ruling, then agent session)"
+    status: done
+    ref: "_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md"
+  - id: "epic-4-retro-item-37-reproduce-dw-311-with-a-fresh-browser-pr"
+    epic: 4
+    action: "Reproduce DW-311 with a fresh browser profile and a wrong password on
+      tracker.cuatro.dev, record the result in the ledger, and if it signs in, fix
+      it with a regression test in apps/tracker/__tests__/ before anything else."
+    owner: "Cuatro (Operator, then agent session)"
+    status: done
+    ref: "_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md"
+  - id: "epic-4-retro-item-38-read-the-tournament-backup-s-first-unatt"
+    epic: 4
+    action: "Read the tournament backup's first unattended line (2026-10-01T03:45Z)
+      into ops/tournament-placement.md, and rule on the three nightly backup jobs
+      having no reader: accept the named limit in writing, or name a reader."
+    owner: "Cuatro (Operator)"
+    status: done
+    ref: "_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md"
+  - id: "epic-4-retro-item-39-run-the-bmad-project-context-refresh-bef"
+    epic: 4
+    action: "Run the /bmad-project-context refresh before Epic 5: 36 ops records with
+      the Epic 4 ones named, ops/traefik/ and ops/postgres/, the five WSL-spawning
+      suites, the suite figure; close DW-298, DW-303 and DW-312's context half."
+    owner: "Cuatro (agent session)"
+    status: done
+    ref: "_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md"
+  - id: "epic-4-retro-item-40-process-a-runbook-s-box-block-stops-at-i"
+    epic: 4
+    action: "Process: a runbook's box block stops at its first failing command, runs
+      from a file on the box, and names only tools the workstation has; rehearse the
+      helper block in the transport the run will use."
+    owner: "Cuatro"
+    status: done
+    ref: "_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md"
+  - id: "epic-4-retro-item-41-one-pr-for-three-small-fixes-dw-313-s-tw"
+    epic: 4
+    action: "One PR for three small fixes: DW-313's two tamper cases by XOR, DW-307's
+      --volumes with its test pin (then the Operator removes volume 4fc208dc), and
+      DW-312's code half (docker/Caddyfile and the comment in packages/contracts-serve/publish.mjs)."
+    owner: "Cuatro (agent session, Operator for the volume)"
+    status: done
+    ref: "_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md"
+  - id: "epic-4-retro-item-42-bring-the-ledger-and-board-level-with-th"
+    epic: 4
+    action: "Bring the ledger and board level with the records: close DW-301 citing
+      the four run times, and correct the 4-8 row's 'to be confirmed' from ops/tracker-cutover.md
+      step 13."
+    owner: "Cuatro (agent session)"
+    status: done
+    ref: "_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md"
+  - id: "epic-4-retro-item-43-file-the-unledgered-hazards-and-give-dns"
+    epic: 4
+    action: "File the unledgered hazards and give DNS-01 renewal an owner: DW entries
+      for Umami's liveness-only healthcheck, the generic app alias, and the installed
+      backup-script copies; a dated Pending action to re-read the scratch certificate
+      after 2026-11-29."
+    owner: "Cuatro (agent session)"
+    status: done
+    ref: "_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md"
+  - id: "epic-4-retro-item-44-process-every-spec-records-the-independe"
+    epic: 4
+    action: "Process: every spec records the independent verifier's verdict, clean
+      passes included."
+    owner: "Cuatro"
+    status: done
+    ref: "_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md"

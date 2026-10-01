@@ -1,5 +1,5 @@
 <!-- bmad:context -->
-<!-- Verified 2026-09-30 against 9a7f562. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-10-01 against a9bc0d7. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## cuatro-portfolio
 
@@ -7,7 +7,7 @@ The Anchor of the Cuatro Ecosystem: the portfolio at cuatro.dev, plus the contra
 `contracts/`, published at `https://cuatro.dev/contracts/`: the design token contract, which a
 second application, `cs-tracker`, renders, and the App Registry the Hub's Suite Directory reads.
 Next.js 16 / React 19 / TypeScript, Sass, pnpm, Turborepo 2.10.13, Vitest, Playwright, on one
-Hostinger KVM 2 box that pulls CI-built images and never builds. A Turborepo of four workspaces under
+Hostinger KVM 2 box (`deploy@177.7.52.248`) behind Traefik. A Turborepo of four workspaces under
 `apps/`: `hub` (the portfolio), `tracker` (merged from `cuatro-tracker`, serving `tracker.cuatro.dev`
 since the cutover of 2026-09-29), `tournament` (merged from `cs-tournament`, with a Go worker in
 `apps/tournament/worker/` that Turborepo never runs, serving `tournament.cuatro.dev` since the
@@ -28,25 +28,38 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
 - Never use an em-dash, an en-dash, a double-dash standing in for a dash, or an emoji in any
   prose, comment, commit subject, or documentation written here. Use a comma, a colon,
   parentheses, or two sentences. CLI flags and CSS custom properties keep their dashes.
+- Every story spec records the independent verifier's verdict, a clean pass included, or says no
+  independent verifier ran. A spec silent on it reads the same as one never verified.
 
 ## Where things are
 
 - Architecture invariants AD-1 to AD-26:
   `_bmad-output/planning-artifacts/architecture/architecture-cuatro-portfolio-2026-08-15/ARCHITECTURE-SPINE.md`.
   Every story in `epics.md` names its governing AD. Read that AD before starting.
-- **`ops/` holds 31 records that are the operational source of truth, not the planning
+- **`ops/` holds 36 records that are the operational source of truth, not the planning
   artifacts.** Answer an operational question from there before inferring it from code:
-  `routing-inventory.md` (the real routing table), `estate.md` (every application and its
-  disposition), `known-violations.md` (what is knowingly in breach, and what closes it),
-  `tracker-cutover.md` and `tournament-placement.md` (how the tracker and the tournament reached the
+  `routing-inventory.md` (the real routing table and the box as it stands), `estate.md` (every
+  application and its disposition), `known-violations.md` (what is knowingly in breach, and what closes
+  it), `tracker-cutover.md` and `tournament-placement.md` (how the tracker and the tournament reached the
   box, and their by-hand later rollouts), `settled-inputs-refresh.md` (AD-22's refresh before Epic 4,
-  and the rebuild's topology decisions), `capacity-threshold.md`, `contract-serving.md`,
+  and the rebuild's topology decisions), `traefik-cutover.md` (Traefik and each hostname's move),
+  `postgres.md` and `postgres-backup.md` (the estate Postgres, its consumers, its nightly backup),
+  `cs-tracker-cutover.md`, `caddy-retirement.md` (the old topology's removal, § Retirement run is the
+  end state), `capacity-threshold.md`, `contract-serving.md`,
   `cs-tracker-token-adoption.md`, `rendered-output-harness.md`, `monitoring.md`,
   `backup-digital-library.md`, `bot-mitigation.md`, `asset-budget.md` (what the build actually ships,
   weighed), `registry-schema.md` (the App Registry's shape and its blocking gate),
   `registry-verification.md` (the scheduled check of every entry), `registry-inputs.md` (how the
   Registry's values were first chosen, frozen 2026-09-24: `contracts/registry.json` is the only
   source of Registry values).
+- `ops/traefik/` and `ops/postgres/` are the estate's proxy and Postgres stacks (compose projects
+  `traefik` and `postgres`), started by hand from their runbooks and never by the Deploy. The box after
+  Epic 4: `traefik-ingress-1` alone on 80 and 443 (dashboard on loopback 8081), the Origin CA pair in
+  volume `traefik-origin-ca`, no Cloudflare Origin Rule; Caddy and the three old Postgres stores are
+  gone; `postgres-estate-postgres-1` holds Umami, the tracker and `cs-tracker`, dumped to R2 nightly at
+  03:15Z. The tracker's Redis and qBittorrent still run in the old `cuatro-tracker` project (DW-306):
+  never run `docker compose up` in `/home/deploy/cuatro-tracker`, which recreates an empty Postgres and
+  the old app.
 - The Hub moved to `apps/hub/` in Story 3-2 (2026-09-28). A record, spec or comment written before
   then names the Hub's paths from the repository root: read `app/`, `components/`, `content/`,
   `hooks/`, `lib/`, `public/` and `next.config.js` under `apps/hub/`.
@@ -75,13 +88,23 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   resolves to no script exits 0 with "No tasks were executed", so CI invokes the scripts directly and
   never gates through turbo (DW-252).
 - `corepack pnpm test` starts Vitest in watch mode and never exits. Always pass `--run`. The
-  full suite is 1761 tests across 71 files in roughly 110 seconds on this host, so run all of it.
-  Measured 2026-09-30 at `9a7f562`; treat the figure as a rough expectation, never as a number to
+  full suite is 1845 tests across 75 files in roughly 100 seconds on this host, so run all of it.
+  Measured 2026-10-01 at `a9bc0d7`; treat the figure as a rough expectation, never as a number to
   assert on.
-- On this host three files whose cases spawn WSL's bash, `ops/__tests__/deploy-remote.test.ts`,
-  `ops/__tests__/library-backup.test.ts` and `ops/__tests__/tracker-backup.test.ts`, sometimes fail
-  a case after about 30 seconds with empty output and pass on the next run (DW-135). Re-run the
-  suite before debugging such a failure; CI runs a native bash and never sees it.
+- On this host the six suites under `ops/__tests__/` whose cases spawn WSL's bash, `deploy-remote`,
+  `library-backup`, `tracker-backup`, `postgres-backup`, `postgres-init` and `tournament-backup`
+  (`.test.ts`), sometimes fail a case after about 30 seconds with empty output and pass on the next run
+  (DW-135), all six in one run on 2026-10-01. Re-run those files before debugging such a failure; CI
+  runs a native bash and never sees it.
+- The workstation's Git Bash has no `jq`: parse JSON with `node -e`. A WebSocket upgrade probe with
+  `curl` needs `--http1.1`, or it answers 400 instead of 101.
+- Every compose command against `docker-compose.yml`, on the box or here, needs `HUB_TAG` exported
+  first (the Hub's image line refuses an unset tag, DW-310). Use `ops/tracker-cutover.md`'s form:
+  `export HUB_TAG="$(git rev-parse HEAD)"`, then `docker compose --env-file .env.production`.
+- A runbook's box block runs from a file on the box under `set -euo pipefail`, so it stops at its
+  first failing command. Never pipe a script into `ssh` over stdin: `docker compose up` and
+  `docker rollout` read the remaining lines and the script silently ends early. A helper block names
+  only tools the workstation has, and is rehearsed in the transport the run will use.
 - There is no lint gate and no working lint command: the script is misspelled `linkg`, and
   `next lint` was removed in Next 16, so `corepack pnpm linkg` fails too. Do not put lint in
   an acceptance criterion, and do not add an `eslint` invocation to CI, until a story lands a
@@ -163,10 +186,11 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   image merges unnoticed: read them on the pushed sha before a merge. Image (tracker) has failed on a
   transient `next/font` Google Fonts fetch with nothing under `apps/tracker` changed; re-run it before
   debugging.
-- `docker/Caddyfile` describes a proxy that is gone: since 2026-10-01 (`ops/caddy-retirement.md`
-  § Retirement run) the box's ingress is Traefik from `ops/traefik/`, `traefik-ingress-1` on 80 and
-  443, and the shared Caddy and its Caddyfile are retired. No process reads that file, so editing it
-  changes nothing (DW-312 deletes it). Read `ops/routing-inventory.md` for the real routing table.
+- Traefik on the box bind-mounts `ops/traefik/traefik.yml` and `ops/traefik/dynamic/` from the checkout
+  the deploy resets to `main`, so a merged routing change goes live at the next deploy, and no CI job
+  starts Traefik to prove it first (DW-299). Rehearse a `dynamic/` change locally as
+  `ops/traefik-cutover.md` § Rehearsed off the box did. Caddy and its Caddyfile are gone; read
+  `ops/routing-inventory.md`, never a dated Caddy section, for the routing table.
 - Adding an application to `deploy.yml` trips the Capacity Gate (AD-9), which refuses any id
   not in `placements` in `ops/capacity-gate.yml` (six today, `cs-tournament` the latest). The gate is
   open on a measured threshold (load15 0.60). Read `ops/capacity-threshold.md` before editing
