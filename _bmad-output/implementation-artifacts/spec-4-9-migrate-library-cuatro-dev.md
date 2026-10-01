@@ -2,7 +2,7 @@
 title: 'Story 4-9: Migrate library.cuatro.dev onto Traefik, the store left in place'
 type: 'feature'
 created: '2026-09-30'
-status: 'awaiting-operator'
+status: 'done'
 baseline_commit: '8c995868f6a91799078597ee47098275660834bf'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -102,6 +102,7 @@ router, `library-headers` on the API router and `readTimeout: 60s` each failed t
 ## Spec Change Log
 
 - 2026-10-01: box half steps 1 to 5 ran from 00:04Z with the Operator present (runbook § Moving library.cuatro.dev onto Traefik), recorded in `ops/backup-digital-library.md` § Cutover run, library.cuatro.dev; Origin Rule `041740b5be6f41e588bbbc41f2af4e81` since 00:04:56Z, no rollback. Step 6, the 2026-10-01 03:45Z backup line, is still to be read (Pending Operator action 11); status stays `awaiting-operator` until it is.
+- 2026-10-01: step 6 read at 03:49Z: the 03:45:01Z `library-backup` line green (`redis=empty`, `offsite=ok-...`, `roundtrip=sha256-match`, `restore=verified`, `exit=0`), monitor 803750025 `UP`; recorded in `ops/backup-digital-library.md` § Cutover run, library.cuatro.dev, Pending Operator action 11 dated. Status `done`.
 
 ## Review Triage Log
 

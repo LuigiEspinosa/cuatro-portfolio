@@ -975,7 +975,10 @@ development_status:
   # (six rules now); the 228 line probe read 200 200 404 alone, 3 caddy then 225 no-via inside the propagation
   # minute; monitor 803750025 UP. Readings in ops/backup-digital-library.md § Cutover run, library.cuatro.dev;
   # Pending action 10 dated. Only step 6 remains before done: the 2026-10-01 03:45Z backup line (action 11).
-  4-9-migrate-library-cuatro-dev: awaiting-operator
+  # 4-9 done 2026-10-01: step 6 read at 03:49Z, the 03:45:01Z library-backup line green (redis=empty, offsite=ok,
+  # roundtrip=sha256-match, restore=verified, exit=0), the first scheduled run after the move; monitor 803750025 UP.
+  # Pending action 11 dated. Readings in ops/backup-digital-library.md § Cutover run, library.cuatro.dev.
+  4-9-migrate-library-cuatro-dev: done
   # 4-10 awaiting-operator 2026-09-30: repository half built and verified on dev. New record
   # ops/cs-tracker-cutover.md: the cs-tracker compose change (migrate under a profile, off app's depends_on, both on
   # estate-postgres) as an exact diff for the Operator to land there, and the move: dump of cs_tracker_prod restored

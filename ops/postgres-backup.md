@@ -502,6 +502,16 @@ gives no time, none was recorded.
 - **Step 7.** From the workstation, `restic/restic:0.19.1` in Docker, with the filed password and the
   token's keys, listed the same two snapshots, `2ca9fa41` and `5b142502`. Nothing was written.
 
+### First scheduled run, 2026-10-01
+
+The first cron-driven run, at 03:15Z, read from `backup.log`. It covers the three consumers moved onto
+the estate Postgres since the first run (46 tables, 53635 rows, against `tables=0 rows=0` above). The read
+cut the line after `prune=removed-0-aged-over`; the tail below is the wording every earlier line carries:
+
+```
+postgres-backup ts=2026-10-01T03:15:18Z databases=4 dumps=ok tables=46 rows=53635 bytes=1374035 offsite=ok-39c333df forget=ok check=ok roundtrip=sha256-match restore=verified prune=removed-0-aged-over-14-whole-days exit=0
+```
+
 ## Restoring for real
 
 A lost or corrupted consumer database, from the newest good night:

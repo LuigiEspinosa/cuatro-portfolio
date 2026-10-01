@@ -625,6 +625,9 @@ committed on `dev`.** The Operator runs it and dates Pending Operator actions 10
 Origin Rule has sent `library.cuatro.dev` to Traefik since 00:04:56Z. Step 6, the 03:45Z backup line of
 the night after, has not yet been read. Readings in § Cutover run, library.cuatro.dev.
 
+**Amended 2026-10-01:** step 6 read green at 03:49Z, the 03:45:01Z line below in § Cutover run,
+library.cuatro.dev. Story 4-9 is done.
+
 **Why here and not in `ops/traefik-cutover.md` or a new `ops/library-cutover.md`.** Decision, Story
 4-9, the Operator may overrule. This record is the only one that owns `digital-library`'s operations:
 its store, its backup job, its restore procedure and the cron line the move is verified against. The
@@ -895,7 +898,7 @@ can cause, § The restore procedure applies, and it never unpacks over the live 
 the orchestrating session with the Operator present.** Steps 1 to 5 as written above; nothing differed,
 so nothing stopped the run, and the rollback was neither needed nor run. No `digital-library` container
 was touched, and nothing in that repository changed. `library.cuatro.dev` is served by Traefik through an
-Origin Rule since 00:04:56Z; Caddy's block remains, unreached, until Story 4.11. Step 6 is pending.
+Origin Rule since 00:04:56Z; Caddy's block remains, unreached, until Story 4.11. Step 6 was read at 03:49Z and is green.
 
 **Preconditions.** `ops/traefik-cutover.md` § The sequence ran and is recorded (§ Cutover run), with the
 `library.cuatro.dev` pairs matching at its step 5. `main` at `f9ea578` carries both of Story 4-9's
@@ -910,8 +913,8 @@ the API's JSON where the steps name `jq`. The run sat outside 03:40 to 04:00 UTC
 | 3 | 00:04:50Z | The request loop started on the workstation and ran to 00:14:08Z: 228 lines, each request with a unique URL |
 | 4 | 00:04:56Z | The entrypoint read answered `success` `true`, so the rule was added to the existing ruleset with the `POST`: `success` `true`, `errors` `[]`. Rule `041740b5be6f41e588bbbc41f2af4e81`, description `Story 4-9: library.cuatro.dev to Traefik on 8443`; the ruleset then held six rules. At 00:05:08Z from the workstation: `/login` HEAD `200`, no `via`; `/` `302`, `location: /login`, no `via`; `/api/health` `200`, `"book_count":0`, `referrer-policy: no-referrer` once, no `via`; `/files/probe-<ts>.epub` `404`, no `via`. Box at 00:05:05Z: load `0.39, 0.37, 0.34`; `ESTABLISHED` on 8443 `16` (baseline `11`) |
 | 5 | 00:14:29Z | The counts below. Monitor 803750025 `UP` at 00:14Z (45d 14h 17m, no incident), two five-minute intervals after the rule. Box at 00:14:26Z: load `0.19, 0.20, 0.25` |
-| 6 | _pending_ | To be read after 2026-10-01T03:45Z, as `deploy`: `grep "^library-backup ts=2026-10-01T03:4" /home/deploy/backups/digital-library/backup.log` must print one line reading `redis=empty`, `offsite=ok-...`, `roundtrip=sha256-match`, `restore=verified` and `exit=0`, and monitor 803750025 still `UP`. Pending Operator action 11 |
-| 7 | 2026-10-01 | This record, and the dated amendments to `ops/routing-inventory.md` § Ingress and `ops/estate.md`; step 6's line is added here when it is read |
+| 6 | 03:49:00Z | As `deploy`, `grep "^library-backup ts=2026-10-01T03:4" /home/deploy/backups/digital-library/backup.log` printed exactly one line, the 03:45:01Z run below: `redis=empty`, `offsite=ok-digital-library/library-20261001T034501Z.tar.gz.gpg`, `roundtrip=sha256-match`, `restore=verified`, `exit=0`. Its `prune=removed-1-aged-over-14-whole-days` is the ordinary local window. Box load `0.06, 0.15, 0.18`. Monitor 803750025 `UP` at 03:49Z (45d 17h, no incident) |
+| 7 | 2026-10-01 | This record, and the dated amendments to `ops/routing-inventory.md` § Ingress and `ops/estate.md`; step 6's line added at 03:49Z |
 
 Step 2's summary line. The object key `digital-library/library-20261001T000413Z.tar.gz.gpg` and the local
 archive beside it are the copies this move stands on, kept 30 and 15 days by § Retention:
@@ -930,6 +933,12 @@ Step 5's counts over the loop's 228 lines:
 The last `caddy` line is 00:04:56Z and the first `no-via` line 00:04:59Z, both inside the minute after the
 rule was created at 00:04:56Z, which step 5 reads as the rule reaching every edge location; no `caddy`
 line follows. So no finding, and nothing was rolled back.
+
+Step 6's line, the first scheduled run after the move, read at 03:49Z:
+
+```
+library-backup ts=2026-10-01T03:45:01Z snapshot=ok own=ok integrity=ok objects=23 archive=library-20261001T034501Z.tar.gz.gpg tar=first-attempt bytes=3352 encrypt=aes256 size=within-ceiling redis=empty offsite=ok-digital-library/library-20261001T034501Z.tar.gz.gpg roundtrip=sha256-match restore=verified prune=removed-1-aged-over-14-whole-days exit=0
+```
 
 ## Named limits
 
@@ -1019,7 +1028,7 @@ them from the evidence each cell names. Row 9 is new, from the same review.
 | 8 | **Record the result.** Paste action 6's summary line into this file under a new "First offsite run" heading with its UTC date, replace the projected object size in "The destination and its cost" with the measured one, note action 7's outcome, and change named limits 1, 2 and 5 to describe the state that now holds | The record is the artifact. A backup path nobody wrote down is one nobody can audit | 2026-08-27. "First offsite run", the measured size and named limits 1, 2 and 5 |
 | 9 | **Install the 2026-09-24 scripts on the box.** After the `dev` into `main` merge that carries them has deployed, as `deploy` on `177.7.52.248`, in the checkout the deploy maintains. (1) `cd /home/deploy/cuatro-portfolio && sha256sum ops/s3-object.sh ops/library-backup.sh ops/library-restore-verify.sh` must print the Committed column above; stop here if it does not. (2) Keep the installed copies, never overwriting one a retry already kept: `for f in s3-object.sh library-backup.sh library-restore-verify.sh; do [ -e /usr/local/sbin/$f.pre-2026-09-24 ] \|\| sudo cp -p /usr/local/sbin/$f /usr/local/sbin/$f.pre-2026-09-24; done`. (3) Install all three or stop at the first failure: `( set -e; for f in s3-object.sh library-backup.sh library-restore-verify.sh; do sudo install -o root -g root -m 0755 ops/$f /usr/local/sbin/$f; done )`. (4) `sha256sum /usr/local/sbin/s3-object.sh /usr/local/sbin/library-backup.sh /usr/local/sbin/library-restore-verify.sh` must print the same three. (5) `/usr/local/sbin/s3-object.sh selftest` must end `matches byte for byte`. (6) One run in the cron shape of action 6 must exit **0** with `roundtrip=sha256-match` and `restore=verified`. **If any of steps 3 to 6 fails**, put all three old copies back with `for f in s3-object.sh library-backup.sh library-restore-verify.sh; do sudo install -o root -g root -m 0755 /usr/local/sbin/$f.pre-2026-09-24 /usr/local/sbin/$f; done`, confirm with `sha256sum` that the box again matches the Installed column, and record the failure here | The cold review of Story 1-8 changed all three in the repository (see "What is installed on the box"): the signing no longer puts key material in argv, and the two timeouts a config sets now reach the object client, and a zero is refused. Until this row is done the box runs the 2026-08-24 install. Afterwards, write the three installed digests and the date into the Installed column, paste the run's summary line under a dated heading, date this cell, and delete the `.pre-2026-09-24` copies | _not done_ |
 | 10 | **Move `library.cuatro.dev` onto Traefik.** Run § Moving library.cuatro.dev onto Traefik (Story 4-9) steps 1 to 5 as written, after its preconditions: `ops/traefik-cutover.md` Pending actions 1 to 4 dated, the merge carrying Story 4-9 deployed, and the origin-rules token of `ops/settled-inputs-refresh.md` Pending action 4. Step 2 must print the green summary line and `counts-match` before step 4 creates the rule | A routing move: no step writes to the store, and deleting the rule (the section's rollback) sends the hostname back to Caddy. Ran from 00:04Z with the Operator present, the rule created at 00:04:56Z: § Cutover run, library.cuatro.dev | 2026-10-01 |
-| 11 | **Read the next night's backup and record the move.** Step 6 after 03:45 UTC the following day, then step 7: the "Cutover run, library.cuatro.dev" heading here, and the dated amendments to `ops/routing-inventory.md` § Ingress and `ops/estate.md`. Date rows 10 and 11 | The nightly line is the proof that the backup path still works after the move, which is Story 4.9's acceptance intent. **2026-10-01:** step 7's record and both amendments are written; step 6 is the one part left, read after 2026-10-01T03:45Z, its line then added to § Cutover run, library.cuatro.dev | _not done_ |
+| 11 | **Read the next night's backup and record the move.** Step 6 after 03:45 UTC the following day, then step 7: the "Cutover run, library.cuatro.dev" heading here, and the dated amendments to `ops/routing-inventory.md` § Ingress and `ops/estate.md`. Date rows 10 and 11 | The nightly line is the proof that the backup path still works after the move, which is Story 4.9's acceptance intent. **2026-10-01:** step 7's record and both amendments are written; step 6 is the one part left, read after 2026-10-01T03:45Z, its line then added to § Cutover run, library.cuatro.dev. Read at 03:49Z, the 03:45:01Z line green, monitor 803750025 `UP` | 2026-10-01 |
 
 **Maintaining this file.** When an action is performed, replace the cell with the ISO 8601 UTC
 completion date and leave the row in place. Deletion is not used: which part of the path was
