@@ -9424,3 +9424,24 @@ status: done
     `ops/cs-tracker-cutover.md`, the library's) for a compose command against this checkout's
     `docker-compose.yml` without `HUB_TAG` exported, and fix any before it runs.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-8-migrate-tracker-cuatro-dev.md`
+  id: DW-311
+  summary: >-
+    The Operator observed `tracker.cuatro.dev`'s sign-in accepting any password; the cause is not
+    established, and the tracker's authentication has not been checked against it.
+  evidence: |-
+    Found 2026-09-30 by Story 4-8's box run (`ops/tracker-cutover.md` § Estate Postgres move run,
+    2026-09-30, step 11): the Operator signed in at `https://tracker.cuatro.dev` on the moved database,
+    saw the library, and observed that the sign-in accepted any password. Nothing in the move touches
+    authentication: the image is `5117673`, the one the 2026-09-29 cutover placed, and the move changed the
+    database URL and its password only. Not reproduced or diagnosed here. `apps/tracker/lib/auth.ts` `authorizeCredentials`
+    reads as a `bcrypt.compare` against the stored hash, so the first question is whether the observation
+    was a real credential check at all (an existing NextAuth session cookie, a redirect that never posted
+    the form) or a path that bypasses that function.
+
+    **Owner: Story 4.11, or the Operator's planned clean start (the Operator said on 2026-10-01 that every
+    application's data is wiped for a clean start after this project); the Operator confirms which.**
+    **Trigger: before any real user signs in to the tracker.** Reproduce with a fresh browser profile and a
+    wrong password; if it signs in, find the path and fix it with a regression test in
+    `apps/tracker/__tests__/`.
+  status: open

@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-30-2026 18:40
+last_updated: 10-01-2026 00:05
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -952,7 +952,16 @@ development_status:
   # the Operator's, ops/tracker-cutover.md § Moving the database onto the estate Postgres steps 1 to 14 and
   # § Pending Operator actions 5 to 8, after the 4-4 placement, the 4-5 install and, for the hostname, 4-2 and
   # 4-6. DW-275 (per-id deploy) not in this run's scope, still open.
-  4-8-migrate-tracker-cuatro-dev: awaiting-operator
+  # 4-8 done 2026-10-01: box half ran from 2026-09-30T23:53Z to 2026-10-01T00:02Z with the Operator present.
+  # Action 7 removed the dangling volume 7f76c782... first. FROZE 23:54:51Z; tracker-backup and restore-verify exit=0
+  # (tables=9 rows=12), pg_restore exit=0, counts-match and counts-match-dump, tracker-migrate a no-op; docker rollout
+  # put cuatro-portfolio-tracker-2 on estate-postgres/cuatro_tracker?connection_limit=4, old-unchanged, the 70 line
+  # probe 200 alone. Origin Rule 1ee043e45b2d46619c9881d2ae005902 moved tracker.cuatro.dev onto Traefik at
+  # 00:00:30Z; the 80 line probe 200 alone; the monitor reading after a full interval to be confirmed. Readings in
+  # ops/tracker-cutover.md § Estate Postgres move run, 2026-09-30; Pending actions 6 to 8 dated. Action 5 (confirm
+  # or overrule the decisions) stays open: nothing overruled, an explicit word awaited. The Operator saw the
+  # sign-in accept any password: DW-311, against apps/tracker authentication, before any real user.
+  4-8-migrate-tracker-cuatro-dev: done
   # 4-9 awaiting-operator 2026-09-30: repository half built and verified on dev. A routing move: the SQLite bind
   # mount and the Redis volume stay in place, no compose change and no digital-library diff. The rehearsal with the
   # real digital-library images corrected two things in ops/traefik/: the API router keeps the API's own

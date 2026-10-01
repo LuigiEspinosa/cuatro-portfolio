@@ -623,6 +623,14 @@ dials `anchor-umami:3000`, the upstream Caddy's block names. Caddy's `analytics.
 remains, unreached, until Story 4.11; deleting the rule sends the hostname back to it. Readings in
 `ops/postgres.md` § Umami move run, 2026-09-30.
 
+**Amended 2026-10-01 (Story 4-8):** `tracker.cuatro.dev` is served by Traefik through a Cloudflare Origin
+Rule since 2026-10-01T00:00Z. The same entrypoint (ruleset `518ad07108bc402fa36ad71fe1e76862`) gained rule
+`1ee043e45b2d46619c9881d2ae005902` at 00:00:30Z, sending `(http.host eq "tracker.cuatro.dev" and ssl)` to
+origin port 8443, where Traefik's `cuatro-tracker` router dials `http://cuatro-app:3000`, the upstream Caddy's block
+names; the ruleset now holds five rules (wheel, www, apex, analytics, tracker). Caddy's
+`tracker.cuatro.dev` block below remains, unreached, until Story 4.11; deleting the rule sends the hostname
+back to it. Readings in `ops/tracker-cutover.md` § Estate Postgres move run, 2026-09-30.
+
 ### The site blocks, as installed
 
 **Amended 2026-09-30:** an eighth block, `tournament.cuatro.dev`, was appended to

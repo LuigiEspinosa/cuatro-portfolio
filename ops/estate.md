@@ -345,6 +345,15 @@ is served by Traefik through a Cloudflare Origin Rule (ruleset `518ad07108bc402f
 `71197cf5c82d48ca80bddc5d5a89d23a`) since 23:36Z. `anchor-db` and Caddy's `analytics.cuatro.dev` block
 remain, unreached by Umami, until Story 4.11. Readings in `ops/postgres.md` § Umami move run, 2026-09-30.
 
+**Amended 2026-10-01 by Story 4-8.** No row changes. The tracker's data is in `cuatro_tracker` on
+`estate-postgres` since 2026-09-30T23:55Z: the server (`cuatro-portfolio-tracker-2`) and the worker reach it
+as role `cuatro_tracker` with `connection_limit=4`, every row of the old store carried over and counted, and
+`tracker-migrate` is the discrete step. `tracker.cuatro.dev` is served by Traefik through a Cloudflare Origin
+Rule (ruleset `518ad07108bc402fa36ad71fe1e76862`, rule `1ee043e45b2d46619c9881d2ae005902`) since
+2026-10-01T00:00Z. Redis and qBittorrent stay in the old `cuatro-tracker` project (DW-306);
+`cuatro-tracker-postgres-1` and Caddy's `tracker.cuatro.dev` block remain, unreached, until Story 4.11.
+Readings in `ops/tracker-cutover.md` § Estate Postgres move run, 2026-09-30.
+
 | Application | Disposition | Status | `absorbed_into` | Registry treatment |
 |---|---|---|---|---|
 | `cuatro-portfolio` | Anchor | `Live` | n/a | The Hub itself; rendered |

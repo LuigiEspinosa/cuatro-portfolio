@@ -578,6 +578,75 @@ else; `echo` prints one 40-character sha.
 **Later rollouts** after the move take the commands of § The sequence above: `tracker-migrate` now
 migrates `cuatro_tracker`, and `docker rollout ... tracker` rolls onto it.
 
+### Estate Postgres move run, 2026-09-30
+
+**Observed from 2026-09-30T23:53Z to 2026-10-01T00:02Z on the box as `deploy`, run by the orchestrator
+with the Operator present; the Operator did the browser steps.** Preconditions, each recorded:
+`ops/postgres.md` § Placement run, 2026-09-30 (step 4 printed `cuatro_tracker cuatro_tracker 20`);
+`ops/postgres-backup.md` § First run; `ops/traefik-cutover.md` § Cutover run and § Cutover run, cuatro.dev
+and www; `main` at `f9ea578` carrying Story 4-8's commits (`30aa927`, `e6ad48a`, `6dcb2bc`), Deploy run
+36779534561; the Origin Rules token on the workstation. `jq` is not in the workstation's Git Bash, so
+`node` parsed the JSON of steps 12 and 14.
+
+- **Step 1**, 23:53:55Z: `HUB_TAG=f9ea578`, `TRACKER_TAG=5117673f3834f9368eecd7fe459bc0ca4ddd5b3c` (40
+  characters, the running server's sha); load average `0.10, 0.29, 0.30`. `cuatro-portfolio-tracker-1 Up 27
+  hours (healthy)`, `cuatro-portfolio-tracker-worker-1 Up 27 hours`, no exited `tracker` container; the
+  source's migrations `11 20260721120000_merge_suggestion_unique_pair`; `0` public tables in the target; the
+  compose grep counted `2`; `docker-rollout version v0.14`. The source database 8015 kB;
+  `CUATRO_TRACKER_DB_PASSWORD` not yet in `.env.production`, `TRACKER_DB_PASS` present. Two dangling
+  volumes: `7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3` (created 2026-09-29T21:05:53Z,
+  no container, `PG_VERSION` 16) and `4fc208dc72207d649d6ae09d4d7cfbc374dca965787537f1cc5869ad92953a49`
+  (created 2026-09-30T08:04:07Z, no container, `PG_VERSION` 17, DW-307's, left alone). From the
+  workstation: `/api/health` 200, `/api/ready` `{"status":"ok","db":"ok","redis":"ok"}`.
+- **Pending action 7**, before step 2: the volume `7f76c782...` read as above (no container, `PG_VERSION`
+  16) and was removed; `docker volume ls` no longer lists it.
+- **Step 2**: `CUATRO_TRACKER_DB_PASSWORD` appended to `.env.production` without printing, count `1`.
+- **Step 3**: `/home/deploy/pg-move/tracker-rollback.yml` written; the two counts `1` and `1`.
+- **Step 4**: the request loop ran on the workstation from 23:54:54Z to 23:56:35Z, 70 lines.
+- **Step 5**: `tracker-worker` stopped, **`FROZE=2026-09-30T23:54:51Z`**; load average `0.36, 0.31, 0.31`.
+  The Operator wrote nothing in the tracker during the window.
+- **Step 6**: dangling volumes before `1` (DW-307's). `ops/tracker-backup.sh`:
+  `tracker-backup file=/home/deploy/backups/cuatro-tracker/tracker-20260930T235451Z.dump dump=ok list=ok
+  tables=9 rows=12 bytes=22310 sha256=6e82df4ccb731bbecce7cb8029048737f37f5f77c0db3fcc3fabb299859dfec3
+  exit=0`. `ops/tracker-restore-verify.sh`: `tracker-restore-verify sha256=match restore=ok tables=9
+  rows=12 migrations=11-applied-0-pending exit=0`. Dangling volumes after `1`, unchanged. The three files
+  were copied to the workstation by `scp`, and the dump's sha256 matched there.
+- **Step 7**: `pg_restore` `exit=0`.
+- **Step 8**: `counts-match` and `counts-match-dump`.
+- **Step 9**: `tracker-migrate` printed `Datasource "db": PostgreSQL database "cuatro_tracker", schema
+  "public" at "estate-postgres:5432"` and `No pending migrations to apply.`, exit 0; load average `0.41,
+  0.33, 0.31` at 23:54:58Z.
+- **Step 10 started about a minute late, an orchestration fault and not a runbook defect.** The script was
+  piped into `ssh` over stdin, where `docker rollout` would have read the script's remaining lines as its
+  own input, so step 10 was run from a file on the box at 23:55:3xZ. The server kept serving on the old
+  database meanwhile, and the worker stayed stopped.
+- **Step 10**: `docker rollout --env-file .env.production --timeout 120 tracker` exit 0 ("Stopping and
+  removing old containers"); the new container `/cuatro-portfolio-tracker-2` `healthy`, its environment
+  `@estate-postgres:5432/cuatro_tracker?connection_limit=4`. `tracker-worker` started, `worker.ready` count
+  `1`, its environment the same `@estate-postgres:5432/cuatro_tracker?connection_limit=4`. `old-unchanged`
+  (the old store equals the dump's counts). At 23:55:55Z: `tracker-worker-1 Up 10 seconds`, `tracker-2 Up
+  16 seconds (healthy)`; load average `0.77, 0.42, 0.35`.
+- **Step 11**, 23:56:56Z: the 70 probe lines counted `200` alone. `/api/ready` answered 200 with `db ok`
+  and `redis ok`, `via: 1.1 Caddy`. The monitor 803750023 read `UP` (45d 13h, no incident). The Operator
+  signed in at `https://tracker.cuatro.dev` and saw the library, and observed that the sign-in accepted
+  any password (DW-311; nothing in this move touches authentication).
+- **Step 12**, 00:00:05Z on 2026-10-01: Traefik on 8443 answered `/api/health` 200; load average `0.17,
+  0.32, 0.33`. The request loop ran from 00:00:16Z to 00:02:14Z, 80 lines. The rule was added to ruleset
+  `518ad07108bc402fa36ad71fe1e76862` at **`MOVED=2026-10-01T00:00:30Z`**: rule
+  **`1ee043e45b2d46619c9881d2ae005902`**, "Story 4-8: tracker.cuatro.dev to Traefik on 8443", `true` and
+  `[]`. The ruleset then held five rules: wheel, www, apex, analytics and tracker. At 00:00:50Z:
+  `/api/health` `HEAD` 200 with no `via` line, `/api/ready` 200 with `db ok` and `redis ok` and no `via`
+  line, `/` 307 to `/login?callbackUrl=%2F` with no `via` line. On the box at 00:00:46Z: load average
+  `0.13, 0.29, 0.32`, and Traefik's `ESTABLISHED` count 11.
+- **Step 13**, 00:02:35Z: the 80 probe lines counted `200` alone. The monitor 803750023's reading after a
+  full interval on the new path is to be confirmed.
+
+Rollbacks R1 and R2 were not needed and not run. `/home/deploy/pg-move` holds `tracker-rollback.yml`,
+`TRACKER_FROZE`, `TRACKER_DUMP`, `tracker-backup.out`, `tracker-verify.out`, `tracker-migrate.log` and
+`tracker-rollout.log`; the dump and its two files stay in `/home/deploy/backups/cuatro-tracker/` until
+Story 4.11. Redis and qBittorrent stay in the `cuatro-tracker` project (DW-306), and
+`cuatro-tracker-postgres-1` and Caddy's `tracker.cuatro.dev` block remain, unreached, until Story 4.11.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -586,10 +655,10 @@ migrates `cuatro_tracker`, and `docker rollout ... tracker` rolls onto it.
 | 2 | **Merge Epic 3 into `main`** and let the deploy run | The compose services and both scripts reach the box only this way. PR #84 merged as `5117673`; the dispatch run 36627964371 was the deploy that put the checkout and the scripts on the box (`ops/contract-serving.md` action 11) | 2026-09-29T20:41:37Z |
 | 3 | **Run steps 1 to 8 above**, on a day the Operator can watch the probe | Step 2's two exit codes and summary lines, step 7's count and step 1's two files go into this record. Done: § Cutover run | 2026-09-29T21:34:15Z |
 | 4 | **Archive `cuatro-tracker`** once action 3 has held for a week | DW-285 then writes `absorbed_into` and moves `source` to the Anchor (AD-6); Story 3.8 left it there, no source repository being archived on 2026-09-29. The box's `/home/deploy/cuatro-tracker` checkout stays: it runs the stores until Story 4.8. **Operator ruling 2026-09-29:** archived the same evening rather than a week later, the Operator judging the week unnecessary because the rollback reads nothing from GitHub (the old project's checkout and images stay on the box) and an archive is reversible; `gh repo archive`, kept public, the new containers healthy 45 minutes after the switch. DW-285 then wrote `absorbed_into: cuatro-portfolio` and moved `source` to `https://github.com/LuigiEspinosa/cuatro-portfolio/tree/main/apps/tracker` in Registry 1.6.0 the same day | 2026-09-29T21:53:16Z |
-| 5 | **Confirm or overrule Story 4-8's decisions** in § Moving the database onto the estate Postgres: Redis and qBittorrent staying in the old project (DW-306), the worker-only freeze with the Operator writing nothing for the window, the move by `docker rollout`, data before hostname, the override-file rollback, rows written after step 11 not carried back by R2 (kept in `cuatro_tracker-after-r2.dump`), `connection_limit=4`, this record | The Story 4-8 spec's Design Notes carry the reasoning | _not done_ |
-| 6 | **Merge the commit carrying Story 4-8 into `main`** and let the Deploy run | It rolls the Hub alone. From then until § Moving the database step 10, no tracker `up` or rollout from the plain file (the bold note in that section) | _not done_ |
-| 7 | **Remove the restored copy the 2026-09-29 verification left**: the dangling volume `7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3`, created 2026-09-29T21:05:53Z | Read first: `docker ps -a --filter volume=7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3` prints no container, and `docker run --rm -v 7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3:/v:ro alpine ls /v` lists a Postgres data directory. Then `docker volume rm 7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3`. A copy of a restore, never the only copy: the live database and the dump stay | _not done_ |
-| 8 | **Run § Moving the database onto the estate Postgres, steps 1 to 14**, after `ops/postgres.md` action 3 and `ops/postgres-backup.md` § Install and first run; steps 12 and 13 also after `ops/traefik-cutover.md` actions 4 and 6 and the origin rules token | Step 14 amends `ops/routing-inventory.md` and `ops/estate.md` | _not done_ |
+| 5 | **Confirm or overrule Story 4-8's decisions** in § Moving the database onto the estate Postgres: Redis and qBittorrent staying in the old project (DW-306), the worker-only freeze with the Operator writing nothing for the window, the move by `docker rollout`, data before hostname, the override-file rollback, rows written after step 11 not carried back by R2 (kept in `cuatro_tracker-after-r2.dump`), `connection_limit=4`, this record | The Story 4-8 spec's Design Notes carry the reasoning. The Operator was present for the move on 2026-09-30 and overruled nothing; an explicit word is awaited, so the row stays open | _not done_ |
+| 6 | **Merge the commit carrying Story 4-8 into `main`** and let the Deploy run | It rolls the Hub alone. From then until § Moving the database step 10, no tracker `up` or rollout from the plain file (the bold note in that section). PR #88 merged as `f9ea578`, and Deploy run 36779534561 ran | 2026-09-30T21:27Z |
+| 7 | **Remove the restored copy the 2026-09-29 verification left**: the dangling volume `7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3`, created 2026-09-29T21:05:53Z | Read first: `docker ps -a --filter volume=7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3` prints no container, and `docker run --rm -v 7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3:/v:ro alpine ls /v` lists a Postgres data directory. Then `docker volume rm 7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3`. A copy of a restore, never the only copy: the live database and the dump stay. Done before step 2 of § Estate Postgres move run, 2026-09-30 | 2026-09-30 |
+| 8 | **Run § Moving the database onto the estate Postgres, steps 1 to 14**, after `ops/postgres.md` action 3 and `ops/postgres-backup.md` § Install and first run; steps 12 and 13 also after `ops/traefik-cutover.md` actions 4 and 6 and the origin rules token | Step 14 amends `ops/routing-inventory.md` and `ops/estate.md`. Done: § Estate Postgres move run, 2026-09-30, ending 2026-10-01T00:02Z | 2026-09-30 |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.

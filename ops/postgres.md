@@ -334,7 +334,9 @@ cover this instance first**, since a moved database otherwise has no backup at a
 
 **Story 4-8, 2026-09-30:** the tracker's move is written in `ops/tracker-cutover.md` § Moving the database
 onto the estate Postgres, the record that owns the tracker's placement; it restores the dump
-`ops/tracker-backup.sh` wrote and `ops/tracker-restore-verify.sh` proved, rather than a second one.
+`ops/tracker-backup.sh` wrote and `ops/tracker-restore-verify.sh` proved, rather than a second one. The
+move ran from 2026-09-30T23:53Z to 2026-10-01T00:02Z: `ops/tracker-cutover.md` § Estate Postgres move run,
+2026-09-30.
 
 **Story 4-10, 2026-09-30:** `cs-tracker`'s move is written in `ops/cs-tracker-cutover.md` § The sequence,
 a record of its own, since no record here owned how `cs-tracker` runs. It counts every table but Oban's
