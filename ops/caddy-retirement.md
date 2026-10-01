@@ -135,7 +135,7 @@ the 8443 instance (service `traefik`, Story 4-2's) keeps serving every rule; the
 at a time, each hostname moving from one Traefik to the other with both answering; and the 8443 instance
 stops last. `docker compose up` names it an orphan and leaves it running (§ Rehearsed off the box).
 
-Two consequences, both deliberate:
+Three consequences, all deliberate:
 
 - **The dashboard moves to loopback 8081.** The 8443 instance holds `127.0.0.1:8080` until step 7, so the
   new one cannot bind it; recreating the new instance later to take 8080 back would be a second handover
@@ -143,6 +143,11 @@ Two consequences, both deliberate:
 - **The service is named `ingress`, not `traefik`.** Two services of one project need two names. The
   container is `traefik-ingress-1`; the project, its network and its `traefik_acme` volume keep their names,
   so the scratch certificate carries over without a new issuance.
+- **From step 4 to step 7 both instances mount the same `traefik_acme` and its `/acme/acme.json`.** Nothing
+  coordinates two writers of that file, so the window must hold no write: its one certificate is the scratch
+  hostname's, `notAfter` 2026-12-29, which Traefik renews only once thirty days remain, so not before
+  2026-11-29, and the window is one session. Run steps 4 to 7 before 2026-11-29; later, read
+  `docker logs traefik-traefik-1 2>&1 | grep -ci acme` first and stop the 8443 instance before a renewal is due.
 
 **The one gap left is plain HTTP**, between Caddy's stop and `ingress` binding 80: about a second in the
 rehearsal (the 443 column failed on two lines and the 80 column on one). Only plaintext requests, which receive a redirect,
@@ -252,6 +257,58 @@ and `*.cuatro.dev` in a volume named `cs-tracker_caddy_data` and the same pair i
 `tls internal`; this commit's `ops/traefik/`; and an override sending Let's Encrypt's hostname to loopback,
 so no account was registered. A request loop ran across the whole sequence, one line every 0.2 seconds plus
 the requests' own time, each line `cuatro.dev` over https on 8443, over https on 443, and over http on 80.
+
+To re-run the handover, from the repository root in Git Bash (re-run 2026-10-01 at 03:32Z; every line it
+printed matched the block below, minus the request loop, the rollback rehearsal, steps 9 and 10 and the
+archive helpers, which this shorter form does not run; a volume stands for `/home/deploy/origin-ca`):
+
+```bash
+docker network create cs-tracker_default && docker volume create cs-tracker_caddy_data && docker volume create origin-ca-stand-in
+MSYS_NO_PATHCONV=1 docker run --rm -v cs-tracker_caddy_data:/data -v origin-ca-stand-in:/home alpine:3 sh -c 'apk add -q openssl && mkdir /data/origin-ca && openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=throwaway-origin -addext "subjectAltName=DNS:cuatro.dev,DNS:*.cuatro.dev" -keyout /data/origin-ca/origin.key -out /data/origin-ca/origin.pem && cp /data/origin-ca/origin.* /home/'
+for a in anchor-app:3000 anchor-umami:3000 app:4000 cuatro-app:3000 library-web:3000 library-api:4000 list-wheel:80 tournament:3000; do
+  docker run -d --name "stand-in-${a%%:*}" --network cs-tracker_default --network-alias "${a%%:*}" traefik/whoami:v1.11 --port "${a##*:}" --name "${a%%:*}"
+done
+# Caddy holding 80 and 443, as on the box today.
+MSYS_NO_PATHCONV=1 docker run -d --name stand-in-caddy -p 80:80 -p 443:443 caddy:2 sh -c 'printf "{\n local_certs\n}\ncuatro.dev, *.cuatro.dev {\n respond caddy 200\n}\n" > /etc/caddy/Caddyfile && exec caddy run --config /etc/caddy/Caddyfile'
+# Story 4-2's 8443 instance, from the commit before this story, and this story's files; one throwaway `.env` each.
+O=$(mktemp -d) && git archive 04ab448 ops/traefik | tar -x -C "$O"
+for d in "$O/ops/traefik" ops/traefik; do
+  install -m 600 /dev/null "$d/.env"
+  printf "TRAEFIK_DASHBOARD_USERS='operator:%s'\nCF_DNS_API_TOKEN=throwaway\n" "$(openssl passwd -apr1 throwaway)" >> "$d/.env"
+done
+printf 'services:\n  traefik:\n    extra_hosts: ["acme-v02.api.letsencrypt.org:127.0.0.1"]\n' > "$O/ops/traefik/offline.yml"
+printf 'services:\n  ingress:\n    extra_hosts: ["acme-v02.api.letsencrypt.org:127.0.0.1"]\n' > ops/traefik/offline.yml
+OLD="docker compose -f $O/ops/traefik/compose.yml -f $O/ops/traefik/offline.yml"
+T='docker compose -f ops/traefik/compose.yml -f ops/traefik/offline.yml'
+$OLD up -d --wait
+# step 3, with a volume standing for /home/deploy/origin-ca.
+docker volume create traefik-origin-ca
+MSYS_NO_PATHCONV=1 docker run --rm --entrypoint sh -v origin-ca-stand-in:/src:ro -v cs-tracker_caddy_data:/caddy:ro -v traefik-origin-ca:/dst traefik:v3.7.13 -c \
+  'cmp /src/origin.pem /caddy/origin-ca/origin.pem && cmp /src/origin.key /caddy/origin-ca/origin.key && cp /src/origin.pem /src/origin.key /dst/ && chmod 644 /dst/origin.pem && chmod 600 /dst/origin.key && cmp /src/origin.pem /dst/origin.pem && cmp /src/origin.key /dst/origin.key && echo pair-equal && ls -l /dst | tail -n +2'
+# step 4.
+docker stop stand-in-caddy && $T up -d --wait
+docker ps --filter label=com.docker.compose.project=traefik --format '{{.Names}} {{.Status}} {{.Ports}}'
+# step 5: each path on the 8443 instance against ingress on 443, then plain HTTP on 80.
+for u in cuatro.dev/ 'www.cuatro.dev/some/path?q=1' analytics.cuatro.dev/ cs-tracker.cuatro.dev/ tracker.cuatro.dev/ library.cuatro.dev/ library.cuatro.dev/api/x library.cuatro.dev/files/y wheel.cuatro.dev/ tournament.cuatro.dev/; do
+  h=${u%%/*}; p=/${u#*/}
+  for port in 8443 443; do echo "$u $port $(curl -sk -o /dev/null -w '%{http_code}' --resolve "$h:$port:127.0.0.1" "https://$h:$port$p") $(curl -sk --resolve "$h:$port:127.0.0.1" "https://$h:$port$p" | grep ^Name)"; done
+done
+for m in '' '-I' '-X POST'; do echo "${m:-GET} $(curl -s -o /dev/null -D - $m --max-time 5 --resolve cuatro.dev:80:127.0.0.1 'http://cuatro.dev/some/path?q=1' | tr -d '\r' | awk 'NR==1 {c=$2} tolower($1)=="location:" {l=$2} END {print c, l}')"; done
+echo | openssl s_client -connect 127.0.0.1:443 -servername tracker.cuatro.dev 2>/dev/null | openssl x509 -noout -subject
+curl -sk -D - -o /dev/null --resolve cuatro.dev:443:127.0.0.1 https://cuatro.dev/ | tr -d '\r' | grep -E '^(Referrer-Policy|X-Content-Type-Options|X-Frame-Options):'
+curl -s -o /dev/null -w 'dashboard 8081, no credentials %{http_code}\n' http://localhost:8081/dashboard/
+curl -s -o /dev/null -w 'dashboard 8081, credentials %{http_code}\n' -u operator:throwaway http://localhost:8081/dashboard/
+echo "routers $(curl -s -u operator:throwaway http://localhost:8081/api/http/routers | grep -o '"status":"enabled"' | wc -l)"
+echo "ingress log error lines: $(docker logs traefik-ingress-1 2>&1 | grep -cE 'level=error|ERR ')"
+# step 7: stop the 8443 instance; 443 and 80 keep answering.
+docker stop traefik-traefik-1
+curl -sk -o /dev/null -w 'after the stop, 443 %{http_code}\n' --resolve cuatro.dev:443:127.0.0.1 https://cuatro.dev/
+curl -s -o /dev/null -w 'after the stop, 80 %{http_code}\n' --resolve cuatro.dev:80:127.0.0.1 http://cuatro.dev/
+# Remove everything; `git status --short` prints nothing afterwards.
+$T down; $OLD down -v; rm -rf "$O" ops/traefik/.env ops/traefik/offline.yml
+docker rm -f $(docker ps -aq --filter name=stand-in-)
+docker volume rm traefik-origin-ca origin-ca-stand-in cs-tracker_caddy_data && docker network rm cs-tracker_default
+```
 
 ```
 ## step 3: the origin pair into Traefik's own volume
@@ -854,7 +911,9 @@ environment, so neither is typed or printed; `NEWQ` connects as `postgres`, whic
     commits, and each removal. Then date each Pending Operator action, and take the dated amendments the
     records name for this run: `ops/routing-inventory.md` (§ Ingress, § The routers, § The shared network,
     § Backup coverage, per project, and the hostname table each name the sentence that changes when it
-    runs), `ops/estate.md`, `ops/known-violations.md` KV-1, `ops/monitoring.md`'s "What terminates TLS" row
+    runs; also § What each compose project actually runs, whose `cs-tracker` heading names `caddy` and `db`,
+    § Scheduled work on the box, whose 03:30 `cuatro-backup.sh` line step 13 retires, and § How to re-gather
+    this record, 6, whose procedure reads `cs-tracker-caddy-1`, rewritten for `traefik-ingress-1`), `ops/estate.md`, `ops/known-violations.md` KV-1, `ops/monitoring.md`'s "What terminates TLS" row
     (Traefik v3.7.13, `traefik-ingress-1`), `ops/traefik-cutover.md` (§ Rollback to Caddy, whole, retired by
     this run; the dashboard tunnel on 8081), and `ops/postgres.md` (the three old stores retired). Close DW-296
     and file what the run found.
