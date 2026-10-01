@@ -354,6 +354,15 @@ Rule (ruleset `518ad07108bc402fa36ad71fe1e76862`, rule `1ee043e45b2d46619c9881d2
 `cuatro-tracker-postgres-1` and Caddy's `tracker.cuatro.dev` block remain, unreached, until Story 4.11.
 Readings in `ops/tracker-cutover.md` § Estate Postgres move run, 2026-09-30.
 
+**Amended 2026-10-01 by Story 4-9.** No row changes. `digital-library`'s store did not move: the SQLite tree
+is still the bind mount `/home/deploy/digital-library/data`, Redis still the volume
+`digital-library_redis_data`, and no container was touched. `library.cuatro.dev` is served by Traefik
+through a Cloudflare Origin Rule (ruleset `518ad07108bc402fa36ad71fe1e76862`, rule
+`041740b5be6f41e588bbbc41f2af4e81`) since 2026-10-01T00:04Z, both its paths through Traefik's own routers,
+after a backup and restore proved against the live counts minutes before. Caddy's `library.cuatro.dev` block
+remains, unreached, until Story 4.11. Readings in `ops/backup-digital-library.md` § Cutover run,
+library.cuatro.dev.
+
 | Application | Disposition | Status | `absorbed_into` | Registry treatment |
 |---|---|---|---|---|
 | `cuatro-portfolio` | Anchor | `Live` | n/a | The Hub itself; rendered |

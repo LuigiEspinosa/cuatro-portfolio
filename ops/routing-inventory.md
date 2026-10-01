@@ -631,6 +631,15 @@ names; the ruleset now holds five rules (wheel, www, apex, analytics, tracker). 
 `tracker.cuatro.dev` block below remains, unreached, until Story 4.11; deleting the rule sends the hostname
 back to it. Readings in `ops/tracker-cutover.md` § Estate Postgres move run, 2026-09-30.
 
+**Amended 2026-10-01 (Story 4-9):** `library.cuatro.dev` is served by Traefik through a Cloudflare Origin
+Rule since 2026-10-01T00:04Z. The same entrypoint (ruleset `518ad07108bc402fa36ad71fe1e76862`) gained rule
+`041740b5be6f41e588bbbc41f2af4e81` at 00:04:56Z, sending `(http.host eq "library.cuatro.dev" and ssl)` to
+origin port 8443, where both of the hostname's paths go through Traefik's own routers: the `/api/` and
+`/files/` prefixes to `library-api:4000` with `library-api-headers`, everything else to `library-web:3000`, the
+split Caddy's block makes. The ruleset now holds six rules (wheel, www, apex, analytics, tracker, library).
+Caddy's `library.cuatro.dev` block below remains, unreached, until Story 4.11; deleting the rule sends the
+hostname back to it. Readings in `ops/backup-digital-library.md` § Cutover run, library.cuatro.dev.
+
 ### The site blocks, as installed
 
 **Amended 2026-09-30:** an eighth block, `tournament.cuatro.dev`, was appended to

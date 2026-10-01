@@ -101,6 +101,8 @@ router, `library-headers` on the API router and `readTimeout: 60s` each failed t
 
 ## Spec Change Log
 
+- 2026-10-01: box half steps 1 to 5 ran from 00:04Z with the Operator present (runbook § Moving library.cuatro.dev onto Traefik), recorded in `ops/backup-digital-library.md` § Cutover run, library.cuatro.dev; Origin Rule `041740b5be6f41e588bbbc41f2af4e81` since 00:04:56Z, no rollback. Step 6, the 2026-10-01 03:45Z backup line, is still to be read (Pending Operator action 11); status stays `awaiting-operator` until it is.
+
 ## Review Triage Log
 
 All six layers ran inline in the build session (the run has no Agent tool), so none is independent of the author; stated as a limit, not a pass. Design Review: no `.scss`, `.tsx` or motion in the diff, skipped. ECC verification loop: build, typecheck and the full suite observed green (below); lint N/A.

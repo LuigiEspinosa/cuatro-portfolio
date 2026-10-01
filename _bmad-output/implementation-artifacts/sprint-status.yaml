@@ -968,6 +968,13 @@ development_status:
   # Referrer-Policy (library-api-headers) and websecure sets readTimeout 0 (DW-297 closed). Box half is the
   # Operator's, ops/backup-digital-library.md § Moving library.cuatro.dev onto Traefik steps 1 to 7 and § Pending
   # Operator actions 10 and 11, after 4-2's runbook; the Registry's tech array already declares SQLite and Redis.
+  # 4-9 awaiting-operator 2026-10-01: steps 1 to 5 of the box half ran from 00:04Z with the Operator present, main
+  # at f9ea578, Traefik not recreated (traefik.yml digests matched). library-backup and restore-verify exit=0 in the
+  # cron shape, object digital-library/library-20261001T000413Z.tar.gz.gpg, 23 objects across 11 tables,
+  # counts-match. Origin Rule 041740b5be6f41e588bbbc41f2af4e81 moved library.cuatro.dev onto Traefik at 00:04:56Z
+  # (six rules now); the 228 line probe read 200 200 404 alone, 3 caddy then 225 no-via inside the propagation
+  # minute; monitor 803750025 UP. Readings in ops/backup-digital-library.md § Cutover run, library.cuatro.dev;
+  # Pending action 10 dated. Only step 6 remains before done: the 2026-10-01 03:45Z backup line (action 11).
   4-9-migrate-library-cuatro-dev: awaiting-operator
   # 4-10 awaiting-operator 2026-09-30: repository half built and verified on dev. New record
   # ops/cs-tracker-cutover.md: the cs-tracker compose change (migrate under a profile, off app's depends_on, both on
