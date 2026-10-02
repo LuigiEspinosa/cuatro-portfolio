@@ -48,7 +48,7 @@ context:
 **Acceptance Criteria:**
 - AC1: Given the record's clients table, when the test runs, then every row is a Registry id, `cuatro-portfolio` and `cs-tracker` are present, no `wallet` entry is, each Clerk OAuth application name equals its id, and each variable is the derived name.
 - AC2: Given `.env.example`, when the test runs, then it names `OIDC_ISSUER` and every table variable, each with an empty value.
-- AC3: Given the tracked tree, when the test runs, then no tracked file assigns a non-empty value to any of those variables.
+- AC3: Given the tracked tree, when the test runs, then no tracked file assigns a non-empty value to any of those variables, in the env form `NAME=value` or the YAML form `NAME: value` (fix round 1).
 - AC4: Given the record, when read, then the Clerk-assigned Client ID (AD-3 holds on the name and the variables, not the value) is stated and filed.
 - AC5: Given DW-319, when the record is read, then each logout field read from a published discovery document is quoted with URL and UTC time, what stays unknown until the estate's issuer exists is said, and DW-319 is amended.
 - AC6: Given the by-hand steps, when read, then each names its exact action, holds on either plan, verifies by variable name only, and is a Pending Operator action.
@@ -89,4 +89,11 @@ Review layers run inline by the builder, not as context-free subagents (no subag
 
 ## Independent verification
 
-No independent verifier has run yet.
+**Round 1, 2026-10-02: refused (pass false, nothing pushed).** Four findings, handled in fix round 1:
+
+- major, AC2 unmet (`.env.example` and its `it.todo`): not fixable by an agent. The fixer's Read of `.env.example` was refused again by the user-level `.env.*` deny, and was not worked around. AC2 stays unmet until the Operator does `ops/identity-issuer.md` action 8, lifts the deny for that file in a session, or rules AC2 operator-pending.
+- major, AC1 narrows AD-3's "client ids derived from the application id" to the OAuth application's Name and the variables, because Clerk assigns the Client ID: no code change can close it. It waits on the Operator's ruling on DW-320.
+- minor, fixed: the no-value scan missed the YAML form `NAME: value` (reproduced with an untracked probe that passed). The pattern now matches `NAME=value` and `NAME: value`, an optional opening quote included, and still spares `$` interpolations. A new fixture case holds both forms and the interpolations; the YAML probe now fails the scan case, and the clean tree passes it.
+- minor, fixed: the recorded sha256 of `clerk.clerk.com`'s discovery document was not reproducible. A third read at 2026-10-02T15:04:33Z hashed differently again with the same 1,181 bytes and the same logout fields. The record's table drops the hash and a note gives the three prefixes; DW-319's amendment says the fields, not a hash, are the evidence.
+
+Fix round 1 re-ran: `identity-issuer.test.ts` 5 passed, 1 todo; typecheck exit 0; full root suite 1843 passed, 1 skipped, 1 todo, 6 failed, all six in the DW-135 WSL suites, each of which passed in full when re-run alone (28, 59, 20 plus 1 skipped, 17, 15, 11). Awaiting the verifier's round 2.

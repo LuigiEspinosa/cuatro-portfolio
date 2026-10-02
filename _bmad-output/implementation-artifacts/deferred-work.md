@@ -9785,8 +9785,8 @@ status: done
 
     **Amended 2026-10-02 by Story 5.2: the public evidence says no.** The estate's issuer does not exist
     yet, so its own document was not read. A live Clerk production issuer's was:
-    `https://clerk.clerk.com/.well-known/openid-configuration`, read 2026-10-02T14:38:31Z (HTTP 200, sha256
-    `5c2a1997...ab17c62`), states `"backchannel_logout_supported":false` and
+    `https://clerk.clerk.com/.well-known/openid-configuration`, read 2026-10-02T14:38:31Z (HTTP 200; its bytes
+    vary between reads, so the fields are the evidence, not a hash), states `"backchannel_logout_supported":false` and
     `"frontchannel_logout_supported":false` and has no `end_session_endpoint`; it does advertise a
     `revocation_endpoint`. Clerk's sample metadata document names none of the three
     (`ops/identity-issuer.md` § Logout, as far as it can be read today). Unless the estate's instance
