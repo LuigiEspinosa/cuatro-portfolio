@@ -320,7 +320,7 @@ audience naming this client only, and no encrypted ID token. Steam's sign-in sta
 counterpart of `STEAM_ID`: `cs-tracker` holds one person's inventory, so a subject the issuer verifies is
 still refused unless it is that one. It is an identifier, not a credential, and the Hub shows it at
 `https://cuatro.dev/auth/session`. With any of the four empty `cs-tracker` is unconfigured and behaves
-exactly as before: the three routes answer 404, a visitor without a session is sent to Steam, and the
+exactly as before: the three routes answer what an unrouted path answers (404, `Not Found`), a visitor without a session is sent to Steam, and the
 session cookie keeps the name `_cs_tracker_key`. With all four set (and in production, where the cookie is
 `Secure`) the session cookie is `__Host-cs-tracker`, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, never a
 `Domain`, and a visitor without a session is sent to `/auth/sign-in`. The rename ends every session once, at

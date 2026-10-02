@@ -9910,3 +9910,17 @@ status: done
     **Owner: Story 5.7, or the Operator's ruling.** **Trigger: after `ops/identity-issuer.md` action CT5.**
     Remove `/auth/steam` and its callback, or record why a second path stays.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
+  id: DW-327
+  summary: >-
+    `cs-tracker`'s OIDC session carries no lifetime: `oidc_sub` lives as long as the browser-session cookie,
+    while the Hub's session ends after 8 hours (`SESSION_SECONDS` in `apps/hub/lib/oidc.ts`).
+  evidence: |-
+    Found 2026-10-02 by Story 5.4's independent verifier (minor finding, round 1). The callback writes
+    `oidc_sub` and `oidc_email` into the Phoenix session with no expiry, as the existing Steam session does, so
+    one identity can outlive the Hub's session on the other side of the boundary. No acceptance criterion of
+    Story 5.4 binds a lifetime.
+
+    **Owner: Story 5.5 (sign-out reaches every session).** **Trigger: when Story 5.5 starts.** Give the
+    `cs-tracker` session a server-side expiry matching the Hub's, or record why it differs.
+  status: open
