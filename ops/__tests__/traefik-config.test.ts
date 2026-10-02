@@ -263,7 +263,9 @@ describe('ForwardAuth on the dashboard (Story 5.6)', () => {
   it('switched on, gates the dashboard and routes its callback paths to the service, ungated', () => {
     expect(gated.find((r) => r.name === 'dashboard')).toEqual({ name: 'dashboard', rule: 'Host(`localhost`)', entryPoints: '[traefik]', middlewares: '[dashboard-forward-auth]', service: 'api@internal' });
     expect(gated.find((r) => r.name === 'dashboard-oauth2')).toEqual({ name: 'dashboard-oauth2', rule: 'Host(`localhost`) && PathPrefix(`/oauth2/`)', entryPoints: '[traefik]', service: 'forward-auth' });
-    expect(ON).toContain(['    dashboard-forward-auth:', '      forwardAuth:', '        address: http://forward-auth:4180/', ''].join('\n'));
+    // The whole block, so no added key (trustForwardHeader, authResponseHeaders) passes unseen.
+    const middleware = ON.split('\n    dashboard-forward-auth:\n')[1]?.split(/\n(?= {0,4}\S)/)[0]?.trimEnd();
+    expect(middleware).toBe(['      forwardAuth:', '        address: http://forward-auth:4180/'].join('\n'));
     expect(ON).toContain(['    forward-auth:', '      loadBalancer:', '        servers:', '          - url: http://forward-auth:4180', ''].join('\n'));
   });
 
@@ -283,9 +285,17 @@ describe('ForwardAuth on the dashboard (Story 5.6)', () => {
   });
 
   const service = COMPOSE.split('\n  forward-auth:\n')[1]?.split(/\n(?= {0,2}\S)/)[0] ?? '';
-  const env = (name: string) => new RegExp(`^ {6}OAUTH2_PROXY_${name}: (.+)$`, 'm').exec(service)?.[1];
+  /** The service's environment, every uncommented `KEY: value` line of its block. */
+  const ENV = Object.fromEntries(
+    (service.split('\n    environment:\n')[1]?.split(/\n(?= {0,4}\S)/)[0] ?? '')
+      .split('\n')
+      .filter((l) => !/^\s*#/.test(l))
+      .map((l) => /^ {6}([A-Z0-9_]+): (.+)$/.exec(l)?.slice(1) ?? [l, 'unparsed']),
+  );
 
   it('runs oauth2-proxy pinned by digest, under a profile, published nowhere, on the shared network', () => {
+    // Its keys as an exact set: a `command:` or `entrypoint:` could pass flags the environment test never sees.
+    expect([...service.matchAll(/^ {4}([a-z_]+):/gm)].map((m) => m[1])).toEqual(['image', 'profiles', 'environment', 'configs', 'networks', 'restart']);
     expect(service).toMatch(/^ {4}image: quay\.io\/oauth2-proxy\/oauth2-proxy:v7\.15\.5@sha256:[0-9a-f]{64}$/m);
     expect(service).toMatch(/^ {4}profiles: \[forward-auth\]$/m);
     expect(service).not.toMatch(/^ {4}ports:/m);
@@ -293,20 +303,33 @@ describe('ForwardAuth on the dashboard (Story 5.6)', () => {
   });
 
   it('is a provider-neutral OIDC client with PKCE, a host-only __Host- session and the Owner alone', () => {
-    expect(env('PROVIDER')).toBe('oidc');
-    expect(env('OIDC_ISSUER_URL')).toBe('${OIDC_ISSUER:-}');
-    // AD-3's derivation from the stack's name, `traefik`, as ops/identity-issuer.md records.
-    expect(env('CLIENT_ID')).toBe('${TRAEFIK_OIDC_CLIENT_ID:-}');
-    expect(env('CLIENT_SECRET')).toBe('${TRAEFIK_OIDC_CLIENT_SECRET:-}');
-    expect(env('COOKIE_SECRET')).toBe('${TRAEFIK_FORWARD_AUTH_COOKIE_SECRET:-}');
-    expect(env('CODE_CHALLENGE_METHOD')).toBe('S256');
-    expect(env('COOKIE_NAME')).toMatch(/^__Host-/);
-    expect(env('COOKIE_SECURE')).toBe("'true'");
-    expect(service).not.toMatch(/COOKIE_DOMAIN/);
-    expect(env('REDIRECT_URL')).toBe('http://localhost:8080/oauth2/callback');
-    // An email domain would admit anyone the issuer knows at that domain; one address is the allowlist.
-    expect(service).not.toMatch(/EMAIL_DOMAIN/);
-    expect(env('AUTHENTICATED_EMAILS_FILE')).toBe('/etc/forward-auth/owner-email');
+    // The whole environment as an exact set: once switched on this service is the dashboard's only gate, so
+    // an added setting (SKIP_AUTH_ROUTES, SKIP_JWT_BEARER_TOKENS, INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL) or a
+    // widened one (WHITELIST_DOMAINS '*') must fail here. No COOKIE_DOMAIN (host-only, AD-11) and no
+    // EMAIL_DOMAINS, which would admit anyone the issuer knows at that domain: one address is the allowlist.
+    expect(ENV).toEqual({
+      OAUTH2_PROXY_HTTP_ADDRESS: '0.0.0.0:4180',
+      OAUTH2_PROXY_PROVIDER: 'oidc',
+      OAUTH2_PROXY_OIDC_ISSUER_URL: '${OIDC_ISSUER:-}',
+      // AD-3's derivation from the stack's name, `traefik`, as ops/identity-issuer.md records.
+      OAUTH2_PROXY_CLIENT_ID: '${TRAEFIK_OIDC_CLIENT_ID:-}',
+      OAUTH2_PROXY_CLIENT_SECRET: '${TRAEFIK_OIDC_CLIENT_SECRET:-}',
+      OAUTH2_PROXY_COOKIE_SECRET: '${TRAEFIK_FORWARD_AUTH_COOKIE_SECRET:-}',
+      OAUTH2_PROXY_SCOPE: 'openid email profile',
+      OAUTH2_PROXY_CODE_CHALLENGE_METHOD: 'S256',
+      OAUTH2_PROXY_INSECURE_OIDC_SKIP_NONCE: "'false'",
+      OAUTH2_PROXY_REDIRECT_URL: 'http://localhost:8080/oauth2/callback',
+      OAUTH2_PROXY_WHITELIST_DOMAINS: 'localhost:8080',
+      OAUTH2_PROXY_AUTHENTICATED_EMAILS_FILE: '/etc/forward-auth/owner-email',
+      OAUTH2_PROXY_COOKIE_NAME: '__Host-traefik-dashboard',
+      OAUTH2_PROXY_COOKIE_SECURE: "'true'",
+      OAUTH2_PROXY_COOKIE_SAMESITE: 'lax',
+      OAUTH2_PROXY_COOKIE_EXPIRE: '8h',
+      OAUTH2_PROXY_COOKIE_REFRESH: "'0'",
+      OAUTH2_PROXY_REVERSE_PROXY: "'true'",
+      OAUTH2_PROXY_UPSTREAMS: 'static://202',
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "'true'",
+    });
     expect(service).toContain(['      - source: forward-auth-owner-email', '        target: /etc/forward-auth/owner-email'].join('\n'));
     expect(COMPOSE).toContain(['  forward-auth-owner-email:', '    content: ${TRAEFIK_OIDC_OWNER_EMAIL:-}'].join('\n'));
     // FR-23: nothing under ops/traefik/ names a provider.

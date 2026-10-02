@@ -75,6 +75,8 @@ services:
       OAUTH2_PROXY_COOKIE_SECRET: ${TRAEFIK_FORWARD_AUTH_COOKIE_SECRET:-}
       OAUTH2_PROXY_SCOPE: openid email profile
       OAUTH2_PROXY_CODE_CHALLENGE_METHOD: S256
+      # Sends and checks a nonce, as the Hub's and cs-tracker's clients do; oauth2-proxy skips it by default.
+      OAUTH2_PROXY_INSECURE_OIDC_SKIP_NONCE: 'false'
       # The SSH tunnel's local end, `ssh -N -L 8080:127.0.0.1:8081`; the issuer holds this redirect URI.
       OAUTH2_PROXY_REDIRECT_URL: http://localhost:8080/oauth2/callback
       OAUTH2_PROXY_WHITELIST_DOMAINS: localhost:8080
