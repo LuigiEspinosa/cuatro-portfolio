@@ -23,6 +23,7 @@ Story 5.4, and every Registry entry keeps `identity: none` until its own story m
 5. [The sequence](#the-sequence)
 6. [Issuer run](#issuer-run)
 7. [Pending Operator actions](#pending-operator-actions)
+8. [The Hub's sign-in (Story 5.3)](#the-hubs-sign-in-story-53)
 
 ## The issuer
 
@@ -73,7 +74,7 @@ underscores (the Postgres convention, `ops/postgres.md`), then `_OIDC_CLIENT_ID`
 
 | Application id | Clerk OAuth application name | Client ID variable | Client secret variable | GitHub repository holding the secrets | On-box env file | Redirect URI |
 |---|---|---|---|---|---|---|
-| `cuatro-portfolio` | `cuatro-portfolio` | `CUATRO_PORTFOLIO_OIDC_CLIENT_ID` | `CUATRO_PORTFOLIO_OIDC_CLIENT_SECRET` | `LuigiEspinosa/cuatro-portfolio` | `/home/deploy/cuatro-portfolio/.env.production` | Added by Story 5.3 with its callback route |
+| `cuatro-portfolio` | `cuatro-portfolio` | `CUATRO_PORTFOLIO_OIDC_CLIENT_ID` | `CUATRO_PORTFOLIO_OIDC_CLIENT_SECRET` | `LuigiEspinosa/cuatro-portfolio` | `/home/deploy/cuatro-portfolio/.env.production` | `https://cuatro.dev/auth/callback` (Story 5.3, § The Hub's sign-in) |
 | `cs-tracker` | `cs-tracker` | `CS_TRACKER_OIDC_CLIENT_ID` | `CS_TRACKER_OIDC_CLIENT_SECRET` | `LuigiEspinosa/cs-tracker` | `/home/deploy/cs-tracker/.env` | Added by Story 5.4 with its callback route |
 
 **The Client ID value is not derivable (observed 2026-10-02T14:38Z).** Clerk's SSO guide
@@ -102,9 +103,9 @@ line and this record use the same name. Values live in exactly three places and 
    `OIDC_ISSUER` beside them. No workflow reads them today; they are the durable copy a rebuilt box or a
    later deploy step reads from.
 3. The application's on-box env file (the table's column). The Hub's `.env.production` is interpolated by
-   `docker-compose.yml` for four services, which is why every name carries its id. Nothing reads these
-   lines until Story 5.3 maps them into `anchor-app` and Story 5.4 into `cs-tracker`; each application then
-   sees only issuer configuration and client credentials (FR-23).
+   `docker-compose.yml` for four services, which is why every name carries its id. Story 5.3 maps the
+   Hub's three into `anchor-app` (read at its next rollout), and Story 5.4 maps `cs-tracker`'s; each
+   application sees only issuer configuration and client credentials (FR-23).
 
 `ops/__tests__/identity-issuer.test.ts` fails if any file in the repository that git does not ignore
 assigns one of the five names a value, in the env form `NAME=value` or the YAML form `NAME: value` (a
@@ -220,7 +221,8 @@ only.
     ssh deploy@177.7.52.248 'grep -cE "^(OIDC_ISSUER|CUATRO_PORTFOLIO_OIDC_CLIENT_(ID|SECRET))=.+" /home/deploy/cuatro-portfolio/.env.production; grep -cE "^(OIDC_ISSUER|CS_TRACKER_OIDC_CLIENT_(ID|SECRET))=.+" /home/deploy/cs-tracker/.env'
     ```
     The last command prints `3` twice. An `ssh` exit of 1 from the first two means the lines were already
-    there; nothing was appended. No container is restarted: nothing reads the lines yet.
+    there; nothing was appended. No container is restarted here: the Hub reads its lines at its next
+    rollout (§ The Hub's sign-in, action H2), and nothing reads `cs-tracker`'s until Story 5.4.
 12. **Date the Pending Operator actions** below and write § Issuer run.
 
 ## Issuer run
@@ -247,3 +249,51 @@ observation are written here, each with its UTC time.
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place. A new participating application adds a row to § The clients in the same change
 that adds its secrets.
+
+## The Hub's sign-in (Story 5.3)
+
+**What exists (built 2026-10-02 on `dev`, proven against a stand-in issuer only).** The Hub is the
+confidential client `cuatro-portfolio` above. `GET /auth/sign-in` reads the issuer's discovery document and
+sends the browser to its `authorization_endpoint` with PKCE `S256`, `state` and `nonce`; `GET /auth/callback`
+(the redirect URI) exchanges the code with `client_secret_basic` and the verifier, verifies the ID token
+against the issuer's JWKS (`iss`, `aud`, `exp`, `nonce`, `azp`), and mints the Hub's own session;
+`GET /auth/session` answers `{ sub, email }` for a session and 401 without one. Every cookie the Hub sets is
+`__Host-hub-session` or `__Host-hub-oidc`: `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, never a
+`Domain`. The session lasts eight hours and is signed with a key derived from the client secret, so
+rotating the secret ends every session. Code: `apps/hub/lib/oidc.ts` and `apps/hub/app/auth/`; tests:
+`apps/hub/lib/__tests__/oidc.test.ts`. Nothing in them names a provider (FR-23).
+
+**Unconfigured is the default.** With any of `OIDC_ISSUER`, `CUATRO_PORTFOLIO_OIDC_CLIENT_ID` or
+`CUATRO_PORTFOLIO_OIDC_CLIENT_SECRET` empty, the three routes answer 404 and the Hub serves as before;
+`docker-compose.yml` maps each into `anchor-app` defaulting empty. So `main` may deploy before the issuer
+exists. No page links to sign-in: the routes are reached by URL.
+
+**By hand, in order, after this record's actions 5 and 7:**
+
+1. **H1. Register the redirect URI.** On the issuer's OAuth applications page, open `cuatro-portfolio` and
+   add exactly `https://cuatro.dev/auth/callback` to its Redirect URIs. Nothing else on the client changes.
+2. **H2. Roll the Hub onto the variables.** The Hub reads `.env.production` at its next rollout. If the
+   lines from action 7 are on the box before Epic 5's merge to `main`, that deploy does it. Otherwise
+   dispatch the Deploy on `main`: `gh workflow run deploy.yml --ref main --repo LuigiEspinosa/cuatro-portfolio`,
+   then wait for it to finish green. Check, printing no value:
+   `curl -s -o /dev/null -w '%{http_code}\n' https://cuatro.dev/auth/session` prints `401`. A `404` means the
+   Hub still reads no configuration: check the three names with action 7's last command.
+3. **H3. Observe the live sign-in.** In a fresh browser profile open `https://cuatro.dev/auth/sign-in`,
+   sign in at the issuer, and confirm the browser lands on `https://cuatro.dev/`. Open
+   `https://cuatro.dev/auth/session`: it shows a JSON `sub`. Then open the developer tools' cookie list for
+   `cuatro.dev` and for the issuer's hostnames, and record each cookie's name and Domain, never its value.
+   Expected: `__Host-hub-session` on `cuatro.dev` with no leading dot (host-only), and **no cookie with
+   Domain `.cuatro.dev` or `cuatro.dev` set by any other hostname**; a cookie like that fails the story
+   (AD-11). Write the result, with the UTC time, under § Hub sign-in run below.
+
+### Hub sign-in run
+
+_Not yet run._ H2's status code and H3's observations are written here, each with its UTC time.
+
+### Pending Operator actions, Story 5.3
+
+| # | Action | Note | Completed (UTC) |
+|---|---|---|---|
+| H1 | **Register `https://cuatro.dev/auth/callback`** on the `cuatro-portfolio` OAuth application | After action 5 | _not done_ |
+| H2 | **Roll the Hub onto its three variables** and check `/auth/session` answers 401 | After action 7 and H1; a box change | _not done_ |
+| H3 | **Sign in at `https://cuatro.dev/auth/sign-in` and record the session and every cookie's Domain** | Story 5.3 is done when this cell is dated with no `.cuatro.dev` cookie; then DW-322 flips the Registry's `identity` | _not done_ |

@@ -9833,3 +9833,20 @@ status: done
     the issuer's DNS records are added.** Either accept them DNS only as a new KV entry in
     `ops/known-violations.md`, or proxy the Frontend API, which then needs its own runbook.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-3-the-hub-authenticates-over-oidc-authorization-code-pkce.md`
+  id: DW-322
+  summary: >-
+    The Registry still declares `cuatro-portfolio` as `identity: none` although the Hub now carries an OIDC
+    sign-in, because no person has yet observed it work against the live issuer.
+  evidence: |-
+    Found 2026-10-02 by Story 5.3, which built the Hub's sign-in (`apps/hub/lib/oidc.ts`, `apps/hub/app/auth/`)
+    and proved it only against a stand-in issuer in `apps/hub/lib/__tests__/oidc.test.ts`; the Clerk issuer
+    does not exist yet (`ops/identity-issuer.md` actions 1 to 7). AD-12 makes `identity` a declaration, and
+    NFR-9 forbids a declaration ahead of the fact, so the entry stays `none` until `ops/identity-issuer.md`
+    action H3 is dated. The flip is a value change, so a Registry minor release (AD-5), and Story 5.11
+    verifies every identity declaration against reality.
+
+    **Owner: the session that dates action H3, or Story 5.11.** **Trigger: action H3 dated with no
+    `.cuatro.dev` cookie.** Move `cuatro-portfolio` to `identity: oidc` in `contracts/registry.json` with a
+    minor `contract_version` bump, and update whatever pins the old value.
+  status: open

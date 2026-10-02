@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-02-2026 14:54
+last_updated: 10-02-2026 15:45
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1047,7 +1047,15 @@ development_status:
   # .env.example not edited: the session permission settings deny .env.*; block and test case in the record.
   # Box, Clerk, Cloudflare and GitHub half is the Operator: ops/identity-issuer.md Pending Operator actions 1 to 9.
   5-2-one-clerk-issuer-and-one-oidc-client-per-application: awaiting-operator
-  5-3-the-hub-authenticates-over-oidc-authorization-code-pkce: backlog
+  # 5-3 awaiting-operator 2026-10-02: repository half built on dev. The Hub signs in over OIDC Authorization Code +
+  # PKCE from discovery alone (apps/hub/lib/oidc.ts, apps/hub/app/auth/ sign-in, callback, session; jose 6.2.2, already
+  # locked, now a root dependency), mints its own __Host-hub-session (Secure, HttpOnly, Path=/, no Domain), and answers
+  # 404 on /auth/* with OIDC_ISSUER or either CUATRO_PORTFOLIO_OIDC_ variable unset, so main may deploy before the
+  # issuer exists. Proven against a loopback stand-in issuer in apps/hub/lib/__tests__/oidc.test.ts and against the
+  # built server.js; docker-compose.yml maps the three variables into anchor-app, defaulting empty. Redirect URI
+  # https://cuatro.dev/auth/callback. Live sign-in is the Operator's: ops/identity-issuer.md actions H1 to H3 (after
+  # 5.2's actions 5 and 7); DW-322 flips the Registry's identity once H3 is dated.
+  5-3-the-hub-authenticates-over-oidc-authorization-code-pkce: awaiting-operator
   5-4-cs-tracker-authenticates-the-javascript-elixir-boundary: backlog
   5-5-sign-out-reaches-every-session-including-open-liveview-socke: backlog
   5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the: backlog
