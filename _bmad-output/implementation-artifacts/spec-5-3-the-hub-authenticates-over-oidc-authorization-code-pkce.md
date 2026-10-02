@@ -95,6 +95,16 @@ context:
 
 ## Spec Change Log
 
+- 2026-10-02, `43caa3b` (by Story 5.4's builder, before that story): round 1's two minor findings closed in
+  `apps/hub/lib/__tests__/oidc.test.ts`, code unchanged. An ID token signed HS256 with the client secret is
+  refused at the allow-list: the case pins the logged message, because `jose`'s remote JWKS refuses any HS*
+  token by itself (`getKtyFromAlg`), so with `HS256` added to `ID_TOKEN_ALGORITHMS` the message becomes
+  `Unsupported "alg" value for a JSON Web Key Set` and the case fails. Two tokens sealed with the Hub's key carry
+  both purposes' fields, a transaction-sealed one with a `sub` presented as a session and a session-sealed
+  one with the live state, nonce and verifier presented as a transaction; with `audience: purpose` removed
+  from `unseal` they answer 200 and 302 and both cases fail. `oidc.test.ts` 24 passed; not yet independently
+  verified.
+
 ## Review Triage Log
 
 Review layers run inline by the builder, not as context-free subagents (no subagent tool in this run); the independent verifier is the context-free pass. Design review skipped: no `.scss`, no rendered `.tsx` and no motion in the diff. Ponytail: lean; the one exported constant only the test could use (`SCOPE`) stays because the module uses it.
