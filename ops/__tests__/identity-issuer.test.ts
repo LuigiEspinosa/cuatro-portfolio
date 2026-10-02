@@ -41,11 +41,13 @@ const clients = clientRows(RECORD);
 const variables = ['OIDC_ISSUER', ...clients.flatMap((c) => [c.clientIdVariable, c.secretVariable])];
 
 /**
- * A git grep ERE for a value assigned to one of `names`: `NAME=value` (env file, shell) or `NAME: value`
- * (a compose `environment:` map, a workflow `env:` block; YAML indents with spaces only). An optional opening quote is allowed, and a value
- * starting with whitespace, a `$` interpolation, a quote or a closing backtick in prose is not a value.
+ * A git grep ERE for a value assigned to one of `names`: `NAME=value` (env file, shell), `NAME: value`
+ * (a compose `environment:` map, a workflow `env:` block; YAML indents with spaces only) or `"NAME": "value"`
+ * (JSON, where the colon follows the closing quote and the space is optional). An optional opening quote is
+ * allowed, and a value starting with whitespace, a `$` interpolation, a quote or a closing backtick in prose
+ * is not a value.
  */
-const valuePattern = (names: string[]) => `(${names.join('|')})(=|: +)["']?[^[:space:]$"'\`]`;
+const valuePattern = (names: string[]) => `(${names.join('|')})(=|: +|": *)["']?[^[:space:]$"'\`]`;
 
 describe('the parser', () => {
   it('reads the rows of one section only', () => {
@@ -84,11 +86,11 @@ describe('credentials never live in the repository', () => {
   //   for (const v of variables) expect(new RegExp(`^${v}=[ \\t]*$`, 'm').test(example), v).toBe(true);
   it.todo('documents every variable in .env.example with an empty value');
 
-  it('the value pattern catches both assignment forms and spares interpolations', () => {
+  it('the value pattern catches the env, YAML and JSON assignment forms and spares interpolations', () => {
     const re = new RegExp(valuePattern(['X_OIDC_CLIENT_SECRET']).replace('[:space:]', '\\s'));
-    for (const hit of ['X_OIDC_CLIENT_SECRET=v', 'X_OIDC_CLIENT_SECRET="v"', '  X_OIDC_CLIENT_SECRET: v', "X_OIDC_CLIENT_SECRET: 'v'"])
+    for (const hit of ['X_OIDC_CLIENT_SECRET=v', 'X_OIDC_CLIENT_SECRET="v"', '  X_OIDC_CLIENT_SECRET: v', "X_OIDC_CLIENT_SECRET: 'v'", '{"X_OIDC_CLIENT_SECRET": "v"}', '{"X_OIDC_CLIENT_SECRET":"v"}'])
       expect(re.test(hit), hit).toBe(true);
-    for (const miss of ['X_OIDC_CLIENT_SECRET=', 'X_OIDC_CLIENT_SECRET=""', 'X_OIDC_CLIENT_SECRET=${X}', 'X_OIDC_CLIENT_SECRET: ${{ secrets.X }}', 'X_OIDC_CLIENT_SECRET: "${X}"', '`X_OIDC_CLIENT_SECRET`: prose', 'X_OIDC_CLIENT_SECRET:'])
+    for (const miss of ['X_OIDC_CLIENT_SECRET=', 'X_OIDC_CLIENT_SECRET=""', 'X_OIDC_CLIENT_SECRET=${X}', 'X_OIDC_CLIENT_SECRET: ${{ secrets.X }}', 'X_OIDC_CLIENT_SECRET: "${X}"', '`X_OIDC_CLIENT_SECRET`: prose', 'X_OIDC_CLIENT_SECRET:', '"X_OIDC_CLIENT_SECRET": ""', '"X_OIDC_CLIENT_SECRET": "${X}"'])
       expect(re.test(miss), miss).toBe(false);
   });
 
