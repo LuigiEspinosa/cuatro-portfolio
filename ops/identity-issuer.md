@@ -553,12 +553,15 @@ WebUI has its own login and no hostname (`ops/routing-inventory.md` § How qBitt
 and no public router reaches the service, whichever way the switch below is set.
 
 - **The service** is `forward-auth` in `ops/traefik/compose.yml`: oauth2-proxy as the confidential OIDC client
-  `traefik`, with PKCE `S256`, the issuer read from discovery (`OIDC_ISSUER`, no provider named, FR-23), and
-  a session cookie `__Host-traefik-dashboard`: `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, no `Domain`,
+  `traefik`, with PKCE `S256`, a `nonce` it sends and checks in the ID token as the Hub's and `cs-tracker`'s
+  clients do (`OAUTH2_PROXY_INSECURE_OIDC_SKIP_NONCE: 'false'`; oauth2-proxy skips it by default), the issuer
+  read from discovery (`OIDC_ISSUER`, no provider named, FR-23), and a session cookie `__Host-traefik-dashboard`: `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, no `Domain`,
   eight hours as the Hub's. It admits one address, the Owner's (`TRAEFIK_OIDC_OWNER_EMAIL`, handed to it as a
   file), and only when the issuer states that address verified; a domain allowlist would admit anyone the
   issuer knows at that domain, `demo@cuatro.dev` included. It sits on `cs-tracker_default` beside Traefik and
-  publishes no port. Its `/oauth2/` paths, the callback among them, are a router of their own on the
+  publishes no port. `ops/__tests__/traefik-config.test.ts` holds its whole environment, its top-level keys
+  and the `dashboard-forward-auth` middleware as exact sets, so an added setting (a skip-auth route, JWT
+  bearer bypass, unverified email, `trustForwardHeader`) or a widened one fails a case. Its `/oauth2/` paths, the callback among them, are a router of their own on the
   dashboard's loopback entrypoint.
 - **What changes for the dashboard, once switched:** its router's middleware becomes `dashboard-forward-auth`,
   so a request without the session is sent to the issuer and back to `http://localhost:8080/oauth2/callback`,
@@ -644,6 +647,26 @@ C, switched on                dashboard, no session: 302 http://issuer:9000/auth
                               /oauth2/sign_out 302, dashboard then 302
                               A against C, every application line: IDENTICAL
 D, switch removed, recreated  A against D: IDENTICAL, probes and /api/rawdata byte for byte
+```
+
+**Re-run with the nonce on, 2026-10-02 between 21:22:53Z and 21:25:41Z** (two runs of the same phases, the
+committed `compose.yml` with `OAUTH2_PROXY_INSECURE_OIDC_SKIP_NONCE: 'false'`; Story 5.6's fix round 1):
+
+```
+A, B                          as above; A against B: IDENTICAL, probes and /api/rawdata byte for byte
+FA3                           /ping OK
+C, switched on                A against C, every application line: IDENTICAL; dashboard no session 302, basic credentials 302
+                              authorize URL carries code_challenge_method=S256, nonce and state
+                              the Owner's callback 302 to /dashboard/, the same __Host- cookie; dashboard 200
+                              replayed callback 403
+                              callback with a well-formed forged state: 403, no session cookie; dashboard then 302
+                              callback with a state that does not parse (`state=forged`): 500, no session cookie
+                                ("Error while parsing OAuth2 state: invalid length"); a refusal, not a fault
+                              demo@cuatro.dev: callback 403, dashboard 302
+                              an issuer that omits the nonce from the ID token: callback 403, dashboard 302
+                                ("nonce verification failed: id_token nonce claim does not match the session nonce")
+                              footprint 0.00% CPU, 6.0 to 6.2 MiB
+D                             dashboard 401 and 200 with basic credentials; A against D: IDENTICAL, probes and /api/rawdata
 ```
 
 The recreate refuses connections on every hostname for under a second, once at FA4 and once at a

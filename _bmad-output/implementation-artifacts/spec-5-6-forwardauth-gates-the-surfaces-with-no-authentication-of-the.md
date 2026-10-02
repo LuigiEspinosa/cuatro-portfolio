@@ -88,6 +88,9 @@ The switch is inert because Traefik's environment is fixed at container creation
 
 ## Spec Change Log
 
+- Fix round 1 (2026-10-02), after the independent verifier refused round 1 on AC5 ("the test holds each setting"): five security mutants passed all 32 cases. The test now holds the forward-auth service's whole environment as an exact map, its top-level keys as an exact list (so no `command:` or `entrypoint:` can pass flags), and the `dashboard-forward-auth` middleware as an exact block. The service also sends and checks a nonce now (`OAUTH2_PROXY_INSECURE_OIDC_SKIP_NONCE: 'false'`), the verifier's first minor finding; the record states the forged-state outcomes, its second. AC5's wording is unchanged: the fix makes the test meet it.
+- Fix round 1 evidence, this session. `traefik-config.test.ts`: 32 cases pass. Mutants, each run against the file and each failing 1 case (`Tests 1 failed | 31 passed`): `WHITELIST_DOMAINS` set to `'*'`; added `INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL: 'true'`; added `SKIP_AUTH_ROUTES: '.*'`; added `SKIP_JWT_BEARER_TOKENS: 'true'`; added `trustForwardHeader: true` on the middleware; `SKIP_NONCE` set to `'true'`; `SKIP_NONCE` removed; an added `command: ['--skip-auth-route=.*']`; an added `authResponseHeaders` on the middleware. Rehearsal in traefik:v3.7.13 with the stand-in issuer, 2026-10-02 between 21:22:53Z and 21:25:41Z (two runs): A against B and A against D identical byte for byte, A against C identical on every application line; the authorize URL carries `S256`, `nonce` and `state`; the Owner's callback 302 and dashboard 200; replayed callback 403; a well-formed forged state 403 and an unparseable one 500, neither setting a session; `demo@cuatro.dev` 403; an issuer omitting the nonce 403 (oauth2-proxy logged the nonce mismatch).
+
 ## Review Triage Log
 
 Review layers run inline by the builder (no subagent tool); the independent verifier is the context-free pass. Ponytail, the ECC verification loop and self-evaluation applied inline, not invoked as skills. Design review skipped: no `.scss`, no `.tsx`, no motion.
@@ -103,4 +106,5 @@ Review layers run inline by the builder (no subagent tool); the independent veri
 
 ## Independent verification
 
-No independent verifier has run yet.
+- Round 1 (2026-10-02, tree `e7f4476`, cs-tracker `faaa642`): **refused**, nothing pushed. Its own rehearsal, gates, cs-tracker suite in the OTP 28 image and eight-probe image comparison all passed, and it met AC1 to AC4, AC6 and AC7. One major finding: AC5 unmet, because the test held a chosen subset of oauth2-proxy's settings, so five security mutants (`WHITELIST_DOMAINS '*'`, added `INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL`, `SKIP_AUTH_ROUTES`, `SKIP_JWT_BEARER_TOKENS`, and `trustForwardHeader` on the middleware) passed all 32 cases. Two minor: no nonce (oauth2-proxy's default), and the record silent on a forged state's 500. All three are addressed in fix round 1 (§ Spec Change Log).
+- Round 2: not run yet.
