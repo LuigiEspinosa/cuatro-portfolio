@@ -435,7 +435,9 @@ _Not yet run._ CT3's status code and CT5's observations are written here, each w
 
 **What exists (built 2026-10-02, the Hub on this repository's `dev` and `cs-tracker` on its `dev`, proven
 against a stand-in issuer only).** Nothing below names a provider (FR-23), and with OIDC unconfigured both
-applications answer exactly as before: the new routes answer what an unrouted path answers.
+applications answer as before. In `cs-tracker` the new routes answer what an unrouted path answers (404,
+`Not Found`). In the Hub they answer 404 with an empty body, as its Story 5.3 routes do, while an unrouted
+path answers 404 with the Hub's 404 page: the status is the same, the body is not.
 
 - **Each application's own sign-out**, `GET https://cuatro.dev/auth/sign-out` and
   `GET https://cs-tracker.cuatro.dev/auth/sign-out`, reached by URL as sign-in is. It revokes every session

@@ -29,7 +29,7 @@ context:
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|--------------|---------------------------|----------------|
-| Unconfigured | any value empty | `/auth/sign-out`, `/auth/backchannel-logout` answer as an unrouted path | none |
+| Unconfigured | any value empty | `/auth/sign-out`, `/auth/backchannel-logout` answer 404: in `cs-tracker` as an unrouted path; in the Hub with an empty body, as its 5.3 routes, where an unrouted path answers the 404 page | none |
 | Own sign-out | `GET /auth/sign-out` | the subject's sessions revoked, cookie cleared, its sockets disconnected; 302 to `end_session_endpoint` (`client_id`, `post_logout_redirect_uri`) when advertised, else local only | `Sec-Fetch-Site` cross-site or same-site, or a prefetch: 403, nothing revoked |
 | Back-channel | `POST logout_token` | 200 `no-store`; sessions matching `sid` or `sub` revoked; sockets disconnected | 400 `no-store`, nothing revoked: not a signed JWS, key outside the JWKS, symmetric or `none` alg, `iss`, `aud`, `iat` missing or over 5 minutes old, `exp` missing or past, `events` without the back-channel member, a `nonce`, neither `sub` nor `sid`, no `jti`, a replayed `jti` |
 | Lifetime | `cs-tracker` session 8 hours old | refused, as the Hub's | none |
@@ -101,6 +101,8 @@ context:
 - The root suite on the tree holding this record: 1898 passed, 1 skipped, 1 todo, and 3 cases failed after about 30 seconds with empty output in `deploy-remote`, `library-backup` and `postgres-backup` (DW-135); each file re-run alone passed (28, 59, and 20 with 1 skipped).
 
 ## Spec Change Log
+
+- 2026-10-02, after round 1 (its minor finding 1): the matrix's unconfigured row said both new routes answer "as an unrouted path". That holds in `cs-tracker`; the Hub answers 404 with an empty body, where an unrouted path answers 404 with its 404 page. The row and `ops/identity-issuer.md` § Sign-out now say what each application does. No code changed.
 
 ## Review Triage Log
 
