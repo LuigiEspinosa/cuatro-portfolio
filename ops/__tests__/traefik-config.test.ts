@@ -53,6 +53,26 @@ function parseRouters(text: string): Router[] {
   return routers;
 }
 
+/** The middlewares under `http.middlewares`, each with the one kind it declares (headers, chain, ...). */
+function middlewareKinds(text: string): Map<string, string> {
+  const lines = text.split(/\r?\n/);
+  const start = lines.indexOf('  middlewares:');
+  if (start < 0) throw new Error('no `  middlewares:` block');
+  const kinds = new Map<string, string>();
+  let current = '';
+  for (const line of lines.slice(start + 1)) {
+    if (/^ {0,2}\S/.test(line)) break;
+    const name = /^ {4}([a-z0-9-]+):\s*$/.exec(line);
+    if (name) current = name[1];
+    const kind = /^ {6}([A-Za-z]+):/.exec(line);
+    if (kind && current && !kinds.has(current)) kinds.set(current, kind[1]);
+  }
+  return kinds;
+}
+
+/** The names in a router's one-line `[a, b]` middlewares list. */
+const names = (list?: string) => (list ?? '').replace(/^\[|\]$/g, '').split(',').map((s) => s.trim()).filter(Boolean);
+
 /** Hostnames in `§ Every hostname in the zone` whose origin is this box. */
 function boxHostnames(markdown: string): string[] {
   const section = markdown.split('\n## Every hostname in the zone\n')[1]?.split('\n## ')[0];
@@ -282,6 +302,30 @@ describe('ForwardAuth on the dashboard (Story 5.6)', () => {
     }
     // The public routing is the same whichever way the switch is set.
     expect(gated.filter(isPublic)).toEqual(publicRouters);
+  });
+
+  // Matching forwardAuth by name misses a wrapper: a `chain` of dashboard-forward-auth on an application router
+  // gates it switched on and names an undefined middleware switched off. So, in both renders, every middleware
+  // a router names is defined, and a public router names only header and redirect kinds, never a chain.
+  it('lets a public router name only defined header and redirect middlewares, in either state', () => {
+    for (const [text, rs] of [[OFF, routers], [ON, gated]] as const) {
+      // A block-style list would hide a router's middlewares from the one-line parser.
+      expect(text).not.toMatch(/^ {6}middlewares:\s*$/m);
+      const kinds = middlewareKinds(text);
+      for (const r of rs) {
+        for (const m of names(r.middlewares)) {
+          expect(kinds.has(m), `${r.name} names ${m}`).toBe(true);
+          if (isPublic(r)) expect(['headers', 'redirectRegex'], `${r.name} names ${m}, a ${kinds.get(m)}`).toContain(kinds.get(m));
+        }
+      }
+    }
+  });
+
+  it('middlewareKinds reads each middleware and the kind it declares', () => {
+    const text = ['http:', '  middlewares:', '    a:', '      headers:', '        x: y', '    b:', '      chain:', '        middlewares: [a]', '  services:', '    s:', '      chain:'].join('\n');
+    expect([...middlewareKinds(text)]).toEqual([['a', 'headers'], ['b', 'chain']]);
+    expect(names('[a, b@file]')).toEqual(['a', 'b@file']);
+    expect(names(undefined)).toEqual([]);
   });
 
   const service = COMPOSE.split('\n  forward-auth:\n')[1]?.split(/\n(?= {0,2}\S)/)[0] ?? '';
