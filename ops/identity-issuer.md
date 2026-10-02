@@ -669,6 +669,12 @@ C, switched on                A against C, every application line: IDENTICAL; da
 D                             dashboard 401 and 200 with basic credentials; A against D: IDENTICAL, probes and /api/rawdata
 ```
 
+**The allowlist ignores case** (Story 5.6's verifier, round 2, and re-observed in fix round 2's run ending
+2026-10-02T22:04:18Z): an issuer-verified `OWNER@EXAMPLE.TEST`, the Owner's address in capitals, is admitted
+(callback 302, the `__Host-` cookie, dashboard 200), because oauth2-proxy compares addresses case-insensitively.
+`owner@example.test.evil.example` is refused (callback 403), as `demo@cuatro.dev` is. Acceptable for one address
+the issuer verifies: the issuer, never the browser, asserts it, and a domain is case-insensitive anyway.
+
 The recreate refuses connections on every hostname for under a second, once at FA4 and once at a
 break-glass. Not proven here: the real issuer (whether it accepts the loopback redirect URI, its
 `email_verified` claim), the box's aliases, the edge, and a browser's handling of a `__Host-` cookie on
