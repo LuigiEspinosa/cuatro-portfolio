@@ -85,13 +85,31 @@ http:
       service: noop@internal
       tls:
         certResolver: cloudflare
-    # The dashboard: loopback-only entrypoint, basic auth, reached as http://localhost:8080/dashboard/
-    # through an SSH tunnel. Never on websecure.
+    # The dashboard: loopback-only entrypoint, reached as http://localhost:8080/dashboard/ through an SSH
+    # tunnel. Never on websecure. Basic auth, until the Operator sets DASHBOARD_FORWARD_AUTH=on in Traefik's
+    # gitignored `.env` and recreates it (Story 5.6, `ops/identity-issuer.md` § The Traefik dashboard behind
+    # ForwardAuth): then the forward-auth service signs the Owner in at the issuer instead (AD-11). The value
+    # is read once, at Traefik's start, so nothing merged here changes the dashboard until that step. Traefik
+    # renders this file as a Go template, comments included, so a comment never holds template braces. Each
+    # condition below sits on a line of its own, and nothing outside its three blocks depends on it.
+{{ if eq (env "DASHBOARD_FORWARD_AUTH") "on" }}
+    dashboard:
+      rule: Host(`localhost`)
+      entryPoints: [traefik]
+      middlewares: [dashboard-forward-auth]
+      service: api@internal
+    # The forward-auth service's own paths, the sign-in callback among them, never behind the gate itself.
+    dashboard-oauth2:
+      rule: Host(`localhost`) && PathPrefix(`/oauth2/`)
+      entryPoints: [traefik]
+      service: forward-auth
+{{ else }}
     dashboard:
       rule: Host(`localhost`)
       entryPoints: [traefik]
       middlewares: [dashboard-auth]
       service: api@internal
+{{ end }}
 
   middlewares:
     # The estate's header set, as the retired shared Caddyfile sent it.
@@ -131,6 +149,14 @@ http:
       basicAuth:
         users:
           - '{{ env "TRAEFIK_DASHBOARD_USERS" }}'
+    # ForwardAuth gates surfaces with no authentication of their own and is never an application's identity
+    # path (AD-11): the dashboard's router alone names it. A 2xx from the service admits the request; any
+    # other answer, its redirect to the issuer included, goes back to the browser as the service sent it.
+{{ if eq (env "DASHBOARD_FORWARD_AUTH") "on" }}
+    dashboard-forward-auth:
+      forwardAuth:
+        address: http://forward-auth:4180/
+{{ end }}
 
   services:
     cuatro-portfolio:
@@ -165,6 +191,13 @@ http:
       loadBalancer:
         servers:
           - url: http://tournament:3000
+{{ if eq (env "DASHBOARD_FORWARD_AUTH") "on" }}
+    # `ops/traefik/compose.yml`'s forward-auth service, started under its profile (Story 5.6).
+    forward-auth:
+      loadBalancer:
+        servers:
+          - url: http://forward-auth:4180
+{{ end }}
 
 # Every proxied hostname is served the Cloudflare Origin CA certificate for cuatro.dev and *.cuatro.dev
 # (AD-26), mounted read-only from Traefik's own volume `traefik-origin-ca` (`ops/traefik/compose.yml`).
