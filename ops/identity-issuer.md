@@ -468,6 +468,16 @@ path answers 404 with the Hub's 404 page: the status is the same, the body is no
   the old container is lost for a session minted on the old container after the new one started, a window
   of seconds (DW-328).
 - **`cs-tracker`'s OIDC session now lasts 8 hours**, the Hub's lifetime (DW-327 closed).
+- **Under `cs-tracker`'s kill switch a back-channel logout answers 503 and revokes nothing, and nothing is
+  lost by it** (decided 2026-10-02 from the code, after the 5.5 verifier's finding 2). The receiver must
+  fetch discovery and the JWKS to verify the token, and NFR-5 forbids any outbound call under the kill
+  switch, so it cannot verify; acting on an unverified token would let anyone sign the Owner out. Refusing
+  loses nothing because a kill-switched process holds no OIDC session: `KILL_SWITCH` is read once at boot
+  (`config/runtime.exs`; `docs/deployment.md` § Toggle the kill switch recreates the container), the new
+  process refuses every session minted before it started, and under the kill switch its sign-in and its
+  callback answer 503 and mint none (each held by a case in `oidc_controller_test.exs`, the callback's
+  added at `cs-tracker` `faaa642`). The Hub has no kill switch. A logout sent while the kill switch is on is
+  not retried and need not be.
 
 **What sign-out reaches, by what the issuer advertises.**
 
