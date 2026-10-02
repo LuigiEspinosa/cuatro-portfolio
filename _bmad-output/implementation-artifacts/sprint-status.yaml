@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-02-2026 15:45
+last_updated: 10-02-2026 19:27
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1068,7 +1068,7 @@ development_status:
   # unreachable here, ruling CT4 (DW-324). Live sign-in, rollout and the person observing one identity cross the
   # boundary are the Operator's: ops/identity-issuer.md CT1 to CT6. DW-323 to DW-326 filed.
   5-4-cs-tracker-authenticates-the-javascript-elixir-boundary: awaiting-operator
-  5-5-sign-out-reaches-every-session-including-open-liveview-socke: backlog
+  5-5-sign-out-reaches-every-session-including-open-liveview-socke: awaiting-operator
   5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the: backlog
   5-7-provider-replaceability-is-evidenced-not-asserted: backlog
   5-8-the-demo-principal-contract: backlog
