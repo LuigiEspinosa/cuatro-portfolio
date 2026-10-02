@@ -1057,7 +1057,7 @@ development_status:
   # 5.2's actions 5 and 7); DW-322 flips the Registry's identity once H3 is dated.
   5-3-the-hub-authenticates-over-oidc-authorization-code-pkce: awaiting-operator
   # 5-4 awaiting-operator 2026-10-02: repository halves built. cs-tracker (its dev branch, worktree
-  # cs-tracker-workspace/cs-tracker-dev, 3d613f2 0f10ed0 687edfb a011f93, not pushed) signs in over OIDC Authorization Code + PKCE
+  # cs-tracker-workspace/cs-tracker-dev, 3d613f2 0f10ed0 687edfb a011f93, pushed after verifier round 2's clean pass) signs in over OIDC Authorization Code + PKCE
   # through oidcc 3.8.0 from discovery alone (/auth/sign-in, /auth/callback, /auth/session), admits only
   # CS_TRACKER_OIDC_OWNER_SUB, and with all four variables set names its session __Host-cs-tracker (Secure, HttpOnly,
   # Path=/, no Domain); with any unset it answers there what an unrouted path answers, keeps _cs_tracker_key and sends
