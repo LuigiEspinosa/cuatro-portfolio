@@ -9782,4 +9782,54 @@ status: done
     (`/.well-known/openid-configuration`) for `end_session_endpoint`, `backchannel_logout_supported` and
     `backchannel_logout_session_supported`, and record them; **then Story 5.5**, which builds on them.
     **Trigger: the first read of the issuer's discovery document.**
+
+    **Amended 2026-10-02 by Story 5.2: the public evidence says no.** The estate's issuer does not exist
+    yet, so its own document was not read. A live Clerk production issuer's was:
+    `https://clerk.clerk.com/.well-known/openid-configuration`, read 2026-10-02T14:38:31Z (HTTP 200, sha256
+    `5c2a1997...ab17c62`), states `"backchannel_logout_supported":false` and
+    `"frontchannel_logout_supported":false` and has no `end_session_endpoint`; it does advertise a
+    `revocation_endpoint`. Clerk's sample metadata document names none of the three
+    (`ops/identity-issuer.md` § Logout, as far as it can be read today). Unless the estate's instance
+    differs, AD-11's "RP-Initiated plus Back-Channel" cannot be met as written. **Owner now: the Operator's
+    ruling on AD-11's logout rule, before Story 5.5 opens**, with `ops/identity-issuer.md` Pending Operator
+    action 3 recording the estate issuer's own values first. Still unknown until then: those values, and
+    whether any plan or instance setting changes them.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-2-one-clerk-issuer-and-one-oidc-client-per-application.md`
+  id: DW-320
+  summary: >-
+    AD-3 derives "Clerk client `<id>`", but Clerk assigns each OAuth application's Client ID itself, so
+    the client id value cannot be derived from the application id.
+  evidence: |-
+    Found 2026-10-02 at 14:38Z by Story 5.2, reading
+    `https://clerk.com/docs/guides/configure/auth-strategies/oauth/single-sign-on.md`: the Operator
+    completes "`Name` - Helps you identify your application." and then saves the Client ID Clerk shows,
+    and "the create response includes the Client ID and Client Secret". Client ID Metadata Documents let a
+    public client use a URL as its `client_id`, which is neither the id nor available to the estate's
+    confidential clients. Story 5.2 holds AD-3 where it can: the OAuth application's Name is the id and
+    every variable carrying the value is derived from it (`ops/identity-issuer.md` § The clients, held by
+    `ops/__tests__/identity-issuer.test.ts`).
+
+    **Owner: the Operator, by a ruling that narrows AD-3's "Clerk client `<id>`" to the OAuth
+    application's name and the variables that carry its credentials.** **Trigger: the next spine
+    amendment, or Story 5.7, whose replaceability evidence may point an application at an issuer that
+    does let the client id be chosen.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-2-one-clerk-issuer-and-one-oidc-client-per-application.md`
+  id: DW-321
+  summary: >-
+    The Clerk issuer's own hostnames under `cuatro.dev` must be DNS only for Clerk's CNAME check, which
+    AD-26 ("Every live `cuatro.dev` hostname is proxied by Cloudflare") forbids as written.
+  evidence: |-
+    Found 2026-10-02 at 14:40Z by Story 5.2's review, reading
+    `https://clerk.com/docs/guides/development/deployment/production.md`: "Set the DNS record for this
+    subdomain to a "DNS only" mode on your host to prevent proxying." The same guide offers a Frontend API
+    proxy instead ("If you're unable to add a CNAME record for the Frontend API, you can use a proxy
+    instead"), which would put a Clerk route on the box's Traefik. Nothing exists yet: the records are
+    added by `ops/identity-issuer.md` § The sequence step 5. KV-7 is the precedent for accepting DNS-only
+    `cuatro.dev` hostnames as a standing known violation.
+
+    **Owner: the Operator's ruling, `ops/identity-issuer.md` Pending Operator action 9.** **Trigger: before
+    the issuer's DNS records are added.** Either accept them DNS only as a new KV entry in
+    `ops/known-violations.md`, or proxy the Frontend API, which then needs its own runbook.
   status: open
