@@ -107,7 +107,9 @@ line and this record use the same name. Values live in exactly three places and 
    sees only issuer configuration and client credentials (FR-23).
 
 `ops/__tests__/identity-issuer.test.ts` fails if any file in the repository that git does not ignore
-assigns one of the five names a value.
+assigns one of the five names a value, in the env form `NAME=value` or the YAML form `NAME: value` (a
+compose `environment:` map, a workflow `env:` block); a `$` interpolation such as `${{ secrets.NAME }}` is
+not a value.
 
 **`.env.example` does not document them yet.** The authoring session's permission settings deny every
 read and write of `.env.*`, `.env.example` included, and that wall was not worked around. Pending Operator
@@ -136,11 +138,16 @@ issuer does not exist, so its own discovery document cannot be read. Two publish
 
 | Source | Retrieved (UTC) | `end_session_endpoint` | `backchannel_logout_supported` | `frontchannel_logout_supported` | `revocation_endpoint` |
 |---|---|---|---|---|---|
-| `https://clerk.clerk.com/.well-known/openid-configuration`, the issuer `https://clerk.clerk.com` (a live Clerk production instance, by the `clerk.<domain>` pattern the one for `clerk.com`), HTTP 200, 1,181 bytes, sha256 `5c2a1997319044c8691e9ad9ad6d9fd1cd04bc649fd065fd97b06ee02ab17c62` | 2026-10-02T14:38:31Z | Absent | `false` | `false` | `https://clerk.clerk.com/oauth/token/revoke` |
+| `https://clerk.clerk.com/.well-known/openid-configuration`, the issuer `https://clerk.clerk.com` (a live Clerk production instance, by the `clerk.<domain>` pattern the one for `clerk.com`), HTTP 200, 1,181 bytes (see the note below on its hash) | 2026-10-02T14:38:31Z | Absent | `false` | `false` | `https://clerk.clerk.com/oauth/token/revoke` |
 | The sample "authorization server metadata" document on `https://clerk.com/docs/guides/configure/auth-strategies/oauth/how-clerk-implements-oauth.md` | 2026-10-02T14:38:18Z | Absent | Absent | Absent | Absent |
 
 The same live instance's `/.well-known/oauth-authorization-server` (2026-10-02T14:38:31Z, HTTP 200) also
-names no `end_session_endpoint`. No Clerk page read documents RP-Initiated or Back-Channel logout
+names no `end_session_endpoint`.
+
+The document's bytes vary between reads, so no hash pins it: three reads of 1,181 bytes each hashed
+differently (sha256 prefixes `5c2a1997` at 14:38:31Z, `e5ad925d` at 14:55:58Z in the independent verifier's
+read, `91342d62` at 15:04:33Z), and all three carried the same values in the four columns above. The fields,
+not a hash, are the evidence; re-read them rather than compare a digest. No Clerk page read documents RP-Initiated or Back-Channel logout
 (`ops/clerk-pricing-and-terms.md` § Found in passing, filed, and this story's reading of the two OAuth
 guides above).
 

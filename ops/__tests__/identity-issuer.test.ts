@@ -40,6 +40,13 @@ const prefix = (id: string) => id.toUpperCase().replace(/-/g, '_');
 const clients = clientRows(RECORD);
 const variables = ['OIDC_ISSUER', ...clients.flatMap((c) => [c.clientIdVariable, c.secretVariable])];
 
+/**
+ * A git grep ERE for a value assigned to one of `names`: `NAME=value` (env file, shell) or `NAME: value`
+ * (a compose `environment:` map, a workflow `env:` block; YAML indents with spaces only). An optional opening quote is allowed, and a value
+ * starting with whitespace, a `$` interpolation, a quote or a closing backtick in prose is not a value.
+ */
+const valuePattern = (names: string[]) => `(${names.join('|')})(=|: +)["']?[^[:space:]$"'\`]`;
+
 describe('the parser', () => {
   it('reads the rows of one section only', () => {
     const text = ['# x', '## The clients', '| Id | Name |', '| `a-b` | `a-b` | `A` | `B` | x |', '## Next', '| `c` | `c` | `C` | `D` |'].join('\n');
@@ -77,9 +84,16 @@ describe('credentials never live in the repository', () => {
   //   for (const v of variables) expect(new RegExp(`^${v}=[ \\t]*$`, 'm').test(example), v).toBe(true);
   it.todo('documents every variable in .env.example with an empty value');
 
+  it('the value pattern catches both assignment forms and spares interpolations', () => {
+    const re = new RegExp(valuePattern(['X_OIDC_CLIENT_SECRET']).replace('[:space:]', '\\s'));
+    for (const hit of ['X_OIDC_CLIENT_SECRET=v', 'X_OIDC_CLIENT_SECRET="v"', '  X_OIDC_CLIENT_SECRET: v', "X_OIDC_CLIENT_SECRET: 'v'"])
+      expect(re.test(hit), hit).toBe(true);
+    for (const miss of ['X_OIDC_CLIENT_SECRET=', 'X_OIDC_CLIENT_SECRET=""', 'X_OIDC_CLIENT_SECRET=${X}', 'X_OIDC_CLIENT_SECRET: ${{ secrets.X }}', 'X_OIDC_CLIENT_SECRET: "${X}"', '`X_OIDC_CLIENT_SECRET`: prose', 'X_OIDC_CLIENT_SECRET:'])
+      expect(re.test(miss), miss).toBe(false);
+  });
+
   it('assigns no variable a value in any tracked or untracked, unignored file', () => {
-    // A value is anything after `=` but whitespace, a `$` interpolation or a closing backtick in prose.
-    const pattern = `(${variables.join('|')})=[^[:space:]$\`]`;
+    const pattern = valuePattern(variables);
     const found = spawnSync('git', ['grep', '--untracked', '-l', '-E', pattern], { cwd: ROOT, encoding: 'utf8' });
     expect(found.error).toBeUndefined();
     expect(found.stdout.trim()).toBe('');
