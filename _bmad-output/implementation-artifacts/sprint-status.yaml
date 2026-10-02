@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-02-2026 14:20
+last_updated: 10-02-2026 14:54
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1037,7 +1037,16 @@ development_status:
   # marginal spend today), recommendation Hobby at $0, pending the Operator: ops/clerk-pricing-and-terms.md
   # § Pending Operator actions 1 to 3 (action 1 closes the story). DW-319 filed (no logout on the docs pages read).
   5-1-refresh-clerk-s-pricing-and-terms: awaiting-operator
-  5-2-one-clerk-issuer-and-one-oidc-client-per-application: backlog
+  # 5-2 awaiting-operator 2026-10-02: repository half built on dev. New record ops/identity-issuer.md: one Clerk
+  # issuer (application cuatro, production instance on id.cuatro.dev, decided so Clerk cookies stay off .cuatro.dev),
+  # one confidential OIDC client per FR-21 application (cuatro-portfolio, cs-tracker), each Name the Registry id and
+  # each credential named <ID>_OIDC_CLIENT_ID and _SECRET plus OIDC_ISSUER, held by ops/__tests__/identity-issuer.test.ts
+  # with a scan that no unignored file assigns one a value. Logout read from the live issuer clerk.clerk.com at 14:38Z:
+  # backchannel_logout_supported false, no end_session_endpoint; DW-319 amended to an Operator ruling before 5.5.
+  # DW-320 (Clerk assigns the Client ID, AD-3) and DW-321 (DNS-only issuer hostnames against AD-26) filed.
+  # .env.example not edited: the session permission settings deny .env.*; block and test case in the record.
+  # Box, Clerk, Cloudflare and GitHub half is the Operator: ops/identity-issuer.md Pending Operator actions 1 to 9.
+  5-2-one-clerk-issuer-and-one-oidc-client-per-application: awaiting-operator
   5-3-the-hub-authenticates-over-oidc-authorization-code-pkce: backlog
   5-4-cs-tracker-authenticates-the-javascript-elixir-boundary: backlog
   5-5-sign-out-reaches-every-session-including-open-liveview-socke: backlog
