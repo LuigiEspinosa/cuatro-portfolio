@@ -9850,3 +9850,63 @@ status: done
     `.cuatro.dev` cookie.** Move `cuatro-portfolio` to `identity: oidc` in `contracts/registry.json` with a
     minor `contract_version` bump, and update whatever pins the old value.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
+  id: DW-323
+  summary: >-
+    The Registry still declares `cs-tracker` as `identity: none` although it now carries an OIDC sign-in,
+    because no person has yet observed one identity cross the boundary against the live issuer.
+  evidence: |-
+    Found 2026-10-02 by Story 5.4, which built `cs-tracker`'s sign-in on its `dev` branch and proved it only
+    against a stand-in issuer in its own suite. AD-12 makes `identity` a declaration and NFR-9 forbids one
+    ahead of the fact, so the entry stays `none` until `ops/identity-issuer.md` action CT5 is dated.
+
+    **Owner: the session that dates action CT5, or Story 5.11.** **Trigger: CT5 dated with equal subjects and
+    no `.cuatro.dev` cookie.** Move `cs-tracker` to `identity: oidc` in `contracts/registry.json` with a minor
+    `contract_version` bump (with DW-322's flip if both are due), and update whatever pins the old value.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
+  id: DW-324
+  summary: >-
+    `cs-tracker` pins `oidcc` 3.8.0, the version the architecture's Stack table names, and 3.8.0 carries
+    EEF-CVE-2026-75759 (HIGH, fixed in 3.9.0).
+  evidence: |-
+    Found 2026-10-02 by Story 5.4 through Hex 2.5.1's audit during `mix deps.get`, and read at
+    `https://api.osv.dev/v1/vulns/EEF-CVE-2026-75759`: 3.8.0 accepts an encrypted ID token with no signature
+    inside. `cs-tracker` unsets the ID token encryption fields after discovery so it never decrypts one, and
+    its suite reproduces the bypass with that line removed. Moving off the named version amends the spine's
+    Stack table, which is a ruling.
+
+    **Owner: the Operator, `ops/identity-issuer.md` action CT4.** **Trigger: any time; before CT3 for the
+    first rollout to carry it.** Options and a recommendation are in CT4.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
+  id: DW-325
+  summary: >-
+    Hex 2.5.1's audit flags twelve packages `cs-tracker` locked before Story 5.4 (bandit, cowboy, cowlib,
+    hpax, lazy_html, mint, phoenix, phoenix_live_view, plug, postgrex, req, swoosh), several HIGH.
+  evidence: |-
+    Found 2026-10-02 by Story 5.4: `mix deps.get` with Hex 2.5.1 in the production builder image
+    (`hexpm/elixir:1.19.5-erlang-28.5-debian-trixie-20260610-slim`) lists advisories against each, for
+    example EEF-CVE-2026-65623 and EEF-CVE-2026-74836 in Bandit 1.11.1, which serves `cs-tracker`. The
+    workstation's Hex 2.4.2 prints none. None is Story 5.4's change; `cs-tracker` has no CI and no dependency
+    automation (DW-14), so nothing else surfaced them.
+
+    **Owner: a `cs-tracker` dependency story the Operator schedules.** **Trigger: before the next `cs-tracker`
+    rollout that is not Story 5.4's.** Read each advisory's reachability, bump what applies, run
+    `mix precommit` and build the image.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
+  id: DW-326
+  summary: >-
+    `cs-tracker` keeps its Steam OpenID 2.0 sign-in beside the OIDC one, a second identity path and the one
+    piece of provider-specific sign-in logic left in an OIDC application.
+  evidence: |-
+    Found 2026-10-02 by Story 5.4, which added OIDC and left `/auth/steam` working so `main` behaves exactly
+    as before while the issuer does not exist. With OIDC configured a visitor without a session is sent to
+    OIDC, and Steam is reachable by URL only. `STEAM_ID` also names the inventory `cs-tracker` reads, so
+    retiring the sign-in does not retire the variable. AD-11 and FR-23 bind provider-specific logic, which
+    Story 5.7 evidences.
+
+    **Owner: Story 5.7, or the Operator's ruling.** **Trigger: after `ops/identity-issuer.md` action CT5.**
+    Remove `/auth/steam` and its callback, or record why a second path stays.
+  status: open
