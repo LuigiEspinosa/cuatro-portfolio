@@ -82,9 +82,10 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
 
 /**
  * The routes the Hub serves that render no Hub markup at all: the 2-8 sweep's `NON_HUB_ROUTES` and its
- * `AUTH_ROUTES`, Story 5.3's sign-in handlers, which answer 404 with an empty body while unconfigured.
+ * `AUTH_ROUTES`, Story 5.3's sign-in and Story 5.5's sign-out handlers, which answer 404 with an empty body
+ * while unconfigured.
  */
-const NON_HUB_ROUTES = ['/api/health', '/auth/callback', '/auth/session', '/auth/sign-in'] as const;
+const NON_HUB_ROUTES = ['/api/health', '/auth/backchannel-logout', '/auth/callback', '/auth/session', '/auth/sign-in', '/auth/sign-out'] as const;
 
 /** The entrance the home surface animates, and the selector the settle waits on. */
 const ENTRANCE_SELECTOR = '.nav-link, .contact-container a';

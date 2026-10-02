@@ -165,11 +165,11 @@ const SURFACES = [
 const NON_HUB_ROUTES = ['/api/health'] as const;
 
 /**
- * The Hub's sign-in route handlers (Story 5.3, `apps/hub/lib/oidc.ts`). They render no markup, and the
+ * The Hub's sign-in and sign-out route handlers (Stories 5.3 and 5.5, `apps/hub/lib/oidc.ts`). They render no markup, and the
  * suite runs the Hub with no OIDC variables, so each answers 404 with an empty body and sets no cookie:
  * the unconfigured Hub `main` may deploy before the issuer exists. The last case in this file pins that.
  */
-const AUTH_ROUTES = ['/auth/callback', '/auth/session', '/auth/sign-in'] as const;
+const AUTH_ROUTES = ['/auth/backchannel-logout', '/auth/callback', '/auth/session', '/auth/sign-in', '/auth/sign-out'] as const;
 
 /**
  * The entrance the home surface animates, and the selector the settle waits on.

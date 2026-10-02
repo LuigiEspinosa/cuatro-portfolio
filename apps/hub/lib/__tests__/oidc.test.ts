@@ -11,7 +11,9 @@ import { SignJWT, decodeJwt, exportJWK, generateKeyPair, type CryptoKey, type JW
 import { GET as signIn } from '@/app/auth/sign-in/route';
 import { GET as callback } from '@/app/auth/callback/route';
 import { GET as sessionRoute } from '@/app/auth/session/route';
-import { REDIRECT_URI, SESSION_COOKIE, TRANSACTION_COOKIE } from '@/lib/oidc';
+import { GET as signOutRoute } from '@/app/auth/sign-out/route';
+import { GET as backchannelGet, POST as backchannelRoute } from '@/app/auth/backchannel-logout/route';
+import { BACKCHANNEL_LOGOUT_EVENT, REDIRECT_URI, SESSION_COOKIE, TRANSACTION_COOKIE, oidcConfig } from '@/lib/oidc';
 
 // Story 5.3 (AD-11, FR-23). The Hub's sign-in is driven end to end against a stand-in OIDC issuer on
 // loopback: discovery, a JWKS, and a token endpoint that checks client authentication and PKCE the way a
@@ -32,6 +34,8 @@ const issuerState = {
   signWithForeignKey: false,
   /** Sign the ID token HS256 with the client secret, the forgery an asymmetric-only allow-list refuses. */
   signWithClientSecret: false,
+  /** Story 5.5: whether discovery advertises an end_session_endpoint. */
+  endSession: true,
   tokenRequests: [] as { authorization?: string; body: URLSearchParams }[],
   /** code -> what the authorization request bound it to. */
   codes: new Map<string, { challenge: string; method: string; redirectUri: string; clientId: string; nonce: string }>(),
@@ -56,6 +60,9 @@ beforeAll(async () => {
         token_endpoint: `${issuer}/token`,
         jwks_uri: `${issuer}/jwks`,
         code_challenge_methods_supported: ['S256'],
+        ...(issuerState.endSession ? { end_session_endpoint: `${issuer}/end-session?ui=1` } : {}),
+        backchannel_logout_supported: true,
+        backchannel_logout_session_supported: true,
       });
     if (url.pathname === '/jwks') return json(200, { keys: [jwk] });
     if (url.pathname === '/token' && req.method === 'POST') {
@@ -99,7 +106,13 @@ const configure = () => {
   vi.stubEnv('OIDC_ISSUER', issuer);
   vi.stubEnv('CUATRO_PORTFOLIO_OIDC_CLIENT_ID', CLIENT_ID);
   vi.stubEnv('CUATRO_PORTFOLIO_OIDC_CLIENT_SECRET', CLIENT_SECRET);
+  // The first configuration read fixes the process's revocation epoch, as the first request does in the Hub.
+  oidcConfig();
 };
+
+/** Story 5.5: revocations live in process memory; each test starts with a fresh process's worth. */
+const REVOCATIONS = Symbol.for('cuatro-portfolio.hub.oidc.revocations');
+const restartProcess = () => delete (globalThis as Record<symbol, unknown>)[REVOCATIONS];
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -107,7 +120,9 @@ afterEach(() => {
   issuerState.claims = {};
   issuerState.signWithForeignKey = false;
   issuerState.signWithClientSecret = false;
+  issuerState.endSession = true;
   issuerState.tokenRequests = [];
+  restartProcess();
   vi.restoreAllMocks();
   issuerState.codes.clear();
 });
@@ -152,6 +167,9 @@ describe('unconfigured (AC1)', () => {
       expect((await signIn()).status, missing).toBe(404);
       expect((await callback(request('/auth/callback?code=x&state=y'))).status, missing).toBe(404);
       expect((await sessionRoute(request('/auth/session'))).status, missing).toBe(404);
+      expect((await signOutRoute(request('/auth/sign-out'))).status, missing).toBe(404);
+      expect((await backchannelRoute(logoutRequest(new URLSearchParams({ logout_token: 'x' })))).status, missing).toBe(404);
+      expect((await backchannelGet()).status, missing).toBe(404);
       vi.unstubAllEnvs();
     }
   });
@@ -326,9 +344,237 @@ describe('host-only cookies (AC4)', () => {
 
 describe('no provider-specific logic (AC5, FR-23)', () => {
   it('names no identity provider in the module or the routes', () => {
-    for (const file of ['apps/hub/lib/oidc.ts', 'apps/hub/app/auth/sign-in/route.ts', 'apps/hub/app/auth/callback/route.ts', 'apps/hub/app/auth/session/route.ts']) {
+    for (const file of ['apps/hub/lib/oidc.ts', 'apps/hub/app/auth/sign-in/route.ts', 'apps/hub/app/auth/callback/route.ts', 'apps/hub/app/auth/session/route.ts', 'apps/hub/app/auth/sign-out/route.ts', 'apps/hub/app/auth/backchannel-logout/route.ts']) {
       const source = readFileSync(resolve(process.cwd(), file), 'utf8');
       expect(source, file).not.toMatch(/clerk|auth0|okta|cognito|keycloak|zitadel|authentik|google|github|azure|entra/i);
+    }
+  });
+});
+
+// Story 5.5 (AD-11, FR-22). Sign-out and Back-Channel Logout against the same stand-in issuer, which
+// advertises an end_session_endpoint and signs logout tokens with the key it signs ID tokens with.
+
+/** A full sign-in; answers the session cookie's value. `claims` are added to the ID token. */
+async function signedIn(claims: JWTPayload = {}) {
+  issuerState.claims = claims;
+  const a = await authorize();
+  const response = await callbackWith({ code: a.code, state: a.state }, a.transaction);
+  expect(response.status).toBe(302);
+  issuerState.claims = {};
+  return setCookie(response, SESSION_COOKIE)!.value;
+}
+
+const sessionStatus = async (cookie: string) => (await sessionRoute(request('/auth/session', { [SESSION_COOKIE]: cookie }))).status;
+
+const signOutWith = (cookie: string | undefined, headers: Record<string, string> = { 'sec-fetch-site': 'same-origin' }) =>
+  signOutRoute(
+    new NextRequest(new URL('/auth/sign-out', 'https://cuatro.dev'), {
+      headers: { ...headers, ...(cookie === undefined ? {} : { cookie: `${SESSION_COOKIE}=${cookie}` }) },
+    }),
+  );
+
+function logoutRequest(body: URLSearchParams | string, contentType = 'application/x-www-form-urlencoded') {
+  return new NextRequest(new URL('/auth/backchannel-logout', 'https://cuatro.dev'), {
+    method: 'POST',
+    headers: { 'content-type': contentType },
+    body: body.toString(),
+  });
+}
+
+const b64 = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+
+/** A logout token as Back-Channel Logout 1.0 § 2.4 shapes it, with `claims` merged and `omit` removed. */
+async function logoutToken(claims: JWTPayload = {}, omit: string[] = [], how: 'issuer' | 'foreign' | 'secret' | 'none' = 'issuer') {
+  const now = Math.floor(Date.now() / 1000);
+  const payload: JWTPayload = {
+    iss: issuer,
+    aud: CLIENT_ID,
+    iat: now,
+    exp: now + 120,
+    jti: `jti-${Math.random()}`,
+    sub: 'user_stand_in',
+    events: { [BACKCHANNEL_LOGOUT_EVENT]: {} },
+    ...claims,
+  };
+  for (const name of omit) delete payload[name];
+  if (how === 'none') return `${b64({ alg: 'none', typ: 'logout+jwt' })}.${b64(payload)}.`;
+  if (how === 'secret')
+    return new SignJWT(payload).setProtectedHeader({ alg: 'HS256', typ: 'logout+jwt' }).sign(new TextEncoder().encode(CLIENT_SECRET));
+  return new SignJWT(payload)
+    .setProtectedHeader({ alg: 'RS256', kid: 'stand-in', typ: 'logout+jwt' })
+    .sign(how === 'foreign' ? foreignKey : signingKey);
+}
+
+const postLogout = async (token: string) => backchannelRoute(logoutRequest(new URLSearchParams({ logout_token: token })));
+
+describe("the Hub's own sign-out (Story 5.5, AC2)", () => {
+  it('revokes every Hub session of the subject, clears the cookie, and follows the end_session_endpoint', async () => {
+    configure();
+    const first = await signedIn();
+    const second = await signedIn();
+    expect(await sessionStatus(first)).toBe(200);
+
+    const response = await signOutWith(first);
+    expect(response.status).toBe(302);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    const location = new URL(response.headers.get('location') ?? '');
+    expect(`${location.origin}${location.pathname}`).toBe(`${issuer}/end-session`);
+    expect(Object.fromEntries(location.searchParams)).toEqual({ ui: '1', client_id: CLIENT_ID, post_logout_redirect_uri: 'https://cuatro.dev/' });
+    const cleared = setCookie(response, SESSION_COOKIE)?.header ?? '';
+    expect(cleared).toMatch(/^__Host-hub-session=;/);
+    for (const attribute of [/; Max-Age=0/i, /; Secure/i, /; HttpOnly/i, /; Path=\/(;|$)/i]) expect(cleared).toMatch(attribute);
+    expect(cleared).not.toMatch(/; Domain=/i);
+
+    // The cookie it was given, and the subject's other session on another device.
+    expect(await sessionStatus(first)).toBe(401);
+    expect(await sessionStatus(second)).toBe(401);
+  });
+
+  it('signs out of the Hub alone when the issuer advertises no end_session_endpoint, or discovery fails', async () => {
+    configure();
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    for (const arrange of [() => (issuerState.endSession = false), () => (issuerState.discoveryIssuer = 'https://elsewhere.example.test')]) {
+      const session = await signedIn();
+      arrange();
+      const response = await signOutWith(session);
+      expect(response.status).toBe(302);
+      expect(response.headers.get('location')).toBe('https://cuatro.dev/');
+      expect(setCookie(response, SESSION_COOKIE)?.header).toMatch(/Max-Age=0/i);
+      expect(await sessionStatus(session)).toBe(401);
+      issuerState.endSession = true;
+      issuerState.discoveryIssuer = undefined;
+    }
+    expect(logged).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses a sign-out another site started or a browser prefetched, and revokes nothing', async () => {
+    configure();
+    const session = await signedIn();
+    for (const headers of <Record<string, string>[]>[
+      { 'sec-fetch-site': 'cross-site' },
+      { 'sec-fetch-site': 'same-site' },
+      { 'sec-fetch-site': 'same-origin', 'sec-purpose': 'prefetch' },
+      { purpose: 'prefetch' },
+    ]) {
+      const response = await signOutWith(session, headers);
+      expect(response.status, JSON.stringify(headers)).toBe(403);
+      expect(response.headers.getSetCookie(), JSON.stringify(headers)).toEqual([]);
+    }
+    expect(await sessionStatus(session)).toBe(200);
+    // A typed URL or a bookmark (`none`), and a client that sends no Fetch Metadata, sign out.
+    expect((await signOutWith(session, { 'sec-fetch-site': 'none' })).status).toBe(302);
+    expect((await signOutWith(undefined, {})).status).toBe(302);
+  });
+
+  it('lets the subject sign in again once the second of the sign-out has passed', async () => {
+    configure();
+    const old = await signedIn();
+    await signOutWith(old);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(Date.now() + 1000);
+    try {
+      const fresh = await signedIn();
+      expect(await sessionStatus(fresh)).toBe(200);
+      expect(await sessionStatus(old)).toBe(401);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('Back-Channel Logout (Story 5.5, AC4)', () => {
+  it('a valid logout token naming the subject revokes every session of it, and answers 200 no-store', async () => {
+    configure();
+    const first = await signedIn();
+    const second = await signedIn();
+    const response = await postLogout(await logoutToken());
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(await sessionStatus(first)).toBe(401);
+    expect(await sessionStatus(second)).toBe(401);
+  });
+
+  it('a logout token naming only a sid revokes the session the issuer gave that sid, and no other', async () => {
+    configure();
+    const named = await signedIn({ sid: 'sid-a' });
+    const other = await signedIn({ sid: 'sid-b' });
+    expect((await postLogout(await logoutToken({ sid: 'sid-a' }, ['sub']))).status).toBe(200);
+    expect(await sessionStatus(named)).toBe(401);
+    expect(await sessionStatus(other)).toBe(200);
+  });
+
+  it('a replayed logout token is refused', async () => {
+    configure();
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const token = await logoutToken({ sid: 'sid-a' }, ['sub']);
+    expect((await postLogout(token)).status).toBe(200);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(Date.now() + 1000);
+    try {
+      const session = await signedIn({ sid: 'sid-a' });
+      expect((await postLogout(token)).status).toBe(400);
+      expect(await sessionStatus(session)).toBe(200);
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(logged).toHaveBeenCalledWith('auth back-channel logout:', 'a replayed logout token');
+  });
+
+  const now = () => Math.floor(Date.now() / 1000);
+  const form = async (claims: JWTPayload = {}, omit: string[] = [], how?: 'foreign' | 'secret' | 'none') =>
+    logoutRequest(new URLSearchParams({ logout_token: await logoutToken(claims, omit, how) }));
+  const refusals: [string, () => Promise<NextRequest>][] = [
+    ['a token signed by a key outside the JWKS', () => form({}, [], 'foreign')],
+    ['a token signed HS256 with the client secret', () => form({}, [], 'secret')],
+    ['an unsigned token (alg none)', () => form({}, [], 'none')],
+    ['an encrypted token (JWE)', async () => logoutRequest(new URLSearchParams({ logout_token: `${b64({ alg: 'dir', enc: 'A256GCM' })}..aXY.Y2lwaGVy.dGFn` }))],
+    ['another issuer', () => form({ iss: 'https://elsewhere.example.test' })],
+    ['another audience', () => form({ aud: 'someone-else' })],
+    ['no iat', () => form({}, ['iat'])],
+    ['an iat over five minutes old', () => form({ iat: now() - 400 })],
+    ['no exp', () => form({}, ['exp'])],
+    ['an exp in the past', () => form({ iat: now() - 120, exp: now() - 60 })],
+    ['no jti', () => form({}, ['jti'])],
+    ['an empty jti', () => form({ jti: '' })],
+    ['no events claim', () => form({}, ['events'])],
+    ['events without the back-channel member', () => form({ events: { 'http://schemas.openid.net/event/other': {} } })],
+    ['a back-channel member that is not an object', () => form({ events: { [BACKCHANNEL_LOGOUT_EVENT]: true } })],
+    ['a nonce', () => form({ nonce: 'n' })],
+    ['neither sub nor sid', () => form({}, ['sub'])],
+    ['no logout_token', async () => logoutRequest(new URLSearchParams({ other: 'x' }))],
+    ['a body that is not a form', async () => logoutRequest(JSON.stringify({ logout_token: await logoutToken() }), 'application/json')],
+  ];
+
+  it.each(refusals)('refuses %s with 400, no-store, and revokes nothing', async (_name, build) => {
+    configure();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const session = await signedIn({ sid: 'sid-a' });
+    const response = await backchannelRoute(await build());
+    expect(response.status).toBe(400);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(await response.json()).toEqual({ error: 'invalid_request' });
+    expect(await sessionStatus(session)).toBe(200);
+  });
+
+  it('answers a GET 404 while configured: the specification defines POST only', async () => {
+    configure();
+    expect((await backchannelGet()).status).toBe(404);
+  });
+});
+
+describe('a restart forgets revocations, so it refuses every older session (Story 5.5, AC6)', () => {
+  it('refuses a session minted before this process started', async () => {
+    configure();
+    const session = await signedIn();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(Date.now() + 2000);
+    try {
+      restartProcess();
+      oidcConfig();
+      expect(await sessionStatus(session)).toBe(401);
+      expect(await sessionStatus(await signedIn())).toBe(200);
+    } finally {
+      vi.useRealTimers();
     }
   });
 });

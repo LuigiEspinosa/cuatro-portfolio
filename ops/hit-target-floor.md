@@ -272,7 +272,9 @@ added `/auth/sign-in`, `/auth/callback` and `/auth/session` (`apps/hub/lib/oidc.
 registered as `AUTH_ROUTES` rather than `NON_HUB_ROUTES`, because the suite runs the Hub without OIDC
 variables and so each answers 404 with an empty body, not 2xx JSON. A standing case asserts exactly
 that, with no `Set-Cookie`, so the unconfigured Hub `main` may deploy before the issuer exists is held
-in the browser suite too; `accessibility-floor.pw.ts` excludes the same three from its surfaces.
+in the browser suite too; `accessibility-floor.pw.ts` excludes the same three from its surfaces. Story 5-5
+added two more the same way, `/auth/sign-out` and `/auth/backchannel-logout`, five in all; the second
+defines `POST` only and answers a `GET` 404 with an empty body whether or not the Hub is configured.
 
 ## The floor
 
