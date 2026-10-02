@@ -71,4 +71,30 @@ Blind Hunter layer run inline by the builder, not as a context-free subagent (no
 
 ## Independent verification
 
-No independent verifier has run yet.
+Independent verifier, round 1, 2026-10-02: **pass**, no blocker, major or minor finding. A context-free
+session that did not write the change ran the following against `f7f4c80` on `dev`.
+
+- Spec against intent: AC1 to AC7 cover `epics.md` Story 5.1's intent (AD-22's bounded scope, the
+  recurring cost as a named decision against NFR-4) and the spine's Recurring cost row. Nothing narrowed.
+- AC1: re-fetched the four Clerk pages at 2026-10-02T14:17Z (all HTTP 200, the pricing page again
+  624,478 bytes) and checked every double-quoted string in `ops/clerk-pricing-and-terms.md` against
+  them by script: 62 found verbatim. Of the four misses, two are split by page markup and were found in
+  the page source (the `id_token` lifetime, the "free trial" designation), one is the spine's own
+  words (found in AD-22) and one is the record's own decision marker. The terms still read "Last
+  updated: July 2, 2026". Plan assignments for MFA, branding removal, the fixed 7-day session and
+  satellite domains were checked in the pricing page's comparison table.
+- AC2: the eight-row table covers every AD-11 element; the pricing page names no OAuth application
+  (zero matches), so "No Clerk page read prices or limits it" is accurate and carries action 2.
+- AC3 and AC4: each term is quoted with its meaning; the decision row has three options, figures, the
+  $0 recorded marginal spend with sources, the total against $100, a recommendation, pending the
+  Operator, and is Pending Operator action 1.
+- AC5: the diff touches only the record, `AGENTS.md`, this spec, `epic-5-context.md`,
+  `deferred-work.md` and `sprint-status.yaml`; no code, env file or secret. DW-319's claim was
+  re-checked: neither OAuth docs page contains `logout`, `end_session` or `backchannel`.
+- AC6: `corepack pnpm typecheck` exit 0. `corepack pnpm test --run`: 1839 passed, 1 skipped, 5 failed,
+  all five in WSL bash suites (DW-135). Each of the six WSL suites re-run alone passed in full
+  (`deploy-remote` 28, `library-backup` 59, `tracker-backup` 11, `postgres-backup` 20 plus 1 skipped,
+  `postgres-init` 17, `tournament-backup` 15). No Hub code changed, so no Hub build or rendered-output run.
+- AC7: Operator-pending, correctly: the plan ruling is his (Pending Operator action 1).
+- Prose and secrets: no em-dash, en-dash, spaced double-dash or emoji in any added line; no key,
+  secret or password pattern.
