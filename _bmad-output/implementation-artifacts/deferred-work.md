@@ -9794,6 +9794,13 @@ status: done
     ruling on AD-11's logout rule, before Story 5.5 opens**, with `ops/identity-issuer.md` Pending Operator
     action 3 recording the estate issuer's own values first. Still unknown until then: those values, and
     whether any plan or instance setting changes them.
+
+    **Amended 2026-10-02 by Story 5.5, which opened with the ruling still open and built only what holds
+    either way:** each application's own sign-out, RP-Initiated Logout followed whenever discovery
+    advertises an `end_session_endpoint`, and a Back-Channel receiver in each application, proven against
+    a stand-in issuer advertising both. On an issuer advertising neither, sign-out reaches only the
+    application signed out of, its open LiveView sockets included (`ops/identity-issuer.md` § Sign-out, its
+    table). The ruling is still action 11, and Story 5.5's AC10 waits on it.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-2-one-clerk-issuer-and-one-oidc-client-per-application.md`
   id: DW-320
@@ -9923,4 +9930,27 @@ status: done
 
     **Owner: Story 5.5 (sign-out reaches every session).** **Trigger: when Story 5.5 starts.** Give the
     `cs-tracker` session a server-side expiry matching the Hub's, or record why it differs.
+
+    **Closed 2026-10-02 by Story 5.5, on `cs-tracker`'s `dev`.** The callback records the session's mint
+    time (`oidc_iat`), and `CsTracker.Auth.OIDC.signed_in?/1`, which the HTTP gate, the live gate and
+    `/auth/session` all call, refuses a session 8 hours old or more, the Hub's `SESSION_SECONDS`, as well as
+    a revoked one. A case holds both gates to it. It reaches the box with Story 5.5's action S3.
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-5-sign-out-reaches-every-session-including-open-liveview-socke.md`
+  id: DW-328
+  summary: >-
+    Sign-out's revocations live in each application's process memory, so a second process never sees them
+    and `docker-rollout`'s overlap can lose one.
+  evidence: |-
+    Found 2026-10-02 by Story 5.5, by design (`ops/identity-issuer.md` § Sign-out). The Hub keeps them on
+    `globalThis` and `cs-tracker` in ETS, each process refusing every session minted before it started, so a
+    restart never revives a revoked session. Two gaps remain. During a rollout's overlap, a logout that
+    reaches the old container is lost for a session the old container minted after the new one started (a
+    window of seconds, one Owner). And a second replica of either application would accept a session the
+    other revoked. Neither application runs a second replica today.
+
+    **Owner: the story that first runs a second replica of the Hub or `cs-tracker`, or the Operator's
+    ruling.** **Trigger: a second replica, or a logout observed lost at a rollout.** Move the revocations to
+    a store both processes share (the estate Postgres for `cs-tracker`; the Hub has none), or record why
+    the window is accepted.
   status: open

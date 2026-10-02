@@ -25,6 +25,7 @@ Story 5.4, and every Registry entry keeps `identity: none` until its own story m
 7. [Pending Operator actions](#pending-operator-actions)
 8. [The Hub's sign-in (Story 5.3)](#the-hubs-sign-in-story-53)
 9. [cs-tracker's sign-in (Story 5.4)](#cs-trackers-sign-in-story-54)
+10. [Sign-out (Story 5.5)](#sign-out-story-55)
 
 ## The issuer
 
@@ -165,6 +166,10 @@ is amended to carry it to a ruling before Story 5.5.
 **What stays unknown until the issuer exists.** The estate instance's own values for the four fields
 above, and whether any plan or instance setting changes them. § The sequence step 6 reads and records
 them; that reading, not this one, is what Story 5.5 builds on.
+
+**Story 5.5 built what holds either way** (§ Sign-out): each application's own sign-out, RP-Initiated
+Logout driven by whatever discovery advertises, and a Back-Channel receiver in each application. What the
+estate can claim on an issuer advertising neither is action 11's ruling, which stays open.
 
 ## The sequence
 
@@ -425,3 +430,99 @@ _Not yet run._ CT3's status code and CT5's observations are written here, each w
 | CT4 | **Rule on `oidcc` 3.8.0 against EEF-CVE-2026-75759** | Closes DW-324 | _not done_ |
 | CT5 | **Observe one identity cross the JavaScript/Elixir boundary** and record every cookie's Domain | Story 5.4 is done when this cell is dated with equal subjects and no `.cuatro.dev` cookie; then DW-323 flips the Registry's `identity` | _not done_ |
 | CT6 | **Document the four names in `cs-tracker`'s `.env.example`** | A repository change the authoring session could not make | _not done_ |
+
+## Sign-out (Story 5.5)
+
+**What exists (built 2026-10-02, the Hub on this repository's `dev` and `cs-tracker` on its `dev`, proven
+against a stand-in issuer only).** Nothing below names a provider (FR-23), and with OIDC unconfigured both
+applications answer exactly as before: the new routes answer what an unrouted path answers.
+
+- **Each application's own sign-out**, `GET https://cuatro.dev/auth/sign-out` and
+  `GET https://cs-tracker.cuatro.dev/auth/sign-out`, reached by URL as sign-in is. It revokes every session
+  of the signed-in subject in that application, on every device (FR-22 says every session), deletes the
+  session cookie, and in `cs-tracker` broadcasts `disconnect` on the subject's `live_socket_id`
+  (`oidc_sessions:<sub>`), which closes every LiveView socket open on those sessions; the client reconnects
+  at once and its mount refuses the revoked session, sending it to `/auth/sign-in`. Then, when discovery
+  advertises an `end_session_endpoint`, the browser goes there with `client_id` and
+  `post_logout_redirect_uri` (`https://cuatro.dev/` and `https://cs-tracker.cuatro.dev/`), which is
+  RP-Initiated Logout 1.0, so the issuer's own session ends too. Without one, or when discovery fails, the
+  Hub sends the browser to `/` and `cs-tracker` answers `Signed out of cs-tracker.` No `id_token_hint` is
+  sent (neither application keeps the ID token), so an issuer may ask the person to confirm. A request
+  whose `Sec-Fetch-Site` is `cross-site` or `same-site`, or that a browser marks as a prefetch, answers 403
+  and revokes nothing.
+- **A Back-Channel Logout receiver in each application**, `POST https://cuatro.dev/auth/backchannel-logout`
+  and `POST https://cs-tracker.cuatro.dev/auth/backchannel-logout`. It validates the `logout_token` as
+  Back-Channel Logout 1.0 § 2.6 requires: a compact JWS signed by a key in the issuer's JWKS with the ID
+  token's asymmetric algorithms (so `none`, HS* and an encrypted token are refused), `iss` the configured
+  issuer, `aud` naming this client, `iat` present and under five minutes old, `exp` present and not past,
+  `events` carrying `http://schemas.openid.net/event/backchannel-logout` as an object, no `nonce`, `sub` or
+  `sid` present, and a `jti` not seen before. A valid token revokes every session matching its `sub` or
+  `sid` and answers 200; `cs-tracker` also broadcasts the disconnect. Anything else answers 400
+  `invalid_request` and revokes nothing. Both answer `Cache-Control: no-store`.
+- **Revocation lives in each process's memory** (the Hub's `globalThis`, `cs-tracker`'s ETS). A restart
+  forgets it, so each process refuses every OIDC session minted before it started: **the Owner signs in
+  again after every rollout of either application**, the Hub's included, which every push to `main` that
+  deploys causes. A revoked session is never revived. During `docker-rollout`'s overlap a logout reaching
+  the old container is lost for a session minted on the old container after the new one started, a window
+  of seconds (DW-328).
+- **`cs-tracker`'s OIDC session now lasts 8 hours**, the Hub's lifetime (DW-327 closed).
+
+**What sign-out reaches, by what the issuer advertises.**
+
+| The issuer advertises | Signing out of the Hub | Signing out of `cs-tracker` |
+|---|---|---|
+| `end_session_endpoint` and `backchannel_logout_supported: true`, each client registered for both | Every Hub session; the issuer's session; the issuer's back-channel call ends every `cs-tracker` session and closes its open sockets | The same, mirrored |
+| `end_session_endpoint` only | Every Hub session and the issuer's session. `cs-tracker`'s sessions and open sockets keep serving, up to 8 hours | The same, mirrored |
+| Neither (a live Clerk production issuer, read 2026-10-02, § Logout) | **Every Hub session only.** The issuer's session survives, so the next sign-in at either application may not ask for the password, and `cs-tracker`'s sessions and open sockets keep serving, up to 8 hours | **Every `cs-tracker` session and every socket open on them only.** The Hub's sessions keep serving |
+
+So on an issuer advertising neither, sign-out reaches only the application signed out of, its open
+LiveView sockets included; FR-22's reach across applications is not met, and nothing in either
+application can meet it without the issuer. That is action 11's ruling (DW-319), which this record does
+not make.
+
+**By hand, in order, after the issuer's action 3 has recorded its discovery document:**
+
+1. **S1. Register the post-logout redirect URIs**, only if discovery advertises an `end_session_endpoint`:
+   on the issuer's OAuth applications page, add exactly `https://cuatro.dev/` to `cuatro-portfolio` and
+   `https://cs-tracker.cuatro.dev/` to `cs-tracker`, wherever the issuer takes post-logout redirect URIs.
+   If it advertises none, or its page offers no such field, write that under § Sign-out run instead.
+2. **S2. Register the Back-Channel Logout URIs**, only if discovery says `backchannel_logout_supported:
+   true`: `https://cuatro.dev/auth/backchannel-logout` on `cuatro-portfolio` and
+   `https://cs-tracker.cuatro.dev/auth/backchannel-logout` on `cs-tracker`. Otherwise record that it was not
+   offered.
+3. **S3. Roll both applications onto Story 5.5.** The Hub at the epic's merge to `main` (or H2's dispatch);
+   `cs-tracker` by CT3's merge and redeploy once the verifier has pushed its `dev`. Then, from Git Bash,
+   printing no value:
+   ```bash
+   for h in cuatro.dev cs-tracker.cuatro.dev; do
+     curl -s -o /dev/null -w "$h backchannel %{http_code}\n" -X POST -d logout_token=x "https://$h/auth/backchannel-logout"
+     curl -s -o /dev/null -w "$h sign-out cross-site %{http_code}\n" -H 'Sec-Fetch-Site: cross-site' "https://$h/auth/sign-out"
+   done
+   ```
+   Expected: `400` and `403` for each host. A `404` means that application reads no OIDC configuration.
+4. **S4. Observe an open socket leave on sign-out** (FR-22's case; it holds on any issuer). In the browser
+   CT5 signed in with, open `https://cs-tracker.cuatro.dev/` in tab A and the developer tools' Network
+   panel on its WebSocket (`/live/websocket`). In tab B type `https://cs-tracker.cuatro.dev/auth/sign-out`.
+   In tab A, record: the socket closing, the reconnect's `phx_reply` carrying
+   `"redirect":{"to":"/auth/sign-in"}`, and the page leaving the dashboard. If the issuer's session is still
+   alive it may sign straight back in; record whether the issuer asked for the password.
+5. **S5. Observe sign-out cross the boundary**, only if S2 registered both URIs. With the Hub and tab A of
+   `cs-tracker` both signed in, open `https://cuatro.dev/auth/sign-out` in another tab, complete the
+   issuer's page if it shows one, and record that tab A left the dashboard as in S4 and that
+   `https://cs-tracker.cuatro.dev/auth/session` answers 401 before any new sign-in. If S2 was not possible,
+   this step waits on action 11.
+
+### Sign-out run
+
+_Not yet run._ S1 and S2's registrations (or that the issuer offered none), S3's status codes and S4 and
+S5's observations are written here, each with its UTC time.
+
+### Pending Operator actions, Story 5.5
+
+| # | Action | Note | Completed (UTC) |
+|---|---|---|---|
+| S1 | **Register the post-logout redirect URIs**, or record that the issuer advertises no `end_session_endpoint` | After action 3 | _not done_ |
+| S2 | **Register the Back-Channel Logout URIs**, or record that the issuer does not support it | After action 3 | _not done_ |
+| S3 | **Roll both applications onto Story 5.5** and check the status codes | After H2 and CT3; a box change | _not done_ |
+| S4 | **Observe an open `cs-tracker` socket leave on sign-out** | After S3 | _not done_ |
+| S5 | **Observe sign-out cross from the Hub to an open `cs-tracker` socket** | Only with S2 done; otherwise action 11 decides what stands in for it | _not done_ |
