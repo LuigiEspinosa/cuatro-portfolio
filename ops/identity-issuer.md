@@ -24,6 +24,7 @@ Story 5.4, and every Registry entry keeps `identity: none` until its own story m
 6. [Issuer run](#issuer-run)
 7. [Pending Operator actions](#pending-operator-actions)
 8. [The Hub's sign-in (Story 5.3)](#the-hubs-sign-in-story-53)
+9. [cs-tracker's sign-in (Story 5.4)](#cs-trackers-sign-in-story-54)
 
 ## The issuer
 
@@ -75,7 +76,7 @@ underscores (the Postgres convention, `ops/postgres.md`), then `_OIDC_CLIENT_ID`
 | Application id | Clerk OAuth application name | Client ID variable | Client secret variable | GitHub repository holding the secrets | On-box env file | Redirect URI |
 |---|---|---|---|---|---|---|
 | `cuatro-portfolio` | `cuatro-portfolio` | `CUATRO_PORTFOLIO_OIDC_CLIENT_ID` | `CUATRO_PORTFOLIO_OIDC_CLIENT_SECRET` | `LuigiEspinosa/cuatro-portfolio` | `/home/deploy/cuatro-portfolio/.env.production` | `https://cuatro.dev/auth/callback` (Story 5.3, § The Hub's sign-in) |
-| `cs-tracker` | `cs-tracker` | `CS_TRACKER_OIDC_CLIENT_ID` | `CS_TRACKER_OIDC_CLIENT_SECRET` | `LuigiEspinosa/cs-tracker` | `/home/deploy/cs-tracker/.env` | Added by Story 5.4 with its callback route |
+| `cs-tracker` | `cs-tracker` | `CS_TRACKER_OIDC_CLIENT_ID` | `CS_TRACKER_OIDC_CLIENT_SECRET` | `LuigiEspinosa/cs-tracker` | `/home/deploy/cs-tracker/.env` | `https://cs-tracker.cuatro.dev/auth/callback` (Story 5.4, § cs-tracker's sign-in) |
 
 **The Client ID value is not derivable (observed 2026-10-02T14:38Z).** Clerk's SSO guide
 (`https://clerk.com/docs/guides/configure/auth-strategies/oauth/single-sign-on.md`) has the Operator
@@ -104,8 +105,10 @@ line and this record use the same name. Values live in exactly three places and 
    later deploy step reads from.
 3. The application's on-box env file (the table's column). The Hub's `.env.production` is interpolated by
    `docker-compose.yml` for four services, which is why every name carries its id. Story 5.3 maps the
-   Hub's three into `anchor-app` (read at its next rollout), and Story 5.4 maps `cs-tracker`'s; each
-   application sees only issuer configuration and client credentials (FR-23).
+   Hub's three into `anchor-app` (read at its next rollout); `cs-tracker`'s compose file hands its whole
+   `.env` to the app (`env_file`), so its lines need no mapping (Story 5.4). Each application sees only
+   issuer configuration and client credentials (FR-23), and `cs-tracker` one more value, its Owner's
+   subject (§ cs-tracker's sign-in).
 
 `ops/__tests__/identity-issuer.test.ts` fails if any file in the repository that git does not ignore
 assigns one of the five names a value, in the env form `NAME=value` or the YAML form `NAME: value` (a
@@ -297,3 +300,128 @@ _Not yet run._ H2's status code and H3's observations are written here, each wit
 | H1 | **Register `https://cuatro.dev/auth/callback`** on the `cuatro-portfolio` OAuth application | After action 5 | _not done_ |
 | H2 | **Roll the Hub onto its three variables** and check `/auth/session` answers 401 | After action 7 and H1; a box change | _not done_ |
 | H3 | **Sign in at `https://cuatro.dev/auth/sign-in` and record the session and every cookie's Domain** | Story 5.3 is done when this cell is dated with no `.cuatro.dev` cookie; then DW-322 flips the Registry's `identity` | _not done_ |
+
+## cs-tracker's sign-in (Story 5.4)
+
+**What exists (built 2026-10-02 on `cs-tracker`'s `dev` branch, proven against a stand-in issuer only).**
+`cs-tracker` is the confidential client `cs-tracker` above, through `oidcc` 3.8.0, and nothing in it names a
+provider (FR-23). `GET /auth/sign-in` reads the issuer's discovery document and sends the browser to its
+`authorization_endpoint`; `GET /auth/callback` (the redirect URI) exchanges the code and admits only the
+Owner's subject into `cs-tracker`'s own session; `GET /auth/session` answers `{ sub, email }` for that
+session and 401 without one, the counterpart of the Hub's route, so a person can compare the two. The
+request is pinned to what the Hub sends, whatever discovery offers: PKCE `S256` only, a plain query (no
+request object, no PAR), `client_secret_basic`, `RS256`, `PS256`, `ES256` or `EdDSA` for the ID token, an
+audience naming this client only, and no encrypted ID token. Steam's sign-in stays beside it (DW-326). Code:
+`lib/cs_tracker/auth/oidc.ex`, `lib/cs_tracker_web/controllers/oidc_controller.ex`; tests:
+`test/cs_tracker_web/controllers/oidc_controller_test.exs`, all in `LuigiEspinosa/cs-tracker`.
+
+**Four values, all or none.** `OIDC_ISSUER`, `CS_TRACKER_OIDC_CLIENT_ID`, `CS_TRACKER_OIDC_CLIENT_SECRET`, and
+`CS_TRACKER_OIDC_OWNER_SUB`, the Owner's subject at the issuer. The last is the allowlist, the OIDC
+counterpart of `STEAM_ID`: `cs-tracker` holds one person's inventory, so a subject the issuer verifies is
+still refused unless it is that one. It is an identifier, not a credential, and the Hub shows it at
+`https://cuatro.dev/auth/session`. With any of the four empty `cs-tracker` is unconfigured and behaves
+exactly as before: the three routes answer 404, a visitor without a session is sent to Steam, and the
+session cookie keeps the name `_cs_tracker_key`. With all four set (and in production, where the cookie is
+`Secure`) the session cookie is `__Host-cs-tracker`, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, never a
+`Domain`, and a visitor without a session is sent to `/auth/sign-in`. The rename ends every session once, at
+the rollout that first reads all four.
+
+**The dependency (Constitution rule 19).** `oidcc` 3.8.0, exact pin, Apache-2.0, maintained by the Erlang
+Ecosystem Foundation, the version the architecture's Stack table names. It adds `jose` 1.11.12 and
+`telemetry_registry` 0.3.2 to `mix.lock`. It calls the issuer through Erlang's `:httpc`, where
+`cs-tracker`'s own code uses `Req`; `cs-tracker` passes it a 10 second timeout and certificate and hostname
+verification (`:httpc.ssl_verify_host_options(true)`), and checks the kill switch before any sign-in
+request. **3.8.0 carries EEF-CVE-2026-75759** (GHSA-533g-4vf3-xwrj, HIGH, published 2026-08-30, fixed in
+3.9.0, read at `https://api.osv.dev/v1/vulns/EEF-CVE-2026-75759` 2026-10-02T17:06Z): it accepts an encrypted
+ID token with no signature inside. It is reachable only when the client holds a decryption key, which
+`oidcc` derives from the client secret when discovery lists an `HS*` algorithm among the ID token
+encryption algorithms. `cs-tracker` unsets both encryption fields after discovery, so it never decrypts an
+ID token; the suite reproduces the bypass on 3.8.0 with that line removed (an unsigned encrypted token
+admitted, 302) and refuses it with the line in place (401). The move to 3.9.0 is the Operator's ruling,
+action CT4. Hex 2.5.1's audit also flags twelve packages `cs-tracker` already locked before this story
+(DW-325); `jose` and `telemetry_registry` carry no advisory.
+
+**What `oidcc` needs from discovery.** It refuses a document without `scopes_supported`,
+`response_types_supported`, `subject_types_supported` or `id_token_signing_alg_values_supported`. A live
+Clerk production instance, `https://clerk.clerk.com/.well-known/openid-configuration` read
+2026-10-02T16:53:36Z, carries all four, lists `RS256`, `S256` and `client_secret_basic`, and lists no
+request object, PAR or ID token encryption field. The estate issuer's own document is read by § The
+sequence step 6; if it lacks one of the four, sign-in answers 502 and the rest of `cs-tracker` is unaffected.
+
+**By hand, in order, after this record's actions 5 and 7 and the Hub's H3:**
+
+1. **CT1. Register the redirect URI.** On the issuer's OAuth applications page, open `cs-tracker` and add
+   exactly `https://cs-tracker.cuatro.dev/auth/callback` to its Redirect URIs. Nothing else changes.
+2. **CT2. Set the Owner's subject.** In the browser H3 signed in with, open `https://cuatro.dev/auth/session`
+   and copy its `sub` into the local `.env` as `CS_TRACKER_OIDC_OWNER_SUB=<sub>`. Then, from Git Bash at the
+   repository root, printing no value:
+   ```bash
+   grep -E '^CS_TRACKER_OIDC_OWNER_SUB=' .env | tr -d '\r' \
+     | ssh deploy@177.7.52.248 'f=/home/deploy/cs-tracker/.env; ! grep -q "^CS_TRACKER_OIDC_OWNER_SUB=" "$f" && { [ -z "$(tail -c1 "$f")" ] || echo >> "$f"; cat >> "$f"; }'
+   t="$(mktemp)"; grep -E '^CS_TRACKER_OIDC_OWNER_SUB=' .env | tr -d '\r' > "$t"
+   gh secret set -f "$t" --repo LuigiEspinosa/cs-tracker; rm -f "$t"
+   ssh deploy@177.7.52.248 'grep -cE "^(OIDC_ISSUER|CS_TRACKER_OIDC_(CLIENT_ID|CLIENT_SECRET|OWNER_SUB))=.+" /home/deploy/cs-tracker/.env'
+   ```
+   The last command prints `4`. Nothing reads the line until CT3.
+3. **CT3. Merge and roll `cs-tracker`.** Once the independent verifier has pushed `dev`, merge it into
+   `cs-tracker`'s `main` (nobody else commits there): `gh pr create --repo LuigiEspinosa/cs-tracker --base main
+   --head dev --title "Story 5.4: OIDC sign-in"`, then merge it. On the box, in an interactive `ssh
+   deploy@177.7.52.248` session, `cs-tracker`'s own redeploy (the order `ops/cs-tracker-cutover.md` records
+   for it; this change adds no migration, and the step is idempotent):
+   ```bash
+   cd /home/deploy/cs-tracker
+   git pull --ff-only && git log -1 --format='%H %s'
+   docker compose build app
+   docker compose run --rm migrate
+   docker rollout -w 20 app
+   ```
+   Then from the workstation: `curl -s -o /dev/null -w '%{http_code}\n' https://cs-tracker.cuatro.dev/auth/session`
+   prints `401`. A `404` means `cs-tracker` reads fewer than four values: check them with CT2's last
+   command. The rollout signs the Owner's Steam session out once (the cookie's new name).
+4. **CT4. Rule on `oidcc` 3.8.0** (DW-324). Options: (a) move to 3.9.0 now, amending the Stack table's row in
+   `ARCHITECTURE-SPINE.md` and the epic's wording, a one-line change to `cs-tracker`'s `mix.exs` and its lock,
+   re-run with `mix precommit`; (b) keep 3.8.0, relying on the unset encryption fields and the case that
+   proves them, until AD-22's next refresh; (c) keep 3.8.0 and add `oidcc` to AD-22's refresh scope so the
+   pin is re-read on a schedule. **Recommendation: (a)**, because the fix is on the sign-in path, its cost is
+   one line and one suite run, and the unset fields stay as defence in depth. Any time; before CT3 if the
+   ruling should reach the box with the first rollout.
+5. **CT5. Observe one identity cross the boundary** (FR-21, SM-9). In a fresh browser profile:
+   1. Open `https://cuatro.dev/auth/sign-in`, sign in at the issuer, then open `https://cuatro.dev/auth/session`
+      and note its `sub`.
+   2. Open `https://cs-tracker.cuatro.dev/`. It sends the browser to `/auth/sign-in` and on to the issuer;
+      record whether the issuer asked for the password again (its own session may answer without asking).
+      The browser lands on the dashboard.
+   3. Open `https://cs-tracker.cuatro.dev/auth/session`: its `sub` equals step 1's.
+   4. Open the developer tools' cookie list for `cuatro.dev`, `cs-tracker.cuatro.dev` and the issuer's
+      hostnames, and record each cookie's name and Domain, never its value. Expected: `__Host-hub-session` on
+      `cuatro.dev` and `__Host-cs-tracker` on `cs-tracker.cuatro.dev`, each host-only, and **no cookie with
+      Domain `.cuatro.dev` or `cuatro.dev`**; one fails the story (AD-11).
+
+   Write the result under § cs-tracker sign-in run with the UTC time, and whether the two subjects were equal
+   (the value itself need not be written). Equal subjects is FR-21's acceptance condition, observed.
+6. **CT6. Document the four names in `cs-tracker`'s `.env.example`**, which the authoring session's
+   permission settings deny it to open. Append, then commit on `cs-tracker`'s `dev` with a subject line only:
+   ```text
+
+   # OIDC sign-in (cuatro-portfolio Story 5.4): all four or none. See docs/deployment.md.
+   OIDC_ISSUER=
+   CS_TRACKER_OIDC_CLIENT_ID=
+   CS_TRACKER_OIDC_CLIENT_SECRET=
+   CS_TRACKER_OIDC_OWNER_SUB=
+   ```
+   `docs/deployment.md` already lists them. Independent of CT1 to CT5.
+
+### cs-tracker sign-in run
+
+_Not yet run._ CT3's status code and CT5's observations are written here, each with its UTC time.
+
+### Pending Operator actions, Story 5.4
+
+| # | Action | Note | Completed (UTC) |
+|---|---|---|---|
+| CT1 | **Register `https://cs-tracker.cuatro.dev/auth/callback`** on the `cs-tracker` OAuth application | After action 5 | _not done_ |
+| CT2 | **Set `CS_TRACKER_OIDC_OWNER_SUB`** on the box and as a GitHub secret, and check the four names | After H3 and action 7; a box change | _not done_ |
+| CT3 | **Merge `cs-tracker`'s `dev` into `main` and roll the app**, then check `/auth/session` answers 401 | After the verifier pushes `dev`; a box change | _not done_ |
+| CT4 | **Rule on `oidcc` 3.8.0 against EEF-CVE-2026-75759** | Closes DW-324 | _not done_ |
+| CT5 | **Observe one identity cross the JavaScript/Elixir boundary** and record every cookie's Domain | Story 5.4 is done when this cell is dated with equal subjects and no `.cuatro.dev` cookie; then DW-323 flips the Registry's `identity` | _not done_ |
+| CT6 | **Document the four names in `cs-tracker`'s `.env.example`** | A repository change the authoring session could not make | _not done_ |
