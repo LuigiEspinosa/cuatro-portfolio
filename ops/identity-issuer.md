@@ -1,0 +1,240 @@
+# The identity issuer and its OIDC clients
+
+The estate's one Clerk issuer, the one OIDC client each participating application holds, where every
+credential lives, and what the issuer can do about logout. It is the artifact Story 5.2 delivers under
+AD-11 and AD-3, on the plan Story 5.1 leaves to the Operator (`ops/clerk-pricing-and-terms.md` § Decision:
+the plan the issuer runs on).
+
+This file is a record, not Registry data. Every value is marked as a decision or an observation, and the
+two are never presented as the same kind of fact (NFR-9). Times are UTC.
+
+**Nothing here exists yet. Written 2026-10-02, committed on `dev`.** No Clerk account, issuer, OAuth
+application, GitHub secret or env line was created by the authoring session, which had no account and
+no credential. The Operator runs § The sequence and dates each Pending Operator action at the end. No
+application authenticates in this story: the Hub's client is used by Story 5.3 and `cs-tracker`'s by
+Story 5.4, and every Registry entry keeps `identity: none` until its own story makes it true.
+
+## Contents
+
+1. [The issuer](#the-issuer)
+2. [The clients](#the-clients)
+3. [Where each credential lives](#where-each-credential-lives)
+4. [Logout, as far as it can be read today](#logout-as-far-as-it-can-be-read-today)
+5. [The sequence](#the-sequence)
+6. [Issuer run](#issuer-run)
+7. [Pending Operator actions](#pending-operator-actions)
+
+## The issuer
+
+**Decision (Story 5.2, 2026-10-02):** one Clerk application named `cuatro`, its **production** instance
+on the domain **`id.cuatro.dev`**, on whichever plan the Operator rules for Story 5.1. By Clerk's
+documented pattern (`https://clerk.<INSERT_YOUR_APP_DOMAIN>.com` "for a production environment", the
+how-Clerk-implements-OAuth page) its Frontend API, and so its issuer, is `https://clerk.id.cuatro.dev`. The
+issuer URL is configuration, not a credential, and is held in the variable `OIDC_ISSUER`. The real value
+is whatever the instance's discovery document states as `issuer`, recorded by § The sequence step 6.
+
+**Why `id.cuatro.dev` and not `cuatro.dev`.** Clerk's production deployment guide (read 2026-10-02T14:40Z,
+`https://clerk.com/docs/guides/development/deployment/production.md`) says: "When you set a root domain
+for your production deployment, Clerk's authentication will work across all subdomains. User sessions
+will also be shared across the subdomains." Clerk's cookie guide (same time,
+`https://clerk.com/docs/guides/how-clerk-works/cookies.md`) says Clerk sets cookies on sign-in and "This
+cannot be disabled." With `cuatro.dev` as the root, Clerk's own cookies could be scoped to `.cuatro.dev`,
+which AD-11 forbids anywhere in the estate. With `id.cuatro.dev` as the root, anything Clerk scopes to its
+root reaches `*.id.cuatro.dev` only, where no application lives. This is a reading of two docs pages, not
+an observation of Clerk's cookies: § The sequence step 7 observes them, and a cookie with `Domain=.cuatro.dev`
+stops the sequence. The Operator may overrule the domain before step 4; nothing after step 4 depends on
+its spelling except the issuer URL.
+
+**The issuer's DNS records breach AD-26 as written.** AD-26: "Every live `cuatro.dev` hostname is proxied
+by Cloudflare". Clerk's production guide says its Frontend API CNAME fails Clerk's check behind a proxy:
+"Set the DNS record for this subdomain to a "DNS only" mode on your host to prevent proxying." So
+`clerk.id.cuatro.dev`, and any other serving hostname the Domains page lists, would be a `cuatro.dev`
+hostname outside the proxy, terminating TLS at Clerk, the same shape as KV-7's two Vercel hostnames. The
+alternative Clerk documents is to proxy its Frontend API through a hostname of the estate's own ("If
+you're unable to add a CNAME record for the Frontend API, you can use a proxy instead", the same guide),
+which would put a Clerk route on the box's Traefik. **Which one is the Operator's ruling** (Pending
+Operator action 9, before step 5); this record does not make it. Filed as DW-321.
+
+**Plan.** No step below needs a feature the pricing page puts on Pro only (custom domain, unlimited
+applications, passwords and PKCE are on every plan, `ops/clerk-pricing-and-terms.md` § What prices each
+part of AD-11), so the sequence is the same on Hobby or Pro. Whether OAuth applications are plan-gated is
+5.1's Pending Operator action 2, checked at step 8.
+
+## The clients
+
+One OAuth application on the issuer per participating application. FR-21 names the pair, the Hub
+(`cuatro-portfolio`) and `cs-tracker`; further applications are optional and each is a new row here
+(AD-3 applies to it the same way). `maicoin` is `wallet` (AD-12) and never has a row.
+
+**Derivation (AD-3).** Each name below is derived from the Registry id, never chosen: the OAuth
+application's **Name** is the id itself, and each variable is the id uppercased with hyphens as
+underscores (the Postgres convention, `ops/postgres.md`), then `_OIDC_CLIENT_ID` or `_OIDC_CLIENT_SECRET`.
+`ops/__tests__/identity-issuer.test.ts` holds this table to that rule and to `contracts/registry.json`.
+
+| Application id | Clerk OAuth application name | Client ID variable | Client secret variable | GitHub repository holding the secrets | On-box env file | Redirect URI |
+|---|---|---|---|---|---|---|
+| `cuatro-portfolio` | `cuatro-portfolio` | `CUATRO_PORTFOLIO_OIDC_CLIENT_ID` | `CUATRO_PORTFOLIO_OIDC_CLIENT_SECRET` | `LuigiEspinosa/cuatro-portfolio` | `/home/deploy/cuatro-portfolio/.env.production` | Added by Story 5.3 with its callback route |
+| `cs-tracker` | `cs-tracker` | `CS_TRACKER_OIDC_CLIENT_ID` | `CS_TRACKER_OIDC_CLIENT_SECRET` | `LuigiEspinosa/cs-tracker` | `/home/deploy/cs-tracker/.env` | Added by Story 5.4 with its callback route |
+
+**The Client ID value is not derivable (observed 2026-10-02T14:38Z).** Clerk's SSO guide
+(`https://clerk.com/docs/guides/configure/auth-strategies/oauth/single-sign-on.md`) has the Operator
+complete "`Name` - Helps you identify your application." and then "save the **Client ID**", and its CLI
+note says "the create response includes the Client ID and Client Secret": Clerk assigns the value. So
+AD-3's "Clerk client `<id>`" holds on the application's Name and on every variable that carries the value,
+and the value itself is Clerk's opaque string. Client ID Metadata Documents, which let "a public OAuth
+client use an HTTPS metadata-document URL as its `client_id`" (how-Clerk-implements-OAuth page), are for
+public clients and would put a URL, not the id, in the value; not used. Filed as DW-320 for a spine
+wording ruling.
+
+**Each client is confidential**: the Hub and `cs-tracker` both exchange the code on their server, so each
+holds a secret, and each still sends PKCE (AD-11; "Require PKCE is enabled by default for newly created
+Clerk instances", `ops/clerk-pricing-and-terms.md`).
+
+## Where each credential lives
+
+**Decision (Story 5.2).** One spelling per value everywhere: the GitHub Actions secret, the on-box env
+line and this record use the same name. Values live in exactly three places and never in a tracked file:
+
+1. The Operator's local gitignored `.env` at the repository root, where each value is first pasted (the
+   client secret is shown once: "Clerk does not store your Client Secret and cannot show it to you
+   again", the SSO guide).
+2. GitHub Actions secrets in the application's own repository (the table's column), each with
+   `OIDC_ISSUER` beside them. No workflow reads them today; they are the durable copy a rebuilt box or a
+   later deploy step reads from.
+3. The application's on-box env file (the table's column). The Hub's `.env.production` is interpolated by
+   `docker-compose.yml` for four services, which is why every name carries its id. Nothing reads these
+   lines until Story 5.3 maps them into `anchor-app` and Story 5.4 into `cs-tracker`; each application then
+   sees only issuer configuration and client credentials (FR-23).
+
+`ops/__tests__/identity-issuer.test.ts` fails if any file in the repository that git does not ignore
+assigns one of the five names a value.
+
+**`.env.example` does not document them yet.** The authoring session's permission settings deny every
+read and write of `.env.*`, `.env.example` included, and that wall was not worked around. Pending Operator
+action 8 appends this block to the end of `.env.example`, exactly:
+
+```text
+
+# Identity (Story 5.2): the one Clerk issuer and one OIDC client per application.
+# Names derive from the Registry id (AD-3); values live only in GitHub Actions
+# secrets and the on-box env files, never here. See ops/identity-issuer.md.
+OIDC_ISSUER=
+CUATRO_PORTFOLIO_OIDC_CLIENT_ID=
+CUATRO_PORTFOLIO_OIDC_CLIENT_SECRET=
+CS_TRACKER_OIDC_CLIENT_ID=
+CS_TRACKER_OIDC_CLIENT_SECRET=
+```
+
+and, in the same commit, replaces the `it.todo` in the test with the case its comment spells out, which
+holds every name in § The clients to an empty line in `.env.example`.
+
+## Logout, as far as it can be read today
+
+DW-319 asks whether the issuer advertises the logout AD-11 requires (RP-Initiated, which needs an
+`end_session_endpoint`, and Back-Channel, which needs `backchannel_logout_supported: true`). The estate's
+issuer does not exist, so its own discovery document cannot be read. Two published documents can:
+
+| Source | Retrieved (UTC) | `end_session_endpoint` | `backchannel_logout_supported` | `frontchannel_logout_supported` | `revocation_endpoint` |
+|---|---|---|---|---|---|
+| `https://clerk.clerk.com/.well-known/openid-configuration`, the issuer `https://clerk.clerk.com` (a live Clerk production instance, by the `clerk.<domain>` pattern the one for `clerk.com`), HTTP 200, 1,181 bytes, sha256 `5c2a1997319044c8691e9ad9ad6d9fd1cd04bc649fd065fd97b06ee02ab17c62` | 2026-10-02T14:38:31Z | Absent | `false` | `false` | `https://clerk.clerk.com/oauth/token/revoke` |
+| The sample "authorization server metadata" document on `https://clerk.com/docs/guides/configure/auth-strategies/oauth/how-clerk-implements-oauth.md` | 2026-10-02T14:38:18Z | Absent | Absent | Absent | Absent |
+
+The same live instance's `/.well-known/oauth-authorization-server` (2026-10-02T14:38:31Z, HTTP 200) also
+names no `end_session_endpoint`. No Clerk page read documents RP-Initiated or Back-Channel logout
+(`ops/clerk-pricing-and-terms.md` § Found in passing, filed, and this story's reading of the two OAuth
+guides above).
+
+**What this means (derived).** A live Clerk issuer states plainly that it does not support Back-Channel
+logout, and advertises no RP-Initiated endpoint. Unless the estate's instance differs, AD-11's "Logout
+is RP-Initiated plus Back-Channel" cannot be met as written, and FR-22 needs another mechanism (for
+example each application ending its own session and revoking its tokens at `revocation_endpoint`, with
+`cs-tracker`'s `live_socket_id` broadcast unchanged). That is a spine decision, not this story's: DW-319
+is amended to carry it to a ruling before Story 5.5.
+
+**What stays unknown until the issuer exists.** The estate instance's own values for the four fields
+above, and whether any plan or instance setting changes them. § The sequence step 6 reads and records
+them; that reading, not this one, is what Story 5.5 builds on.
+
+## The sequence
+
+From the workstation in Git Bash, never PowerShell (AGENTS.md: piping from PowerShell appends CRLF), at the
+repository root, unless a step says otherwise. No step prints a credential: every check reads names
+only.
+
+1. **Prerequisites.** `ops/clerk-pricing-and-terms.md` Pending Operator action 1 (the plan) is dated,
+   and so is this record's action 9 (AD-26). Action 3 there (the terms' date) is done at step 2.
+2. **Create the Clerk account** at `https://dashboard.clerk.com` with an email address the Operator reads
+   (the terms' fee-change email is a "may", `ops/clerk-pricing-and-terms.md` § Terms, as published). Pick
+   the plan ruled at step 1.
+3. **Create the application** named `cuatro`. Sign-in: email address with password (the demo principal of
+   Story 5.8 signs in with one). A social connection is optional (Hobby allows three).
+4. **Create the production instance** on the domain `id.cuatro.dev`. If Clerk refuses a subdomain as the
+   production domain, stop, record what the dashboard said here, and re-open § The issuer.
+5. **Add the DNS records** the instance's Domains page lists, in Cloudflare, as Pending Operator action 9
+   ruled: each **DNS only** if the ruling accepts the breach (Clerk's guide: a proxied record fails its
+   CNAME check), and then the KV entry the ruling names is added to `ops/known-violations.md`; or as the
+   Frontend API proxy setup the ruling names, which is its own runbook and stops this sequence until it
+   exists. Record each record's name, type, target and proxy status in § Issuer run below, and add them
+   to `ops/routing-inventory.md` as a dated revision, since AD-22's topology item covers every hostname's
+   address, TLS terminator and proxy status.
+6. **Read the discovery document** once the Domains page shows the records verified:
+   `curl -sS https://clerk.id.cuatro.dev/.well-known/openid-configuration | node -e "const j=JSON.parse(require('fs').readFileSync(0,'utf8'));for(const k of ['issuer','end_session_endpoint','backchannel_logout_supported','backchannel_logout_session_supported','frontchannel_logout_supported','revocation_endpoint','code_challenge_methods_supported'])console.log(k,JSON.stringify(j[k]))"`.
+   Record the output and the UTC time in § Issuer run and in DW-319. The `issuer` value is `OIDC_ISSUER`.
+7. **Observe Clerk's cookies.** In a fresh browser profile, sign in once at the instance's hosted sign-in
+   page (Clerk's Account Portal), open the developer tools' cookie list, and record every
+   cookie's name and Domain, never its value. **A cookie with `Domain=.cuatro.dev` or `Domain=cuatro.dev`
+   stops the sequence** (AD-11): record it and re-open § The issuer.
+8. **Create one OAuth application per row** of § The clients, on the instance's OAuth applications page:
+   Name exactly the row's id, scopes `openid`, `profile` and `email`, confidential (not public), PKCE
+   required. Leave Redirect URIs for Stories 5.3 and 5.4. Paste the secret, which Clerk shows once, and the
+   Client ID into the local `.env` as the row's two variables, and `OIDC_ISSUER` once. Record whether the
+   page showed an upgrade prompt (`ops/clerk-pricing-and-terms.md` Pending Operator action 2).
+9. **Check the local `.env` by name**: `grep -cE '^(OIDC_ISSUER|CUATRO_PORTFOLIO_OIDC_CLIENT_(ID|SECRET)|CS_TRACKER_OIDC_CLIENT_(ID|SECRET))=.+' .env`
+   prints `5`.
+10. **Set the GitHub Actions secrets**, one repository at a time, through a temporary file that is
+    removed after:
+    ```bash
+    t="$(mktemp)"
+    grep -E '^(OIDC_ISSUER|CUATRO_PORTFOLIO_OIDC_CLIENT_(ID|SECRET))=' .env | tr -d '\r' > "$t"
+    gh secret set -f "$t" --repo LuigiEspinosa/cuatro-portfolio
+    grep -E '^(OIDC_ISSUER|CS_TRACKER_OIDC_CLIENT_(ID|SECRET))=' .env | tr -d '\r' > "$t"
+    gh secret set -f "$t" --repo LuigiEspinosa/cs-tracker
+    rm -f "$t"
+    gh secret list --repo LuigiEspinosa/cuatro-portfolio | grep OIDC
+    gh secret list --repo LuigiEspinosa/cs-tracker | grep OIDC
+    ```
+    The two lists show three names each, with today's date.
+11. **Append the on-box env lines**, refusing to append twice and never echoing a value:
+    ```bash
+    grep -E '^(OIDC_ISSUER|CUATRO_PORTFOLIO_OIDC_CLIENT_(ID|SECRET))=' .env | tr -d '\r' \
+      | ssh deploy@177.7.52.248 'f=/home/deploy/cuatro-portfolio/.env.production; ! grep -qE "^(OIDC_ISSUER|CUATRO_PORTFOLIO_OIDC_)" "$f" && { [ -z "$(tail -c1 "$f")" ] || echo >> "$f"; cat >> "$f"; }'
+    grep -E '^(OIDC_ISSUER|CS_TRACKER_OIDC_CLIENT_(ID|SECRET))=' .env | tr -d '\r' \
+      | ssh deploy@177.7.52.248 'f=/home/deploy/cs-tracker/.env; ! grep -qE "^(OIDC_ISSUER|CS_TRACKER_OIDC_)" "$f" && { [ -z "$(tail -c1 "$f")" ] || echo >> "$f"; cat >> "$f"; }'
+    ssh deploy@177.7.52.248 'grep -cE "^(OIDC_ISSUER|CUATRO_PORTFOLIO_OIDC_CLIENT_(ID|SECRET))=.+" /home/deploy/cuatro-portfolio/.env.production; grep -cE "^(OIDC_ISSUER|CS_TRACKER_OIDC_CLIENT_(ID|SECRET))=.+" /home/deploy/cs-tracker/.env'
+    ```
+    The last command prints `3` twice. An `ssh` exit of 1 from the first two means the lines were already
+    there; nothing was appended. No container is restarted: nothing reads the lines yet.
+12. **Date the Pending Operator actions** below and write § Issuer run.
+
+## Issuer run
+
+_Not yet run._ Step 5's DNS records, step 6's discovery output, step 7's cookie list and step 8's prompt
+observation are written here, each with its UTC time.
+
+## Pending Operator actions
+
+| # | Action | Note | Completed (UTC) |
+|---|---|---|---|
+| 1 | **Create the account, the application and the production instance on `id.cuatro.dev`** (§ The sequence steps 1 to 4) | After `ops/clerk-pricing-and-terms.md` actions 1 and 3 | _not done_ |
+| 2 | **Add the instance's DNS records as action 9 ruled, and record them** here and in `ops/routing-inventory.md` (step 5) | Cloudflare | _not done_ |
+| 3 | **Read and record the issuer's discovery document** (step 6), and amend DW-319 with it | Answers what § Logout leaves unknown | _not done_ |
+| 4 | **Observe and record Clerk's cookie Domains** (step 7) | A `.cuatro.dev` cookie stops the sequence | _not done_ |
+| 5 | **Create the two OAuth applications** (step 8) and record the plan-gate observation | Closes `ops/clerk-pricing-and-terms.md` action 2 | _not done_ |
+| 6 | **Set the GitHub Actions secrets in both repositories** (steps 9 and 10) | Names only in the check | _not done_ |
+| 7 | **Append the on-box env lines** (step 11) | Story 5.2 is done when every cell in this table is dated | _not done_ |
+| 8 | **Document the five names in `.env.example`** and turn the test's `it.todo` into its case (§ Where each credential lives) | A repository change, not a box one; it falls to the Operator only because the authoring session could not open the file. Independent of actions 1 to 7. Run `corepack pnpm vitest run ops/__tests__/identity-issuer.test.ts` after | _not done_ |
+| 9 | **Rule on AD-26 for the issuer's hostnames**, before action 2: accept them DNS only as a new known violation in the KV-7 shape, or proxy Clerk's Frontend API through the estate (§ The issuer) | Closes DW-321. The domain decision (`id.cuatro.dev`) may be overruled at the same time | _not done_ |
+
+**Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
+leave the row in place. A new participating application adds a row to § The clients in the same change
+that adds its secrets.
