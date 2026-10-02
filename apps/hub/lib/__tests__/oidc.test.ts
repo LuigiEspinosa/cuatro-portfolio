@@ -1,13 +1,13 @@
 // @vitest-environment node
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createServer, type Server } from 'node:http';
-import { createHash } from 'node:crypto';
+import { createHash, hkdfSync } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { NextRequest } from 'next/server';
-import { SignJWT, exportJWK, generateKeyPair, type CryptoKey, type JWTPayload } from 'jose';
+import { SignJWT, decodeJwt, exportJWK, generateKeyPair, type CryptoKey, type JWTPayload } from 'jose';
 import { GET as signIn } from '@/app/auth/sign-in/route';
 import { GET as callback } from '@/app/auth/callback/route';
 import { GET as sessionRoute } from '@/app/auth/session/route';
@@ -30,6 +30,8 @@ const issuerState = {
   discoveryIssuer: undefined as string | undefined,
   claims: {} as JWTPayload,
   signWithForeignKey: false,
+  /** Sign the ID token HS256 with the client secret, the forgery an asymmetric-only allow-list refuses. */
+  signWithClientSecret: false,
   tokenRequests: [] as { authorization?: string; body: URLSearchParams }[],
   /** code -> what the authorization request bound it to. */
   codes: new Map<string, { challenge: string; method: string; redirectUri: string; clientId: string; nonce: string }>(),
@@ -76,9 +78,13 @@ beforeAll(async () => {
       issuerState.codes.delete(body.get('code') ?? '');
       const now = Math.floor(Date.now() / 1000);
       const claims = { iss: issuer, aud: bound.clientId, sub: 'user_stand_in', iat: now, exp: now + 300, email: 'operator@example.test', nonce: bound.nonce };
-      const idToken = await new SignJWT({ ...claims, ...issuerState.claims })
-        .setProtectedHeader({ alg: 'RS256', kid: 'stand-in' })
-        .sign(issuerState.signWithForeignKey ? foreignKey : signingKey);
+      const idToken = issuerState.signWithClientSecret
+        ? await new SignJWT({ ...claims, ...issuerState.claims })
+            .setProtectedHeader({ alg: 'HS256' })
+            .sign(new TextEncoder().encode(CLIENT_SECRET))
+        : await new SignJWT({ ...claims, ...issuerState.claims })
+            .setProtectedHeader({ alg: 'RS256', kid: 'stand-in' })
+            .sign(issuerState.signWithForeignKey ? foreignKey : signingKey);
       return json(200, { access_token: 'opaque', token_type: 'Bearer', id_token: idToken });
     }
     json(404, {});
@@ -100,7 +106,9 @@ afterEach(() => {
   issuerState.discoveryIssuer = undefined;
   issuerState.claims = {};
   issuerState.signWithForeignKey = false;
+  issuerState.signWithClientSecret = false;
   issuerState.tokenRequests = [];
+  vi.restoreAllMocks();
   issuerState.codes.clear();
 });
 
@@ -242,6 +250,47 @@ describe('the session route', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('the ID token allow-list is asymmetric only', () => {
+  // jose's remote JWKS refuses an HS* token on its own (no `oct` key type), so the status alone cannot
+  // tell which gate refused. The message pins it to the allow-list: with HS256 added to
+  // ID_TOKEN_ALGORITHMS the refusal becomes jose's 'Unsupported "alg" value for a JSON Web Key Set'.
+  it('refuses an ID token signed HS256 with the client secret, at the allow-list', async () => {
+    configure();
+    issuerState.signWithClientSecret = true;
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const a = await authorize();
+    const response = await callbackWith({ code: a.code, state: a.state }, a.transaction);
+    expect(response.status).toBe(400);
+    expect(setCookie(response, SESSION_COOKIE)).toBeUndefined();
+    expect(logged).toHaveBeenCalledWith('auth callback:', '"alg" (Algorithm) Header Parameter value not allowed');
+  });
+});
+
+describe('a sealed token passes only for the purpose it was sealed for', () => {
+  // The Hub's own cookie key, derived the way oidc.ts derives it. Each token below carries the fields
+  // of the purpose it is presented for, so only the audience check can refuse it.
+  const hubKey = () => new Uint8Array(hkdfSync('sha256', CLIENT_SECRET, '', 'cuatro-portfolio hub cookies v1', 32));
+  const sealAs = (payload: JWTPayload, purpose: string) =>
+    new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setAudience(purpose).setIssuedAt().setExpirationTime('600s').sign(hubKey());
+
+  it('refuses a transaction-sealed token carrying a sub as a session', async () => {
+    configure();
+    const token = await sealAs({ sub: 'user_stand_in', state: 's', nonce: 'n', verifier: 'v' }, 'transaction');
+    expect((await sessionRoute(request('/auth/session', { [SESSION_COOKIE]: token }))).status).toBe(401);
+    expect((await sessionRoute(request('/auth/session', { [SESSION_COOKIE]: await sealAs({ sub: 'user_stand_in' }, 'session') }))).status).toBe(200);
+  });
+
+  it('refuses a session-sealed token carrying a valid state, nonce and verifier as a transaction', async () => {
+    configure();
+    const a = await authorize();
+    const { state, nonce, verifier } = decodeJwt(a.transaction);
+    const token = await sealAs({ sub: 'user_stand_in', state, nonce, verifier }, 'session');
+    const response = await callbackWith({ code: a.code, state: a.state }, token);
+    expect(response.status).toBe(400);
+    expect(setCookie(response, SESSION_COOKIE)).toBeUndefined();
   });
 });
 
