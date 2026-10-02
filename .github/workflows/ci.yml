@@ -378,3 +378,28 @@ jobs:
       # reaching this runner can redirect or silence it. See `ops/literal-conformance.md`.
       - name: Literal conformance
         run: node ops/literal-conformance.mjs
+
+  provider-swap:
+    runs-on: ubuntu-latest
+
+    # FR-23 says the identity provider is replaceable by configuration alone, and Story 5.7's acceptance
+    # intent says that is shown by pointing an application at a different issuer, never by reading the code.
+    # This job is that demonstration on every push: `ops/provider-swap.sh` starts dex, an OpenID Provider
+    # implemented independently of every issuer the estate's suites stand in, pinned by digest, and signs in
+    # through the Hub's production image and the committed forward-auth service with their issuer and client
+    # variables pointed at it and nothing else changed. It needs no account and no secret. `cs-tracker` is
+    # demonstrated by the same script by hand only: its production release is built from a private
+    # repository this job's token cannot read, and that repository has no CI (DW-14). See
+    # `ops/identity-issuer.md` § Provider replaceability. It sits last so no line other records cite moves.
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # The image `image.yml` builds and the deploy rolls, built here from the same Dockerfile so the
+      # artefact under test is the production one.
+      - name: Build the Hub's production image
+        run: docker build -f apps/hub/Dockerfile -t provider-swap-hub:ci .
+
+      - name: Provider swap
+        run: HUB_IMAGE=provider-swap-hub:ci bash ops/provider-swap.sh

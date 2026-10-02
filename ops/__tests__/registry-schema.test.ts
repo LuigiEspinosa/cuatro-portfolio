@@ -1800,6 +1800,8 @@ describe('the CI wiring', () => {
     // Six jobs until Story 2-34 added `literal-conformance` after this one,
     // FR-17's blocking gate (AD-21), whose wiring is asserted in
     // `ops/__tests__/literal-conformance.test.ts` beside the module it runs.
+    // Story 5.7 added `provider-swap`, FR-23's demonstration, wired in
+    // `ops/__tests__/provider-swap.test.ts` beside the script it runs.
     expect(
       jobNames,
       'the order is a reader convenience, since jobs run in parallel. The set is not: a job added or removed' +
@@ -1812,6 +1814,7 @@ describe('the CI wiring', () => {
       JOB,
       'rendered-output',
       'literal-conformance',
+      'provider-swap',
     ]);
   });
 

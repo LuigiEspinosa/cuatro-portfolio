@@ -1015,7 +1015,7 @@ describe('the CI wiring', () => {
     );
   });
 
-  it('sits among the seven jobs the file carries, and adds no other', () => {
+  it('sits among the eight jobs the file carries, and adds no other', () => {
     // This set and the identical one in `ops/__tests__/registry-schema.test.ts`
     // are the fourth committed assertion the contents of `ci.yml` are pinned by,
     // and adding a job fails both. That is deliberate: each of the two suites
@@ -1024,6 +1024,8 @@ describe('the CI wiring', () => {
     // Six jobs until Story 2-34 added `literal-conformance`, FR-17's blocking
     // gate (AD-21), whose wiring is asserted in
     // `ops/__tests__/literal-conformance.test.ts` beside the module it runs.
+    // Story 5.7 added `provider-swap`, FR-23's demonstration, wired in
+    // `ops/__tests__/provider-swap.test.ts` beside the script it runs.
     expect(
       jobNames,
       'the order is a reader convenience rather than a rule, since jobs run in parallel. The set is not: a job' +
@@ -1036,6 +1038,7 @@ describe('the CI wiring', () => {
       'registry-schema',
       'rendered-output',
       'literal-conformance',
+      'provider-swap',
     ]);
   });
 
