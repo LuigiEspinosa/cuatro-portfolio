@@ -26,6 +26,7 @@ Story 5.4, and every Registry entry keeps `identity: none` until its own story m
 8. [The Hub's sign-in (Story 5.3)](#the-hubs-sign-in-story-53)
 9. [cs-tracker's sign-in (Story 5.4)](#cs-trackers-sign-in-story-54)
 10. [Sign-out (Story 5.5)](#sign-out-story-55)
+11. [The Traefik dashboard behind ForwardAuth (Story 5.6)](#the-traefik-dashboard-behind-forwardauth-story-56)
 
 ## The issuer
 
@@ -538,3 +539,227 @@ S5's observations are written here, each with its UTC time.
 | S3 | **Roll both applications onto Story 5.5** and check the status codes | After H2 and CT3; a box change | _not done_ |
 | S4 | **Observe an open `cs-tracker` socket leave on sign-out** | After S3 | _not done_ |
 | S5 | **Observe sign-out cross from the Hub to an open `cs-tracker` socket** | Only with S2 done; otherwise action 11 decides what stands in for it | _not done_ |
+
+## The Traefik dashboard behind ForwardAuth (Story 5.6)
+
+**What exists (built 2026-10-02 on `dev`, rehearsed off the box against a stand-in issuer only).** AD-11 keeps
+Traefik ForwardAuth for surfaces with no authentication of their own and never for an application's identity.
+On the box that is one surface: **the Traefik dashboard** (`api@internal`), whose only gate today is Traefik's
+own basic auth (`TRAEFIK_DASHBOARD_USERS`, the `dashboard-auth` middleware). Every other surface authenticates
+itself and is not gated: Umami's login, the tracker's `/admin` (`next-auth`, `apps/tracker/middleware.ts`), the
+tournament's admin (Supabase Auth), `cs-tracker` (the Owner's sign-in), the Hub (Story 5.3); qBittorrent's
+WebUI has its own login and no hostname (`ops/routing-inventory.md` § How qBittorrent is administered).
+`ops/__tests__/traefik-config.test.ts` holds that no router but the dashboard's names a forwardAuth middleware
+and no public router reaches the service, whichever way the switch below is set.
+
+- **The service** is `forward-auth` in `ops/traefik/compose.yml`: oauth2-proxy as the confidential OIDC client
+  `traefik`, with PKCE `S256`, the issuer read from discovery (`OIDC_ISSUER`, no provider named, FR-23), and
+  a session cookie `__Host-traefik-dashboard`: `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, no `Domain`,
+  eight hours as the Hub's. It admits one address, the Owner's (`TRAEFIK_OIDC_OWNER_EMAIL`, handed to it as a
+  file), and only when the issuer states that address verified; a domain allowlist would admit anyone the
+  issuer knows at that domain, `demo@cuatro.dev` included. It sits on `cs-tracker_default` beside Traefik and
+  publishes no port. Its `/oauth2/` paths, the callback among them, are a router of their own on the
+  dashboard's loopback entrypoint.
+- **What changes for the dashboard, once switched:** its router's middleware becomes `dashboard-forward-auth`,
+  so a request without the session is sent to the issuer and back to `http://localhost:8080/oauth2/callback`,
+  and basic auth no longer admits anyone. **What does not change:** the dashboard stays on the loopback
+  entrypoint (`127.0.0.1:8081` on the box), reached only through `ssh -N -L 8080:127.0.0.1:8081
+  deploy@177.7.52.248`; `api.insecure` stays off; no hostname, DNS record or published port is added; and
+  `TRAEFIK_DASHBOARD_USERS` stays in the env file, unused while switched on and the gate again once switched
+  off. Every public router is untouched.
+- **Why nothing merged changes the box (the hazard of DW-299).** Traefik renders `dynamic/routes.yml` as a Go
+  template. The dashboard's two routers, the middleware and the service sit inside
+  `eq (env "DASHBOARD_FORWARD_AUTH") "on"`; with the variable unset the file renders to the same routers,
+  middlewares and services as before this story, and Traefik reads its environment once, when its container
+  is created. The service is under the compose profile `forward-auth`, which the plain `up -d` never starts.
+  So the deploy that resets the checkout to `main` changes nothing; FA3 and FA4 below, by hand, do. With an
+  env file holding only today's two names, `docker compose config` accepts the new `compose.yml` (with and
+  without the profile), and `up -d --wait` starts the ingress alone, its dashboard answering 401 and 200 and
+  no router, middleware or service naming the service (checked 2026-10-02 around 20:41Z).
+- **Sign-out.** `http://localhost:8080/oauth2/sign_out` ends the dashboard's session. Signing out of an
+  application or of the issuer does not reach it: oauth2-proxy receives no Back-Channel logout, so the
+  session serves up to eight hours (DW-330). The dashboard is not an application, so FR-22 does not bind it.
+- **Break-glass.** If the issuer is down or refuses the client, the dashboard cannot be reached while
+  switched on. Delete the `DASHBOARD_FORWARD_AUTH` line from `ops/traefik/.env` and recreate the ingress as
+  FA4 does: basic auth is back, as the rehearsal's phase D shows.
+
+**The component (Constitution rule 19).** `quay.io/oauth2-proxy/oauth2-proxy:v7.15.5`, pinned by its
+multi-platform index digest `sha256:8498b0d0ef0a7b29686414000a08aee467f02d0299c9ed1e006a8f33fc017916` (read
+2026-10-02). MIT (`gh api repos/oauth2-proxy/oauth2-proxy`, not archived). v7.15.5 was published 2026-10-01
+and is the first release outside GHSA-63jm-59jj-478j and GHSA-wr5q-7wxw-x568 (both critical, authentication
+bypasses) and GHSA-hhqp-vx7f-5c6m (moderate), each patched after v7.15.4; `api.osv.dev` listed no
+vulnerability for 7.15.5 at 2026-10-02T20:12:23Z. The image runs as UID 65532 with `/bin/oauth2-proxy` as its
+entrypoint, and refuses to start on an empty value (`invalid configuration`, observed 2026-10-02 with the
+cookie secret empty). **What it stores: nothing on disk and nothing server-side.** The session store is the
+default cookie store, so the session is an encrypted cookie in the Owner's browser, sealed with
+`TRAEFIK_FORWARD_AUTH_COOKIE_SECRET`. It holds the client secret and that cookie secret in its environment
+and calls only the issuer. Its version is not on AD-22's refresh list (FA6, DW-329).
+
+**Capacity (AD-9).** Not a placement: `ops/capacity-gate.yml` lists applications, and its header names Umami
+and Postgres as infrastructure rather than Estate applications; this service belongs to the Traefik stack, is
+started by hand and never by a deploy, so no id is added and no workflow's gate reads it. Its footprint in the
+rehearsal, idle after a sign-in: 0.00% CPU and 6.2 MiB of memory (`docker stats`; 5.8 MiB in an earlier run), beside the gate's
+threshold of load15 0.60 on 2 vCPU (`ops/capacity-threshold.md`).
+
+**The client (AD-3).** The Traefik stack has no Registry id, so the derivation is applied to its compose
+project name, `traefik` (`name: traefik` in `ops/traefik/compose.yml`): the OAuth application's Name is
+`traefik`, and its variables are `TRAEFIK_OIDC_CLIENT_ID` and `TRAEFIK_OIDC_CLIENT_SECRET`. It is not a row of
+§ The clients, whose rows are Registry ids. Two more names belong to the service: `TRAEFIK_OIDC_OWNER_EMAIL`
+(an identifier, not a credential) and `TRAEFIK_FORWARD_AUTH_COOKIE_SECRET` (generated on the box, never
+copied anywhere else). The values live in the box's gitignored `/home/deploy/cuatro-portfolio/ops/traefik/.env`
+beside `TRAEFIK_DASHBOARD_USERS`, and the two client values also as GitHub Actions secrets of
+`LuigiEspinosa/cuatro-portfolio`, the durable copy. That file is the ingress's `env_file` too, so Traefik's own
+container sees them: the same file, on the same box, with the same reader. The redirect URI is
+`http://localhost:8080/oauth2/callback`, the SSH tunnel's local end: plain `http` on a loopback name, which
+some issuers refuse for a confidential client. If the issuer refuses it, FA1 stops and FA7 is the ruling.
+
+### Rehearsed off the box
+
+**Observed 2026-10-02 between 20:45:30Z and 20:46:50Z on the authoring machine** (Docker 29.8.1, Compose
+5.5.1), with copies of the committed `ops/traefik/` files in a scratch directory and a scratch override that
+replaced the ingress's `env_file` with a throwaway file and pointed `acme-v02.api.letsencrypt.org` at
+loopback, as `ops/traefik-cutover.md` § Rehearsed off the box did: a network `cs-tracker_default`, a volume
+`traefik-origin-ca` holding a self-signed pair for `cuatro.dev` and `*.cuatro.dev`, one `traefik/whoami:v1.11`
+per upstream alias, and `ops/forward-auth-stand-in-issuer.mjs` in `node:24-slim` as the issuer
+`http://issuer:9000` (client `traefik`, the redirect URI above, PKCE `S256` required). Requests went to 443
+with `curl --resolve`, and to the dashboard with `--connect-to localhost:8080:127.0.0.1:8081`, the tunnel's
+shape. Everything was removed afterwards. Each phase probed the seven hostnames with a router of their own
+and `www`, the `library` split, `cuatro.dev/oauth2/sign_in` (an application path, which must reach the
+application), an unknown hostname, plain HTTP, the dashboard over 443, the dashboard with and without basic
+credentials, and Traefik's `/api/rawdata`:
+
+```
+A, main's routes.yml          every hostname 200 from its own stand-in; cuatro.dev/oauth2/sign_in 200 Name: anchor-app
+                              dashboard: no credentials 401, basic credentials 200; 13 routers, all enabled
+B, this routes.yml, unset     A against B: IDENTICAL, probes and /api/rawdata byte for byte; no configuration error
+FA3, forward-auth started     /ping OK; nothing names it yet
+FA4, switch on, recreated     7 of 200 requests to cuatro.dev, sent every 50 ms through the recreate, got no answer
+C, switched on                dashboard, no session: 302 http://issuer:9000/authorize?...code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Foauth2%2Fcallback...
+                              issuer authorize (the Owner): 302 http://localhost:8080/oauth2/callback?code=...&state=...
+                              callback: 302 http://localhost:8080/dashboard/
+                              Set-Cookie: __Host-traefik-dashboard=...; Path=/; Max-Age=28800; HttpOnly; Secure; SameSite=Lax
+                              dashboard, session: 200; routers add dashboard-oauth2, middlewares dashboard-forward-auth, services forward-auth
+                              basic credentials only: 302; forged X-Forwarded-Email, X-Auth-Request-Email, X-Forwarded-User: 302
+                              callback as demo@cuatro.dev (signed in at the issuer, not the Owner): 403; dashboard then 302
+                              /oauth2/sign_out 302, dashboard then 302
+                              A against C, every application line: IDENTICAL
+D, switch removed, recreated  A against D: IDENTICAL, probes and /api/rawdata byte for byte
+```
+
+The recreate refuses connections on every hostname for under a second, once at FA4 and once at a
+break-glass. Not proven here: the real issuer (whether it accepts the loopback redirect URI, its
+`email_verified` claim), the box's aliases, the edge, and a browser's handling of a `__Host-` cookie on
+`http://localhost`, which FA5 observes. To re-run it, from the repository root in Git Bash, probing each phase
+with the lines of `ops/traefik-cutover.md`'s block on port 443 and saving
+`curl -s "${D[@]}" -u operator:throwaway http://localhost:8080/api/rawdata` per phase for `cmp`. The block as
+written ran end to end under `bash -e` between 2026-10-02T20:43:02Z and 20:43:48Z, printing `callback 302`
+and `dashboard 200` and leaving no container, network or volume behind. Bodies go to `$W/body`, never
+`/dev/null`, which Git Bash's curl cannot open while `MSYS_NO_PATHCONV` is set:
+
+```bash
+T0="$(mktemp -d)"; W="$(cygpath -m "$T0")"; export MSYS_NO_PATHCONV=1
+cp ops/traefik/compose.yml ops/traefik/traefik.yml "$W/"; mkdir "$W/dynamic"
+git show origin/main:ops/traefik/dynamic/routes.yml > "$W/dynamic/routes.yml"
+printf 'services:\n  ingress:\n    env_file: !override [rehearsal.envfile]\n    extra_hosts: ["acme-v02.api.letsencrypt.org:127.0.0.1"]\n' > "$W/rehearsal.yml"
+ISS=http://issuer:9000
+{ printf "TRAEFIK_DASHBOARD_USERS='operator:%s'\nCF_DNS_API_TOKEN=throwaway\n" "$(openssl passwd -apr1 throwaway)"; echo "OIDC_ISSUER=$ISS"
+  printf 'TRAEFIK_OIDC_CLIENT_ID=traefik\nTRAEFIK_OIDC_CLIENT_SECRET=throwaway-client-secret\nTRAEFIK_OIDC_OWNER_EMAIL=owner@example.test\n'
+  printf 'TRAEFIK_FORWARD_AUTH_COOKIE_SECRET=%s\n' "$(head -c 32 /dev/urandom | base64 | tr -- '+/' '-_')"; } > "$W/rehearsal.envfile"
+T="docker compose -f $W/compose.yml -f $W/rehearsal.yml --env-file $W/rehearsal.envfile"
+docker network create cs-tracker_default && docker volume create traefik-origin-ca
+docker run --rm -v traefik-origin-ca:/data alpine:3 sh -c 'apk add -q openssl && openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=throwaway-origin -addext "subjectAltName=DNS:cuatro.dev,DNS:*.cuatro.dev" -keyout /data/origin.key -out /data/origin.pem'
+for a in anchor-app:3000 anchor-umami:3000 app:4000 cuatro-app:3000 library-web:3000 library-api:4000 list-wheel:80 tournament:3000; do
+  docker run -d --name "stand-in-${a%%:*}" --network cs-tracker_default --network-alias "${a%%:*}" traefik/whoami:v1.11 --port "${a##*:}" --name "${a%%:*}"
+done
+docker run -d --name stand-in-issuer --network cs-tracker_default --network-alias issuer -p 127.0.0.1:9000:9000 -v "$(pwd -W)/ops/forward-auth-stand-in-issuer.mjs:/issuer.mjs:ro" \
+  -e ISSUER=http://issuer:9000 -e CLIENT_ID=traefik -e CLIENT_SECRET=throwaway-client-secret -e REDIRECT_URI=http://localhost:8080/oauth2/callback node:24-slim node /issuer.mjs
+D=(--connect-to localhost:8080:127.0.0.1:8081); I=(--connect-to issuer:9000:127.0.0.1:9000); J="$W/jar"
+loc() { curl -s -D - -o "$W/body" "$@" | tr -d '\r' | sed -n 's/^[Ll]ocation: //p'; }
+$T up -d --wait ingress                                                              # phase A
+cp ops/traefik/dynamic/routes.yml "$W/dynamic/routes.yml"; sleep 4                    # phase B
+$T --profile forward-auth up -d forward-auth                                         # FA3
+echo DASHBOARD_FORWARD_AUTH=on >> "$W/rehearsal.envfile"; $T up -d --wait ingress   # FA4, phase C
+curl -s -X POST "${I[@]}" 'http://issuer:9000/as?email=owner@example.test'; echo    # or demo@cuatro.dev
+a=$(loc "${D[@]}" -c "$J" -b "$J" http://localhost:8080/dashboard/); b=$(loc "${I[@]}" "$a")
+curl -s -o "$W/body" -w 'callback %{http_code}\n' "${D[@]}" -c "$J" -b "$J" "$b"
+curl -s -o "$W/body" -w 'dashboard %{http_code}\n' "${D[@]}" -b "$J" http://localhost:8080/dashboard/
+sed -i '/^DASHBOARD_FORWARD_AUTH=/d' "$W/rehearsal.envfile"; $T up -d --wait ingress  # phase D
+$T --profile forward-auth down -v; docker rm -f $(docker ps -aq --filter name=stand-in-)
+docker volume rm traefik-origin-ca && docker network rm cs-tracker_default; rm -rf "$T0"
+```
+
+### By hand, in order, after this record's actions 1 to 7 (the issuer exists and its values are recorded)
+
+1. **FA1. Create the client.** On the issuer's OAuth applications page, as § The sequence step 8 does: Name
+   `traefik`, scopes `openid`, `profile` and `email`, confidential, PKCE required, Redirect URI exactly
+   `http://localhost:8080/oauth2/callback`. Paste the Client ID and the secret into the local `.env` as
+   `TRAEFIK_OIDC_CLIENT_ID` and `TRAEFIK_OIDC_CLIENT_SECRET`, and the Owner's sign-in address as
+   `TRAEFIK_OIDC_OWNER_EMAIL`. **If the page refuses the redirect URI, stop**, record what it said under
+   § Dashboard run, and take FA7.
+2. **FA2. Put the values on the box and in GitHub**, printing none, from Git Bash at the repository root:
+   ```bash
+   grep -E '^(OIDC_ISSUER|TRAEFIK_OIDC_(CLIENT_ID|CLIENT_SECRET|OWNER_EMAIL))=' .env | tr -d '\r' \
+     | ssh deploy@177.7.52.248 'f=/home/deploy/cuatro-portfolio/ops/traefik/.env; ! grep -qE "^(OIDC_ISSUER|TRAEFIK_OIDC_)" "$f" && { [ -z "$(tail -c1 "$f")" ] || echo >> "$f"; cat >> "$f"; }'
+   ssh deploy@177.7.52.248 'f=/home/deploy/cuatro-portfolio/ops/traefik/.env; grep -q "^TRAEFIK_FORWARD_AUTH_COOKIE_SECRET=" "$f" || printf "TRAEFIK_FORWARD_AUTH_COOKIE_SECRET=%s\n" "$(head -c 32 /dev/urandom | base64 | tr -- "+/" "-_")" >> "$f"; grep -cE "^(OIDC_ISSUER|TRAEFIK_OIDC_(CLIENT_ID|CLIENT_SECRET|OWNER_EMAIL)|TRAEFIK_FORWARD_AUTH_COOKIE_SECRET)=.+" "$f"'
+   t="$(mktemp)"; grep -E '^TRAEFIK_OIDC_CLIENT_(ID|SECRET)=' .env | tr -d '\r' > "$t"
+   gh secret set -f "$t" --repo LuigiEspinosa/cuatro-portfolio; rm -f "$t"
+   ```
+   The second command prints `5`. An `ssh` exit of 1 from the first means the lines were already there.
+   Nothing reads them until FA3.
+3. **FA3. Start the service**, in an interactive `ssh deploy@177.7.52.248` session. No router names it yet, so
+   this changes nothing a request sees:
+   ```bash
+   cd /home/deploy/cuatro-portfolio && T='docker compose -f ops/traefik/compose.yml'
+   $T --profile forward-auth up -d forward-auth
+   docker run --rm --network cs-tracker_default curlimages/curl:8.11.1 -s http://forward-auth:4180/ping; echo
+   $T logs forward-auth | tail -5
+   ```
+   `OK` prints. `invalid configuration` in the log means a value is empty: check FA2's count.
+4. **FA4. Switch the dashboard**, at a quiet hour, because recreating the ingress refuses connections on
+   every hostname for under a second (the rehearsal), in the same session:
+   ```bash
+   echo DASHBOARD_FORWARD_AUTH=on >> ops/traefik/.env
+   $T up -d --wait ingress
+   docker logs traefik-ingress-1 --since 2m 2>&1 | grep -c 'Error while building configuration'
+   for h in cuatro.dev analytics.cuatro.dev cs-tracker.cuatro.dev tracker.cuatro.dev library.cuatro.dev wheel.cuatro.dev tournament.cuatro.dev; do
+     echo "$h $(curl -sk -o /dev/null -w '%{http_code}' --resolve "$h:443:127.0.0.1" "https://$h/")"; done
+   curl -s -o /dev/null -w 'dashboard, no session %{http_code}\n' http://localhost:8081/dashboard/
+   ```
+   The `grep` prints `0`, each hostname answers what it answered before (`ops/caddy-retirement.md`
+   § Retirement run), and the dashboard answers `302`. A `500` there means Traefik cannot reach the service:
+   break-glass above.
+5. **FA5. Observe the sign-in.** On the workstation, `ssh -N -L 8080:127.0.0.1:8081 deploy@177.7.52.248`; in a
+   fresh browser profile open `http://localhost:8080/dashboard/`, sign in at the issuer, and confirm the
+   dashboard shows. Record under § Dashboard run, with the UTC time: the cookie list for `localhost` (each
+   cookie's name and Domain, never its value; expected `__Host-traefik-dashboard`, host-only), and that
+   `curl -s -o /dev/null -w '%{http_code}\n' -u operator http://localhost:8080/dashboard/` (it prompts for the
+   old password) prints `302` from a second terminal. If the issuer holds a second account (the demo
+   principal of Story 5.8), sign in with it in another fresh profile and record the `403`.
+6. **FA6. Rule on oauth2-proxy's shelf life** (DW-329). Options: (a) add oauth2-proxy to AD-22's refresh
+   scope, a spine amendment, so its pin is re-read with Traefik's; (b) leave it off the list and re-read it
+   only when an advisory is published; (c) as (a), and also watch the repository's security advisories.
+   **Recommendation: (a)**, because v7.15.5 itself exists to close two critical authentication bypasses and
+   the service is the dashboard's only gate once switched. Any time.
+7. **FA7. Rule on the dashboard's address, only if FA1 stopped.** Options: (a) give the dashboard a public
+   hostname behind ForwardAuth over `websecure` (a new proxied DNS record, a new public surface, an `https`
+   redirect URI), which reverses Story 4-2's loopback-only placement; (b) keep it loopback-only on basic auth
+   and record AD-11's dashboard clause as not met on this issuer; (c) another issuer for this one client,
+   which re-opens Story 5.1. **Recommendation: (b)**, because SSH and basic auth already gate it and (a)
+   trades that for a public surface.
+
+### Dashboard run
+
+_Not yet run._ FA1's registration, FA2's count, FA3's `/ping`, FA4's statuses and FA5's observations are
+written here, each with its UTC time.
+
+### Pending Operator actions, Story 5.6
+
+| # | Action | Note | Completed (UTC) |
+|---|---|---|---|
+| FA1 | **Create the `traefik` client** with the loopback redirect URI | After action 5; stops at FA7 if refused | _not done_ |
+| FA2 | **Put the five values on the box and the two client values in GitHub** | After FA1; a box change | _not done_ |
+| FA3 | **Start `forward-auth`** under its profile and check `/ping` | After FA2; a box change that routes nothing | _not done_ |
+| FA4 | **Switch the dashboard** and check every hostname and the dashboard's `302` | After FA3; recreates the ingress | _not done_ |
+| FA5 | **Sign in to the dashboard through the tunnel** and record the cookie and the refused basic credentials | Story 5.6 is done when this cell is dated | _not done_ |
+| FA6 | **Rule on oauth2-proxy's place in AD-22's refresh** | Closes DW-329 | _not done_ |
+| FA7 | **Rule on the dashboard's address**, only if the issuer refuses the loopback redirect URI | Only if FA1 stopped | _not done_ |

@@ -780,6 +780,14 @@ public router below serves on its 443; the box's checkout read `50fde81` at the 
 | `dns01-probe` | the scratch hostname | none; the one router naming the `cloudflare` resolver | none (`noop@internal`) |
 | `dashboard` | `Host(localhost)`, on the loopback `traefik` entrypoint only | `dashboard-auth` | `api@internal` |
 
+**Amended 2026-10-02 (Story 5.6, repository half only):** the file now holds a second state for the dashboard,
+rendered only when Traefik's environment carries `DASHBOARD_FORWARD_AUTH=on`: the `dashboard` router's
+middleware becomes `dashboard-forward-auth` (ForwardAuth to the `forward-auth` service, `http://forward-auth:4180`,
+AD-11), and a `dashboard-oauth2` router, `Host(localhost) && PathPrefix(/oauth2/)` on the same loopback
+entrypoint, reaches that service. With the variable unset, which is the box until
+`ops/identity-issuer.md` § The Traefik dashboard behind ForwardAuth action FA4, the table above is what Traefik
+loads. No public router changes in either state.
+
 **Only `cs-tracker`'s upstream serves a WebSocket through the origin**, and its router sets
 `X-Forwarded-Proto: https` because Traefik forwards an upgrade as `wss` (Story 4-10). The others were
 checked on 2026-10-01 for DW-309: the Hub, Umami and `list-wheel` serve no upgrade; the tracker streams its

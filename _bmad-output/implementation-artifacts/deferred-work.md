@@ -9954,3 +9954,32 @@ status: done
     a store both processes share (the estate Postgres for `cs-tracker`; the Hub has none), or record why
     the window is accepted.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the.md`
+  id: DW-329
+  summary: >-
+    oauth2-proxy, the dashboard's ForwardAuth service, is pinned by digest and on no schedule that re-reads
+    the pin.
+  evidence: |-
+    Found 2026-10-02 by Story 5.6 (`ops/identity-issuer.md` § The Traefik dashboard behind ForwardAuth).
+    `ops/traefik/compose.yml` pins `quay.io/oauth2-proxy/oauth2-proxy:v7.15.5` by its index digest. v7.15.5,
+    published 2026-10-01, exists to close two critical authentication bypasses, and once FA4 switches the
+    dashboard the service is its only gate. AD-22's refresh scope names Traefik, PostgreSQL, restic and
+    `docker-rollout` but not this component, and adding it is a spine amendment.
+
+    **Owner: the Operator's ruling, action FA6.** **Trigger: before FA4, or at AD-22's next refresh.** Add
+    oauth2-proxy to AD-22's scope, or record why its pin is re-read only on a published advisory.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the.md`
+  id: DW-330
+  summary: >-
+    The dashboard's ForwardAuth session is reached by no sign-out but its own `/oauth2/sign_out`, so it
+    serves up to eight hours after the Owner signs out elsewhere.
+  evidence: |-
+    Found 2026-10-02 by Story 5.6. oauth2-proxy keeps the session in a sealed cookie and receives no
+    Back-Channel logout, so neither an application's sign-out (Story 5.5) nor the issuer's reaches it. The
+    dashboard is not an application, so FR-22 does not bind it, and it is reached only through an SSH tunnel.
+
+    **Owner: the Operator's ruling on action 11 (DW-319), which decides what sign-out reaches estate-wide.**
+    **Trigger: that ruling.** Shorten `OAUTH2_PROXY_COOKIE_EXPIRE`, add a server-side session store that a
+    logout can reach, or record the eight hours as accepted.
+  status: open
