@@ -9821,6 +9821,13 @@ status: done
     application's name and the variables that carry its credentials.** **Trigger: the next spine
     amendment, or Story 5.7, whose replaceability evidence may point an application at an issuer that
     does let the client id be chosen.**
+
+    **Story 5.7, 2026-10-02: the evidence, not the ruling.** `ops/provider-swap.sh` points the Hub,
+    `cs-tracker` and the dashboard's forward-auth at dex, an issuer that lets each Client ID be chosen, so
+    each was the application id itself, and all three signed in through the same variables that carry
+    Clerk's assigned values (`ops/identity-issuer.md` § Provider replaceability). Both kinds of value pass
+    through unchanged, so the narrowing this entry asks for loses nothing an application depends on. The
+    ruling stays the Operator's.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-2-one-clerk-issuer-and-one-oidc-client-per-application.md`
   id: DW-321
@@ -9916,6 +9923,14 @@ status: done
 
     **Owner: Story 5.7, or the Operator's ruling.** **Trigger: after `ops/identity-issuer.md` action CT5.**
     Remove `/auth/steam` and its callback, or record why a second path stays.
+
+    **Story 5.7, 2026-10-02: decided and half built.** FR-23 and AD-11 require that no provider-specific
+    sign-in answers once `cs-tracker` federates. On `cs-tracker`'s `dev` (`f1501ac`, `ee33c71`), with all four
+    OIDC values set, `/auth/steam` and its callback answer what an unrouted path answers and a Steam session
+    admits no one; unconfigured, nothing changes, and emptying one value is the break-glass
+    (`ops/identity-issuer.md` § cs-tracker's Steam sign-in). The Steam code is still in the repository.
+    **Owner now: the Operator's ruling, action PS2** (delete it after CT5, recommended, or keep it as the
+    break-glass and record FR-23's letter in `ops/known-violations.md`).
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
   id: DW-327

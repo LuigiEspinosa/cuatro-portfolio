@@ -27,6 +27,7 @@ Story 5.4, and every Registry entry keeps `identity: none` until its own story m
 9. [cs-tracker's sign-in (Story 5.4)](#cs-trackers-sign-in-story-54)
 10. [Sign-out (Story 5.5)](#sign-out-story-55)
 11. [The Traefik dashboard behind ForwardAuth (Story 5.6)](#the-traefik-dashboard-behind-forwardauth-story-56)
+12. [Provider replaceability (Story 5.7)](#provider-replaceability-story-57)
 
 ## The issuer
 
@@ -792,3 +793,156 @@ written here, each with its UTC time.
 | FA5 | **Sign in to the dashboard through the tunnel** and record the cookie and the refused basic credentials | Story 5.6 is done when this cell is dated | _not done_ |
 | FA6 | **Rule on oauth2-proxy's place in AD-22's refresh** | Closes DW-329 | _not done_ |
 | FA7 | **Rule on the dashboard's address**, only if the issuer refuses the loopback redirect URI | Only if FA1 stopped | _not done_ |
+
+## Provider replaceability (Story 5.7)
+
+**What FR-23 claims, and how it is shown (built 2026-10-02 on `dev`).** FR-23: identity is replaceable
+without touching application code, because no participant holds provider-specific logic beyond issuer
+configuration and client credentials (AD-11: "OIDC *is* the reversibility seam"). Every participant was built
+and proven against a stand-in issuer written for its own suite, and each suite scans its code for provider
+names; neither is the claim. The claim is shown by pointing each participant's **built production artefact**
+at a **second, independently implemented OpenID Provider** through the variables it already reads, changing
+nothing else, and completing a sign-in. `ops/provider-swap.sh` does that on a scratch internal Docker network,
+driving each sign-in with `ops/provider-swap-sign-in.mjs` the way a browser behind Traefik would, and leaves
+nothing behind. It is never run on the box.
+
+| Participant | Artefact | What it was given | Session minted |
+|---|---|---|---|
+| The Hub | the production image, `apps/hub/Dockerfile` | `OIDC_ISSUER`, `CUATRO_PORTFOLIO_OIDC_CLIENT_ID` and `_SECRET` | `__Host-hub-session` |
+| `cs-tracker` | the production release image, its own `Dockerfile` | `OIDC_ISSUER`, `CS_TRACKER_OIDC_CLIENT_ID`, `_SECRET` and `_OWNER_SUB` (the Hub's `sub`, as CT2 does), over the boot baseline every run needs (`DATABASE_URL`, `SECRET_KEY_BASE`, `PHX_HOST`, `STEAM_ID`) | `__Host-cs-tracker` |
+| The dashboard's forward-auth | `ops/traefik/compose.yml`'s `forward-auth`, as committed | the five names its environment interpolates (`OIDC_ISSUER`, `TRAEFIK_OIDC_CLIENT_ID`, `_SECRET`, `TRAEFIK_OIDC_OWNER_EMAIL`, `TRAEFIK_FORWARD_AUTH_COOKIE_SECRET`) | `__Host-traefik-dashboard` |
+
+**The one addition, and why it is not application configuration.** The scratch issuer's TLS certificate is
+signed by a certificate authority made for the run, so each runtime is told to trust it: `NODE_EXTRA_CA_CERTS`
+for the Hub, and the image's own CA bundle with the authority appended, mounted in place, for `cs-tracker`
+(which verifies certificate and hostname, `:httpc.ssl_verify_host_options(true)`), and the authority alone,
+mounted in place, for forward-auth. An issuer with a publicly trusted certificate needs none of it.
+`ops/__tests__/provider-swap.test.ts` holds each participant's variables to exactly these sets, so the
+demonstration cannot quietly start passing a flag.
+
+**The second issuer (Constitution rule 19, a test-time dependency only).** dex `v2.45.1`, a CNCF project,
+Apache-2.0 (`gh api repos/dexidp/dex`, not archived), pinned by its multi-platform index digest
+`sha256:8499afd690c437f52301efd2b05b2455da5bd2dfc20332cd697dc9937f808462` (read 2026-10-02, `dex version`:
+v2.45.1, Go 1.26.0). Advisories read 2026-10-02T22:41Z: the repository's GHSA-7qjx-gp9h-65qj (high, the
+token-exchange grant ignores a client's allowed connectors) names its affected range as later than 2.45.1 and
+is unreachable here (no token exchange, one connector); `api.osv.dev` lists GO-2024-2476 (GHSA-gr79-9v6v-gc9r,
+TLS 1.0 and 1.1 served by 2.37.0) against 2.45.1 with its own note that its versions could not be mapped, and
+the GHSA names 2.38.0 as patched. It stores nothing (`storage: memory`), holds one user and the three clients,
+runs on a network with no egress for one run, and is never on the box or in a deploy. Idle footprint 0.00%
+CPU and 8.1 MiB (`docker stats` on a bare instance). Its login is the bcrypt hash of `password` from dex's own
+`examples/config-dev.yaml`, a throwaway on an issuer that lives for one run; client secrets are generated
+per run and printed nowhere.
+
+**How dex differs from Clerk, which is the point.** It is a different implementation with its own login
+pages, its own `sub` format (an encoded user and connector id), no `end_session_endpoint` and no Back-Channel
+logout; it offers `plain` PKCE and `client_secret_post`, which the participants refuse to take; and it lets
+the operator **choose** each Client ID, so here each is the application id itself, AD-3's literal derivation.
+Clerk assigns its own (DW-320). The variables carry either kind of value unchanged, which is what DW-320
+needs from them. oauth2-proxy asks with `approval_prompt=force`, so dex shows a consent page for forward-auth
+only, which the driver approves as a person would.
+
+**Run on 2026-10-02 between 22:55:32Z and 22:55:57Z** (Docker 29.8.1), on the Hub's image built from
+`7275275` and `cs-tracker`'s from `ee33c71` on its `dev`, exit 0, nothing left behind:
+
+```
+== issuer: Dex Version: v2.45.1, https://issuer.test:5554
+== the Hub (provider-swap-hub:7275275): OIDC_ISSUER, CUATRO_PORTFOLIO_OIDC_CLIENT_ID and _SECRET
+session before sign-in: 401
+sign-in: 302 to https://issuer.test:5554/auth client_id=cuatro-portfolio code_challenge_method=S256 state nonce
+issuer: signed in as owner@example.test, back to https://cuatro.dev/auth/callback with a code
+callback: 302 to https://cuatro.dev/
+cookie __Host-hub-session: host-only, Secure, HttpOnly, Path=/ on cuatro.dev
+session after sign-in: 200 {"sub":"CiQwOGE4Njg0Yi1kYjg4LTRiNzMtOTBhOS0zY2QxNjYxZjU0NjYSBWxvY2Fs","email":"owner@example.test"}
+== cs-tracker (provider-swap-cs-tracker:ee33c71): OIDC_ISSUER, CS_TRACKER_OIDC_CLIENT_ID, _SECRET and _OWNER_SUB (the Hub's sub)
+session before sign-in: 401
+sign-in: 302 to https://issuer.test:5554/auth client_id=cs-tracker code_challenge_method=S256 state nonce
+issuer: signed in as owner@example.test, back to https://cs-tracker.cuatro.dev/auth/callback with a code
+callback: 302 to /
+cookie __Host-cs-tracker: host-only, Secure, HttpOnly, Path=/ on cs-tracker.cuatro.dev
+session after sign-in: 200 {"sub":"CiQwOGE4Njg0Yi1kYjg4LTRiNzMtOTBhOS0zY2QxNjYxZjU0NjYSBWxvY2Fs","email":"owner@example.test"}
+/auth/steam: 404
+one identity: cs-tracker's sub equals the Hub's
+== forward-auth (ops/traefik/compose.yml): OIDC_ISSUER, TRAEFIK_OIDC_CLIENT_ID and _SECRET
+session before sign-in: 401
+sign-in: 302 to https://issuer.test:5554/auth client_id=traefik code_challenge_method=S256 state nonce
+issuer: signed in as owner@example.test, back to http://localhost:8080/oauth2/callback with a code
+callback: 302 to /dashboard/
+cookie __Host-traefik-dashboard: host-only, Secure, HttpOnly, Path=/ on localhost:8080
+session after sign-in: 200 {"user":"CiQwOGE4Njg0Yi1kYjg4LTRiNzMtOTBhOS0zY2QxNjYxZjU0NjYSBWxvY2Fs","email":"owner@example.test"}
+forwardAuth check with the session: 202
+== every participant signed in at https://issuer.test:5554
+```
+
+Re-run on the committed script between 2026-10-02T23:05:14Z and 23:05:44Z: exit 0, the same lines. Without
+`CS_TRACKER_IMAGE`, as CI runs it: exit 0, `cs-tracker` skipped, the Hub and forward-auth signed in. The driver also fails the run on any cookie carrying a `Domain`. Handed a wrong client secret, the Hub's
+callback answers 400 and the script exits 1 (checked once, on a scratch copy). Not shown: sign-out, which dex
+does not advertise (FR-22 is Story 5.5's, proven against a stand-in that does), and a real browser.
+
+**Repeatable.** From the repository root in Git Bash or any Linux shell, with Docker and `openssl`:
+
+```bash
+docker build -f apps/hub/Dockerfile -t provider-swap-hub:local .
+git -C ../cs-tracker-workspace/cs-tracker-dev archive HEAD | docker build -t provider-swap-cs-tracker:local -
+HUB_IMAGE=provider-swap-hub:local CS_TRACKER_IMAGE=provider-swap-cs-tracker:local bash ops/provider-swap.sh
+```
+
+It stops if a network named `cs-tracker_default` already exists (it creates and removes its own). Without
+`CS_TRACKER_IMAGE` it skips `cs-tracker` and says so. **In CI:** the `provider-swap` job in `ci.yml` builds the
+Hub's image and runs the script on every push, with no account and no secret. `cs-tracker` is not in it:
+its release is built from a private repository the workflow's token cannot read, and that repository has no
+CI of its own (DW-14), so its half runs by hand, as above, after any change to its sign-in.
+
+### cs-tracker's Steam sign-in (DW-326)
+
+**What FR-23 and AD-11 require of it.** Steam OpenID 2.0 is provider-specific sign-in logic, and a Steam
+session was a second identity path: with OIDC configured, `/auth/steam` still minted a session the Owner gates
+admitted. FR-23 forbids the first and AD-11's one identity forbids the second, so once `cs-tracker` federates,
+Steam may not answer. Built here, on `cs-tracker`'s `dev` (`f1501ac`, `ee33c71`): with all four OIDC values
+set, `/auth/steam` and its callback answer what an unrouted path answers (the `:oidc_unconfigured` pipeline,
+the mirror of Story 5.4's gate), a Steam session admits nothing at the HTTP gate or the live one, and the Steam
+sign-out route returns to `/auth/sign-in`. Unconfigured, nothing changes: the production images of `faaa642`
+and `ee33c71`, unconfigured, answered `/`, `/auth/steam`, `/auth/steam/callback`, the three OIDC paths probed
+and an unrouted path identically (status, headers with `date`, `x-request-id`, cookie values and Steam's state
+and return address masked, and body length; 2026-10-02T22:55:24Z). Emptying any one of the four values is the
+break-glass that brings Steam back. `mix precommit` exit 0, 726 tests, 0 failures, 4 excluded; dropping the
+plug's, the live gate's or the router's new check, or the sign-out's new target, each fails a case.
+
+**What remains is a ruling** (action PS2): the Steam code itself is still in `cs-tracker`, unreachable once
+configured, and FR-23's letter says an application *contains* no provider-specific logic.
+
+### By hand
+
+1. **PS1. Rule on how the live estate evidences FR-23.** The live estate has one issuer, and pointing it at a
+   second one needs a second provider account or a self-hosted issuer on the box. Options: (a) accept the
+   off-box demonstration above, run on the production artefacts and in CI, as FR-23's evidence, after
+   running `ops/provider-swap.sh` once yourself; (b) a self-hosted dex on the box for one window, on a new
+   proxied hostname behind Traefik, the Hub's three values pointed at it and back (a box, DNS and Traefik
+   change, a new public surface for the window, and one rollout each way); (c) a second hosted provider's
+   free account, with a client for the Hub, pointed at and back the same way (a new third-party account and
+   terms to read). **Recommendation: (a)**, because (b) and (c) exercise the same three variables on the same
+   image this run already exercised, and add a production sign-in surface, a rollout and an account to show
+   it. Story 5.7 is done when this cell is dated (with (b) or (c), when that swap is recorded under § Provider
+   swap run).
+2. **PS2. Rule on the Steam sign-in's code** (DW-326). Options: (a) delete `/auth/steam`, its callback,
+   `CsTracker.Auth.SteamOpenID` and the nonce store once CT5 is dated, keeping `STEAM_ID` (it still names the
+   inventory) and making the issuer the only sign-in, with a second issuer, by configuration, as the recovery
+   from an issuer outage; (b) keep the code, unreachable once configured, as the break-glass, and record
+   FR-23's letter as knowingly breached in `ops/known-violations.md`. **Recommendation: (a)**, because this
+   story shows the recovery (b) would keep Steam for is a change of configuration values, and Steam is itself
+   a third-party provider. After CT5.
+3. **PS3. Make `provider-swap` a required check on `main`.** A GitHub settings change: add it to the
+   branch ruleset beside the thirteen required today, once it has passed on `main` once, and move the count
+   in `AGENTS.md` § Dependency automation policy in the same change. **Recommendation: yes**, because a
+   change that ties a participant to one provider then cannot merge red. Any time after Epic 5 merges.
+
+### Provider swap run
+
+_Not yet run._ PS1's ruling, and the live swap if (b) or (c) is ruled, are written here with the UTC time.
+
+### Pending Operator actions, Story 5.7
+
+| # | Action | Note | Completed (UTC) |
+|---|---|---|---|
+| PS1 | **Rule on how the live estate evidences FR-23**, and run the swap if (b) or (c) | Story 5.7 is done when this cell is dated | _not done_ |
+| PS2 | **Rule on deleting `cs-tracker`'s Steam sign-in code** | After CT5; closes DW-326 | _not done_ |
+| PS3 | **Make `provider-swap` a required check on `main`** | A GitHub settings change | _not done_ |
