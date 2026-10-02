@@ -9764,3 +9764,22 @@ status: done
     after DW-307's fix (`ops/tournament-placement.md`), so every installed backup script matches the
     checkout today. The entry stays open: nothing yet compares the two, so the next fix drifts the same way.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-1-refresh-clerk-s-pricing-and-terms.md`
+  id: DW-319
+  summary: >-
+    No Clerk page read for Story 5.1 documents logout: neither OAuth docs page mentions an
+    `end_session_endpoint`, RP-Initiated logout or Back-Channel logout, both of which AD-11 requires.
+  evidence: |-
+    Found 2026-10-02 at 14:01Z by Story 5.1, reading `https://clerk.com/docs/advanced-usage/clerk-idp`
+    and `https://clerk.com/docs/guides/configure/auth-strategies/oauth/how-clerk-implements-oauth` (both
+    "Last updated on Oct 1, 2026"): a text search of each for `logout`, `end_session` and `backchannel`
+    found nothing. Absence on two pages is not proof the issuer lacks them, and capability was outside
+    5.1's pricing scope, so it was not researched further (`ops/clerk-pricing-and-terms.md` § Found in
+    passing, filed). If the issuer advertises neither, AD-11's logout rule and FR-22 cannot be met as
+    written and the spine needs a ruling before Story 5.5.
+
+    **Owner: Story 5.2**, which creates the issuer and can read its discovery document
+    (`/.well-known/openid-configuration`) for `end_session_endpoint`, `backchannel_logout_supported` and
+    `backchannel_logout_session_supported`, and record them; **then Story 5.5**, which builds on them.
+    **Trigger: the first read of the issuer's discovery document.**
+  status: open

@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-01-2026 02:57
+last_updated: 10-02-2026 14:20
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1029,8 +1029,14 @@ development_status:
   4-11-retire-caddy-and-decommission-the-old-topology: done
   epic-4-retrospective: done
 
-  epic-5: backlog
-  5-1-refresh-clerk-s-pricing-and-terms: backlog
+  epic-5: in-progress
+  # 5-1 awaiting-operator 2026-10-02: repository half built on dev. New record ops/clerk-pricing-and-terms.md:
+  # Clerk pricing, the Standard Terms ("Last updated: July 2, 2026") and two OAuth docs pages read 2026-10-02 at
+  # 14:01Z with URL and time; pricing unchanged since 2026-09-30, every AD-11 element a page prices is $0 on Hobby, OAuth
+  # applications named by no pricing line. The plan is a named decision against NFR-4 ($100 ceiling, $0 recorded
+  # marginal spend today), recommendation Hobby at $0, pending the Operator: ops/clerk-pricing-and-terms.md
+  # § Pending Operator actions 1 to 3 (action 1 closes the story). DW-319 filed (no logout on the docs pages read).
+  5-1-refresh-clerk-s-pricing-and-terms: awaiting-operator
   5-2-one-clerk-issuer-and-one-oidc-client-per-application: backlog
   5-3-the-hub-authenticates-over-oidc-authorization-code-pkce: backlog
   5-4-cs-tracker-authenticates-the-javascript-elixir-boundary: backlog
