@@ -80,8 +80,11 @@ const HUB_ROOT = join(REPO_ROOT, 'apps', 'hub');
 /** A path the Hub does not route, which renders `app/not-found.tsx` through the root layout. */
 const NOT_FOUND = '/a-route-that-does-not-exist';
 
-/** The routes the Hub serves that render no Hub markup at all, same list as the 2-8 sweep. */
-const NON_HUB_ROUTES = ['/api/health'] as const;
+/**
+ * The routes the Hub serves that render no Hub markup at all: the 2-8 sweep's `NON_HUB_ROUTES` and its
+ * `AUTH_ROUTES`, Story 5.3's sign-in handlers, which answer 404 with an empty body while unconfigured.
+ */
+const NON_HUB_ROUTES = ['/api/health', '/auth/callback', '/auth/session', '/auth/sign-in'] as const;
 
 /** The entrance the home surface animates, and the selector the settle waits on. */
 const ENTRANCE_SELECTOR = '.nav-link, .contact-container a';
@@ -1126,7 +1129,9 @@ test.describe('the accessibility floor', () => {
     expect(onDisk, 'the derived route set no longer carries the home route').toContain('/');
     expect(onDisk, 'the derived route set no longer carries the 404 surface').toContain(NOT_FOUND);
     expect(onDisk, 'the walk no longer finds a route handler').toContain('/api/health');
-    expect(SURFACES.map((surface) => surface.route)).toEqual(onDisk.filter((route) => route !== '/api/health'));
+    expect(SURFACES.map((surface) => surface.route)).toEqual(
+      onDisk.filter((route) => !(NON_HUB_ROUTES as readonly string[]).includes(route))
+    );
     expect(SURFACES.length, 'fewer than two Hub surfaces, so the sweep is not universal').toBeGreaterThan(1);
 
     // **The ledger is empty since Story 2-33**, which is a reading rather than a hole: every sweep below

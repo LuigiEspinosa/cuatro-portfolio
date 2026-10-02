@@ -165,6 +165,13 @@ const SURFACES = [
 const NON_HUB_ROUTES = ['/api/health'] as const;
 
 /**
+ * The Hub's sign-in route handlers (Story 5.3, `apps/hub/lib/oidc.ts`). They render no markup, and the
+ * suite runs the Hub with no OIDC variables, so each answers 404 with an empty body and sets no cookie:
+ * the unconfigured Hub `main` may deploy before the issuer exists. The last case in this file pins that.
+ */
+const AUTH_ROUTES = ['/auth/callback', '/auth/session', '/auth/sign-in'] as const;
+
+/**
  * The entrance the home surface animates, and the selector the settle waits on.
  *
  * `HomeLayout.scss` animates these from `opacity: 0` at 2000ms and 2200ms, with an 80ms stagger
@@ -877,7 +884,7 @@ test.describe('the hit-target floor', () => {
     // arrival. Story 2-9, the next on the board, adds a surface. Without this case that surface is
     // simply never visited, and every count above it stays green.
     const onDisk = routesOnDisk(join(HUB_ROOT, 'app'));
-    const registered: string[] = [...SURFACES.map((surface) => surface.route), ...NON_HUB_ROUTES].sort();
+    const registered: string[] = [...SURFACES.map((surface) => surface.route), ...NON_HUB_ROUTES, ...AUTH_ROUTES].sort();
 
     expect(onDisk.length, 'no route was derived from app/, so this comparison is over nothing').toBeGreaterThan(0);
     expect(onDisk, 'the derived route set no longer carries the home route').toContain('/');
@@ -1770,5 +1777,14 @@ test.describe('the hit-target floor', () => {
     }
 
     expect(landings).toHaveLength(NON_HUB_ROUTES.length);
+  });
+
+  test('the sign-in routes answer 404 with no markup and no cookie while the Hub is unconfigured', async ({ page }) => {
+    for (const route of AUTH_ROUTES) {
+      const response = await page.request.get(route, { maxRedirects: 0 });
+      expect(response.status(), `${route} answers as configured, so the suite's Hub carries OIDC variables`).toBe(404);
+      expect(await response.text(), `${route} rendered a body`).toBe('');
+      expect(response.headersArray().filter((h) => h.name.toLowerCase() === 'set-cookie'), route).toEqual([]);
+    }
   });
 });
