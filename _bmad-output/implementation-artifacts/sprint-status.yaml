@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-02-2026 20:50
+last_updated: 10-03-2026 02:30
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1087,7 +1087,13 @@ development_status:
   # mailbox question, credentials, issuer account, budget ruling and each switch are the Operator's: DP1 to DP8.
   # DW-331 to DW-333 filed.
   5-8-the-demo-principal-contract: awaiting-operator
-  5-9-demo-reset-and-a-baseline-fixture-per-application: backlog
+  # 5-9 awaiting-operator 2026-10-03: repository halves built. ops/demo-principal.md § The reset defines demo:reset
+  # once (delete by owner through an explicit key, never the Operator's rows or the principal's account, a committed
+  # fixture with fixed ids and times, one transaction, idempotent, skipped when off or absent, run from the host as
+  # a one-shot docker compose run, one line out, exit 0 or 1). Tracker on dev here (Postgres-backed suite, CI gains
+  # a Postgres service); cs-tracker dev d1adf6c 7b79f25 dcd35ee; digital-library branch story-5-8-demo-principal
+  # 527bc2c. Running each reset live (DR1 to DR3) and the uploads ruling (DR4) are the Operator's. DW-334 filed.
+  5-9-demo-reset-and-a-baseline-fixture-per-application: awaiting-operator
   5-10-one-host-level-reset-scheduler-for-the-estate: backlog
   5-11-demo-and-identity-declarations-verified-against-reality: backlog
   epic-5-retrospective: optional

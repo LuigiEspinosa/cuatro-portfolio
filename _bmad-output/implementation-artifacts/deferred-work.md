@@ -10012,6 +10012,10 @@ status: done
     **Owner: the Operator's ruling DP4.** **Trigger: before DP5 or DP6 turns demo access on.** Raise the
     limits to 22 and 29 on the box and in `ops/postgres/10-consumers.sh` and the budget table together (the
     sum becomes 86 of 97), or lower the pools instead.
+
+    **Story 5.9, 2026-10-03:** each `demo:reset` holds one more connection while its one-shot container runs
+    (the tracker's demo client, `cs-tracker`'s `with_repo` at `pool_size: 1`), none while demo access is off,
+    so option (a) becomes 23 and 30, a sum of 88 of 97 (`ops/demo-principal.md` DP4).
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
   id: DW-332
@@ -10045,4 +10049,28 @@ status: done
     **Owner: Story 5.9 (`digital-library`'s reset), or the Operator's ruling.** **Trigger: before DP7 creates
     the demo user.** Refuse uploads to the demo principal, bound them, or record the window between resets as
     accepted.
+
+    **Story 5.9, 2026-10-03, on `digital-library`'s `story-5-8-demo-principal`:** the reset removes every
+    upload in the demo library with its cover and its rows (`apps/api/src/demo-reset.ts`, held by a case).
+    Whether the demo principal may upload at all narrows what a Visitor can do, so it is not this story's to
+    decide. **Owner now: the Operator's ruling DR4** (`ops/demo-principal.md`; recommendation: refuse uploads
+    to the demo principal).
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-9-demo-reset-and-a-baseline-fixture-per-application.md`
+  id: DW-334
+  summary: >-
+    `digital-library`'s upload deduplicates by `sha256` across every library, so a duplicate answers 409 with
+    the other scope's book row.
+  evidence: |-
+    Found 2026-10-03 by Story 5.9 while writing the fixture. `books.sha256` is unique across the whole table
+    and `importBook` looks a digest up with `BookRepository.findBySha256` in every library, and
+    `POST /api/libraries/:libraryId/books` answers 409 with that book (title, author, `library_id`,
+    `file_path`). So the demo principal uploading a file the Operator holds reads the Operator's book row
+    across the boundary, and the Operator uploading a file the demo library holds is refused it. The same
+    unique digest makes a reset fail (exit 1, nothing applied) if the Operator ever holds a fixture PDF, which
+    a case holds. Story 5.8's boundary (`hasAccess`) is not consulted on that path.
+
+    **Owner: the Operator's ruling DR4, then `digital-library`.** **Trigger: DR4.** If DR4 refuses demo
+    uploads, the demo side closes and the Operator's side reads only the public fixture; otherwise scope the
+    duplicate lookup and the 409's body to the uploader's scope, with a case per direction.
   status: open
