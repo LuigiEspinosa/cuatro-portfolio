@@ -228,8 +228,9 @@ release is on `main`. Do H2, H3 and release 1 in one sitting, and CT3, CT5 and r
    `oidc` entry plant `<live>/auth/session` at 401 and `<live>/auth/sign-in` at a 302 to an authorization
    URL in the shape `authorize()` builds, which adds one request per entry (54 with both); for a
    `demo-account` entry plant each same-origin hop to a page naming the address, one request per hop after
-   the first (`tracker` and `library` one each); and the `byDemo` and `oidc` expectations. The row count
-   stays 73.
+   the first (`tracker` and `library` one each); the `byDemo` and `oidc` expectations; and the count of
+   identity rows ending `not an OIDC session route`, pinned at 8 today, which drops by one per entry that
+   goes to `oidc` (6 after orders 1 and 2). The row count stays 73.
 4. Run `corepack pnpm vitest run ops/__tests__/registry-verification.test.ts ops/__tests__/registry-schema.test.ts`,
    then the job itself with `REGISTRY_VERIFICATION_TOKEN` set from `gh auth token` for that one command,
    printed nowhere: `# 73 of 73 checks passed`.
