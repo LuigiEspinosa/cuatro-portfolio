@@ -1092,7 +1092,7 @@ development_status:
   # fixture with fixed ids and times, one transaction, idempotent, skipped when off or absent, run from the host as
   # a one-shot docker compose run, one line out, exit 0 or 1). Tracker on dev here (Postgres-backed suite, CI gains
   # a Postgres service); cs-tracker dev d1adf6c 7b79f25 dcd35ee; digital-library branch story-5-8-demo-principal
-  # 527bc2c. Running each reset live (DR1 to DR3) and the uploads ruling (DR4) are the Operator's. DW-334 filed.
+  # 353f7e0 and 6ae8df2 (fix round 1). Running each reset live (DR1 to DR3) and the uploads ruling (DR4) are the Operator's. DW-334 filed.
   5-9-demo-reset-and-a-baseline-fixture-per-application: awaiting-operator
   5-10-one-host-level-reset-scheduler-for-the-estate: backlog
   5-11-demo-and-identity-declarations-verified-against-reality: backlog
