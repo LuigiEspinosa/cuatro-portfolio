@@ -10020,8 +10020,11 @@ status: done
     `open`.
   evidence: |-
     Found 2026-10-03 by Story 5.8 while deciding who participates (`ops/demo-principal.md` § Who
-    participates). `apps/tournament/app/(viewer)` reads anonymously and has no middleware; only
-    `app/api/admin/*` commands need a sign-in, the Operator's console. `ops/registry-inputs.md` § `demo`
+    participates). `apps/tournament/app/(viewer)` reads anonymously and has no middleware. The
+    `app/api/admin/*` commands need a sign-in, the Operator's console, and a player signs in with Steam
+    (`app/auth/steam/*`) only to enroll their own SteamID64 through `POST /api/roster/enroll`
+    (`requireUser`), a sign-in `demo@cuatro.dev` cannot pass (corrected in fix round 1 of the story's
+    verification, which first said only the admin commands sign in). `ops/registry-inputs.md` § `demo`
     listed it among the entries a login gates on 2026-09-02, when it served from Vercel. A Registry value
     change is a minor release and Story 5.11 verifies every `demo` value.
 

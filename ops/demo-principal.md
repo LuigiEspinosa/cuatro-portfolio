@@ -69,7 +69,7 @@ authentication"; AD-12 and FR-24 exempt `MaiCoin` structurally (`identity: walle
 | `cuatro-tracker` (`apps/tracker`) | `Live`, `none` | **yes** | Every route but sign-in sits behind `next-auth` (`middleware.ts`) |
 | `cs-tracker` | `Live`, `none` | **yes** | Every route sits behind the Owner allowlist; it signs in through the issuer since Story 5.4 |
 | `digital-library` | `Live`, `none` | **yes** | Every library route sits behind its own sign-in |
-| `cs-tournament` (`apps/tournament`) | `Live`, `none` | no, pending ruling DP8 | Its whole web surface, `app/(viewer)`, is public and reads anonymously; only `app/api/admin/*` commands need a sign-in, and they are the Operator's console, as Umami's is. It does not require authentication of a Visitor, so FR-25 does not reach it, and its `demo: none` reads as inaccurate (DW-332, for Story 5.11) |
+| `cs-tournament` (`apps/tournament`) | `Live`, `none` | no, pending ruling DP8 | Its whole web surface, `app/(viewer)`, is public and reads anonymously. Two things sign in: the `app/api/admin/*` commands, the Operator's console as Umami's is; and a player, who signs in with Steam (`app/auth/steam/*`, the footer link on `app/(viewer)/page.tsx`) only to enroll their own SteamID64 in the open tournament (`POST /api/roster/enroll` behind `requireUser`). Viewing requires no authentication, and the one Visitor sign-in proves a Steam account, which `demo@cuatro.dev` cannot be, and writes a real roster entry. So FR-25 does not reach it, and its `demo: none` reads as inaccurate (DW-332, for Story 5.11) |
 | `cuatro-portfolio` (`apps/hub`) | `Live`, `open` | no | It signs in since Story 5.3, but gates nothing and owns no row |
 | `list-wheel`, `covidmap`, `future-vizion` | `Live`, `open` | no | No authentication |
 | `maicoin` | `In progress`, `not-deployed` | no, structurally | `identity: wallet`: no user record for an issuer to own (AD-12) |
@@ -107,7 +107,7 @@ read; the Operator's side effects withheld; and a suite case for each clause of 
 - **Switch:** `DEMO_ENABLED=true` (`lib/env.ts`), mapped from `TRACKER_DEMO_ENABLED` in
   `docker-compose.yml`, empty by default. Off, the demo address cannot sign in and owns nothing.
 
-### `cs-tracker` (its repository, branch `dev`, commits `8109599` and `e782b4c`)
+### `cs-tracker` (its repository, branch `dev`, commits `8109599`, `e782b4c` and `5927991`)
 
 - **Principal:** `lib/cs_tracker/demo_principal.ex`. Derived from the issuer: `CS_TRACKER_OIDC_DEMO_SUB`, the
   subject the issuer assigns to `demo@cuatro.dev`, read as the Owner's was (CT2 in `ops/identity-issuer.md`).
@@ -124,6 +124,17 @@ read; the Operator's side effects withheld; and a suite case for each clause of 
   Bandit serves a connection's requests in one process.
 - **Withheld:** the manual Steam sync (`InventoryLive`, "Sync is not available in the demo.") and, on an
   item view, the Recently-Viewed push and the on-view price refresh, which both act on the Owner's scope.
+  The Recently-Viewed list is one in-memory cache with no scope, the Owner's alone, so the dashboard's
+  Recently-Viewed strip reads none of it for the demo principal (`DashboardLive.recent_items/1`, `5927991`, held by
+  a case in `test/cs_tracker/demo_principal_test.exs`, fix round 1).
+- **Shown, accepted:** the dashboard's status line and `InventoryLive`'s sync button show the demo principal
+  the Owner's sync metadata: the last sync time and cooldown (`Inventory.cooldown_status/0`, read from
+  Oban's `public.oban_jobs`, see § What Stories 5.9 to 5.11 build on) and the Steam breaker state
+  (`Inventory.breaker_status/0`, one rate limiter in the application's memory, keyed by nothing). Accepted
+  as job metadata, not an owned row: neither names an item, a mark, a wishlist entry or a price, the
+  demo principal can start no sync, and the breaker describes Steam's limit on the box, which binds both
+  principals alike. A later story that wants the demo to read "Never synced" scopes `cooldown_status/0`
+  by principal.
 - **Undeletable, unchangeable:** `cs-tracker` holds no account: the principal is a subject at the issuer
   named by configuration. A case holds that no Ecto schema has an identity or credential field and that the
   only `DELETE` route is the sign-out.
@@ -223,8 +234,13 @@ into `ssh`. No step prints a credential.
 8. **DP8. Rule on `cs-tournament`.** Options: (a) not a participant: its Visitor surface is public, so its
    Registry `demo` becomes `open` in Story 5.11 (DW-332); (b) a participant: a demo administrator scoped to
    demo seasons, which needs an owner on `season` and every admin command and RLS policy scoped by it, its
-   migrations applied to Supabase by hand (DW-291). **Recommendation: (a)**, because FR-25 binds an application
-   that requires authentication of a Visitor and this one requires none.
+   migrations applied to Supabase by hand (DW-291). The surface to rule on: viewing needs no sign-in; a player
+   signs in with Steam (`app/auth/steam/*`, linked from the Viewer's footer) only to enroll their own SteamID64
+   through `POST /api/roster/enroll` (`requireUser`) while a tournament is open; the admin commands are the
+   Operator's. **Recommendation: (a)**, because FR-25 binds an application that requires authentication of a
+   Visitor to use it, and here a Visitor uses everything anonymously. The one Visitor sign-in proves a Steam
+   account, which `demo@cuatro.dev` cannot be, and a demo enrollment would be a row in the live roster, not a
+   demo scope.
 
 ## Demo principal run
 
