@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-03-2026 15:36
+last_updated: 10-03-2026 17:10
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1102,7 +1102,13 @@ development_status:
   # 3.5 s wall and about 4.6 CPU-seconds with the real images, one connection per reset (DW-331 amended). The
   # install and the first unattended day are the Operator's: ops/demo-principal.md DS1 to DS3.
   5-10-one-host-level-reset-scheduler-for-the-estate: awaiting-operator
-  5-11-demo-and-identity-declarations-verified-against-reality: backlog
+  # 5-11 awaiting-operator 2026-10-03: repository half built on dev. The scheduled Registry verification gives
+  # every entry a demo and an identity row, held to what an anonymous Visitor meets at live (open 2xx, none 3xx,
+  # not-deployed no live, demo-account a dated DR row plus its own sign-in page naming demo@cuatro.dev; oidc a dated
+  # H3 or CT5 plus /auth/session 401 and a PKCE redirect, none no 401 there, wallet maicoin alone), 73 of 73 live.
+  # Registry 1.8.0 corrects cs-tournament to demo open on observation (DW-332 closed). The release the live steps
+  # unlock is written, unapplied: ops/registry-verification.md actions 8 to 11. DW-335 and DW-336 filed.
+  5-11-demo-and-identity-declarations-verified-against-reality: awaiting-operator
   epic-5-retrospective: optional
 
   epic-6: backlog

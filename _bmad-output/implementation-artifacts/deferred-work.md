@@ -9871,6 +9871,13 @@ status: done
     **Owner: the session that dates action H3, or Story 5.11.** **Trigger: action H3 dated with no
     `.cuatro.dev` cookie.** Move `cuatro-portfolio` to `identity: oidc` in `contracts/registry.json` with a
     minor `contract_version` bump, and update whatever pins the old value.
+
+    **Story 5.11, 2026-10-03:** prepared, not applied. The flip is order 1 of `ops/registry-verification.md`
+    § The release the live steps unlock, with its steps and the pins it moves, and the scheduled verification
+    now refuses `oidc` on this entry until H3 is dated and the host answers `/auth/session` 401 and
+    `/auth/sign-in` with an Authorization Code + PKCE redirect. From H2 the job fails `identity: none` as
+    understated until the flip is on `main`, so H2, H3 and the flip belong to one sitting. **Owner now: that
+    record's action 8.**
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
   id: DW-323
@@ -9885,6 +9892,9 @@ status: done
     **Owner: the session that dates action CT5, or Story 5.11.** **Trigger: CT5 dated with equal subjects and
     no `.cuatro.dev` cookie.** Move `cs-tracker` to `identity: oidc` in `contracts/registry.json` with a minor
     `contract_version` bump (with DW-322's flip if both are due), and update whatever pins the old value.
+
+    **Story 5.11, 2026-10-03:** prepared, not applied: order 2 of `ops/registry-verification.md` § The release
+    the live steps unlock, held by the same check as DW-322 against CT5. **Owner now: that record's action 8.**
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
   id: DW-324
@@ -10047,7 +10057,14 @@ status: done
 
     **Owner: Story 5.11, after the Operator's ruling DP8.** **Trigger: DP8.** Move `cs-tournament`'s `demo`
     to `open` in a Registry minor release, or, if DP8 makes it a participant, build its scope first.
-  status: open
+
+    **Closed 2026-10-03 by Story 5.11, without waiting on DP8.** `https://tournament.cuatro.dev` answered 200
+    anonymously at 17:09:55Z, and so did `/bracket` and `/leaderboards`, so `open` is what a Visitor meets now
+    whichever way DP8 goes, and Story 5.11's new `demo` check failed `none` as understated. Registry 1.8.0
+    reads `open` (`ops/registry-verification.md` § The correction). DP8 stays the Operator's: if it makes
+    `cs-tournament` a participant, the value moves to `demo-account` only through that record's release, once
+    its account works.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
   id: DW-333
   summary: >-
@@ -10086,4 +10103,37 @@ status: done
     **Owner: the Operator's ruling DR4, then `digital-library`.** **Trigger: DR4.** If DR4 refuses demo
     uploads, the demo side closes and the Operator's side reads only the public fixture; otherwise scope the
     duplicate lookup and the 409's body to the uploader's scope, with a case per direction.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-11-demo-and-identity-declarations-verified-against-reality.md`
+  id: DW-335
+  summary: >-
+    No participant's own sign-in page names the demo account, so a Visitor cannot obtain its credentials
+    there (FR-25), and the Registry's `demo-account` stays refused by the scheduled verification.
+  evidence: |-
+    Found 2026-10-03 by Story 5.11. `demo@cuatro.dev` appears in no page of `apps/tracker` (`app/`,
+    `components/`), of `digital-library`'s `apps/web/src` on `story-5-8-demo-principal`, or of
+    `cs-tracker`'s `lib/cs_tracker_web` on `dev`. `ops/demo-principal.md` DP2 kept `DEMO_PASSWORD` in the `.env`
+    "until Story 5.11 publishes it on each sign-in surface"; Story 5.11 builds the check that requires it
+    (a `demo-account` entry's page, reached from `live` by same-origin redirects, must name the address) and
+    not the three pages, which are application changes in three repositories. `cs-tracker` has a design
+    question first: with OIDC configured a Visitor without a session goes straight to the issuer, whose page
+    is not the application's own, so it needs a page of its own before that redirect.
+
+    **Owner: a story the Operator schedules in Epic 5, one change per participant.** **Trigger: before
+    `ops/registry-verification.md` action 9 for that participant.** Show the demo address and, from the
+    application's environment, its password on the sign-in page (the tracker's `/login`, the library's
+    `/login`, a `cs-tracker` page before the issuer), with a case in each suite.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-11-demo-and-identity-declarations-verified-against-reality.md`
+  id: DW-336
+  summary: >-
+    The scheduled verification never signs in as the demo account, so a demo sign-in that breaks after its
+    dated observation passes while the sign-in page still names the address.
+  evidence: |-
+    Found 2026-10-03 by Story 5.11 (`ops/registry-verification.md` § Stated limits). A daily sign-in needs the
+    demo password as a workflow secret and a sign-in per application, and `cs-tracker`'s demo signs in at the
+    issuer, which a provider-neutral job cannot drive.
+
+    **Owner: the Operator's ruling, `ops/registry-verification.md` action 11.** **Trigger: the first demo
+    release (action 9).** Options and a recommendation are in that action.
   status: open

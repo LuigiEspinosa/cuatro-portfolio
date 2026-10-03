@@ -73,7 +73,7 @@ authentication"; AD-12 and FR-24 exempt `MaiCoin` structurally (`identity: walle
 | `cuatro-tracker` (`apps/tracker`) | `Live`, `none` | **yes** | Every route but sign-in sits behind `next-auth` (`middleware.ts`) |
 | `cs-tracker` | `Live`, `none` | **yes** | Every route sits behind the Owner allowlist; it signs in through the issuer since Story 5.4 |
 | `digital-library` | `Live`, `none` | **yes** | Every library route sits behind its own sign-in |
-| `cs-tournament` (`apps/tournament`) | `Live`, `none` | no, pending ruling DP8 | Its whole web surface, `app/(viewer)`, is public and reads anonymously. Two things sign in: the `app/api/admin/*` commands, the Operator's console as Umami's is; and a player, who signs in with Steam (`app/auth/steam/*`, the footer link on `app/(viewer)/page.tsx`) only to enroll their own SteamID64 in the open tournament (`POST /api/roster/enroll` behind `requireUser`). Viewing requires no authentication, and the one Visitor sign-in proves a Steam account, which `demo@cuatro.dev` cannot be, and writes a real roster entry. So FR-25 does not reach it, and its `demo: none` reads as inaccurate (DW-332, for Story 5.11) |
+| `cs-tournament` (`apps/tournament`) | `Live`, `none` | no, pending ruling DP8 | Its whole web surface, `app/(viewer)`, is public and reads anonymously. Two things sign in: the `app/api/admin/*` commands, the Operator's console as Umami's is; and a player, who signs in with Steam (`app/auth/steam/*`, the footer link on `app/(viewer)/page.tsx`) only to enroll their own SteamID64 in the open tournament (`POST /api/roster/enroll` behind `requireUser`). Viewing requires no authentication, and the one Visitor sign-in proves a Steam account, which `demo@cuatro.dev` cannot be, and writes a real roster entry. So FR-25 does not reach it, and its `demo: none` reads as inaccurate (DW-332, for Story 5.11). **Corrected 2026-10-03 by Story 5.11:** Registry 1.8.0 reads `open`, on the host's anonymous answers (`ops/registry-verification.md` § The correction); DP8 still decides participation |
 | `cuatro-portfolio` (`apps/hub`) | `Live`, `open` | no | It signs in since Story 5.3, but gates nothing and owns no row |
 | `list-wheel`, `covidmap`, `future-vizion` | `Live`, `open` | no | No authentication |
 | `maicoin` | `In progress`, `not-deployed` | no, structurally | `identity: wallet`: no user record for an issuer to own (AD-12) |
@@ -385,7 +385,10 @@ Every scratch container, network and volume was removed by the harness's exit tr
   times; the sync itself is withheld.
 - **The scheduler** runs each application's reset from the host, outside its containers (AD-13, Story 5.10),
   by the commands in § The reset, item 7: § The scheduler.
-- **The Registry** moves an entry to `demo-account` only once its account works (Story 5.11, FR-27).
+- **The Registry** moves an entry to `demo-account` only once its account works (Story 5.11, FR-27). The scheduled
+  Registry verification holds that: a `demo-account` entry needs its DR row here dated and its own sign-in page
+  naming `demo@cuatro.dev`, and the release that moves the three participants is written, unapplied, in
+  `ops/registry-verification.md` § The release the live steps unlock (its actions 8 and 9).
 
 ## By hand
 
@@ -402,8 +405,10 @@ into `ssh`. No step prints a credential.
    dashboard asks for a code**, since (b) needs no DNS change and no new account. Whether the dashboard asks
    was not observed by this story, which had no account. Write the answer here.
 2. **DP2. Decide the demo credentials.** One password for the issuer account and the two local accounts,
-   distinct from every Operator credential, kept in the gitignored `.env` as `DEMO_PASSWORD` until Story 5.11
-   publishes it on each sign-in surface (FR-25: obtainable from the application's own sign-in surface).
+   distinct from every Operator credential, kept in the gitignored `.env` as `DEMO_PASSWORD` until each
+   application publishes it on its own sign-in surface (FR-25: obtainable from the application's own sign-in
+   surface). **Amended 2026-10-03 by Story 5.11:** no participant's sign-in page names the account yet, and
+   building that in three repositories is DW-335's; Story 5.11's verification refuses `demo-account` until it does.
    Decide too whether the issuer's sign-up stays closed, so no one else can claim the address.
 3. **DP3. Create `demo@cuatro.dev` at the issuer** with that password, and read its subject: sign in to the
    Hub as it and open `https://cuatro.dev/auth/session` (after `ops/identity-issuer.md` H3). Write the subject
@@ -444,7 +449,8 @@ into `ssh`. No step prints a credential.
    hand, which makes the reset refuse. Then DR3. Check: signed in as the demo user, `/api/libraries` lists
    `Demo library` alone; as yourself, it is absent from your list.
 8. **DP8. Rule on `cs-tournament`.** Options: (a) not a participant: its Visitor surface is public, so its
-   Registry `demo` becomes `open` in Story 5.11 (DW-332); (b) a participant: a demo administrator scoped to
+   Registry `demo` becomes `open` in Story 5.11 (DW-332; **done 2026-10-03 on observation, Registry 1.8.0,
+   so (a) changes nothing further**); (b) a participant: a demo administrator scoped to
    demo seasons, which needs an owner on `season` and every admin command and RLS policy scoped by it, its
    migrations applied to Supabase by hand (DW-291). The surface to rule on: viewing needs no sign-in; a player
    signs in with Steam (`app/auth/steam/*`, linked from the Viewer's footer) only to enroll their own SteamID64
