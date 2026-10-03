@@ -313,6 +313,12 @@ both clients are the estate's own. **No upgrade or Pro prompt appeared on Hobby*
 the Operator's check `grep -cE '^(OIDC_ISSUER|CUATRO_PORTFOLIO_OIDC_CLIENT_(ID|SECRET)|CS_TRACKER_OIDC_CLIENT_(ID|SECRET))=.+' .env`
 printed `5`.
 
+**Steps 9 and 10, 2026-10-03T23:22Z.** The Operator ran step 10's commands; `gh secret set` printed
+nothing. Checked by the orchestrator with `gh secret list` (names and dates only):
+`LuigiEspinosa/cuatro-portfolio` holds `OIDC_ISSUER`, `CUATRO_PORTFOLIO_OIDC_CLIENT_ID` and
+`CUATRO_PORTFOLIO_OIDC_CLIENT_SECRET`, set 23:22:17Z; `LuigiEspinosa/cs-tracker` holds `OIDC_ISSUER`,
+`CS_TRACKER_OIDC_CLIENT_ID` and `CS_TRACKER_OIDC_CLIENT_SECRET`, set 23:22:18Z.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -322,7 +328,7 @@ printed `5`.
 | 3 | **Read and record the issuer's discovery document** (step 6), and amend DW-319 with it | Answers what § Logout leaves unknown | 2026-10-03T22:37:59Z. Matches `clerk.clerk.com`: no logout either way, § Issuer run |
 | 4 | **Observe and record Clerk's cookie Domains** (step 7) | A `.cuatro.dev` cookie stops the sequence | 2026-10-03. Stopped on `__client_uat` on `.cuatro.dev`; the Operator accepted it as KV-10; the credential `__client` is on `.clerk.id.cuatro.dev`. § Issuer run |
 | 5 | **Create the two OAuth applications** (step 8) and record the plan-gate observation | Closes `ops/clerk-pricing-and-terms.md` action 2 | 2026-10-03T23:21Z. Both created on Hobby, no upgrade prompt; § Issuer run |
-| 6 | **Set the GitHub Actions secrets in both repositories** (steps 9 and 10) | Names only in the check | _not done_ |
+| 6 | **Set the GitHub Actions secrets in both repositories** (steps 9 and 10) | Names only in the check | 2026-10-03T23:22Z. Three names in each repository, § Issuer run |
 | 7 | **Append the on-box env lines** (step 11) | Story 5.2 is done when every cell in this table is dated | _not done_ |
 | 8 | **Document the five names in `.env.example`** and turn the test's `it.todo` into its case (§ Where each credential lives) | A repository change, not a box one; it falls to the Operator only because the authoring session could not open the file. Independent of actions 1 to 7. Run `corepack pnpm vitest run ops/__tests__/identity-issuer.test.ts` after | _not done_ |
 | 9 | **Rule on AD-26 for the issuer's hostnames**, before action 2: accept them DNS only as a new known violation in the KV-7 shape, or proxy Clerk's Frontend API through the estate (§ The issuer) | Closes DW-321. The domain decision (`id.cuatro.dev`) may be overruled at the same time | 2026-10-03T22:10Z. Ruled: add the hostnames DNS only, accepted as standing, KV-9 in `ops/known-violations.md`. The domain `id.cuatro.dev` kept |
