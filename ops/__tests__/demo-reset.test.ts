@@ -56,7 +56,10 @@ case "$1" in
     esac
     case "$*" in
       *service=anchor-app*) [ -n "\${STUB_HUB-}" ] && printf 'ghcr.io/luigiespinosa/hub:%s\\n' "$STUB_HUB" ;;
-      *service=tracker*) [ -n "\${STUB_TRACKER-}" ] && printf 'ghcr.io/luigiespinosa/tracker:%s\\n' "$STUB_TRACKER" ;;
+      *service=tracker*)
+        # docker ps lists newest first: during a rollout the incoming container, then the outgoing one.
+        [ -n "\${STUB_TRACKER-}" ] && printf 'ghcr.io/luigiespinosa/tracker:%s\\n' "$STUB_TRACKER"
+        [ -n "\${STUB_TRACKER_OUTGOING-}" ] && printf 'ghcr.io/luigiespinosa/tracker:%s\\n' "$STUB_TRACKER_OUTGOING" ;;
     esac
     exit 0 ;;
   compose) ;;
@@ -204,6 +207,15 @@ describe('ops/demo-reset.sh', () => {
       ['cuatro-portfolio', 'f9ea578', '5117673f'],
       ['cs-tracker', '', ''],
       ['digital-library', '', ''],
+    ]);
+  });
+
+  it('names the newest tracker image while a rollout holds two tracker containers', () => {
+    const box = makeBox();
+    const result = run(box, ['cuatro-tracker'], { STUB_TRACKER_OUTGOING: '0ld0ut60' });
+    expect(result.status).toBe(0);
+    expect(result.composeCalls.map((call) => [call.dir, call.hub, call.tracker])).toEqual([
+      ['cuatro-portfolio', 'f9ea578', '5117673f'],
     ]);
   });
 

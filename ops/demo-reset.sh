@@ -149,10 +149,13 @@ case "${v_cron}" in
 esac
 
 # --- the resets -------------------------------------------------------------------
-# A serving container's image tag, the form `ops/tracker-cutover.md` reads TRACKER_TAG in.
+# A serving container's image tag, the form `ops/tracker-cutover.md` reads TRACKER_TAG in. `docker ps` lists
+# newest first, so while a rollout holds two containers of the service the first line is the incoming image.
 tag_of() {
-  timeout 30 docker ps --filter label=com.docker.compose.project=cuatro-portfolio --filter "label=com.docker.compose.service=$1" \
-    --format '{{.Image}}' | tail -n 1 | cut -d: -f2
+  local images
+  images="$(timeout 30 docker ps --filter label=com.docker.compose.project=cuatro-portfolio \
+    --filter "label=com.docker.compose.service=$1" --format '{{.Image}}')"
+  printf '%s\n' "${images%%$'\n'*}" | cut -d: -f2
 }
 
 # The one-off containers of this participant's service, by the labels compose gives a `run` container.

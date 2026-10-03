@@ -269,7 +269,8 @@ install is DS1 to DS3, by hand, after each participant's demo access is on.
    one-shot container that exits when its reset does. No application keeps a timer, so a CPU-bound box pays
    for a reset only while one runs. For the tracker it reads `HUB_TAG` and `TRACKER_TAG` from the serving
    `anchor-app` and `tracker` containers' images (`docker ps`, the form `ops/tracker-cutover.md` uses), so
-   the one-shot runs the image the tracker serves; with either not running, the tracker fails and the
+   the one-shot runs the image the tracker serves; while a rollout holds two containers of a service it takes
+   the newest, the first line `docker ps` lists, so the tag is the incoming image; with either not running, the tracker fails and the
    others still run. A case compares the commands the scheduler runs with this record's table.
 2. **Hourly by default, per participant.** The cron line fires every 15 minutes. A participant is due on a
    tick whose minute since the epoch, rounded down to 15, is a multiple of its interval: `60` runs at minute
@@ -312,7 +313,10 @@ install is DS1 to DS3, by hand, after each participant's demo access is on.
    `/home/deploy/demo-reset/demo-reset.log`, each participant's own line before it:
    `demo-reset ts=<UTC> tick=<HH:MM> lock=ok schedule=ok cron=match ran=3 off=0 failed=none exit=0`. A tick on
    which nothing is due writes nothing, so with the committed schedule a line lands every hour and an hour
-   without one is a scheduler that stopped. Nothing reads the log yet: the same gap as the three backup
+   without one is a scheduler that stopped. `docker compose run` without a TTY also writes its own progress
+   lines to stderr (`Container ... Creating`, `Created`, observed 2026-10-03 by the Story 5.10 verifier), and
+   the cron line sends stderr to the log, so those lines sit beside each participant's one line; read a run
+   by its `demo:reset` and `demo-reset` lines. Nothing reads the log yet: the same gap as the three backup
    logs, amended into DW-315 so its reader covers all four.
 9. **One connection at a time.** Runs never overlap and participants run in turn, so at most one reset
    connection is open in the estate at any moment, and each role sees the one Story 5.9 counted (DP4,
@@ -498,7 +502,9 @@ into `ssh`. No step prints a credential.
     ```
     It must print `demo:reset cuatro-tracker reset rows=12`, `demo:reset cs-tracker reset rows=12`,
     `demo:reset digital-library reset rows=5`, then a summary ending `cron=match ran=3 off=0 failed=none
-    exit=0`, and `exit=0`. Record both `uptime` readings.
+    exit=0`, and `exit=0`. Compose's own progress lines (`Container ... Creating`, `Created`) appear on
+    stderr beside each participant's line, since the run has no TTY; they are expected and are not the
+    participant's output. Record both `uptime` readings.
 15. **DS3. Read the first unattended day**, the next day: `grep '^demo-reset ' /home/deploy/demo-reset/demo-reset.log`
     must show one line per hour since DS1, each ending `exit=0`; and `uptime` read at minute 1 of an hour,
     within the minute after a run, against the gate's load15 0.60. Write both here. A line with `exit=1`
