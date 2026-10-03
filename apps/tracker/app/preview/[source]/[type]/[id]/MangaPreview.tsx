@@ -5,7 +5,7 @@ import {
   getMediaRelations,
   type AnilistMedia,
 } from '@/lib/api/anilist'
-import { db } from '@/lib/db'
+import { scopedDb } from '@/lib/scoped-db'
 import {
   normaliseRelations,
   type NormalisedRelationBuckets,
@@ -35,6 +35,7 @@ function pickCover(media: AnilistMedia): string | null {
 async function resolveInLibraryByAnilistId(
   buckets: NormalisedRelationBuckets,
 ): Promise<Map<number, string>> {
+  const db = await scopedDb()
   const allIds = [
     ...buckets.sequel,
     ...buckets.prequel,

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { MediaType, WatchStatus } from '@prisma/client'
-import { db } from '@/lib/db'
+import { scopedDb } from '@/lib/scoped-db'
 import { findUserEntryByMediaItemId } from '@/lib/db/library'
 import { getTv, getWatchProviders, getImageUrl } from '@/lib/api/tmdb'
 import { env } from '@/lib/env'
@@ -62,6 +62,7 @@ export default async function TvDetailPage({
 }: {
   params: PageParams
 }) {
+  const db = await scopedDb()
   const { id } = await params
   if (!id) notFound()
 

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { MediaType, WatchStatus, type Prisma } from '@prisma/client'
 import { z } from 'zod'
-import { db } from '@/lib/db'
+import { scopedDb } from '@/lib/scoped-db'
 import { logger } from '@/lib/logger'
 import { withRequest } from '@/lib/request-context'
 
@@ -36,6 +36,7 @@ function jsonResponse(body: unknown, status: number): NextResponse {
 }
 
 async function handler(req: NextRequest): Promise<NextResponse> {
+  const db = await scopedDb()
   if (req.method !== 'POST') {
     return jsonResponse({ error: 'method_not_allowed' }, 405)
   }

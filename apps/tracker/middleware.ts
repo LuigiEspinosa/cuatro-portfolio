@@ -1,6 +1,7 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveRequestId } from './lib/request-context'
+import { isDemoPrincipal } from './lib/demo-principal'
 
 // Export for unit testing without mocking next-auth's JWT layer
 export function attachRequestId(req: NextRequest): NextResponse {
@@ -13,6 +14,13 @@ export function attachRequestId(req: NextRequest): NextResponse {
   return response
 }
 
+// The admin surfaces enqueue jobs the worker runs against the Operator's store (import, merge,
+// similarity scan), so the demo principal never reaches them (ops/demo-principal.md). Exported for unit
+// testing, as attachRequestId is.
+export function refusesDemoPrincipal(pathname: string, email: unknown): boolean {
+  return isDemoPrincipal(email) && /^\/(?:api\/)?admin(?:\/|$)/.test(pathname)
+}
+
 // withAuth reads the JWT cookie and redirects to pages.signIn when missing.
 // NEXTAUTH_SECRET is wired in lib/auth.ts via lib/env.ts. Production
 // `next build` catches a misconfigured deploy at build time. In dev under
@@ -20,6 +28,9 @@ export function attachRequestId(req: NextRequest): NextResponse {
 // so the Zod summary surfaces then, not at process startup.
 export default withAuth(
   function middleware(req) {
+    if (refusesDemoPrincipal(req.nextUrl.pathname, req.nextauth.token?.email)) {
+      return new NextResponse(null, { status: 404 })
+    }
     return attachRequestId(req)
   },
   {

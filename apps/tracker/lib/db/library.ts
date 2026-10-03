@@ -1,5 +1,5 @@
 import { type MediaItem, type Prisma, type UserEntry, MediaType, WatchStatus } from '@prisma/client'
-import { db } from '@/lib/db'
+import { scopedDb } from '@/lib/scoped-db'
 import { getGameImageUrl } from '@/lib/api/igdb-images'
 import {
   deriveDisplayDate,
@@ -49,6 +49,7 @@ const DEFAULT_SORT: LibrarySortKey = 'recently_added'
 export async function findUserEntryByMediaItemId(
   mediaItemId: string,
 ): Promise<UserEntryWithMedia | null> {
+  const db = await scopedDb()
   return db.userEntry.findUnique({
     where: { media_item_id: mediaItemId },
     include: { media_item: true },
@@ -63,6 +64,7 @@ export async function findUserEntryByMediaItemId(
 // anti-checklist forbids pagination). Ordered release_date desc to match the
 // default sort; <TimelineView> re-sorts client-side per the active SortMode.
 export async function findTimelineEntries(): Promise<UserEntryWithMedia[]> {
+  const db = await scopedDb()
   return db.userEntry.findMany({
     where: {
       media_item: {
@@ -78,6 +80,7 @@ export async function findTimelineEntries(): Promise<UserEntryWithMedia[]> {
 export async function findLibraryItems(
   opts: LibraryQueryOptions = {},
 ): Promise<UserEntryWithMedia[]> {
+  const db = await scopedDb()
   const {
     mediaType,
     status,
@@ -143,6 +146,7 @@ export async function findLibraryItems(
 async function attachEpisodeStats(
   entries: UserEntryWithMedia[],
 ): Promise<void> {
+  const db = await scopedDb()
   const showIds = entries
     .filter((e) => e.media_item.type === MediaType.TV_SHOW)
     .map((e) => e.media_item.id)

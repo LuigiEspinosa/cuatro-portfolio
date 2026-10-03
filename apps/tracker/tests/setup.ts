@@ -33,6 +33,13 @@ afterEach(() => {
   cleanup()
 })
 
+/* No request runs under the suite, so `getServerSession` answers no session, which is the Operator's
+ * store (`lib/scoped-db.ts`). A test that needs a principal sets the mock's answer. */
+vi.mock('next-auth', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('next-auth')>()),
+  getServerSession: vi.fn(async () => null),
+}))
+
 if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,

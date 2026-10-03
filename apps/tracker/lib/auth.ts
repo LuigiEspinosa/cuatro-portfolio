@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db'
+import { storeFor } from '@/lib/demo-store'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 
@@ -21,8 +22,14 @@ export async function authorizeCredentials(
 ): Promise<{ id: string; email: string; name: string | null } | null> {
   if (!credentials?.email || !credentials?.password) return null
 
-  const user = await db.user.findUnique({
-    where: { email: credentials.email.trim().toLowerCase() },
+  // Each principal signs in against its own store only (ops/demo-principal.md): the demo principal
+  // against the demo schema, never the Operator's, and only while demo access is on.
+  const email = credentials.email.trim().toLowerCase()
+  const store = storeFor(email)
+  if (!store) return null
+
+  const user = await store.user.findUnique({
+    where: { email },
     select: { id: true, email: true, name: true, password: true },
   })
 

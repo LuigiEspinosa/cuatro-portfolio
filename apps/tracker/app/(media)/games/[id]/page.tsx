@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { MediaType } from '@prisma/client'
-import { db } from '@/lib/db'
+import { scopedDb } from '@/lib/scoped-db'
 import { findUserEntryByMediaItemId } from '@/lib/db/library'
 import { getGame, IgdbApiError, type IgdbGame } from '@/lib/api/igdb'
 import { getGameImageUrl } from '@/lib/api/igdb-images'
@@ -106,6 +106,7 @@ export default async function GameDetailPage({
 }: {
   params: PageParams
 }) {
+  const db = await scopedDb()
   const { id } = await params
   if (!id) notFound()
 

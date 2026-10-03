@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { MediaType, WatchStatus } from '@prisma/client'
-import { db } from '@/lib/db'
+import { scopedDb } from '@/lib/scoped-db'
 import { getTvEpisode, getImageUrl } from '@/lib/api/tmdb'
 import { isReleaseDateUnknown } from '@/lib/normalise/release-date'
 import { logger } from '@/lib/logger'
@@ -41,6 +41,7 @@ export async function generateMetadata({
 }: {
   params: PageParams
 }): Promise<{ title: string }> {
+  const db = await scopedDb()
   const { id, n, e } = await params
   const seasonN = parseSeasonOrEpisodeInt(n)
   const episodeE = parseSeasonOrEpisodeInt(e)
@@ -70,6 +71,7 @@ export default async function EpisodeDetailPage({
 }: {
   params: PageParams
 }) {
+  const db = await scopedDb()
   const { id, n, e } = await params
   const seasonN = parseSeasonOrEpisodeInt(n)
   const episodeE = parseSeasonOrEpisodeInt(e)

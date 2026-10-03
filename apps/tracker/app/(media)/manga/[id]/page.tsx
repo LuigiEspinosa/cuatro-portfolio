@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { MediaType } from '@prisma/client'
-import { db } from '@/lib/db'
+import { scopedDb } from '@/lib/scoped-db'
 import { findUserEntryByMediaItemId } from '@/lib/db/library'
 import {
   getMedia,
@@ -48,6 +48,7 @@ type RelationsResolution = {
 async function resolveRelations(
   anilistId: number,
 ): Promise<RelationsResolution> {
+  const db = await scopedDb()
   const empty: NormalisedRelationBuckets = {
     sequel: [],
     prequel: [],
