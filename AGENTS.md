@@ -94,10 +94,10 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   full suite is 1845 tests across 75 files in roughly 100 seconds on this host, so run all of it.
   Measured 2026-10-01 at `a9bc0d7`; treat the figure as a rough expectation, never as a number to
   assert on.
-- On this host the six suites under `ops/__tests__/` whose cases spawn WSL's bash, `deploy-remote`,
-  `library-backup`, `tracker-backup`, `postgres-backup`, `postgres-init` and `tournament-backup`
-  (`.test.ts`), sometimes fail a case after about 30 seconds with empty output and pass on the next run
-  (DW-135), all six in one run on 2026-10-01. Re-run those files before debugging such a failure; CI
+- On this host the seven suites under `ops/__tests__/` whose cases spawn WSL's bash, `deploy-remote`,
+  `library-backup`, `tracker-backup`, `postgres-backup`, `postgres-init`, `tournament-backup` and
+  `demo-reset` (`.test.ts`), sometimes fail a case after about 30 seconds with empty output and pass on the
+  next run (DW-135), all seven in one run on 2026-10-03. Re-run those files before debugging such a failure; CI
   runs a native bash and never sees it.
 - The workstation's Git Bash has no `jq`: parse JSON with `node -e`. A WebSocket upgrade probe with
   `curl` needs `--http1.1`, or it answers 400 instead of 101.
