@@ -1078,7 +1078,15 @@ development_status:
   # only while OIDC is unconfigured. Operator: ops/identity-issuer.md PS1 (live evidence ruling, closes the story),
   # PS2 (delete the Steam code, DW-326), PS3 (make provider-swap required).
   5-7-provider-replaceability-is-evidenced-not-asserted: awaiting-operator
-  5-8-the-demo-principal-contract: backlog
+  # 5-8 awaiting-operator 2026-10-03: repository halves built. New record ops/demo-principal.md: the principal
+  # demo@cuatro.dev, derived (the issuer's subject, CS_TRACKER_OIDC_DEMO_SUB, for cs-tracker; the account address
+  # otherwise), participants from FR-25 (cuatro-tracker, cs-tracker, digital-library; cs-tournament's Visitor
+  # surface is public, ruling DP8, DW-332), each scope its own: schema demo in the tracker's and cs-tracker's own
+  # databases, the libraries the demo principal alone holds in digital-library. Off by default in each. Tracker on
+  # dev here; cs-tracker dev 8109599 e782b4c; digital-library branch story-5-8-demo-principal 4d7bea0 b94a95e. The
+  # mailbox question, credentials, issuer account, budget ruling and each switch are the Operator's: DP1 to DP8.
+  # DW-331 to DW-333 filed.
+  5-8-the-demo-principal-contract: awaiting-operator
   5-9-demo-reset-and-a-baseline-fixture-per-application: backlog
   5-10-one-host-level-reset-scheduler-for-the-estate: backlog
   5-11-demo-and-identity-declarations-verified-against-reality: backlog

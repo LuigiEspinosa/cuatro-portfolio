@@ -9998,3 +9998,48 @@ status: done
     **Trigger: that ruling.** Shorten `OAUTH2_PROXY_COOKIE_EXPIRE`, add a server-side session store that a
     logout can reach, or record the eight hours as accepted.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
+  id: DW-331
+  summary: >-
+    With demo access on, `cuatro-tracker` and `cs-tracker` each open connections their role's limit in
+    `ops/postgres.md` § The budget was not sized for.
+  evidence: |-
+    Found 2026-10-03 by Story 5.8 (`ops/demo-principal.md` § By hand, DP4). The tracker's demo client holds
+    one connection per server container, opened on the first demo request, beside a budget of exactly 20;
+    `cs-tracker`'s `CsTracker.DemoRepo` holds two from boot per container beside a limit of 25 sized for two
+    containers at `POOL_SIZE=10` plus the migrator. Nothing changes while demo access is off.
+
+    **Owner: the Operator's ruling DP4.** **Trigger: before DP5 or DP6 turns demo access on.** Raise the
+    limits to 22 and 29 on the box and in `ops/postgres/10-consumers.sh` and the budget table together (the
+    sum becomes 86 of 97), or lower the pools instead.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
+  id: DW-332
+  summary: >-
+    `cs-tournament`'s Registry `demo` reads `none`, but its whole Visitor surface is public, which is
+    `open`.
+  evidence: |-
+    Found 2026-10-03 by Story 5.8 while deciding who participates (`ops/demo-principal.md` § Who
+    participates). `apps/tournament/app/(viewer)` reads anonymously and has no middleware; only
+    `app/api/admin/*` commands need a sign-in, the Operator's console. `ops/registry-inputs.md` § `demo`
+    listed it among the entries a login gates on 2026-09-02, when it served from Vercel. A Registry value
+    change is a minor release and Story 5.11 verifies every `demo` value.
+
+    **Owner: Story 5.11, after the Operator's ruling DP8.** **Trigger: DP8.** Move `cs-tournament`'s `demo`
+    to `open` in a Registry minor release, or, if DP8 makes it a participant, build its scope first.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
+  id: DW-333
+  summary: >-
+    `digital-library`'s demo principal can upload files into its library, and every Visitor shares that
+    one account.
+  evidence: |-
+    Found 2026-10-03 by Story 5.8. `POST /api/libraries/:libraryId/books` admits any user holding the
+    library, so the demo principal can write a file to the box's disk that the next Visitor can download.
+    The scope holds it to the demo library; nothing bounds what is uploaded or for how long it is served.
+    The reset (Story 5.9) removes it at the next run.
+
+    **Owner: Story 5.9 (`digital-library`'s reset), or the Operator's ruling.** **Trigger: before DP7 creates
+    the demo user.** Refuse uploads to the demo principal, bound them, or record the window between resets as
+    accepted.
+  status: open
