@@ -239,15 +239,38 @@ only.
 
 ## Issuer run
 
-_Not yet run._ Step 5's DNS records, step 6's discovery output, step 7's cookie list and step 8's prompt
-observation are written here, each with its UTC time.
+Step 5's DNS records, step 6's discovery output, step 7's cookie list and step 8's prompt observation are
+written here, each with its UTC time.
+
+**Steps 2 to 4, 2026-10-03, by the Operator.** Account created on Hobby; application `cuatro`; production
+instance on `id.cuatro.dev`, set up in Clerk as a **secondary application** (Clerk's choice between primary
+and secondary). Primary would have put Clerk's API on `clerk.cuatro.dev` and its root on `cuatro.dev`;
+secondary keeps the Frontend API on `clerk.id.cuatro.dev` and verification mail on `@id.cuatro.dev`, as
+§ The issuer decided. Clerk accepted the subdomain.
+
+**Step 5, 2026-10-03, by the Operator, by hand in Cloudflare.** Clerk's Domains page listed five records,
+all CNAME, all added **DNS only** (KV-9):
+
+| Name | Target | Serves |
+|---|---|---|
+| `clerk.id.cuatro.dev` | `frontend-api.clerk.services` | the Frontend API, so the issuer |
+| `accounts.id.cuatro.dev` | `accounts.clerk.services` | the hosted sign-in page (Account Portal) |
+| `clkmail.id.cuatro.dev` | `mail.yr6r7w44sqsh.clerk.services` | mail sending |
+| `clk._domainkey.id.cuatro.dev` | `dkim1.yr6r7w44sqsh.clerk.services` | DKIM |
+| `clk2._domainkey.id.cuatro.dev` | `dkim2.yr6r7w44sqsh.clerk.services` | DKIM |
+
+**Observed 2026-10-03T22:31Z** by `nslookup -type=CNAME <name> beau.ns.cloudflare.com`: all five answer
+exactly the target above. A CNAME answer from the authoritative server is itself the proof each is DNS only.
+No DMARC record was asked for or added; neither `_dmarc.cuatro.dev` nor `_dmarc.id.cuatro.dev` exists
+(observed 22:04Z). Also recorded in `ops/routing-inventory.md`. Two serving hostnames, `clerk.id` and
+`accounts.id`, are therefore under KV-9.
 
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
 | 1 | **Create the account, the application and the production instance on `id.cuatro.dev`** (§ The sequence steps 1 to 4) | After `ops/clerk-pricing-and-terms.md` actions 1 and 3 | _not done_ |
-| 2 | **Add the instance's DNS records as action 9 ruled, and record them** here and in `ops/routing-inventory.md` (step 5) | Cloudflare | _not done_ |
+| 2 | **Add the instance's DNS records as action 9 ruled, and record them** here and in `ops/routing-inventory.md` (step 5) | Cloudflare | 2026-10-03T22:31Z. Five CNAMEs, DNS only, § Issuer run |
 | 3 | **Read and record the issuer's discovery document** (step 6), and amend DW-319 with it | Answers what § Logout leaves unknown | _not done_ |
 | 4 | **Observe and record Clerk's cookie Domains** (step 7) | A `.cuatro.dev` cookie stops the sequence | _not done_ |
 | 5 | **Create the two OAuth applications** (step 8) and record the plan-gate observation | Closes `ops/clerk-pricing-and-terms.md` action 2 | _not done_ |
