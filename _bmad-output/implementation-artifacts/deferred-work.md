@@ -9691,6 +9691,14 @@ status: done
     **Owner: the Operator's planned clean start of every application, or Epic 5, whichever comes first.**
     **Trigger: a red backup line that nobody saw**, or that clean start opening. Choose (a) or (b), build it,
     and amend the three records' named limits to name the reader.
+
+    **Story 5.10, 2026-10-03: a fourth log.** The demo reset scheduler (`ops/demo-reset.sh`, `ops/demo-principal.md`
+    § The scheduler) appends one summary line with `exit=` to `/home/deploy/demo-reset/demo-reset.log` on every
+    run that did anything, hourly with the committed schedule, and nothing reads it either. It was built to be
+    read the same way as the three backup logs: a line whose `exit=` is not 0 is a failure, and no line in the
+    last hour is a scheduler that stopped. Epic 5 does not choose between (a) and (b) here, because both
+    options are about how the box is read from off it, a decision about the estate rather than about demo
+    access. Whichever is chosen reads all four logs, and the record's named limit 1 is amended to name it.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md`
   id: DW-316
@@ -10016,6 +10024,11 @@ status: done
     **Story 5.9, 2026-10-03:** each `demo:reset` holds one more connection while its one-shot container runs
     (the tracker's demo client, `cs-tracker`'s `with_repo` at `pool_size: 1`), none while demo access is off,
     so option (a) becomes 23 and 30, a sum of 88 of 97 (`ops/demo-principal.md` DP4).
+
+    **Story 5.10, 2026-10-03:** the scheduler runs the resets one after another under one lock, so at most one
+    reset connection is open in the whole estate at any moment, and each role gets the one connection Story 5.9
+    counted, never two. The arithmetic stands: 23 and 30, a sum of 88 of 97 (`ops/demo-principal.md`
+    § The scheduler).
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
   id: DW-332
