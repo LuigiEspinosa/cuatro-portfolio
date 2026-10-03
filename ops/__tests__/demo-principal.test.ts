@@ -47,6 +47,45 @@ describe('the record', () => {
   });
 });
 
+// Story 5.9: § The reset is the one definition of `demo:reset`, and its command table names every
+// participant, each by the Registry id its output line carries.
+function resetSection(markdown: string): string {
+  const section = markdown.split('\n## The reset\n')[1]?.split('\n## ')[0];
+  if (!section) throw new Error('no `## The reset` section');
+  return section;
+}
+
+describe('the reset', () => {
+  const section = resetSection(RECORD);
+
+  it('states deletion, exclusions, fixture, transaction, idempotence, off, invocation and output once, in order', () => {
+    const heads = [...section.matchAll(/^(\d+)\. \*\*/gm)].map((m) => Number(m[1]));
+    expect(heads).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    for (const phrase of ['deletes by owner', 'never touches anything else', 'A fixture is a file committed', 'one transaction', 'idempotent', 'Off or absent', 'runs from the host', 'Exit codes and output']) {
+      expect(section).toContain(phrase);
+    }
+  });
+
+  it('gives every participant one host command, a one-shot container from its serving image', () => {
+    const rows = section.split('\n').filter((l) => /^ {3}\| `[a-z0-9-]+` \|/.test(l));
+    expect(rows.map((l) => /`([a-z0-9-]+)`/.exec(l)![1])).toEqual(participants(RECORD));
+    for (const row of rows) expect(row).toContain('docker compose ');
+    for (const row of rows) expect(row).toContain(' run --rm --no-deps ');
+  });
+
+  it('the tracker’s command runs the script that exists, and its line carries the tracker’s Registry id', () => {
+    const tracker = section.split('\n').find((l) => l.startsWith('   | `cuatro-tracker` |'))!;
+    const script = /tsx\/dist\/cli\.mjs (\S+)`/.exec(tracker)![1];
+    expect(read(`apps/tracker/${script}`)).toContain("from '@/lib/demo-reset'");
+    expect(read('apps/tracker/lib/demo-reset.ts')).toContain("export const APP_ID = 'cuatro-tracker'");
+  });
+
+  it('reads the reset of one section only', () => {
+    expect(resetSection(['# r', '## The reset', 'x', '## Next', 'y'].join('\n'))).toBe('x');
+    expect(() => resetSection('## Other\nx')).toThrow('no `## The reset` section');
+  });
+});
+
 describe('the participants in this repository', () => {
   it('the tracker holds the record’s address, not one of its own', () => {
     const source = read('apps/tracker/lib/demo-principal.ts');
