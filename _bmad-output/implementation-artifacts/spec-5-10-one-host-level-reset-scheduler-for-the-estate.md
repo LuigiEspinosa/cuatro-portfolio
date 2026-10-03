@@ -50,9 +50,9 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [x] `ops/demo-reset.sh`, `ops/demo-reset.schedule`, `ops/demo-reset.cron`, `.gitattributes` -- the scheduler, its intervals, its one cron line.
-- [x] `ops/__tests__/demo-reset.test.ts` -- the matrix, under WSL bash with a `docker` stub and a PATH of the box's tools only.
-- [x] `ops/demo-principal.md` -- § The scheduler, its install (DS1 to DS3), the measured cost; DW-315 and DW-331 amended.
+- [x] `ops/demo-reset.sh`, `ops/demo-reset.schedule`, `ops/demo-reset.cron`, `.gitattributes`: the scheduler, its intervals, its one cron line.
+- [x] `ops/__tests__/demo-reset.test.ts`: the matrix, under WSL bash with a `docker` stub and a PATH of the box's tools only.
+- [x] `ops/demo-principal.md`: § The scheduler, its install (DS1 to DS3), the measured cost; DW-315 and DW-331 amended.
 
 **Acceptance Criteria:**
 - AC1: Given a tick where participants are due, when the scheduler runs, then it runs each due participant's record command in its directory, one after another, with `HUB_TAG` and `TRACKER_TAG` read from the serving containers for the tracker, and a test fails when a command differs from the record.
@@ -99,5 +99,5 @@ No independent verifier has run yet.
 ## Verification
 
 **Commands:**
-- `corepack pnpm vitest run ops/__tests__/demo-reset.test.ts ops/__tests__/demo-principal.test.ts` -- expected: all pass.
-- `corepack pnpm typecheck`, `corepack pnpm test --run` -- expected: exit 0 (WSL-bash suites re-run alone on a DW-135 flake).
+- `corepack pnpm vitest run ops/__tests__/demo-reset.test.ts ops/__tests__/demo-principal.test.ts`: expected: all pass.
+- `corepack pnpm typecheck`, `corepack pnpm test --run`: expected: exit 0 (WSL-bash suites re-run alone on a DW-135 flake).
