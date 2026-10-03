@@ -94,7 +94,14 @@ Review layers run inline by the builder (no subagent tool); the independent veri
 
 ## Independent verification
 
-No independent verifier has run yet.
+**Round 1, 2026-10-03: pass.** A context-free verifier read the diff `origin/dev..317c3c0` against the acceptance intent in `epics.md` and AD-13, and re-performed every criterion's evidence on this host.
+
+- AC1 to AC7: `ops/__tests__/demo-reset.test.ts` 25 of 25 alone. 21 mutants of `ops/demo-reset.sh`, each killed, twice with the same failing counts: a failure ignored, no lock, `off` running its container, the override ignored, the cron file never compared, a differing cron file exiting 0, no timeout, the timed-out container left, every one-off removed, a missing or duplicated participant accepted, the 1440 cap dropped, `--no-deps` dropped from the tracker's command, the library's command changed, the tags not exported, an empty tag accepted, the wrong directory, arguments ignoring `off`, no summary on success, a summary on a tick with nothing due, and `head` for `tail` (not in the box's tools, 9 cases fail).
+- The timeout removal's premise, checked with a scratch compose project (`epic5-scratch-oneoff`, removed): `timeout 4 docker compose run --rm --no-deps` exits 124, its container stays `Up` and carries `com.docker.compose.oneoff=True` and the project's absolute `working_dir`, the labels the scheduler filters on.
+- AC8: the three images rebuilt from the same commits (`epic5-scratch-tracker`, `-cs-tracker`, `-library`, removed afterwards) and run through the builder's harness on scratch stores: a full run 3.43 and 3.55 s wall, 4.06 and 4.42 VM CPU-seconds; each reset 1 connection, 0 with its switch off. Within noise of § What a run costs.
+- AC9: `corepack pnpm typecheck` exit 0. `corepack pnpm test --run` 80 files, 1952 tests, 12 failures, each a 30 s stall in one of the seven WSL bash suites (DW-135); each of the seven then passed alone (`demo-reset` 25, `tracker-backup` 11, `tournament-backup` 15, `postgres-init` 17, `postgres-backup` 20 and 1 skipped, `deploy-remote` 28, `library-backup` 59). No application code changed, so no Hub build or rendered-output run was due.
+- AC10 stays the Operator's: DS1 to DS3.
+- Minor, not blocking: `docker compose run` without a TTY writes its own `Container ... Creating` and `Created` lines to stderr (seen in the check above), so the log and DS2's output carry them beside each participant's line, which item 8 and DS2 do not mention; and `tag_of` takes the last line of `docker ps`, the oldest container, so during a by-hand tracker rollout `TRACKER_TAG` can name the outgoing image.
 
 ## Verification
 
