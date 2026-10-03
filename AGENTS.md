@@ -36,7 +36,7 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
 - Architecture invariants AD-1 to AD-26:
   `_bmad-output/planning-artifacts/architecture/architecture-cuatro-portfolio-2026-08-15/ARCHITECTURE-SPINE.md`.
   Every story in `epics.md` names its governing AD. Read that AD before starting.
-- **`ops/` holds 38 records that are the operational source of truth, not the planning
+- **`ops/` holds 39 records that are the operational source of truth, not the planning
   artifacts.** Answer an operational question from there before inferring it from code:
   `routing-inventory.md` (the real routing table and the box as it stands), `estate.md` (every
   application and its disposition), `known-violations.md` (what is knowingly in breach, and what closes
@@ -44,7 +44,8 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   box, and their by-hand later rollouts), `settled-inputs-refresh.md` (AD-22's refresh before Epic 4,
   and the rebuild's topology decisions), `clerk-pricing-and-terms.md` (Clerk's refresh before Epic 5,
   and the identity plan's cost decision), `identity-issuer.md` (the Clerk issuer, each application's OIDC
-  client and where its credentials live), `traefik-cutover.md` (Traefik and each hostname's move),
+  client and where its credentials live), `demo-principal.md` (the demo principal every Demo Access
+  participant derives, its ownership scope and protections), `traefik-cutover.md` (Traefik and each hostname's move),
   `postgres.md` and `postgres-backup.md` (the estate Postgres, its consumers, its nightly backup),
   `cs-tracker-cutover.md`, `caddy-retirement.md` (the old topology's removal, § Retirement run is the
   end state), `capacity-threshold.md`, `contract-serving.md`,

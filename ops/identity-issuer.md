@@ -28,6 +28,7 @@ Story 5.4, and every Registry entry keeps `identity: none` until its own story m
 10. [Sign-out (Story 5.5)](#sign-out-story-55)
 11. [The Traefik dashboard behind ForwardAuth (Story 5.6)](#the-traefik-dashboard-behind-forwardauth-story-56)
 12. [Provider replaceability (Story 5.7)](#provider-replaceability-story-57)
+13. [The demo principal (Story 5.8)](#the-demo-principal-story-58)
 
 ## The issuer
 
@@ -946,3 +947,14 @@ _Not yet run._ PS1's ruling, and the live swap if (b) or (c) is ruled, are writt
 | PS1 | **Rule on how the live estate evidences FR-23**, and run the swap if (b) or (c) | Story 5.7 is done when this cell is dated | _not done_ |
 | PS2 | **Rule on deleting `cs-tracker`'s Steam sign-in code** | After CT5; closes DW-326 | _not done_ |
 | PS3 | **Make `provider-swap` a required check on `main`** | A GitHub settings change | _not done_ |
+
+## The demo principal (Story 5.8)
+
+The demo principal `demo@cuatro.dev`, how each participating application derives it, its ownership scope
+and its protections are their own record, `ops/demo-principal.md`, which Stories 5.9 to 5.11 build on. What
+touches this issuer is two of its actions: DP3 creates the account `demo@cuatro.dev` here, after this
+record's actions 1 to 7 and H3, and records the subject the issuer assigns it as `CS_TRACKER_OIDC_DEMO_SUB`
+in the local `.env`, as CT2 recorded the Owner's; DP1 asks whether the address needs a mailbox for that.
+`cs-tracker` admits that subject beside the Owner's (`CsTracker.Auth.OIDC.admitted?/1`) only while it is set
+and is not the Owner's. The Hub admits any subject the issuer signs in and holds nothing for it. Every
+Pending Operator action of Story 5.8, DP1 to DP8, is listed in that record.
