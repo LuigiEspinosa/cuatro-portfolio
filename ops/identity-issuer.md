@@ -301,7 +301,17 @@ credential is contained. **Ruled by the Operator 2026-10-03: accepted as KV-10**
 `ops/known-violations.md`, exempting exactly those two names; every other `.cuatro.dev` cookie still stops
 the sequence and fails H3 and CT5. The sequence resumes at step 8. The session observed here is to be signed
 out and revoked in the Clerk dashboard, because its `__client` value was shared outside the browser.
-Revocation confirmed: _not yet_.
+Revocation confirmed by the Operator 2026-10-03.
+
+**Step 8, 2026-10-03T23:21Z, by the Operator.** Two OAuth applications on the production instance, Names
+`cuatro-portfolio` and `cs-tracker`, each with scopes `openid`, `profile` and `email` only
+(`public_metadata` and `private_metadata` not granted), **Public off** (confidential, so the token request
+authenticates with the secret; both clients still send an `S256` challenge, which the issuer lists),
+Device authorization grant off, and the **consent screen off** for both, by the Operator's choice, since
+both clients are the estate's own. **No upgrade or Pro prompt appeared on Hobby**
+(`ops/clerk-pricing-and-terms.md` action 2). The Client IDs and secrets went into the local `.env` only;
+the Operator's check `grep -cE '^(OIDC_ISSUER|CUATRO_PORTFOLIO_OIDC_CLIENT_(ID|SECRET)|CS_TRACKER_OIDC_CLIENT_(ID|SECRET))=.+' .env`
+printed `5`.
 
 ## Pending Operator actions
 
@@ -311,7 +321,7 @@ Revocation confirmed: _not yet_.
 | 2 | **Add the instance's DNS records as action 9 ruled, and record them** here and in `ops/routing-inventory.md` (step 5) | Cloudflare | 2026-10-03T22:31Z. Five CNAMEs, DNS only, § Issuer run |
 | 3 | **Read and record the issuer's discovery document** (step 6), and amend DW-319 with it | Answers what § Logout leaves unknown | 2026-10-03T22:37:59Z. Matches `clerk.clerk.com`: no logout either way, § Issuer run |
 | 4 | **Observe and record Clerk's cookie Domains** (step 7) | A `.cuatro.dev` cookie stops the sequence | 2026-10-03. Stopped on `__client_uat` on `.cuatro.dev`; the Operator accepted it as KV-10; the credential `__client` is on `.clerk.id.cuatro.dev`. § Issuer run |
-| 5 | **Create the two OAuth applications** (step 8) and record the plan-gate observation | Closes `ops/clerk-pricing-and-terms.md` action 2 | _not done_ |
+| 5 | **Create the two OAuth applications** (step 8) and record the plan-gate observation | Closes `ops/clerk-pricing-and-terms.md` action 2 | 2026-10-03T23:21Z. Both created on Hobby, no upgrade prompt; § Issuer run |
 | 6 | **Set the GitHub Actions secrets in both repositories** (steps 9 and 10) | Names only in the check | _not done_ |
 | 7 | **Append the on-box env lines** (step 11) | Story 5.2 is done when every cell in this table is dated | _not done_ |
 | 8 | **Document the five names in `.env.example`** and turn the test's `it.todo` into its case (§ Where each credential lives) | A repository change, not a box one; it falls to the Operator only because the authoring session could not open the file. Independent of actions 1 to 7. Run `corepack pnpm vitest run ops/__tests__/identity-issuer.test.ts` after | _not done_ |
