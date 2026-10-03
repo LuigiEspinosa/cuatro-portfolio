@@ -79,12 +79,11 @@ describe('one OIDC client per participating application (AD-3)', () => {
 });
 
 describe('credentials never live in the repository', () => {
-  // The authoring session's permission settings deny every read and write of `.env.*`, so `.env.example`
-  // could not be edited in Story 5.2. `ops/identity-issuer.md` Pending Operator action 8 appends the
-  // documented block and turns this into the case below, in the same commit:
-  //   const example = read('.env.example');
-  //   for (const v of variables) expect(new RegExp(`^${v}=[ \\t]*$`, 'm').test(example), v).toBe(true);
-  it.todo('documents every variable in .env.example with an empty value');
+  // `ops/identity-issuer.md` Pending Operator action 8 appended the documented block to `.env.example`.
+  it('documents every variable in .env.example with an empty value', () => {
+    const example = read('.env.example');
+    for (const v of variables) expect(new RegExp(`^${v}=[ \\t]*$`, 'm').test(example), v).toBe(true);
+  });
 
   it('the value pattern catches the env, YAML and JSON assignment forms and spares interpolations', () => {
     const re = new RegExp(valuePattern(['X_OIDC_CLIENT_SECRET']).replace('[:space:]', '\\s'));

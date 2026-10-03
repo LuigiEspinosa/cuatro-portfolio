@@ -47,13 +47,13 @@ context:
 
 **Acceptance Criteria:**
 - AC1: Given the record's clients table, when the test runs, then every row is a Registry id, `cuatro-portfolio` and `cs-tracker` are present, no `wallet` entry is, each Clerk OAuth application name equals its id, and each variable is the derived name.
-- AC2 (Operator-pending, category d: the `.env.*` deny, action 8): Given `.env.example`, when the test runs, then it names `OIDC_ISSUER` and every table variable, each with an empty value.
+- AC2 (Operator-pending, category d: the `.env.*` deny, action 8): Given `.env.example`, when the test runs, then it names `OIDC_ISSUER` and every table variable, each with an empty value. (Met 2026-10-03T23:48Z: the Operator appended the block, and the case that replaced the `it.todo` passes.)
 - AC3: Given the tracked tree, when the test runs, then no tracked file assigns a non-empty value to any of those variables, in the env form `NAME=value` or the YAML form `NAME: value` (fix round 1).
 - AC4: Given the record, when read, then the Clerk-assigned Client ID (AD-3 holds on the name and the variables, not the value) is stated and filed.
 - AC5: Given DW-319, when the record is read, then each logout field read from a published discovery document is quoted with URL and UTC time, what stays unknown until the estate's issuer exists is said, and DW-319 is amended.
 - AC6: Given the by-hand steps, when read, then each names its exact action, holds on either plan, verifies by variable name only, and is a Pending Operator action.
 - AC7: Given the change, when typecheck and the full root suite run, then both pass.
-- AC8 (Operator-pending): Given the issuer and both clients exist and their credentials are placed, when the record's actions are dated, then the story is done.
+- AC8 (Operator-pending): Given the issuer and both clients exist and their credentials are placed, when the record's actions are dated, then the story is done. (Met 2026-10-03T23:48Z: every action in `ops/identity-issuer.md` § Pending Operator actions is dated, the rulings on AD-3, AD-11 and AD-26 included.)
 
 ## Implementation Notes
 

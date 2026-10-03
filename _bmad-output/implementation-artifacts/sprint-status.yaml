@@ -1047,7 +1047,10 @@ development_status:
   # DW-320 (Clerk assigns the Client ID, AD-3) and DW-321 (DNS-only issuer hostnames against AD-26) filed.
   # .env.example not edited: the session permission settings deny .env.*; block and test case in the record.
   # Box, Clerk, Cloudflare and GitHub half is the Operator: ops/identity-issuer.md Pending Operator actions 1 to 9.
-  5-2-one-clerk-issuer-and-one-oidc-client-per-application: awaiting-operator
+  # 5-2 done 2026-10-03T23:48Z: issuer https://clerk.id.cuatro.dev live on Hobby, both OAuth applications created,
+  # secrets set in both repositories, three lines in each box env file, .env.example documented; rulings AD-3
+  # narrowed, AD-11 logout amended (DW-319), KV-9 (DNS-only issuer hosts) and KV-10 (__client_uat) accepted.
+  5-2-one-clerk-issuer-and-one-oidc-client-per-application: done
   # 5-3 awaiting-operator 2026-10-02: repository half built on dev. The Hub signs in over OIDC Authorization Code +
   # PKCE from discovery alone (apps/hub/lib/oidc.ts, apps/hub/app/auth/ sign-in, callback, session; jose 6.2.2, already
   # locked, now a root dependency), mints its own __Host-hub-session (Secure, HttpOnly, Path=/, no Domain), and answers
