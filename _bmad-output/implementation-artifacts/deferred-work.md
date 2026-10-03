@@ -9836,7 +9836,11 @@ status: done
     Clerk's assigned values (`ops/identity-issuer.md` § Provider replaceability). Both kinds of value pass
     through unchanged, so the narrowing this entry asks for loses nothing an application depends on. The
     ruling stays the Operator's.
-  status: open
+
+    **Closed 2026-10-03 by Operator ruling (option a):** AD-3 is narrowed in the spine (§ AD-3, "Narrowed
+    2026-10-03") to the OAuth application's Name and the credential variables; `ops/identity-issuer.md`
+    action 10 is dated.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-2-one-clerk-issuer-and-one-oidc-client-per-application.md`
   id: DW-321
   summary: >-
@@ -9854,7 +9858,11 @@ status: done
     **Owner: the Operator's ruling, `ops/identity-issuer.md` Pending Operator action 9.** **Trigger: before
     the issuer's DNS records are added.** Either accept them DNS only as a new KV entry in
     `ops/known-violations.md`, or proxy the Frontend API, which then needs its own runbook.
-  status: open
+
+    **Closed 2026-10-03 by Operator ruling:** the issuer's hostnames are added DNS only and accepted as
+    standing, recorded as KV-9 in `ops/known-violations.md`; `ops/identity-issuer.md` action 9 is dated.
+    The domain `id.cuatro.dev` was kept at the same time.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-3-the-hub-authenticates-over-oidc-authorization-code-pkce.md`
   id: DW-322
   summary: >-

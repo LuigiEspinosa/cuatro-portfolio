@@ -71,6 +71,7 @@ edit, and this row is the copy.
 | KV-6 | Zero z-index literals, zero depth tells, zero clipped rings, zero synthesised weights and zero routes with no level-1 heading ship on the Hub | UX-DR44, UX-DR45 (`epics.md:665-676`), A-1 and A-7 (`EXPERIENCE.md:760,766`), the hallmark floor `epics.md:3053-3061` | **Retired** | 2026-09-13 | Story 2-33 | 2026-09-23 |
 | KV-7 | Two `Live` Registry members serve from Vercel, outside the Cloudflare proxy | AD-26, AD-17b | **Open**, accepted as standing | 2026-09-26 | nobody, by decision | _not to be retired_ |
 | KV-8 | Two rendered applications are exempt from the restyle | AD-25, SM-6, SM-12 | **Open**, accepted as standing | 2026-09-26 | nobody, by decision | _not to be retired_ |
+| KV-9 | The identity issuer's hostnames under `id.cuatro.dev` are DNS only, outside the Cloudflare proxy | AD-26, AD-17b | **Open**, accepted as standing | 2026-10-03 | nobody, by decision | _not to be retired_ |
 
 ---
 
@@ -418,6 +419,29 @@ and two rules that bind every live `cuatro.dev` hostname do not hold for them.
 | Opened | **2026-09-26** | **Decision** |
 | Retired by | **nobody, by decision** | **Decision.** It would retire if either application is restyled, leaves `Live` and `Complete`, or AD-25 is amended to admit exemptions |
 | Retired on | _not to be retired_ (Operator ruling 2026-09-26) | **Decision** |
+
+---
+
+## KV-9: The identity issuer's hostnames under `id.cuatro.dev` are DNS only, outside the Cloudflare proxy
+
+**Scope: the serving hostnames the Clerk production instance on `id.cuatro.dev` lists on its Domains
+page (`clerk.id.cuatro.dev` at least), and the two rules below.** Opened before the records exist, by
+the ruling that decides how they are added.
+
+| Field | Value | Nature |
+|---|---|---|
+| Rule breached | **AD-26** (every live `cuatro.dev` hostname is proxied by Cloudflare with Full (strict)) and **AD-17b** (the zone's bot mitigation covers every live subdomain) | **Decision.** A DNS-only record never reaches Cloudflare's proxy, as in KV-7 |
+| Offending hostnames | Those `ops/identity-issuer.md` § The sequence step 5 records, at least `clerk.id.cuatro.dev`. None exists yet | **Decision.** Recorded by name in `ops/identity-issuer.md` and `ops/routing-inventory.md` when the Operator adds them (`ops/identity-issuer.md` action 2) |
+| Why it is an entry | Clerk's production guide requires it: "Set the DNS record for this subdomain to a "DNS only" mode on your host to prevent proxying." (read 2026-10-02T14:40Z, `https://clerk.com/docs/guides/development/deployment/production.md`) | **Observation** of the vendor's documentation, recorded in `ops/identity-issuer.md` § The issuer |
+| The ruling | **Tolerated**: add the issuer's records DNS only, as Clerk requires, rather than proxy Clerk's Frontend API through a hostname of the estate's own | **Decision**, by the Operator in session on 2026-10-03 (`ops/identity-issuer.md` action 9, closing DW-321) |
+| Why it is tolerable | Neither host reaches the box | **Decision.** Clerk terminates TLS and renews its own certificates for these names and absorbs their traffic, as Vercel does for KV-7's two. The proxy alternative would put a Clerk route on the box's Traefik, a new moving part on a CPU-bound box for a hostname the box never serves |
+| What it does not cover | Cookies on `.cuatro.dev` | **Decision.** AD-11's ban on a domain-scoped cookie still holds in full: the instance sits on `id.cuatro.dev` so Clerk's root-scoped cookies reach `*.id.cuatro.dev` only, and `ops/identity-issuer.md` § The sequence step 7 stops the sequence on any `Domain=.cuatro.dev` cookie |
+| Status | **Open and accepted as standing** | **Decision** |
+| Ruled by | **The Operator**, in session | **Decision** |
+| Ruled on | **2026-10-03** | **Decision** |
+| Opened | **2026-10-03** | **Decision** |
+| Retired by | **nobody, by decision** | **Decision.** It would retire if Clerk's Frontend API were proxied through the estate, or the issuer left `cuatro.dev` |
+| Retired on | _not to be retired_ (Operator ruling 2026-10-03) | **Decision** |
 
 ---
 
