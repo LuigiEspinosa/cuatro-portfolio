@@ -4,7 +4,8 @@ name: Registry verification
 # resolves, that `live` resolves and that the vendored token version matches
 # `token_contract`, and that any failure notifies the Operator; AD-16 says the
 # same job is what keeps a Satellite's declaration honest. This file is that
-# job. It is its own workflow rather than a job in `ci.yml`, because two suites
+# job. From Story 5.11 it also holds every `demo` and `identity` declaration to
+# what an anonymous Visitor meets (AD-12, AD-13, FR-24, FR-27). It is its own workflow rather than a job in `ci.yml`, because two suites
 # pin that file's six-job set and its `on:` block verbatim, and because a
 # schedule is a different trigger from a push.
 #
@@ -41,9 +42,10 @@ jobs:
   registry-verification:
     runs-on: ubuntu-latest
 
-    # Checkout, `setup-node` and at most four requests per entry (eight with
-    # retries) with a 15 s ceiling each. A hung network becomes a failure with a
-    # cause rather than a job that runs until the platform kills it.
+    # Checkout, `setup-node` and a few requests per entry (about eleven at most,
+    # an `oidc` or `demo-account` entry, Story 5.11), retried once, with a 15 s
+    # ceiling each. A hung network becomes a failure with a cause rather than a
+    # job that runs until the platform kills it.
     timeout-minutes: 10
 
     steps:

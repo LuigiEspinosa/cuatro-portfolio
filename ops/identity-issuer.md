@@ -307,7 +307,7 @@ _Not yet run._ H2's status code and H3's observations are written here, each wit
 |---|---|---|---|
 | H1 | **Register `https://cuatro.dev/auth/callback`** on the `cuatro-portfolio` OAuth application | After action 5 | _not done_ |
 | H2 | **Roll the Hub onto its three variables** and check `/auth/session` answers 401 | After action 7 and H1; a box change | _not done_ |
-| H3 | **Sign in at `https://cuatro.dev/auth/sign-in` and record the session and every cookie's Domain** | Story 5.3 is done when this cell is dated with no `.cuatro.dev` cookie; then DW-322 flips the Registry's `identity` | _not done_ |
+| H3 | **Sign in at `https://cuatro.dev/auth/sign-in` and record the session and every cookie's Domain** | Story 5.3 is done when this cell is dated with no `.cuatro.dev` cookie; then DW-322 flips the Registry's `identity`, by `ops/registry-verification.md` § The release the live steps unlock, order 1, whose job reads this cell | _not done_ |
 
 ## cs-tracker's sign-in (Story 5.4)
 
@@ -431,7 +431,7 @@ _Not yet run._ CT3's status code and CT5's observations are written here, each w
 | CT2 | **Set `CS_TRACKER_OIDC_OWNER_SUB`** on the box and as a GitHub secret, and check the four names | After H3 and action 7; a box change | _not done_ |
 | CT3 | **Merge `cs-tracker`'s `dev` into `main` and roll the app**, then check `/auth/session` answers 401 | After the verifier pushes `dev`; a box change | _not done_ |
 | CT4 | **Rule on `oidcc` 3.8.0 against EEF-CVE-2026-75759** | Closes DW-324 | _not done_ |
-| CT5 | **Observe one identity cross the JavaScript/Elixir boundary** and record every cookie's Domain | Story 5.4 is done when this cell is dated with equal subjects and no `.cuatro.dev` cookie; then DW-323 flips the Registry's `identity` | _not done_ |
+| CT5 | **Observe one identity cross the JavaScript/Elixir boundary** and record every cookie's Domain | Story 5.4 is done when this cell is dated with equal subjects and no `.cuatro.dev` cookie; then DW-323 flips the Registry's `identity`, by `ops/registry-verification.md` § The release the live steps unlock, order 2, whose job reads this cell | _not done_ |
 | CT6 | **Document the four names in `cs-tracker`'s `.env.example`** | A repository change the authoring session could not make | _not done_ |
 
 ## Sign-out (Story 5.5)
