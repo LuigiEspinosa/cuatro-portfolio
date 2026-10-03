@@ -99,3 +99,4 @@ Review layers run inline by the builder (no subagent tool); the independent veri
 **Commands:**
 - Root: `corepack pnpm typecheck`, `corepack pnpm test --run`; `pnpm --filter tracker typecheck`, `test` (Redis 6379, `TRACKER_DEMO_RESET_DATABASE_URL`), `build`; `node ops/cs-tracker-adoption-probe.mjs`.
 - `cs-tracker`: `mix precommit`. `digital-library`: `pnpm test`, `pnpm typecheck` in `node:22-bookworm`.
+- A local Windows run needs `127.0.0.1`, not `localhost`, as the host in `TRACKER_DEMO_RESET_DATABASE_URL`; `ci.yml`'s `localhost` is right on the runner.
