@@ -1,0 +1,7 @@
+# The estate's demo reset scheduler (Story 5.10, AD-13): ops/demo-principal.md § The scheduler.
+# Installed by hand, byte for byte, as /etc/cron.d/cuatro-demo-reset (cron skips a cron.d name with a dot).
+# It runs the checkout's scheduler and schedule, so a merged change reaches the box at the next deploy, and
+# the scheduler exits 1 on every run while this installed copy differs from the checkout's (DW-318).
+SHELL=/bin/sh
+PATH=/usr/bin:/bin
+*/15 * * * * deploy /home/deploy/cuatro-portfolio/ops/demo-reset.sh >> /home/deploy/demo-reset/demo-reset.log 2>&1
