@@ -3,8 +3,8 @@
 The one definition of Demo Access's principal (AD-13, FR-25, FR-26): who it is, how each participating
 application derives it, the ownership scope its rows live in, and what no application lets anyone do to
 it. It is the artifact Story 5.8 delivers. Story 5.9 adds § The reset, the one definition of `demo:reset`
-and the baseline fixture per application. Story 5.10 (the host scheduler) and Story 5.11 (the Registry's
-`demo` values verified) build on both and do not restate them.
+and the baseline fixture per application. Story 5.10 adds § The scheduler, the one host-level job that runs
+those resets. Story 5.11 (the Registry's `demo` values verified) builds on all three and does not restate them.
 
 This file is a record, not Registry data. Every value is marked as a decision or an observation (NFR-9).
 Times are UTC.
@@ -23,10 +23,11 @@ only, never against the estate (DR1 to DR3).
 2. [Who participates](#who-participates)
 3. [Each participant](#each-participant)
 4. [The reset](#the-reset)
-5. [What Stories 5.9 to 5.11 build on](#what-stories-59-to-511-build-on)
-6. [By hand](#by-hand)
-7. [Demo principal run](#demo-principal-run)
-8. [Pending Operator actions](#pending-operator-actions)
+5. [The scheduler](#the-scheduler)
+6. [What Stories 5.9 to 5.11 build on](#what-stories-59-to-511-build-on)
+7. [By hand](#by-hand)
+8. [Demo principal run](#demo-principal-run)
+9. [Pending Operator actions](#pending-operator-actions)
 
 ## The contract
 
@@ -251,6 +252,120 @@ Per participant:
   **Uploads (DW-333):** the reset removes every upload and its cover with the library's rows. Whether the
   demo principal may upload at all is ruling DR4.
 
+## The scheduler
+
+The one host-level job that runs § The reset (AD-13, FR-26, Story 5.10). Decisions, each held by
+`ops/__tests__/demo-reset.test.ts` unless marked otherwise. **Nothing here is installed on the box**: the
+install is DS1 to DS3, by hand, after each participant's demo access is on.
+
+| File | Role |
+|---|---|
+| `ops/demo-reset.sh` | The scheduler. Runs the due participants one after another under a lock, then one summary line |
+| `ops/demo-reset.schedule` | Each participant's interval in minutes, or `off`. Committed: `60` for all three |
+| `ops/demo-reset.cron` | The one cron line, installed byte for byte as `/etc/cron.d/cuatro-demo-reset` |
+
+1. **On the host, outside every application container.** cron on the box runs the scheduler, which runs
+   each participant's command from § The reset item 7, word for word, in that participant's directory: a
+   one-shot container that exits when its reset does. No application keeps a timer, so a CPU-bound box pays
+   for a reset only while one runs. For the tracker it reads `HUB_TAG` and `TRACKER_TAG` from the serving
+   `anchor-app` and `tracker` containers' images (`docker ps`, the form `ops/tracker-cutover.md` uses), so
+   the one-shot runs the image the tracker serves; with either not running, the tracker fails and the
+   others still run. A case compares the commands the scheduler runs with this record's table.
+2. **Hourly by default, per participant.** The cron line fires every 15 minutes. A participant is due on a
+   tick whose minute since the epoch, rounded down to 15, is a multiple of its interval: `60` runs at minute
+   0 of every hour (UTC), `120` at every even hour, `1440` at 00:00. The phase needs no state file, and a
+   tick missed while the box was down is not made up: the next one due runs. The interval is a multiple of
+   15 from 15 to 1440. **Decision, 2026-10-03:** every participant hourly, which AD-13 names. A Visitor's
+   changes then last until the next full hour at most, so a second Visitor the same day finds the fixture
+   unless they arrive within that hour; a shorter interval narrows the window at a cost § What a run costs
+   gives. Minute 0 is clear of the nightly jobs at 03:15 and 03:45.
+3. **One participant at a time, and each one's failure is its own.** A participant that exits non-zero, or
+   outlives its timeout (240 s, then killed 10 s later), is named in the summary's `failed=` and the run
+   exits 1; every other due participant still runs. Three that each hang still end inside one tick.
+   Killing `docker compose run --rm` ends the client and leaves its container running (observed 2026-10-03,
+   Docker Compose v5.5.1: exit 124, the one-off still `Up` 3 s later), which would keep the reset's
+   connection and transaction past the lock. So on a timeout the scheduler removes the one-off containers of
+   that participant's service (compose's `oneoff`, `service` and `project.working_dir` labels) that were not
+   there before it ran, and no other.
+4. **Never two runs at once.** `flock -n` on `/home/deploy/demo-reset/.demo-reset.lock`: a run that finds it
+   held starts nothing and exits 1 with `lock=held`. The lock belongs to the open descriptor, so a run killed
+   outright (a reboot, `kill -9`) releases it, and a lock file left behind never blocks the next run. A
+   by-hand reset goes through the scheduler (`ops/demo-reset.sh <registry-id>`, which runs that participant
+   now whatever its interval) so the lock covers it; a participant's command typed by hand does not take it.
+5. **`off` costs nothing but its line.** A participant `off` in the schedule makes no `docker` call at all,
+   and prints `demo:reset <registry-id> skipped: off in ops/demo-reset.schedule` on the hourly ticks only.
+   A participant whose own demo access is off but whose schedule still names an interval costs one
+   one-shot container, which prints the application's own `skipped` line (§ The reset item 6; its cost is
+   in § What a run costs). So turning a participant's demo off is two changes: its switch, and `off` here.
+6. **The schedule is committed, never typed on the box.** The box reads `ops/demo-reset.schedule` and runs
+   `ops/demo-reset.sh` from its checkout at `/home/deploy/cuatro-portfolio`, which the deploy resets to `main`,
+   so a merged change to either takes effect at the next deploy. A schedule that names an unknown id, leaves a
+   participant out, names one twice, or gives an interval off the rule runs nothing and exits 1
+   (`schedule=invalid`): a schedule nobody can read must not run half of itself.
+7. **DW-318 does not repeat here.** cron runs the checkout's script, never an installed copy. The one copy
+   the box holds, the cron file, is compared on every run with `ops/demo-reset.cron` (`cmp`); while they
+   differ, or while it is absent, every run still resets and exits 1 naming it (`cron=differs`,
+   `cron=absent`). A deploy that replaces the script while a run reads it is safe: git writes a new file, and
+   the running bash keeps the one it opened (observed 2026-10-03 with `git reset --hard` under a running
+   script: a new inode, and the run finished on the old text).
+8. **DW-315 does repeat here, and is filed there.** Every run that did anything appends one line to
+   `/home/deploy/demo-reset/demo-reset.log`, each participant's own line before it:
+   `demo-reset ts=<UTC> tick=<HH:MM> lock=ok schedule=ok cron=match ran=3 off=0 failed=none exit=0`. A tick on
+   which nothing is due writes nothing, so with the committed schedule a line lands every hour and an hour
+   without one is a scheduler that stopped. Nothing reads the log yet: the same gap as the three backup
+   logs, amended into DW-315 so its reader covers all four.
+9. **One connection at a time.** Runs never overlap and participants run in turn, so at most one reset
+   connection is open in the estate at any moment, and each role sees the one Story 5.9 counted (DP4,
+   DW-331).
+10. **Only tools the box runs.** Beside bash: `docker`, `flock`, `timeout`, `date`, `dirname`, `mkdir`,
+    `cmp`, `tail` and `cut`. Each but `cmp` is run on the box every night by `ops/postgres-backup.sh` since
+    2026-10-01 (`exit=0`, `ops/postgres-backup.md` § First scheduled run); `cmp` printed `installed` on the
+    box in that record's install step 3; `date -u -d @<seconds>` is GNU coreutils, the box's Ubuntu 24.04.4.
+    The suite runs every case with a PATH holding only these and the `docker` stub, so a tool the box lacks
+    fails there. The cron file sets `PATH=/usr/bin:/bin`, and DS1 checks the four that are not coreutils
+    resolve on it.
+
+### What a run costs
+
+**Observed 2026-10-03 on the authoring workstation, not on the box.** Each participant's real image, built
+from the commits Story 5.9 left (`cuatro-portfolio` `dev` at `9d703bc` with `apps/tracker/Dockerfile`,
+`cs-tracker` `dev` `dcd35ee`, `digital-library` `story-5-8-demo-principal` `6ae8df2` with
+`apps/api/Dockerfile`), tagged `epic5-scratch-*`, ran its reset command as a one-shot `docker run --rm`
+against scratch stores: `postgres:18.6-trixie` holding `cuatro_tracker` and `cs_tracker` migrated as DP5 and
+DP6 migrate them (`public` and `demo`), the principal's `User` row in the tracker's, and a migrated SQLite
+file holding the demo user in a volume. Docker Desktop 29.8.1, a WSL2 VM of 8 vCPU. CPU is the VM's whole
+busy time from `/proc/stat` across the run (dockerd and containerd included), with 0.26 s per 10 s of idle
+VM beside it. `docker compose`'s own parse of the compose file, which the box adds per participant, is not
+in these figures.
+
+| Run | Its line | Wall | VM CPU |
+|---|---|---|---|
+| `cuatro-tracker`, three runs | `reset rows=12` | 1.26 to 1.47 s | 1.35 to 1.66 s |
+| `cs-tracker`, three runs | `reset rows=12` | 1.31 to 1.42 s | 2.11 to 2.28 s |
+| `digital-library`, three runs | `reset rows=5` | 0.92 to 0.96 s | 0.89 to 0.96 s |
+| **One full run, the three back to back, twice** | the three lines | **3.45 and 3.61 s** | **4.17 and 4.63 s** |
+| `cuatro-tracker`, its own switch off | `skipped: demo access is off` | 1.48 s | 1.42 s |
+| `cs-tracker`, its own switch off | `skipped: demo access is off` | 1.21 s | 1.54 s |
+
+**Against the Capacity Gate (load15 0.60 on 2 vCPU, `ops/capacity-threshold.md`). Derived, not observed on
+the box.** An hourly run is about 4.6 CPU-seconds an hour, 0.13% of one core averaged over the hour. load15
+is an exponential average the kernel updates every 5 s with a weight of 1 - e^(-5/900), about 0.0055 per
+sample, so a burst of a few seconds adds to it once or twice: even if the box's cores were three times
+slower than this workstation's, about 14 CPU-seconds keeping both of its cores busy for 7 s, two samples
+at 2 runnable add about 0.02 to load15, decaying over the following quarter hour. The box's recorded
+load15 ran 0.05 to 0.27 across the measurement week and read 0.26 to 0.30 during the backup install
+(`ops/postgres-backup.md` § First run); a reset adds a few hundredths at most, under a tenth of the
+headroom. The application's own `off` costs a container start, 1.4 to 1.5 CPU-seconds each, which is
+why `off` in the schedule exists (item 5). DS3 reads the real figure after a run on the box.
+
+**Connections, counted from Postgres's own log** (`log_connections`, `log_disconnections`) on the same
+scratch instance: one tracker reset opened 1 connection to `cuatro_tracker`, one `cs-tracker` reset 1 to
+`cs_tracker`, each closed before the run ended, and with each application's switch off each opened 0.
+That is the one per running reset DP4 counts (DW-331), and item 9 keeps it to one in the estate at a time.
+
+Every scratch container, network and volume was removed by the harness's exit trap, and the three
+`epic5-scratch-*` images afterwards.
+
 ## What Stories 5.9 to 5.11 build on
 
 - **Delete by owner** is emptying the scope: every table in schema `demo` (`cuatro-tracker`, `cs-tracker`),
@@ -265,7 +380,7 @@ Per participant:
   `migrate_demo` on the suite's database), so the demo's sync-button state reads the Owner's sync jobs'
   times; the sync itself is withheld.
 - **The scheduler** runs each application's reset from the host, outside its containers (AD-13, Story 5.10),
-  by the commands in § The reset, item 7.
+  by the commands in § The reset, item 7: § The scheduler.
 - **The Registry** moves an entry to `demo-account` only once its account works (Story 5.11, FR-27).
 
 ## By hand
@@ -359,6 +474,36 @@ into `ssh`. No step prints a credential.
     and keep the window. **Recommendation: (b)**: the hourly window bounds how long a file is served, not
     what it is, and reading, search and progress, which are the application, all work on the fixture. (b) also
     closes DW-334, since a demo upload is what reaches the Operator's book through the duplicate check.
+13. **DS1. Install the scheduler**, after DR1 to DR3 (each participant's demo on and its reset observed) and
+    after `main` carries Story 5.10. On the box as `deploy`, from a file under `set -euo pipefail`:
+    ```
+    cd /home/deploy/cuatro-portfolio
+    git log -1 --format=%H -- ops/demo-reset.sh
+    env -i PATH=/usr/bin:/bin sh -c 'command -v docker flock timeout cmp'
+    install -d -m 0700 /home/deploy/demo-reset
+    sudo install -o root -g root -m 0644 ops/demo-reset.cron /etc/cron.d/cuatro-demo-reset
+    cmp ops/demo-reset.cron /etc/cron.d/cuatro-demo-reset && echo installed
+    ```
+    The `git log` must print a commit (Story 5.10 is on `main`); `command -v` must print four paths; the last
+    line must print `installed`. The cron file goes by `install` from the checkout, never typed. If the box's
+    `docker` is not under `/usr/bin` or `/bin`, stop: the cron file's `PATH` is a change to commit first.
+    Cron picks the file up within a minute, so the first scheduled run is the next full hour. To stop it:
+    `sudo rm /etc/cron.d/cuatro-demo-reset`.
+14. **DS2. One run by hand, in cron's shape**, at a minute that is not a multiple of 15, so the scheduled
+    run does not meet it at the lock:
+    ```
+    uptime
+    env -i HOME=/home/deploy LOGNAME=deploy PATH=/usr/bin:/bin SHELL=/bin/sh /home/deploy/cuatro-portfolio/ops/demo-reset.sh cuatro-tracker cs-tracker digital-library; echo "exit=$?"
+    uptime
+    ```
+    It must print `demo:reset cuatro-tracker reset rows=12`, `demo:reset cs-tracker reset rows=12`,
+    `demo:reset digital-library reset rows=5`, then a summary ending `cron=match ran=3 off=0 failed=none
+    exit=0`, and `exit=0`. Record both `uptime` readings.
+15. **DS3. Read the first unattended day**, the next day: `grep '^demo-reset ' /home/deploy/demo-reset/demo-reset.log`
+    must show one line per hour since DS1, each ending `exit=0`; and `uptime` read at minute 1 of an hour,
+    within the minute after a run, against the gate's load15 0.60. Write both here. A line with `exit=1`
+    names its cause: `failed=<id>` (read that participant's line above it), `cron=differs` (repeat DS1's
+    `install`), `lock=held` (a run outlived 15 minutes).
 
 ## Demo principal run
 
@@ -380,6 +525,9 @@ _Not yet run._ Each step above is written here with the UTC time and what was ob
 | DR2 | **Run `cs-tracker`'s reset live, twice, and observe it** | After DP5 | _not done_ |
 | DR3 | **Run `digital-library`'s reset live, twice, and observe it** | After DP7 | _not done_ |
 | DR4 | **Rule on the demo principal's uploads** | DW-333, DW-334; before DP7 creates the demo user | _not done_ |
+| DS1 | **Install the scheduler's cron file** from the checkout | After DR1 to DR3 and Story 5.10 on `main` | _not done_ |
+| DS2 | **Run the scheduler once by hand, in cron's shape, and observe it** | After DS1 | _not done_ |
+| DS3 | **Read the first unattended day** of `demo-reset.log` and the load after a run | The day after DS1 | _not done_ |
 
 Story 5.8 is done when DP1 to DP7 are dated and DP8 is ruled. Story 5.9 is done when DR1 to DR3 are dated
-and DR4 is ruled.
+and DR4 is ruled. Story 5.10 is done when DS1 to DS3 are dated.
