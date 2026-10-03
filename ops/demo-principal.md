@@ -178,15 +178,21 @@ the two Postgres stacks, a SQLite file and real directories for `digital-library
    `public`), the fixture library's id (`digital-library`).
 2. **It never touches anything else.** Not one Operator row or file, which a suite case per stack proves by
    seeding the Operator's rows beside the demo's, under the same ids where the stack allows it, and comparing
-   them before and after. Not the principal's own account: its row, password and sessions are kept as they
-   are (`cuatro-tracker` and `digital-library`; `cs-tracker` has none). Not a row a migration writes
+   them before and after. Not the principal's own account: its row and password are kept as they are
+   (`cuatro-tracker` and `digital-library`; `cs-tracker` has none), and so are its sessions in
+   `digital-library`. `cuatro-tracker`'s sessions are stateless JWTs (`lib/auth.ts`, strategy `jwt`, sign-in
+   by credentials only), so its reset empties the adapter's `Account`, `Session` and `VerificationToken`
+   tables with the rest of the scope and no signed-in Visitor is signed out by it. Not a row a migration writes
    (`cs-tracker`'s `schema_migrations` and `steam_rate_limit_state`). And it never migrates: the scope's
    schema is migrated as a discrete step before a rollout (AD-23, DP5 and DP6), and a reset against an
    unmigrated scope fails.
 3. **A fixture is a file committed in the application's own repository** that states every row the scope
    holds after a reset other than the principal's own, with fixed ids and fixed times, so two resets leave
    identical rows. Every table of the scope is classified by a suite case as reset or structural, so a table
-   a later migration adds fails that case until it is placed. Where ids come from a sequence, the fixture's
+   a later migration adds fails that case until it is placed: `cuatro-tracker` against `Prisma.ModelName`,
+   `cs-tracker` against `information_schema` for schema `demo`, and `digital-library` against
+   `sqlite_master`, where each table classified reset must reach `libraries` by `ON DELETE CASCADE`
+   (`users` and `sessions` are the principal's, the `books_fts` tables structural). Where ids come from a sequence, the fixture's
    sit where the Operator's never reach and the reset moves each sequence just past them (`cs-tracker`, § 8).
 4. **It is one transaction.** A fault applies nothing; `digital-library` writes its files after the rows
    commit, so a fault there leaves rows whose files the next reset rewrites.
