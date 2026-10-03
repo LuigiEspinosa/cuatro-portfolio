@@ -101,6 +101,11 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   runs a native bash and never sees it.
 - The workstation's Git Bash has no `jq`: parse JSON with `node -e`. A WebSocket upgrade probe with
   `curl` needs `--http1.1`, or it answers 400 instead of 101.
+- The workstation's own `ssh` holds no key the box accepts: reach it as `wsl -d Ubuntu-22.04 ssh
+  deploy@177.7.52.248`. Through `wsl.exe`, double quotes inside the remote command are mangled (a `"$f"`
+  arrives empty), and Git Bash rewrites a `/home/...` argument into a Windows path unless
+  `MSYS_NO_PATHCONV=1` is set. Give the remote side a command with no inner quotes, or a script file on the
+  box (2026-10-03, `ops/identity-issuer.md` § Issuer run, step 11).
 - Every compose command against `docker-compose.yml`, on the box or here, needs `HUB_TAG` exported
   first (the Hub's image line refuses an unset tag, DW-310). Use `ops/tracker-cutover.md`'s form:
   `export HUB_TAG="$(git rev-parse HEAD)"`, then `docker compose --env-file .env.production`.

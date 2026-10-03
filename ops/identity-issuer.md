@@ -226,13 +226,21 @@ only.
     gh secret list --repo LuigiEspinosa/cs-tracker | grep OIDC
     ```
     The two lists show three names each, with today's date.
-11. **Append the on-box env lines**, refusing to append twice and never echoing a value:
+11. **Append the on-box env lines**, refusing to append twice and never echoing a value.
+    **As written below this step does not run from the workstation** (found 2026-10-03): the workstation's
+    own `ssh` holds no key the box accepts, and the box is reached through WSL
+    (`wsl -d Ubuntu-22.04 ssh deploy@177.7.52.248`); through `wsl.exe` the double quotes inside the remote
+    command are mangled, so `$f` reaches the box empty and every file operation fails on an empty name, and
+    Git Bash rewrites a `/home/...` argument into a Windows path unless `MSYS_NO_PATHCONV=1` is set. The
+    run (§ Issuer run) therefore placed a short helper script on the box, fed each application's lines to
+    it with a remote command carrying no inner quotes, and removed it after. Reuse that shape for CT2 and
+    FA2, which carry the same inline form. The original form, kept for reading:
     ```bash
     grep -E '^(OIDC_ISSUER|CUATRO_PORTFOLIO_OIDC_CLIENT_(ID|SECRET))=' .env | tr -d '\r' \
-      | ssh deploy@177.7.52.248 'f=/home/deploy/cuatro-portfolio/.env.production; ! grep -qE "^(OIDC_ISSUER|CUATRO_PORTFOLIO_OIDC_)" "$f" && { [ -z "$(tail -c1 "$f")" ] || echo >> "$f"; cat >> "$f"; }'
+      | wsl -d Ubuntu-22.04 ssh deploy@177.7.52.248 'f=/home/deploy/cuatro-portfolio/.env.production; ! grep -qE "^(OIDC_ISSUER|CUATRO_PORTFOLIO_OIDC_)" "$f" && { [ -z "$(tail -c1 "$f")" ] || echo >> "$f"; cat >> "$f"; }'
     grep -E '^(OIDC_ISSUER|CS_TRACKER_OIDC_CLIENT_(ID|SECRET))=' .env | tr -d '\r' \
-      | ssh deploy@177.7.52.248 'f=/home/deploy/cs-tracker/.env; ! grep -qE "^(OIDC_ISSUER|CS_TRACKER_OIDC_)" "$f" && { [ -z "$(tail -c1 "$f")" ] || echo >> "$f"; cat >> "$f"; }'
-    ssh deploy@177.7.52.248 'grep -cE "^(OIDC_ISSUER|CUATRO_PORTFOLIO_OIDC_CLIENT_(ID|SECRET))=.+" /home/deploy/cuatro-portfolio/.env.production; grep -cE "^(OIDC_ISSUER|CS_TRACKER_OIDC_CLIENT_(ID|SECRET))=.+" /home/deploy/cs-tracker/.env'
+      | wsl -d Ubuntu-22.04 ssh deploy@177.7.52.248 'f=/home/deploy/cs-tracker/.env; ! grep -qE "^(OIDC_ISSUER|CS_TRACKER_OIDC_)" "$f" && { [ -z "$(tail -c1 "$f")" ] || echo >> "$f"; cat >> "$f"; }'
+    wsl -d Ubuntu-22.04 ssh deploy@177.7.52.248 'grep -cE "^(OIDC_ISSUER|CUATRO_PORTFOLIO_OIDC_CLIENT_(ID|SECRET))=.+" /home/deploy/cuatro-portfolio/.env.production; grep -cE "^(OIDC_ISSUER|CS_TRACKER_OIDC_CLIENT_(ID|SECRET))=.+" /home/deploy/cs-tracker/.env'
     ```
     The last command prints `3` twice. An `ssh` exit of 1 from the first two means the lines were already
     there; nothing was appended. No container is restarted here: the Hub reads its lines at its next
@@ -319,6 +327,19 @@ nothing. Checked by the orchestrator with `gh secret list` (names and dates only
 `CUATRO_PORTFOLIO_OIDC_CLIENT_SECRET`, set 23:22:17Z; `LuigiEspinosa/cs-tracker` holds `OIDC_ISSUER`,
 `CS_TRACKER_OIDC_CLIENT_ID` and `CS_TRACKER_OIDC_CLIENT_SECRET`, set 23:22:18Z.
 
+**Step 11, 2026-10-03T23:29Z.** Step 11's inline commands failed twice from the workstation and wrote
+nothing (`find /home/deploy -newermt -10min` listed no file): plain `ssh` was refused for want of a key,
+and through `wsl.exe` the remote command's inner double quotes were mangled. The orchestrator then copied a
+helper, `/home/deploy/oidc-env-append.sh` (argument `hub` or `cs-tracker`; it refuses a file already
+holding the lines, refuses stdin that is not exactly the three expected lines, and prints counts only), and
+rehearsed it: a bad argument exited 2, one wrong line exited 1 with nothing appended, and both files held 0
+OIDC lines. The Operator then piped each application's three lines from the local `.env` into it:
+`grep -E '^(OIDC_ISSUER|CUATRO_PORTFOLIO_OIDC_CLIENT_(ID|SECRET))=' .env | tr -d '\r' | MSYS_NO_PATHCONV=1 wsl -d Ubuntu-22.04 ssh deploy@177.7.52.248 bash /home/deploy/oidc-env-append.sh hub`,
+and the same with `CS_TRACKER` and `cs-tracker`; each printed `appended 3 lines`. Checked by the
+orchestrator (counts only): `3 /home/deploy/cuatro-portfolio/.env.production`, `3 /home/deploy/cs-tracker/.env`;
+a second append was refused (`already present`, exit 1); the helper was then removed. No container was
+restarted, so neither application reads the lines yet.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -329,7 +350,7 @@ nothing. Checked by the orchestrator with `gh secret list` (names and dates only
 | 4 | **Observe and record Clerk's cookie Domains** (step 7) | A `.cuatro.dev` cookie stops the sequence | 2026-10-03. Stopped on `__client_uat` on `.cuatro.dev`; the Operator accepted it as KV-10; the credential `__client` is on `.clerk.id.cuatro.dev`. § Issuer run |
 | 5 | **Create the two OAuth applications** (step 8) and record the plan-gate observation | Closes `ops/clerk-pricing-and-terms.md` action 2 | 2026-10-03T23:21Z. Both created on Hobby, no upgrade prompt; § Issuer run |
 | 6 | **Set the GitHub Actions secrets in both repositories** (steps 9 and 10) | Names only in the check | 2026-10-03T23:22Z. Three names in each repository, § Issuer run |
-| 7 | **Append the on-box env lines** (step 11) | Story 5.2 is done when every cell in this table is dated | _not done_ |
+| 7 | **Append the on-box env lines** (step 11) | Story 5.2 is done when every cell in this table is dated | 2026-10-03T23:29Z. Three lines in each box file, through a helper on the box; § Issuer run |
 | 8 | **Document the five names in `.env.example`** and turn the test's `it.todo` into its case (§ Where each credential lives) | A repository change, not a box one; it falls to the Operator only because the authoring session could not open the file. Independent of actions 1 to 7. Run `corepack pnpm vitest run ops/__tests__/identity-issuer.test.ts` after | _not done_ |
 | 9 | **Rule on AD-26 for the issuer's hostnames**, before action 2: accept them DNS only as a new known violation in the KV-7 shape, or proxy Clerk's Frontend API through the estate (§ The issuer) | Closes DW-321. The domain decision (`id.cuatro.dev`) may be overruled at the same time | 2026-10-03T22:10Z. Ruled: add the hostnames DNS only, accepted as standing, KV-9 in `ops/known-violations.md`. The domain `id.cuatro.dev` kept |
 | 10 | **Rule on AD-3's "Clerk client `<id>`"** (§ The clients, DW-320). Options: (a) narrow AD-3 to the OAuth application's Name and the variables that carry its credentials, which is what this record already holds; (b) keep AD-3 as written and require an issuer that lets the client id be chosen, which rules Clerk out and re-opens Story 5.1; (c) use Client ID Metadata Documents, which apply to public clients only and would make both confidential clients public. **Recommendation: (a)**, a spine wording amendment, since the name and every variable are derived and tested and nothing reads the opaque value but configuration | Closes DW-320. Any time before Story 5.7 | 2026-10-03T22:10Z. Ruled (a): AD-3 narrowed in the spine |
@@ -444,7 +465,7 @@ sequence step 6; if it lacks one of the four, sign-in answers 502 and the rest o
    repository root, printing no value:
    ```bash
    grep -E '^CS_TRACKER_OIDC_OWNER_SUB=' .env | tr -d '\r' \
-     | ssh deploy@177.7.52.248 'f=/home/deploy/cs-tracker/.env; ! grep -q "^CS_TRACKER_OIDC_OWNER_SUB=" "$f" && { [ -z "$(tail -c1 "$f")" ] || echo >> "$f"; cat >> "$f"; }'
+     | wsl -d Ubuntu-22.04 ssh deploy@177.7.52.248 'f=/home/deploy/cs-tracker/.env; ! grep -q "^CS_TRACKER_OIDC_OWNER_SUB=" "$f" && { [ -z "$(tail -c1 "$f")" ] || echo >> "$f"; cat >> "$f"; }'
    t="$(mktemp)"; grep -E '^CS_TRACKER_OIDC_OWNER_SUB=' .env | tr -d '\r' > "$t"
    gh secret set -f "$t" --repo LuigiEspinosa/cs-tracker; rm -f "$t"
    ssh deploy@177.7.52.248 'grep -cE "^(OIDC_ISSUER|CS_TRACKER_OIDC_(CLIENT_ID|CLIENT_SECRET|OWNER_SUB))=.+" /home/deploy/cs-tracker/.env'
@@ -810,7 +831,7 @@ docker volume rm traefik-origin-ca && docker network rm cs-tracker_default; rm -
 2. **FA2. Put the values on the box and in GitHub**, printing none, from Git Bash at the repository root:
    ```bash
    grep -E '^(OIDC_ISSUER|TRAEFIK_OIDC_(CLIENT_ID|CLIENT_SECRET|OWNER_EMAIL))=' .env | tr -d '\r' \
-     | ssh deploy@177.7.52.248 'f=/home/deploy/cuatro-portfolio/ops/traefik/.env; ! grep -qE "^(OIDC_ISSUER|TRAEFIK_OIDC_)" "$f" && { [ -z "$(tail -c1 "$f")" ] || echo >> "$f"; cat >> "$f"; }'
+     | wsl -d Ubuntu-22.04 ssh deploy@177.7.52.248 'f=/home/deploy/cuatro-portfolio/ops/traefik/.env; ! grep -qE "^(OIDC_ISSUER|TRAEFIK_OIDC_)" "$f" && { [ -z "$(tail -c1 "$f")" ] || echo >> "$f"; cat >> "$f"; }'
    ssh deploy@177.7.52.248 'f=/home/deploy/cuatro-portfolio/ops/traefik/.env; grep -q "^TRAEFIK_FORWARD_AUTH_COOKIE_SECRET=" "$f" || printf "TRAEFIK_FORWARD_AUTH_COOKIE_SECRET=%s\n" "$(head -c 32 /dev/urandom | base64 | tr -- "+/" "-_")" >> "$f"; grep -cE "^(OIDC_ISSUER|TRAEFIK_OIDC_(CLIENT_ID|CLIENT_SECRET|OWNER_EMAIL)|TRAEFIK_FORWARD_AUTH_COOKIE_SECRET)=.+" "$f"'
    t="$(mktemp)"; grep -E '^TRAEFIK_OIDC_CLIENT_(ID|SECRET)=' .env | tr -d '\r' > "$t"
    gh secret set -f "$t" --repo LuigiEspinosa/cuatro-portfolio; rm -f "$t"
