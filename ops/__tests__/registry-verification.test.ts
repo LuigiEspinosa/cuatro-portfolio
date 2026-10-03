@@ -1212,7 +1212,7 @@ describe('identity (AD-11, AD-12, FR-24)', () => {
     const serving = await declared(none, { [`${HOST}/auth/session`]: 401 }, 'identity');
     expect(serving.pass).toBe(false);
     expect(serving.detail).toMatch(/^understated: declares none but https:\/\/app\.cuatro\.dev\/auth\/session answered 401/);
-    expect((await declared(none, {}, 'identity')).detail).toMatch(/^cannot be verified: /);
+    expect(await declared(none, {}, 'identity')).toMatchObject({ pass: false, detail: expect.stringMatching(/^cannot be verified: /) });
   });
 
   describe('oidc: a dated observation, a 401 session route and an Authorization Code + PKCE redirect', () => {
@@ -1271,6 +1271,14 @@ describe('the release valve (FR-28)', () => {
     expect(demo).toMatchObject({ pass: true, detail: 'not-deployed and carries no live URL: nothing to reach' });
     const identity = await declared(offline, {}, 'identity', ['H3']);
     expect(identity).toMatchObject({ pass: true, detail: `${IDENTITY_REL} H3 observed **2026-10-04.** Observed; no live URL, so the session route is not probed (FR-28)` });
+    expect(identity.calls.filter((url) => url.includes('/auth/'))).toEqual([]);
+  });
+
+  it('fails an offline oidc declaration whose observation row is undated, the record half alone', async () => {
+    const offline = entry({ id: 'cuatro-portfolio', status: 'In progress', demo: 'not-deployed', identity: 'oidc' });
+    const identity = await declared(offline, {}, 'identity');
+    expect(identity.pass).toBe(false);
+    expect(identity.detail.startsWith(`overstated: ${IDENTITY_REL} H3 reads "_not done_"`), identity.detail).toBe(true);
     expect(identity.calls.filter((url) => url.includes('/auth/'))).toEqual([]);
   });
 
