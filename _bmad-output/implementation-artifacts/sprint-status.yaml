@@ -1036,7 +1036,8 @@ development_status:
   # applications named by no pricing line. The plan is a named decision against NFR-4 ($100 ceiling, $0 recorded
   # marginal spend today), recommendation Hobby at $0, pending the Operator: ops/clerk-pricing-and-terms.md
   # § Pending Operator actions 1 to 3 (action 1 closes the story). DW-319 filed (no logout on the docs pages read).
-  5-1-refresh-clerk-s-pricing-and-terms: awaiting-operator
+  # 5-1 done 2026-10-03T22:04Z: the Operator ruled Hobby at $0 (action 1). Actions 2 and 3 run at Story 5.2's sign-up.
+  5-1-refresh-clerk-s-pricing-and-terms: done
   # 5-2 awaiting-operator 2026-10-02: repository half built on dev. New record ops/identity-issuer.md: one Clerk
   # issuer (application cuatro, production instance on id.cuatro.dev, decided so Clerk cookies stay off .cuatro.dev),
   # one confidential OIDC client per FR-21 application (cuatro-portfolio, cs-tracker), each Name the Registry id and

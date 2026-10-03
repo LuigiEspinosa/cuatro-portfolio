@@ -104,9 +104,9 @@ Data Processing Addendum and the Privacy Policy by reference.
 
 ## Decision: the plan the issuer runs on
 
-**Pending the Operator's ruling. Recommendation: Hobby, $0 a month.** This row is the named
-decision NFR-4 and the spine's Recurring cost row require before any identity charge exists. It is
-not made here: Story 5.2 opens the account on whichever plan the Operator rules.
+**Ruled by the Operator 2026-10-03T22:04Z: Hobby, $0 a month** (option A, the recommendation). This
+row is the named decision NFR-4 and the spine's Recurring cost row require before any identity charge
+exists. Story 5.2 opens the account on Hobby.
 
 **The ceiling.** NFR-4's $40 to $100 band, read as `ops/monitoring.md` § The cost against NFR-4
 reads it: the ceiling is **$100 a month all-in**, and only marginal spend counts.
@@ -150,7 +150,7 @@ the issuer's discovery document) and Story 5.5.
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| 1 | **Rule on the plan decision**: Hobby ($0, recommended), Pro monthly ($25) or Pro annual ($20, $240 up front) | Write the ruling and its date into § Decision: the plan the issuer runs on, replacing "Pending the Operator's ruling". Story 5.1 is done when this cell is dated. Story 5.2 opens the account on the ruled plan | _not done_ |
+| 1 | **Rule on the plan decision**: Hobby ($0, recommended), Pro monthly ($25) or Pro annual ($20, $240 up front) | Write the ruling and its date into § Decision: the plan the issuer runs on, replacing "Pending the Operator's ruling". Story 5.1 is done when this cell is dated. Story 5.2 opens the account on the ruled plan | 2026-10-03T22:04Z (Hobby) |
 | 2 | **Confirm OAuth applications are not plan-gated**, when Story 5.2 creates the first one: on the ruled plan, the dashboard's "OAuth applications" page creates an application with the `openid` scope and shows no upgrade prompt | No Clerk page read prices or limits OAuth applications (§ What prices each part of AD-11). Record what the dashboard showed here. If it is gated, stop and re-open action 1 with the real figure | _not done_ |
 | 3 | **Re-read the terms' date at sign-up** | Creating the account accepts the Standard Terms. If the page's "Last updated" is no longer "July 2, 2026", re-read the clauses in § Terms, as published and record any change here before accepting | _not done_ |
 

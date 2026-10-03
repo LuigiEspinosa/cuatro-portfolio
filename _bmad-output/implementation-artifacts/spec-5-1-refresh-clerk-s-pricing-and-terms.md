@@ -26,7 +26,7 @@ context:
 - AC4: Given NFR-4, when the record is read, then the recurring identity charge is a named decision row: each option's monthly figure, the estate's recorded marginal spend today, the total against $100, and a recommendation, marked pending the Operator's ruling and listed as a Pending Operator action.
 - AC5: Given AD-22's bounded scope, when the diff is read, then nothing outside Clerk's pricing and terms re-opens, and a consequence owned by a later story is filed in `deferred-work.md`, not built.
 - AC6: Given the change, when typecheck and the full root suite run, then both pass.
-- AC7: Given the Operator's ruling on the decision row, when it is recorded in the record with its date, then the story is done. (Operator-pending.)
+- AC7: Given the Operator's ruling on the decision row, when it is recorded in the record with its date, then the story is done. (Met 2026-10-03T22:04Z: the Operator ruled Hobby at $0.)
 
 ## Boundaries & Constraints
 
