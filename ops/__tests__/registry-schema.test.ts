@@ -267,8 +267,10 @@ describe('the committed Registry', () => {
     // Operator ruling 2026-09-29), value changes and so a minor. 1.7.0 from
     // later that day: Story 3-7's placement took `cs-tournament` to `Live` at
     // `https://tournament.cuatro.dev`, its `demo` to `none` and added `Go` to
-    // its `tech`, value changes and so a minor.
-    expect(committed.contract_version).toBe('1.7.0');
+    // its `tech`, value changes and so a minor. 1.8.0 from 2026-10-03: Story
+    // 5.11 corrected `cs-tournament`'s `demo` to `open`, the public surface its
+    // host answers anonymously (DW-332), a value change and so a minor.
+    expect(committed.contract_version).toBe('1.8.0');
     expect(Array.isArray(committed.applications)).toBe(true);
     expect(committed.applications.length).toBeGreaterThan(0);
     // The one entry rule the schema deliberately left open until there were
