@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-03-2026 02:30
+last_updated: 10-03-2026 15:36
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1094,7 +1094,14 @@ development_status:
   # a Postgres service); cs-tracker dev d1adf6c 7b79f25 dcd35ee; digital-library branch story-5-8-demo-principal
   # 353f7e0 and 6ae8df2 (fix round 1). Running each reset live (DR1 to DR3) and the uploads ruling (DR4) are the Operator's. DW-334 filed.
   5-9-demo-reset-and-a-baseline-fixture-per-application: awaiting-operator
-  5-10-one-host-level-reset-scheduler-for-the-estate: backlog
+  # 5-10 awaiting-operator 2026-10-03: repository half built on dev. ops/demo-reset.sh, run from the box's checkout
+  # by one committed cron file (ops/demo-reset.cron, installed as /etc/cron.d/cuatro-demo-reset) every 15 minutes,
+  # reads ops/demo-reset.schedule (60 minutes for each participant, or off) and runs the due resets one at a time
+  # under flock, by the record's commands; a failure or a timeout is named and the others still run; a drifted
+  # cron file exits 1 (DW-318 avoided); one summary line per run, unread (DW-315 amended). A full run measured
+  # 3.5 s wall and about 4.6 CPU-seconds with the real images, one connection per reset (DW-331 amended). The
+  # install and the first unattended day are the Operator's: ops/demo-principal.md DS1 to DS3.
+  5-10-one-host-level-reset-scheduler-for-the-estate: awaiting-operator
   5-11-demo-and-identity-declarations-verified-against-reality: backlog
   epic-5-retrospective: optional
 
