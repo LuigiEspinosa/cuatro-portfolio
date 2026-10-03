@@ -62,7 +62,7 @@ context:
 - AC7: Given the new modules and routes, then no provider is named and no cookie `Domain` is set.
 - AC8: `mix precommit`, typecheck, the full root suite and both floors pass; the built Hub answers unconfigured as before; the adoption probe exits 0.
 - AC9 (Operator-pending): the post-logout and back-channel URIs registered as far as the issuer allows, both rolled, and a person sees an open `cs-tracker` tab leave on sign-out.
-- AC10 (Operator-pending, ruling): DW-319 ruled; until then, on an issuer advertising neither, sign-out reaches only the application signed out of.
+- AC10 (Operator-pending, ruling): DW-319 ruled; until then, on an issuer advertising neither, sign-out reaches only the application signed out of. (Met 2026-10-03T22:45Z: the Operator ruled option a, AD-11 amended so logout is each application ending its own session.)
 
 ## Design Notes
 

@@ -265,13 +265,31 @@ No DMARC record was asked for or added; neither `_dmarc.cuatro.dev` nor `_dmarc.
 (observed 22:04Z). Also recorded in `ops/routing-inventory.md`. Two serving hostnames, `clerk.id` and
 `accounts.id`, are therefore under KV-9.
 
+**Step 6, 2026-10-03T22:37:59Z, by the orchestrator** (a read, no credential).
+`https://clerk.id.cuatro.dev/.well-known/openid-configuration` answered 200:
+
+| Key | Value |
+|---|---|
+| `issuer` | `"https://clerk.id.cuatro.dev"`, so `OIDC_ISSUER` |
+| `end_session_endpoint` | absent |
+| `backchannel_logout_supported` | `false` |
+| `backchannel_logout_session_supported` | absent |
+| `frontchannel_logout_supported` | `false` |
+| `revocation_endpoint` | `"https://clerk.id.cuatro.dev/oauth/token/revoke"` |
+| `code_challenge_methods_supported` | `["S256"]` |
+| `token_endpoint_auth_methods_supported` | `["client_secret_basic","none","client_secret_post"]` |
+| `id_token_signing_alg_values_supported` | `["RS256"]` |
+
+The logout values match `clerk.clerk.com`'s (§ Logout), so action 11's options stand as written. DW-319 is
+amended with them.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
 | 1 | **Create the account, the application and the production instance on `id.cuatro.dev`** (§ The sequence steps 1 to 4) | After `ops/clerk-pricing-and-terms.md` actions 1 and 3 | _not done_ |
 | 2 | **Add the instance's DNS records as action 9 ruled, and record them** here and in `ops/routing-inventory.md` (step 5) | Cloudflare | 2026-10-03T22:31Z. Five CNAMEs, DNS only, § Issuer run |
-| 3 | **Read and record the issuer's discovery document** (step 6), and amend DW-319 with it | Answers what § Logout leaves unknown | _not done_ |
+| 3 | **Read and record the issuer's discovery document** (step 6), and amend DW-319 with it | Answers what § Logout leaves unknown | 2026-10-03T22:37:59Z. Matches `clerk.clerk.com`: no logout either way, § Issuer run |
 | 4 | **Observe and record Clerk's cookie Domains** (step 7) | A `.cuatro.dev` cookie stops the sequence | _not done_ |
 | 5 | **Create the two OAuth applications** (step 8) and record the plan-gate observation | Closes `ops/clerk-pricing-and-terms.md` action 2 | _not done_ |
 | 6 | **Set the GitHub Actions secrets in both repositories** (steps 9 and 10) | Names only in the check | _not done_ |
@@ -279,7 +297,7 @@ No DMARC record was asked for or added; neither `_dmarc.cuatro.dev` nor `_dmarc.
 | 8 | **Document the five names in `.env.example`** and turn the test's `it.todo` into its case (§ Where each credential lives) | A repository change, not a box one; it falls to the Operator only because the authoring session could not open the file. Independent of actions 1 to 7. Run `corepack pnpm vitest run ops/__tests__/identity-issuer.test.ts` after | _not done_ |
 | 9 | **Rule on AD-26 for the issuer's hostnames**, before action 2: accept them DNS only as a new known violation in the KV-7 shape, or proxy Clerk's Frontend API through the estate (§ The issuer) | Closes DW-321. The domain decision (`id.cuatro.dev`) may be overruled at the same time | 2026-10-03T22:10Z. Ruled: add the hostnames DNS only, accepted as standing, KV-9 in `ops/known-violations.md`. The domain `id.cuatro.dev` kept |
 | 10 | **Rule on AD-3's "Clerk client `<id>`"** (§ The clients, DW-320). Options: (a) narrow AD-3 to the OAuth application's Name and the variables that carry its credentials, which is what this record already holds; (b) keep AD-3 as written and require an issuer that lets the client id be chosen, which rules Clerk out and re-opens Story 5.1; (c) use Client ID Metadata Documents, which apply to public clients only and would make both confidential clients public. **Recommendation: (a)**, a spine wording amendment, since the name and every variable are derived and tested and nothing reads the opaque value but configuration | Closes DW-320. Any time before Story 5.7 | 2026-10-03T22:10Z. Ruled (a): AD-3 narrowed in the spine |
-| 11 | **Rule on AD-11's logout rule** once action 3 has recorded the estate issuer's own values (§ Logout, DW-319). Options, if those values match `clerk.clerk.com`'s: (a) amend AD-11 so logout is each application ending its own session and revoking its tokens at `revocation_endpoint`, with `cs-tracker`'s `live_socket_id` broadcast unchanged, and FR-22 met by that; (b) keep "RP-Initiated plus Back-Channel" and change issuer, which re-opens Story 5.1; (c) proxy or front the issuer with a component of the estate's own that implements both, a new service on a CPU-bound box. **Recommendation: (a)**, because it needs no new component and the Hub's session is already its own (Story 5.3). If action 3 finds both supported, record that and close DW-319 with no amendment | Closes DW-319. Before Story 5.5 opens | _not done_ |
+| 11 | **Rule on AD-11's logout rule** once action 3 has recorded the estate issuer's own values (§ Logout, DW-319). Options, if those values match `clerk.clerk.com`'s: (a) amend AD-11 so logout is each application ending its own session and revoking its tokens at `revocation_endpoint`, with `cs-tracker`'s `live_socket_id` broadcast unchanged, and FR-22 met by that; (b) keep "RP-Initiated plus Back-Channel" and change issuer, which re-opens Story 5.1; (c) proxy or front the issuer with a component of the estate's own that implements both, a new service on a CPU-bound box. **Recommendation: (a)**, because it needs no new component and the Hub's session is already its own (Story 5.3). If action 3 finds both supported, record that and close DW-319 with no amendment | Closes DW-319. Before Story 5.5 opens | 2026-10-03T22:45Z. Ruled (a): AD-11 amended in the spine, logout is each application ending its own session |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place. A new participating application adds a row to § The clients in the same change

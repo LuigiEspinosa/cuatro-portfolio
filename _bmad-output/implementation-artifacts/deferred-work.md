@@ -9809,7 +9809,19 @@ status: done
     a stand-in issuer advertising both. On an issuer advertising neither, sign-out reaches only the
     application signed out of, its open LiveView sockets included (`ops/identity-issuer.md` § Sign-out, its
     table). The ruling is still action 11, and Story 5.5's AC10 waits on it.
-  status: open
+
+    **Amended 2026-10-03T22:37:59Z with the estate issuer's own values** (`ops/identity-issuer.md` action 3,
+    § Issuer run): `https://clerk.id.cuatro.dev/.well-known/openid-configuration` answered 200 with
+    `issuer` `https://clerk.id.cuatro.dev`, no `end_session_endpoint`, `backchannel_logout_supported` false,
+    `frontchannel_logout_supported` false, `revocation_endpoint` `https://clerk.id.cuatro.dev/oauth/token/revoke`.
+    They match `clerk.clerk.com`'s, so action 11's options apply as written.
+
+    **Closed 2026-10-03T22:45Z by Operator ruling (option a):** AD-11 is amended in the spine (§ AD-11,
+    "Amended 2026-10-03"): logout is each application ending its own session, with token revocation at
+    `revocation_endpoint` binding only an application that keeps a token (none does today), the
+    `live_socket_id` broadcast unchanged, and Story 5.5's RP-Initiated and Back-Channel paths kept for an
+    issuer that offers them. `ops/identity-issuer.md` action 11 is dated; Story 5.5's AC10 is met.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-2-one-clerk-issuer-and-one-oidc-client-per-application.md`
   id: DW-320
   summary: >-
@@ -10023,7 +10035,11 @@ status: done
     **Owner: the Operator's ruling on action 11 (DW-319), which decides what sign-out reaches estate-wide.**
     **Trigger: that ruling.** Shorten `OAUTH2_PROXY_COOKIE_EXPIRE`, add a server-side session store that a
     logout can reach, or record the eight hours as accepted.
-  status: open
+
+    **Closed 2026-10-03 by Operator ruling: the eight hours are accepted.** Under the amended AD-11 (logout
+    is each surface ending its own session), the dashboard's logout is its own `/oauth2/sign_out`. It is
+    reached only through an SSH tunnel and FR-22 does not bind it. No code change.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
   id: DW-331
   summary: >-
