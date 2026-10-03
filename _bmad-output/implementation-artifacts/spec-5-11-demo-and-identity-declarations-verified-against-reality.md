@@ -98,7 +98,17 @@ Round 1 (2026-10-03, at `b27f6f3`): refused, nothing pushed. Every stage passed 
 - minor, fixed: the `none` case with no answer at `/auth/session` asserted only the detail; it now asserts `pass: false` too. The mutant that passes that branch now fails it.
 - minor, fixed: `ops/registry-verification.md` release step 3 now names the pin on identity rows ending `not an OIDC session route` (8 today, 6 after orders 1 and 2).
 
-Fix round 1: each mutant applied and reverted in turn (the module diff empty after), then re-run: `corepack pnpm typecheck` exit 0; `corepack pnpm test --run` 80 files, 1971 passed, 1 skipped, 1 todo, no failure. Round 2 has not run yet.
+Fix round 1: each mutant applied and reverted in turn (the module diff empty after), then re-run: `corepack pnpm typecheck` exit 0; `corepack pnpm test --run` 80 files, 1971 passed, 1 skipped, 1 todo, no failure.
+
+Round 2 (2026-10-03, at `256dce8`): **pass**, pushed. Run by the verifier on this host, each with its real output kept:
+
+- `corepack pnpm typecheck` exit 0. `corepack pnpm test --run`: 80 files, 1967 passed, 1 skipped, 1 todo, 4 failed, each a WSL-bash case at about 30 s (DW-135: `demo-reset`, `deploy-remote`, `library-backup`, `postgres-backup`). The seven WSL suites then passed one file at a time: `demo-reset` 26, `deploy-remote` 28, `library-backup` 59, `tracker-backup` 11, `postgres-backup` 20 and 1 skipped, `postgres-init` 17, `tournament-backup` 15.
+- `corepack pnpm --filter hub build` exit 0, `apps/hub/public/contracts/registry.json` reading 1.8.0. The rendered-output suite was not run: no Hub component reads `demo`, `identity` or `contract_version`, so nothing the Hub renders changed.
+- The real job, `node ops/registry-verification.mjs` with the token from `gh auth token` for the one command and printed nowhere, at 2026-10-03T18:35:15Z: exit 0, `# 73 of 73 checks passed`. The same module on `cs-tournament` with 1.7.0's `demo: none` failed live as `understated`, and `tournament.cuatro.dev` `/`, `/bracket` and `/leaderboards` answered 200 anonymously (title `InclusivCup`).
+- 32 mutants of the new guards in `ops/registry-verification.mjs`, each applied and reverted in turn (the tree clean after): 29 killed, the round 1 survivors `valveOidc` and `cannotVerifyNone` among them. Three survived, none a verdict a committed Registry can reach: removing the non-redirect guard in `signInPage` still fails the page, on "no usable Location", a different detail; removing the unknown-value guard of `demo` or of `identity` is untested, and the schema's enum, a blocking gate, refuses such a value first (minor, not filed). The 5.10 mutant, `tag_of` taking the last line, fails its case on `0ld0ut60`; reverted.
+- Prose: no em-dash, en-dash, double-dash or emoji in an added line; every commit subject only; no secret in the diff.
+
+AC1 to AC6 met on this round's evidence; AC7 operator-pending (actions 8 to 11, and DP8).
 
 ## Verification
 
