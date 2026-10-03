@@ -1,0 +1,141 @@
+{
+  "mediaItem": [
+    {
+      "id": "demo-media-1",
+      "type": "MOVIE",
+      "title": "The Matrix",
+      "release_date": "1999-03-31T00:00:00.000Z",
+      "overview": "A hacker learns that the world he lives in is a simulation, and joins the resistance against its makers.",
+      "genres": ["Action", "Science Fiction"],
+      "tmdb_id": 603,
+      "runtime": 136,
+      "created_at": "2026-10-01T00:00:00.000Z",
+      "updated_at": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "demo-media-2",
+      "type": "MOVIE",
+      "title": "Spirited Away",
+      "original_title": "千と千尋の神隠し",
+      "release_date": "2001-07-20T00:00:00.000Z",
+      "overview": "A girl wanders into a world of spirits and must work in a bathhouse to free her parents.",
+      "genres": ["Animation", "Family", "Fantasy"],
+      "tmdb_id": 129,
+      "runtime": 125,
+      "created_at": "2026-10-01T00:00:00.000Z",
+      "updated_at": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "demo-media-3",
+      "type": "TV_SHOW",
+      "title": "Breaking Bad",
+      "release_date": "2008-01-20T00:00:00.000Z",
+      "end_date": "2013-09-29T00:00:00.000Z",
+      "overview": "A chemistry teacher turns to making methamphetamine to secure his family's future.",
+      "genres": ["Drama", "Crime"],
+      "status": "Ended",
+      "lifecycle_status": "ended",
+      "tmdb_id": 1396,
+      "created_at": "2026-10-01T00:00:00.000Z",
+      "updated_at": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "demo-media-4",
+      "type": "ANIME",
+      "title": "Cowboy Bebop",
+      "release_date": "1998-04-03T00:00:00.000Z",
+      "end_date": "1999-04-24T00:00:00.000Z",
+      "overview": "Bounty hunters drift through the solar system aboard the spaceship Bebop.",
+      "genres": ["Action", "Drama", "Sci-Fi"],
+      "status": "FINISHED",
+      "anilist_id": 1,
+      "episode_count": 26,
+      "format": "TV",
+      "season": "SPRING",
+      "season_year": 1998,
+      "created_at": "2026-10-01T00:00:00.000Z",
+      "updated_at": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "demo-media-5",
+      "type": "MANGA",
+      "title": "Berserk",
+      "release_date": "1989-08-25T00:00:00.000Z",
+      "overview": "A mercenary with a giant sword fights his way through a dark medieval world.",
+      "genres": ["Action", "Drama", "Fantasy"],
+      "status": "RELEASING",
+      "anilist_id": 30002,
+      "format": "MANGA",
+      "created_at": "2026-10-01T00:00:00.000Z",
+      "updated_at": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "demo-media-6",
+      "type": "GAME",
+      "title": "Portal 2",
+      "release_date": "2011-04-19T00:00:00.000Z",
+      "overview": "Solve physics puzzles with a portal gun in the abandoned Aperture Science facility.",
+      "genres": ["Puzzle", "Platform"],
+      "steam_app_id": 620,
+      "platforms": ["PC"],
+      "developer_name": "Valve",
+      "publisher_name": "Valve",
+      "created_at": "2026-10-01T00:00:00.000Z",
+      "updated_at": "2026-10-01T00:00:00.000Z"
+    }
+  ],
+  "userEntry": [
+    {
+      "id": "demo-entry-1",
+      "media_item_id": "demo-media-1",
+      "status": "COMPLETED",
+      "user_rating": 9,
+      "completed_at": "2026-09-12T00:00:00.000Z",
+      "created_at": "2026-10-01T00:00:00.000Z",
+      "updated_at": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "demo-entry-2",
+      "media_item_id": "demo-media-2",
+      "status": "PLAN_TO_WATCH",
+      "created_at": "2026-10-01T00:00:00.000Z",
+      "updated_at": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "demo-entry-3",
+      "media_item_id": "demo-media-3",
+      "status": "WATCHING",
+      "progress": 12,
+      "started_at": "2026-08-30T00:00:00.000Z",
+      "created_at": "2026-10-01T00:00:00.000Z",
+      "updated_at": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "demo-entry-4",
+      "media_item_id": "demo-media-4",
+      "status": "WATCHING",
+      "progress": 9,
+      "started_at": "2026-09-05T00:00:00.000Z",
+      "created_at": "2026-10-01T00:00:00.000Z",
+      "updated_at": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "demo-entry-5",
+      "media_item_id": "demo-media-5",
+      "status": "ON_HOLD",
+      "progress": 40,
+      "volume_progress": 4,
+      "created_at": "2026-10-01T00:00:00.000Z",
+      "updated_at": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "demo-entry-6",
+      "media_item_id": "demo-media-6",
+      "status": "COMPLETED",
+      "user_rating": 10,
+      "completed_at": "2026-07-14T00:00:00.000Z",
+      "created_at": "2026-10-01T00:00:00.000Z",
+      "updated_at": "2026-10-01T00:00:00.000Z"
+    }
+  ]
+}

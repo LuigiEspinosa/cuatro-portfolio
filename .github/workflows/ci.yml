@@ -27,6 +27,21 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
+      # The tracker's `demo:reset` suite (Story 5.9) runs against a real Postgres: the reset's whole claim is
+      # that it empties schema `demo` and never touches `public` beside it, which a mock cannot show. The
+      # suite fails rather than skips here when the variable below is missing.
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tracker_demo_reset_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
 
     steps:
       - uses: actions/checkout@v7
@@ -61,6 +76,8 @@ jobs:
 
       - name: Tracker unit tests
         run: pnpm --filter tracker test
+        env:
+          TRACKER_DEMO_RESET_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tracker_demo_reset_test
 
       # `apps/tournament` likewise (Story 3-7). Its suite also runs its roulette vectors' Python
       # generator in `--check` mode, on the runner's own `python3`.
