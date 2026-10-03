@@ -203,7 +203,9 @@ only.
 7. **Observe Clerk's cookies.** In a fresh browser profile, sign in once at the instance's hosted sign-in
    page (Clerk's Account Portal), open the developer tools' cookie list, and record every
    cookie's name and Domain, never its value. **A cookie with `Domain=.cuatro.dev` or `Domain=cuatro.dev`
-   stops the sequence** (AD-11): record it and re-open § The issuer.
+   stops the sequence** (AD-11): record it and re-open § The issuer. Exempt since 2026-10-03, by KV-10 in
+   `ops/known-violations.md`: Clerk's `__client_uat` and its instance-suffixed copy `__client_uat_<suffix>`,
+   and nothing else.
 8. **Create one OAuth application per row** of § The clients, on the instance's OAuth applications page:
    Name exactly the row's id, scopes `openid`, `profile` and `email`, confidential (not public), PKCE
    required. Leave Redirect URIs for Stories 5.3 and 5.4. Paste the secret, which Clerk shows once, and the
@@ -283,6 +285,24 @@ No DMARC record was asked for or added; neither `_dmarc.cuatro.dev` nor `_dmarc.
 The logout values match `clerk.clerk.com`'s (§ Logout), so action 11's options stand as written. DW-319 is
 amended with them.
 
+**Step 7, 2026-10-03, by the Operator**, in a fresh browser profile after signing in at
+`https://accounts.id.cuatro.dev` (which then redirected to `id.cuatro.dev`, the instance's home URL, which
+has no DNS record). Names and Domains only:
+
+| Cookie | Domain | What it is |
+|---|---|---|
+| `__client` | `.clerk.id.cuatro.dev` | Clerk's credential, scoped to the Frontend API host and below |
+| `_cfuvid`, `__cf_bm` | `.clerk.id.cuatro.dev` | Cloudflare's bot cookies on the edge in front of Clerk's API |
+| `__client_uat`, `__client_uat_5g1jofuM` | **`.cuatro.dev`** | Clerk's sign-in timestamp, read by its frontend; not a credential |
+
+**The sequence stopped here**, on the two `__client_uat` cookies: as the instance sits on `id.cuatro.dev`
+and is set up as a secondary application, Clerk still scopes that cookie to the registrable domain. The
+credential is contained. **Ruled by the Operator 2026-10-03: accepted as KV-10** in
+`ops/known-violations.md`, exempting exactly those two names; every other `.cuatro.dev` cookie still stops
+the sequence and fails H3 and CT5. The sequence resumes at step 8. The session observed here is to be signed
+out and revoked in the Clerk dashboard, because its `__client` value was shared outside the browser.
+Revocation confirmed: _not yet_.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -290,7 +310,7 @@ amended with them.
 | 1 | **Create the account, the application and the production instance on `id.cuatro.dev`** (§ The sequence steps 1 to 4) | After `ops/clerk-pricing-and-terms.md` actions 1 and 3 | _not done_ |
 | 2 | **Add the instance's DNS records as action 9 ruled, and record them** here and in `ops/routing-inventory.md` (step 5) | Cloudflare | 2026-10-03T22:31Z. Five CNAMEs, DNS only, § Issuer run |
 | 3 | **Read and record the issuer's discovery document** (step 6), and amend DW-319 with it | Answers what § Logout leaves unknown | 2026-10-03T22:37:59Z. Matches `clerk.clerk.com`: no logout either way, § Issuer run |
-| 4 | **Observe and record Clerk's cookie Domains** (step 7) | A `.cuatro.dev` cookie stops the sequence | _not done_ |
+| 4 | **Observe and record Clerk's cookie Domains** (step 7) | A `.cuatro.dev` cookie stops the sequence | 2026-10-03. Stopped on `__client_uat` on `.cuatro.dev`; the Operator accepted it as KV-10; the credential `__client` is on `.clerk.id.cuatro.dev`. § Issuer run |
 | 5 | **Create the two OAuth applications** (step 8) and record the plan-gate observation | Closes `ops/clerk-pricing-and-terms.md` action 2 | _not done_ |
 | 6 | **Set the GitHub Actions secrets in both repositories** (steps 9 and 10) | Names only in the check | _not done_ |
 | 7 | **Append the on-box env lines** (step 11) | Story 5.2 is done when every cell in this table is dated | _not done_ |
@@ -336,8 +356,9 @@ exists. No page links to sign-in: the routes are reached by URL.
    `https://cuatro.dev/auth/session`: it shows a JSON `sub`. Then open the developer tools' cookie list for
    `cuatro.dev` and for the issuer's hostnames, and record each cookie's name and Domain, never its value.
    Expected: `__Host-hub-session` on `cuatro.dev` with no leading dot (host-only), and **no cookie with
-   Domain `.cuatro.dev` or `cuatro.dev` set by any other hostname**; a cookie like that fails the story
-   (AD-11). Write the result, with the UTC time, under § Hub sign-in run below.
+   Domain `.cuatro.dev` or `cuatro.dev` set by any other hostname**, except Clerk's `__client_uat` and
+   `__client_uat_<suffix>`, which KV-10 accepts; any other cookie like that fails the story (AD-11). Write
+   the result, with the UTC time, under § Hub sign-in run below.
 
 ### Hub sign-in run
 
@@ -349,7 +370,7 @@ _Not yet run._ H2's status code and H3's observations are written here, each wit
 |---|---|---|---|
 | H1 | **Register `https://cuatro.dev/auth/callback`** on the `cuatro-portfolio` OAuth application | After action 5 | _not done_ |
 | H2 | **Roll the Hub onto its three variables** and check `/auth/session` answers 401 | After action 7 and H1; a box change | _not done_ |
-| H3 | **Sign in at `https://cuatro.dev/auth/sign-in` and record the session and every cookie's Domain** | Story 5.3 is done when this cell is dated with no `.cuatro.dev` cookie; then DW-322 flips the Registry's `identity`, by `ops/registry-verification.md` § The release the live steps unlock, order 1, whose job reads this cell | _not done_ |
+| H3 | **Sign in at `https://cuatro.dev/auth/sign-in` and record the session and every cookie's Domain** | Story 5.3 is done when this cell is dated with no `.cuatro.dev` cookie but KV-10's two; then DW-322 flips the Registry's `identity`, by `ops/registry-verification.md` § The release the live steps unlock, order 1, whose job reads this cell | _not done_ |
 
 ## cs-tracker's sign-in (Story 5.4)
 
@@ -445,7 +466,8 @@ sequence step 6; if it lacks one of the four, sign-in answers 502 and the rest o
    4. Open the developer tools' cookie list for `cuatro.dev`, `cs-tracker.cuatro.dev` and the issuer's
       hostnames, and record each cookie's name and Domain, never its value. Expected: `__Host-hub-session` on
       `cuatro.dev` and `__Host-cs-tracker` on `cs-tracker.cuatro.dev`, each host-only, and **no cookie with
-      Domain `.cuatro.dev` or `cuatro.dev`**; one fails the story (AD-11).
+      Domain `.cuatro.dev` or `cuatro.dev`** other than Clerk's `__client_uat` and `__client_uat_<suffix>`
+      (KV-10); any other fails the story (AD-11).
 
    Write the result under § cs-tracker sign-in run with the UTC time, and whether the two subjects were equal
    (the value itself need not be written). Equal subjects is FR-21's acceptance condition, observed.
@@ -473,7 +495,7 @@ _Not yet run._ CT3's status code and CT5's observations are written here, each w
 | CT2 | **Set `CS_TRACKER_OIDC_OWNER_SUB`** on the box and as a GitHub secret, and check the four names | After H3 and action 7; a box change | _not done_ |
 | CT3 | **Merge `cs-tracker`'s `dev` into `main` and roll the app**, then check `/auth/session` answers 401 | After the verifier pushes `dev`; a box change | _not done_ |
 | CT4 | **Rule on `oidcc` 3.8.0 against EEF-CVE-2026-75759** | Closes DW-324 | _not done_ |
-| CT5 | **Observe one identity cross the JavaScript/Elixir boundary** and record every cookie's Domain | Story 5.4 is done when this cell is dated with equal subjects and no `.cuatro.dev` cookie; then DW-323 flips the Registry's `identity`, by `ops/registry-verification.md` § The release the live steps unlock, order 2, whose job reads this cell | _not done_ |
+| CT5 | **Observe one identity cross the JavaScript/Elixir boundary** and record every cookie's Domain | Story 5.4 is done when this cell is dated with equal subjects and no `.cuatro.dev` cookie but KV-10's two; then DW-323 flips the Registry's `identity`, by `ops/registry-verification.md` § The release the live steps unlock, order 2, whose job reads this cell | _not done_ |
 | CT6 | **Document the four names in `cs-tracker`'s `.env.example`** | A repository change the authoring session could not make | _not done_ |
 
 ## Sign-out (Story 5.5)
