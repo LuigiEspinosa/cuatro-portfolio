@@ -9934,7 +9934,13 @@ status: done
 
     **Owner: the Operator, `ops/identity-issuer.md` action CT4.** **Trigger: any time; before CT3 for the
     first rollout to carry it.** Options and a recommendation are in CT4.
-  status: open
+
+    **Closed 2026-10-04T04:27Z by Operator ruling (a):** `cs-tracker` moves to `oidcc` 3.9.0. Confirmed from
+    OSV and Hex the same day: EEF-CVE-2026-75759 (GHSA-533g-4vf3-xwrj) affects 3.8.0 and is fixed in 3.9.0,
+    published 2026-08-30 and not retired. The move broke the Back-Channel receiver (oidcc's internal
+    `verify_signature/3` returns a three-element tuple in 3.9.0); the match was widened and `mix precommit`
+    reads 746 tests, 0 failures. The spine's Stack table and the epic are amended.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
   id: DW-325
   summary: >-

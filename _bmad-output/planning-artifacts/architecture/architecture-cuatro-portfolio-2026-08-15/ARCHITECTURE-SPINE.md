@@ -293,7 +293,7 @@ Verified 2026-08-15. The code owns these once it exists; AD-22 governs when they
 | DTCG format module | 2025.10 |
 | Tailwind CSS (cluster + Phoenix) | v4 |
 | Phoenix (`cs-tracker`) | ~> 1.8.7 |
-| oidcc (Elixir client) | 3.8.0 |
+| oidcc (Elixir client) | 3.9.0 (raised from 3.8.0 on 2026-10-04 by Operator ruling CT4, DW-324: EEF-CVE-2026-75759, an encrypted ID token or JARM response accepted without a nested signature, fixed only in 3.9.0) |
 | Clerk | managed, unversioned |
 | Umami | `postgresql-latest` (inherited floating tag; pinned at Epic 4) |
 

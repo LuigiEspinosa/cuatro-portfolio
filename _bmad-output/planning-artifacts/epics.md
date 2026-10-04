@@ -4446,7 +4446,7 @@ hardening across every application and lets any one subdomain set a session its 
 **Depends on:** 5.3.
 **Acceptance intent:** this pair is FR-21's acceptance condition and SM-9's binary; the identity
 is observed carrying across the boundary by a person, not inferred from configuration; `oidcc`
-3.8.0 is the Elixir client.
+3.9.0 is the Elixir client (3.8.0 until the Operator's ruling of 2026-10-04 on DW-324).
 
 ### Story 5.5: Sign-out reaches every session, including open LiveView sockets
 **Depends on:** 5.4.
