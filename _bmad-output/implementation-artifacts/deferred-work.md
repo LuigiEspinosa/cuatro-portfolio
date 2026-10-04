@@ -9898,7 +9898,11 @@ status: done
     `/auth/sign-in` with an Authorization Code + PKCE redirect. From H2 the job fails `identity: none` as
     understated until the flip is on `main`, so H2, H3 and the flip belong to one sitting. **Owner now: that
     record's action 8.**
-  status: open
+
+    **Closed 2026-10-04:** H2 (02:38Z) and H3 (03:51Z) are dated in `ops/identity-issuer.md`, and Registry
+    1.9.0 sets `cuatro-portfolio` `identity` to `oidc` (`ops/registry-verification.md` order 1). The live
+    verification read 73 of 73 at 03:53:22Z.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
   id: DW-323
   summary: >-
