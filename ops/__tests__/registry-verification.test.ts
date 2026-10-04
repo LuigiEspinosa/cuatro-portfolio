@@ -109,11 +109,25 @@ const REDIRECTING: Record<string, { status: number; headers: Record<string, stri
   'https://library.cuatro.dev': { status: 302, headers: { Location: '/login' } },
 };
 /**
- * What `/auth/session` answered on each `live` host, anonymously, 2026-10-03T17:01Z (Story 5.11): no OIDC
- * session route serves anywhere yet. The tracker's middleware sends it to its sign-in and `wheel`'s
- * single-page server answers 200 to any path; every other host 404.
+ * What `/auth/session` answered on each `live` host, anonymously, 2026-10-03T17:01Z (Story 5.11). The
+ * tracker's middleware sends it to its sign-in and `wheel`'s single-page server answers 200 to any path;
+ * every other host 404. From 2026-10-04 the Hub serves its OIDC session route (H2), answering 401.
  */
-const SESSION_ANSWERS: Record<string, number> = { 'https://tracker.cuatro.dev': 307, 'https://wheel.cuatro.dev': 200 };
+const SESSION_ANSWERS: Record<string, number> = {
+  'https://tracker.cuatro.dev': 307,
+  'https://wheel.cuatro.dev': 200,
+  'https://cuatro.dev': 401,
+};
+/**
+ * Where `/auth/sign-in` sends an `oidc` entry's Visitor: an Authorization Code + PKCE request at the
+ * issuer, back to the entry's own callback, in the shape the Hub answered 2026-10-04T02:38Z (H2).
+ */
+const SIGN_IN_AT = (live: string): string => {
+  const url = new URL('https://clerk.id.cuatro.dev/oauth/authorize');
+  for (const [k, v] of Object.entries({ response_type: 'code', client_id: 'client', redirect_uri: `${live}/auth/callback`, scope: 'openid email profile', state: 's', nonce: 'n', code_challenge: 'c', code_challenge_method: 'S256' }))
+    url.searchParams.set(k, v);
+  return url.href;
+};
 
 // ---------------------------------------------------------------------------
 // The planted fetcher and the two record fragments
@@ -170,6 +184,7 @@ const routesForCommittedRegistry = (): Record<string, Answer | Answer[]> => {
     if (entry.live !== undefined) {
       routes[entry.live] = REDIRECTING[entry.live] ?? 200;
       routes[`${entry.live}/auth/session`] = SESSION_ANSWERS[entry.live] ?? 404;
+      if (entry.identity === 'oidc') routes[`${entry.live}/auth/sign-in`] = { status: 302, headers: { Location: SIGN_IN_AT(entry.live) } };
     }
   }
   routes[contents(SLUG, CS_TRACKER_TOKENS)] = { status: 200, body: TOKENS_CSS_AT_REGISTRY };
@@ -326,12 +341,16 @@ describe('the committed Registry against the estate as observed', () => {
 
     const identity = rowsOf(result, 'identity');
     expect(identity).toHaveLength(16);
-    expect(identity.filter((row) => valueOf(row.id, 'identity') === 'oidc')).toEqual([]);
+    // Registry 1.9.0: the Hub's identity is `oidc`, held to H3's dated row and to what its host answers.
+    expect(identity.filter((row) => valueOf(row.id, 'identity') === 'oidc')).toEqual([
+      expect.objectContaining({ id: 'cuatro-portfolio', pass: true, detail: expect.stringMatching(/^ops\/identity-issuer\.md H3 observed 2026-10-04T03:51Z\..*; https:\/\/cuatro\.dev\/auth\/session answered 401; https:\/\/cuatro\.dev\/auth\/sign-in answered 302 to an Authorization Code \+ PKCE request at https:\/\/clerk\.id\.cuatro\.dev\/oauth\/authorize$/) }),
+    ]);
     // MaiCoin is exempt by structure, and the row says so rather than reading as a sign-in not built.
     expect(identity.filter((row) => valueOf(row.id, 'identity') === 'wallet')).toEqual([
       { id: 'maicoin', check: 'identity', pass: true, detail: `wallet: structurally exempt, not unimplemented: ${WALLET_EXEMPT.maicoin}` },
     ]);
-    expect(identity.filter((row) => row.detail.endsWith('not an OIDC session route'))).toHaveLength(8);
+    // 8 until Registry 1.9.0 moved the Hub to `oidc`.
+    expect(identity.filter((row) => row.detail.endsWith('not an OIDC session route'))).toHaveLength(7);
   });
 
   it('prints one PASS or FAIL line per check in the probe shape, and the same rows as a table', async () => {
@@ -349,8 +368,9 @@ describe('the committed Registry against the estate as observed', () => {
     expect(TIMEOUT_MS).toBe(15_000);
     // 44, not 41: the three tree sources Registry 1.6.0 carries (DW-285) are each probed once more,
     // inside their `source exists` row. 52 from Story 5.11: each of the eight `live` hosts declaring
-    // `identity: none` is asked `/auth/session` once; the `demo` rows reuse the `live` answer.
-    expect(fetcher.calls, 'the happy path has no retries, so a doubled request is a defect').toHaveLength(52);
+    // `identity: none` is asked `/auth/session` once; the `demo` rows reuse the `live` answer. 53 from
+    // Registry 1.9.0: the Hub, now `oidc`, is asked `/auth/sign-in` as well.
+    expect(fetcher.calls, 'the happy path has no retries, so a doubled request is a defect').toHaveLength(53);
     for (const { url, init } of fetcher.calls) {
       const headers = (init?.headers ?? {}) as Record<string, string>;
       expect(headers['User-Agent'], url).toBe(USER_AGENT);

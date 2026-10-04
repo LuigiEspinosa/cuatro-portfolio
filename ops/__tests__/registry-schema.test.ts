@@ -269,8 +269,10 @@ describe('the committed Registry', () => {
     // `https://tournament.cuatro.dev`, its `demo` to `none` and added `Go` to
     // its `tech`, value changes and so a minor. 1.8.0 from 2026-10-03: Story
     // 5.11 corrected `cs-tournament`'s `demo` to `open`, the public surface its
-    // host answers anonymously (DW-332), a value change and so a minor.
-    expect(committed.contract_version).toBe('1.8.0');
+    // host answers anonymously (DW-332), a value change and so a minor. 1.9.0
+    // from 2026-10-04: `cuatro-portfolio`'s `identity` to `oidc` once the Hub's
+    // live sign-in was observed (H3, DW-322), a value change and so a minor.
+    expect(committed.contract_version).toBe('1.9.0');
     expect(Array.isArray(committed.applications)).toBe(true);
     expect(committed.applications.length).toBeGreaterThan(0);
     // The one entry rule the schema deliberately left open until there were

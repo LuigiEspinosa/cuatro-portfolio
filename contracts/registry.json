@@ -1,6 +1,6 @@
 {
   "$schema": "./registry.schema.json",
-  "contract_version": "1.8.0",
+  "contract_version": "1.9.0",
   "applications": [
     {
       "id": "cuatro-portfolio",
@@ -10,7 +10,7 @@
       "tech": ["Next.js", "React", "TypeScript", "Sass", "Docker", "Caddy"],
       "source": "https://github.com/LuigiEspinosa/cuatro-portfolio",
       "demo": "open",
-      "identity": "none",
+      "identity": "oidc",
       "live": "https://cuatro.dev"
     },
     {
