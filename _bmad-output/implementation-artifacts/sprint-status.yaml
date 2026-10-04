@@ -1059,7 +1059,9 @@ development_status:
   # built server.js; docker-compose.yml maps the three variables into anchor-app, defaulting empty. Redirect URI
   # https://cuatro.dev/auth/callback. Live sign-in is the Operator's: ops/identity-issuer.md actions H1 to H3 (after
   # 5.2's actions 5 and 7); DW-322 flips the Registry's identity once H3 is dated.
-  5-3-the-hub-authenticates-over-oidc-authorization-code-pkce: awaiting-operator
+  # 5-3 done 2026-10-04T03:51Z: live at cuatro.dev since the Epic 5 merge (PR #92); H2 401 at /auth/session,
+  # H3 a live sign-in with __Host-hub-session host-only; Registry 1.9.0 declares cuatro-portfolio identity oidc.
+  5-3-the-hub-authenticates-over-oidc-authorization-code-pkce: done
   # 5-4 awaiting-operator 2026-10-02: repository halves built. cs-tracker (its dev branch, worktree
   # cs-tracker-workspace/cs-tracker-dev, 3d613f2 0f10ed0 687edfb a011f93, pushed after verifier round 2's clean pass) signs in over OIDC Authorization Code + PKCE
   # through oidcc 3.8.0 from discovery alone (/auth/sign-in, /auth/callback, /auth/session), admits only

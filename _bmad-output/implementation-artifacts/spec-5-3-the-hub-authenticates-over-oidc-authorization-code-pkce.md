@@ -62,7 +62,7 @@ context:
 - AC4: Given every `Set-Cookie` the Hub emits, when the suite inspects it, then it is `__Host-`, `Secure`, `HttpOnly`, `Path=/` and has no `Domain`; and no tracked code sets a cookie `Domain` of `cuatro.dev`.
 - AC5: Given `apps/hub/lib/oidc.ts` and the `/auth` routes, when the suite reads them, then no provider name appears.
 - AC6: Given the change, when typecheck, the full root suite and the Hub build run, then all pass.
-- AC7 (Operator-pending): Given the issuer and the Hub's client exist with the redirect URI registered and the variables on the box, when a person signs in at `https://cuatro.dev/auth/sign-in`, then `/auth/session` shows their subject and the browser holds no cookie with a `Domain` of `cuatro.dev`.
+- AC7 (Operator-pending): Given the issuer and the Hub's client exist with the redirect URI registered and the variables on the box, when a person signs in at `https://cuatro.dev/auth/sign-in`, then `/auth/session` shows their subject and the browser holds no cookie with a `Domain` of `cuatro.dev`. (Met 2026-10-04T03:51Z: the Operator signed in live, `/auth/session` showed a `sub`, and the only `.cuatro.dev` cookies were KV-10's two; Registry 1.9.0 declares `oidc`.)
 
 ## Design Notes
 

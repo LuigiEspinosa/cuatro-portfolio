@@ -399,15 +399,44 @@ exists. No page links to sign-in: the routes are reached by URL.
 
 ### Hub sign-in run
 
-_Not yet run._ H2's status code and H3's observations are written here, each with its UTC time.
+H2's status code and H3's observations are written here, each with its UTC time.
+
+**H2, 2026-10-04T02:38:00Z.** The Hub rolled onto its three variables with the Epic 5 merge: PR #92 merged
+`dev` into `main` at `039aeed` (02:36:21Z) and Deploy run 37171561759 succeeded. Read by the orchestrator
+from outside, no credential, redirects not followed:
+
+| Request | Answer |
+|---|---|
+| `/`, `/cv`, `/work`, `/api/health` | 200, as before |
+| `/projects` | 301 to `/#suite`, as before |
+| `/no-such-page` | 404, as before |
+| `/auth/session` | **401**: configured, no session |
+| `/auth/sign-in` | **302** to `https://clerk.id.cuatro.dev/oauth/authorize` with `code_challenge_method=S256`, a `client_id` and `redirect_uri=https://cuatro.dev/auth/callback`; one cookie, `__Host-hub-oidc`, host-only, `Secure`, `HttpOnly` |
+
+From this moment the scheduled Registry verification reads `cuatro-portfolio` identity as understated
+until H3 is dated and Registry order 1 lands (`ops/registry-verification.md`), the recorded red window.
+
+**H3, 2026-10-04T03:51Z, by the Operator**, in a fresh browser profile: `https://cuatro.dev/auth/sign-in`
+went to Clerk's hosted sign-in on `accounts.id.cuatro.dev`, the Operator signed in with the Operator account,
+and the browser returned to `https://cuatro.dev/`. `https://cuatro.dev/auth/session` showed a JSON `sub`,
+`user_3KCiXnP4IYt5OMClkLJloMREqNt` (an identifier, not a credential; it is `cs-tracker`'s Owner subject for
+CT2). Cookies on `cuatro.dev`, names and Domains only:
+
+| Cookie | Domain |
+|---|---|
+| `__Host-hub-session` | `cuatro.dev`, host-only (no leading dot) |
+| `__client_uat`, `__client_uat_5g1jofuM` | `.cuatro.dev`, KV-10 |
+
+No other `.cuatro.dev` cookie, so AD-11 holds as amended. **Story 5.3 is done**; DW-322's Registry change is
+order 1, applied in the same sitting.
 
 ### Pending Operator actions, Story 5.3
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
 | H1 | **Register `https://cuatro.dev/auth/callback`** on the `cuatro-portfolio` OAuth application | After action 5 | 2026-10-03T23:24Z, by the Operator at step 8, as the application's only redirect URI |
-| H2 | **Roll the Hub onto its three variables** and check `/auth/session` answers 401 | After action 7 and H1; a box change | _not done_ |
-| H3 | **Sign in at `https://cuatro.dev/auth/sign-in` and record the session and every cookie's Domain** | Story 5.3 is done when this cell is dated with no `.cuatro.dev` cookie but KV-10's two; then DW-322 flips the Registry's `identity`, by `ops/registry-verification.md` § The release the live steps unlock, order 1, whose job reads this cell | _not done_ |
+| H2 | **Roll the Hub onto its three variables** and check `/auth/session` answers 401 | After action 7 and H1; a box change | 2026-10-04T02:38Z. Rolled by the Epic 5 merge (PR #92, Deploy run 37171561759); `/auth/session` answers 401; § Hub sign-in run |
+| H3 | **Sign in at `https://cuatro.dev/auth/sign-in` and record the session and every cookie's Domain** | Story 5.3 is done when this cell is dated with no `.cuatro.dev` cookie but KV-10's two; then DW-322 flips the Registry's `identity`, by `ops/registry-verification.md` § The release the live steps unlock, order 1, whose job reads this cell | 2026-10-04T03:51Z. Signed in; `/auth/session` showed a `sub`; `__Host-hub-session` host-only on `cuatro.dev`, no `.cuatro.dev` cookie but KV-10's two; § Hub sign-in run |
 
 ## cs-tracker's sign-in (Story 5.4)
 
