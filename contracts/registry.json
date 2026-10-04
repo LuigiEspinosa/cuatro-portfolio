@@ -1,6 +1,6 @@
 {
   "$schema": "./registry.schema.json",
-  "contract_version": "1.9.0",
+  "contract_version": "1.10.0",
   "applications": [
     {
       "id": "cuatro-portfolio",
@@ -34,7 +34,7 @@
       "tech": ["Elixir", "Phoenix", "LiveView", "PostgreSQL", "Oban", "Docker"],
       "source": "https://github.com/LuigiEspinosa/cs-tracker",
       "demo": "none",
-      "identity": "none",
+      "identity": "oidc",
       "live": "https://cs-tracker.cuatro.dev",
       "family": "tracker-family",
       "token_contract": "2.0.0"
