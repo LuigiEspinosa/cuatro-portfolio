@@ -16,6 +16,11 @@
 *.timer text eol=lf
 *.mjs text eol=lf
 
+# The demo reset scheduler's cron file is installed onto Ubuntu as it is and its schedule read there
+# (Story 5.10): cron rejects CRLF, and the scheduler compares the installed cron file byte for byte.
+ops/demo-reset.cron text eol=lf
+ops/demo-reset.schedule text eol=lf
+
 # `contracts/` is the published surface. It is vendored into seven repositories
 # under one fixed folder name (AD-14), it is generated with `\n` endings by
 # `packages/tokens/build.mjs`, and the `tokens-contract` CI job fails on any

@@ -7,7 +7,13 @@ import { spawnSync } from 'node:child_process';
 import type { SpawnSyncReturns } from 'node:child_process';
 import {
   API,
+  DEMO_PRINCIPAL,
+  DEMO_REL,
   GITHUB_SOURCE,
+  IDENTITY_REL,
+  MAX_HOPS,
+  OBSERVED_BY,
+  WALLET_EXEMPT,
   RECORD_REL,
   REGISTRY_REL,
   SECRET,
@@ -17,6 +23,7 @@ import {
   classify,
   kv2Rows,
   main,
+  observations,
   summaryTable,
   vendoredTarget,
   verify,
@@ -70,6 +77,7 @@ type Registry = { applications: Entry[] };
 const registry = JSON.parse(read(resolve(REPO_ROOT, REGISTRY_REL))) as Registry;
 const record = read(resolve(REPO_ROOT, RECORD_REL));
 const adoption = read(resolve(REPO_ROOT, ADOPTION_REL));
+const observed = { [IDENTITY_REL]: read(resolve(REPO_ROOT, IDENTITY_REL)), [DEMO_REL]: read(resolve(REPO_ROOT, DEMO_REL)) };
 
 const TOKEN = 'github_pat_planted_never_printed';
 const TOKENS_CSS = '/* Cuatro Ecosystem, Design Tokens\n * Contract v1.0.0 · dark only · anchor hue 288\n */\n:root {}\n';
@@ -94,18 +102,24 @@ const STRUCK = ['LuigiEspinosa/cs-tournament'];
 /** The repositories that still answer 404 anonymously: the table less its struck rows. */
 const PRIVATE = KV2_TABLE.filter((slug) => !STRUCK.includes(slug));
 const ARCHIVED = ['LuigiEspinosa/Lumen', 'LuigiEspinosa/tcg-tracker'];
-/** The three `live` URLs that answer 3xx at the first hop, as observed 2026-09-12. */
-const REDIRECTING: Record<string, number> = {
-  'https://tracker.cuatro.dev': 307,
-  'https://cs-tracker.cuatro.dev': 302,
-  'https://library.cuatro.dev': 302,
+/** The three `live` URLs that answer 3xx at the first hop, as observed 2026-09-12, with their Location as observed 2026-10-03. */
+const REDIRECTING: Record<string, { status: number; headers: Record<string, string> }> = {
+  'https://tracker.cuatro.dev': { status: 307, headers: { Location: '/login?callbackUrl=%2F' } },
+  'https://cs-tracker.cuatro.dev': { status: 302, headers: { Location: '/auth/steam' } },
+  'https://library.cuatro.dev': { status: 302, headers: { Location: '/login' } },
 };
+/**
+ * What `/auth/session` answered on each `live` host, anonymously, 2026-10-03T17:01Z (Story 5.11): no OIDC
+ * session route serves anywhere yet. The tracker's middleware sends it to its sign-in and `wheel`'s
+ * single-page server answers 200 to any path; every other host 404.
+ */
+const SESSION_ANSWERS: Record<string, number> = { 'https://tracker.cuatro.dev': 307, 'https://wheel.cuatro.dev': 200 };
 
 // ---------------------------------------------------------------------------
 // The planted fetcher and the two record fragments
 // ---------------------------------------------------------------------------
 
-type Answer = number | Error | { status: number; body?: string | ReadableStream };
+type Answer = number | Error | { status: number; body?: string | ReadableStream; headers?: Record<string, string> };
 type Call = { url: string; init: RequestInit | undefined };
 
 /**
@@ -127,7 +141,7 @@ const planted = (routes: Record<string, Answer | Answer[]>) => {
     const answer = queue.length > 1 ? (queue.shift() as Answer) : queue[0];
     if (answer instanceof Error) throw answer;
     if (typeof answer === 'number') return new Response(null, { status: answer });
-    return new Response(answer.body ?? null, { status: answer.status });
+    return new Response(answer.body ?? null, { status: answer.status, headers: answer.headers });
   };
   return { fetch, calls, unplanted };
 };
@@ -153,7 +167,10 @@ const routesForCommittedRegistry = (): Record<string, Answer | Answer[]> => {
     // A tree source (DW-285) is proven by its path on the named branch, one more call.
     if (match[3] !== undefined) routes[contents(slug, match[4], match[3])] = { status: 200, body: '[]' };
     routes[entry.source] = PRIVATE.includes(slug) ? 404 : 200;
-    if (entry.live !== undefined) routes[entry.live] = REDIRECTING[entry.live] ?? 200;
+    if (entry.live !== undefined) {
+      routes[entry.live] = REDIRECTING[entry.live] ?? 200;
+      routes[`${entry.live}/auth/session`] = SESSION_ANSWERS[entry.live] ?? 404;
+    }
   }
   routes[contents(SLUG, CS_TRACKER_TOKENS)] = { status: 200, body: TOKENS_CSS_AT_REGISTRY };
   return routes;
@@ -204,11 +221,27 @@ const entry = (overrides: Partial<Entry> & { id: string }): Entry => ({
 
 type Input = Parameters<typeof verify>[0];
 
+/**
+ * The two observation records in their own row shape, every action `OBSERVED_BY` names present, and
+ * the ones listed in `done` dated. Undated, a cell reads `_not done_`, as the real records do today.
+ */
+const observedFragment = (done: string[] = []): Record<string, string> => {
+  const rows = (rel: string) =>
+    Object.values(OBSERVED_BY)
+      .flatMap((byId) => Object.values(byId))
+      .filter(([at]) => at === rel)
+      .map(([, action]) => `| ${action} | **An action** | A note | ${done.includes(action) ? '**2026-10-04.** Observed' : '_not done_'} |`);
+  const fragment = (rel: string) =>
+    ['# A record', '', '## Pending Operator actions', '', '| # | Action | Note | Completed (UTC) |', '|---|---|---|---|', ...new Set(rows(rel)), ''].join('\n');
+  return { [IDENTITY_REL]: fragment(IDENTITY_REL), [DEMO_REL]: fragment(DEMO_REL) };
+};
+
 const one = (application: Entry, extra: Partial<Input> = {}) =>
   verify({
     registry: { applications: [application] },
     record: recordFragment(),
     adoption: adoptionFragment(),
+    observed: observedFragment(),
     token: TOKEN,
     fetch: planted({}).fetch,
     ...extra,
@@ -232,19 +265,20 @@ const withScratch = async <T>(use: (dir: string) => Promise<T>): Promise<T> => {
 
 describe('the committed Registry against the estate as observed', () => {
   const fetcher = planted(routesForCommittedRegistry());
-  const run = verify({ registry, record, adoption, fetch: fetcher.fetch, token: TOKEN });
+  const run = verify({ registry, record, adoption, observed, fetch: fetcher.fetch, token: TOKEN });
 
-  it('passes 41 checks: 16 exists, 13 resolves and 3 tolerated with no KV-2 row left to strike, 8 live of which 3 by 3xx, 1 token', async () => {
+  it('passes 73 checks: 16 exists, 13 resolves and 3 tolerated with no KV-2 row left to strike, 8 live of which 3 by 3xx, 1 token, 16 demo, 16 identity', async () => {
     // 35 and 6 live until 2026-09-25, when Vercel left the estate (Operator ruling 2026-09-24) and
     // `cs-tournament` went `Complete` with no `live` to check. 34 until later that day, when
     // Registry 1.5.0 listed `covidmap` and `future-vizion` as `Live` (Operator ruling 2026-09-25):
     // three checks each, both sources public and both `live` URLs answering 200 from Vercel. 40 and 7
     // live until Registry 1.7.0 (Story 3-7's placement) gave `cs-tournament` its `live` again, at
     // `https://tournament.cuatro.dev`, planted here at 200 as `ops/tournament-placement.md` step 6 expects.
+    // 41 until Story 5.11 gave every entry a `demo` and an `identity` row (Registry 1.8.0).
     const result = await run;
     expect(fetcher.unplanted, 'the fixture did not plant a URL the Registry carries').toEqual([]);
-    expect(result.rows).toHaveLength(41);
-    expect(result.lines).toHaveLength(41);
+    expect(result.rows).toHaveLength(73);
+    expect(result.lines).toHaveLength(73);
     expect(result.ok, result.lines.filter((line) => line.startsWith('FAIL')).join('\n')).toBe(true);
 
     const exists = rowsOf(result, 'source exists');
@@ -273,14 +307,39 @@ describe('the committed Registry against the estate as observed', () => {
     expect(token).toHaveLength(1);
     expect(token[0].id).toBe('cs-tracker');
     expect(token[0].detail).toBe(`the Registry declares 2.0.0 and ${SLUG}:${CS_TRACKER_TOKENS}@main reads Contract v2.0.0`);
+
+    // Story 5.11: what each entry declares, held to what its host answers today.
+    const demo = rowsOf(result, 'demo');
+    expect(demo).toHaveLength(16);
+    const valueOf = (id: string, field: string) => registry.applications.find((application) => application.id === id)?.[field];
+    const byDemo = (value: string) => demo.filter((row) => valueOf(row.id, 'demo') === value).map((row) => row.id).sort();
+    expect(byDemo('open')).toEqual(['covidmap', 'cs-tournament', 'cuatro-portfolio', 'future-vizion', 'list-wheel']);
+    expect(byDemo('none')).toEqual(['cs-tracker', 'cuatro-tracker', 'digital-library']);
+    expect(byDemo('not-deployed')).toHaveLength(8);
+    expect(byDemo('demo-account')).toEqual([]);
+    expect(demo.find((row) => row.id === 'cs-tournament')?.detail).toBe(
+      'https://tournament.cuatro.dev answered 200 with no sign-in: usable without authentication'
+    );
+    expect(demo.find((row) => row.id === 'cs-tracker')?.detail).toBe(
+      'https://cs-tracker.cuatro.dev answered 302 to https://cs-tracker.cuatro.dev/auth/steam: a sign-in stands before the application, and no demo access is declared'
+    );
+
+    const identity = rowsOf(result, 'identity');
+    expect(identity).toHaveLength(16);
+    expect(identity.filter((row) => valueOf(row.id, 'identity') === 'oidc')).toEqual([]);
+    // MaiCoin is exempt by structure, and the row says so rather than reading as a sign-in not built.
+    expect(identity.filter((row) => valueOf(row.id, 'identity') === 'wallet')).toEqual([
+      { id: 'maicoin', check: 'identity', pass: true, detail: `wallet: structurally exempt, not unimplemented: ${WALLET_EXEMPT.maicoin}` },
+    ]);
+    expect(identity.filter((row) => row.detail.endsWith('not an OIDC session route'))).toHaveLength(8);
   });
 
   it('prints one PASS or FAIL line per check in the probe shape, and the same rows as a table', async () => {
     const result = await run;
-    for (const line of result.lines) expect(line).toMatch(/^(PASS|FAIL) {2}[a-z0-9-]+ (source exists|source resolves|live|token_contract): \S/);
+    for (const line of result.lines) expect(line).toMatch(/^(PASS|FAIL) {2}[a-z0-9-]+ (source exists|source resolves|live|token_contract|demo|identity): \S/);
     const summary = summaryTable(result.rows);
-    expect(summary).toContain('## Registry verification: 41 of 41 checks passed');
-    expect(summary.split('\n').filter((line) => /^\| [a-z0-9-]+ \| /.test(line))).toHaveLength(41);
+    expect(summary).toContain('## Registry verification: 73 of 73 checks passed');
+    expect(summary.split('\n').filter((line) => /^\| [a-z0-9-]+ \| /.test(line))).toHaveLength(73);
     expect(summaryTable([{ id: 'x', check: 'live', pass: false, detail: 'a | b' }])).toContain('| a \\| b |');
     expect(summaryTable([])).toContain('0 of 0 checks passed');
   });
@@ -289,8 +348,9 @@ describe('the committed Registry against the estate as observed', () => {
     await run;
     expect(TIMEOUT_MS).toBe(15_000);
     // 44, not 41: the three tree sources Registry 1.6.0 carries (DW-285) are each probed once more,
-    // inside their `source exists` row.
-    expect(fetcher.calls, 'the happy path has no retries, so a doubled request is a defect').toHaveLength(44);
+    // inside their `source exists` row. 52 from Story 5.11: each of the eight `live` hosts declaring
+    // `identity: none` is asked `/auth/session` once; the `demo` rows reuse the `live` answer.
+    expect(fetcher.calls, 'the happy path has no retries, so a doubled request is a defect').toHaveLength(52);
     for (const { url, init } of fetcher.calls) {
       const headers = (init?.headers ?? {}) as Record<string, string>;
       expect(headers['User-Agent'], url).toBe(USER_AGENT);
@@ -329,9 +389,9 @@ describe('main', () => {
       const file = join(dir, 'summary.md');
       const result = await main(planted(routesForCommittedRegistry()).fetch, { [SECRET]: TOKEN, GITHUB_STEP_SUMMARY: file });
       expect(result.code, result.message).toBe(0);
-      expect(result.message.split('\n')).toHaveLength(42);
-      expect(result.message.split('\n').at(-1)).toBe('# 41 of 41 checks passed');
-      const { rows } = await verify({ registry, record, adoption, fetch: planted(routesForCommittedRegistry()).fetch, token: TOKEN });
+      expect(result.message.split('\n')).toHaveLength(74);
+      expect(result.message.split('\n').at(-1)).toBe('# 73 of 73 checks passed');
+      const { rows } = await verify({ registry, record, adoption, observed, fetch: planted(routesForCommittedRegistry()).fetch, token: TOKEN });
       expect(readFileSync(file, 'utf8')).toBe(`${summaryTable(rows)}\n`);
     });
   });
@@ -340,7 +400,7 @@ describe('main', () => {
     const routes = { ...routesForCommittedRegistry(), 'https://github.com/LuigiEspinosa/list-wheel': 404 };
     const result = await main(planted(routes).fetch, { [SECRET]: TOKEN });
     expect(result.code).toBe(1);
-    expect(result.message.endsWith('# 40 of 41 checks passed')).toBe(true);
+    expect(result.message.endsWith('# 72 of 73 checks passed')).toBe(true);
     expect(result.message).toContain('FAIL  list-wheel source resolves: absent:');
   });
 
@@ -349,7 +409,7 @@ describe('main', () => {
       const file = join(dir, 'missing', 'summary.md');
       const result = await main(planted(routesForCommittedRegistry()).fetch, { [SECRET]: TOKEN, GITHUB_STEP_SUMMARY: file });
       expect(result.code).toBe(2);
-      expect(result.message).toContain('# 41 of 41 checks passed');
+      expect(result.message).toContain('# 73 of 73 checks passed');
       expect(result.message).toContain(`the job summary at ${file.replace(/\\/g, '\\\\')} could not be written`);
       expect(existsSync(file)).toBe(false);
     });
@@ -371,10 +431,10 @@ describe('main', () => {
 describe('the secret absent', () => {
   it('throws naming the secret and fetches nothing', async () => {
     const fetcher = planted(routesForCommittedRegistry());
-    await expect(verify({ registry, record, adoption, fetch: fetcher.fetch, token: undefined })).rejects.toThrow(
+    await expect(verify({ registry, record, adoption, observed, fetch: fetcher.fetch, token: undefined })).rejects.toThrow(
       new RegExp(`^${SECRET} is not set, so nothing was fetched`)
     );
-    await expect(verify({ registry, record, adoption, fetch: fetcher.fetch, token: '' })).rejects.toThrow(SECRET);
+    await expect(verify({ registry, record, adoption, observed, fetch: fetcher.fetch, token: '' })).rejects.toThrow(SECRET);
     expect(fetcher.calls).toEqual([]);
   });
 
@@ -409,8 +469,14 @@ describe('a malformed entry', () => {
     const token = entry({ id: 'x', token_contract: null as unknown as string });
     await expect(one(token, { fetch: fetcher.fetch })).rejects.toThrow(/carries a token_contract that is not a string/);
     await expect(
-      verify({ registry: { applications: [entry({ id: 'ok' }), null as unknown as Entry] }, record: recordFragment(), adoption: adoptionFragment(), fetch: fetcher.fetch, token: TOKEN })
+      verify({ registry: { applications: [entry({ id: 'ok' }), null as unknown as Entry] }, record: recordFragment(), adoption: adoptionFragment(), observed: observedFragment(), fetch: fetcher.fetch, token: TOKEN })
     ).rejects.toThrow(`${REGISTRY_REL} entry 1 is not an object`);
+    // `demo` and `identity` are held to strings as `live` and `token_contract` are (Story 5.11).
+    for (const field of ['demo', 'identity']) {
+      await expect(one(entry({ id: 'x', [field]: 1 as unknown as string }), { fetch: fetcher.fetch })).rejects.toThrow(
+        `carries a ${field} that is not a string`
+      );
+    }
     expect(fetcher.calls).toEqual([]);
   });
 });
@@ -806,6 +872,7 @@ describe('an entry whose check throws', () => {
       registry: { applications: [entry({ id: 'one' }), entry({ id: 'two' })] },
       record: recordFragment(),
       adoption: adoptionFragment(),
+      observed: observedFragment(),
       fetch,
       token: TOKEN,
     });
@@ -1019,6 +1086,240 @@ describe('the workflow', () => {
     expect(fileInstructions).toMatch(/^permissions:\n {2}contents: read\n\njobs:$/m);
     expect(fileInstructions).not.toMatch(/^\s+needs\s*:/m);
     expect(fileInstructions).not.toMatch(/git (commit|push)|gh (issue|pr) create|upload-artifact/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Story 5.11: `demo` and `identity` held to what a Visitor meets
+// ---------------------------------------------------------------------------
+
+const HOST = 'https://app.cuatro.dev';
+const redirect = (status: number, location: string): Answer => ({ status, headers: { Location: location } });
+const page = (body: string): Answer => ({ status: 200, body });
+/** An authorization request in the shape the Hub and `cs-tracker` send, at a host that is no application's. */
+const authorize = (overrides: Record<string, string | null> = {}, at = 'https://issuer.example/oauth/authorize'): string => {
+  const url = new URL(at);
+  const params: Record<string, string | null> = {
+    response_type: 'code',
+    client_id: 'client',
+    redirect_uri: `${HOST}/auth/callback`,
+    scope: 'openid email',
+    state: 's',
+    nonce: 'n',
+    code_challenge: 'c',
+    code_challenge_method: 'S256',
+    ...overrides,
+  };
+  for (const [name, value] of Object.entries(params)) if (value !== null) url.searchParams.set(name, value);
+  return url.href;
+};
+/** One entry, its routes and the dated actions, answered by `verify`; the one row asked for. */
+const declared = async (application: Entry, routes: Record<string, Answer | Answer[]>, check: 'demo' | 'identity', done: string[] = []) => {
+  const fetcher = planted(routes);
+  const result = await one(application, { fetch: fetcher.fetch, observed: observedFragment(done) });
+  const rows = rowsOf(result, check);
+  expect(rows, `one ${check} row`).toHaveLength(1);
+  return { ...rows[0], calls: fetcher.calls.map((call) => call.url) };
+};
+
+describe('demo (FR-27, AD-13)', () => {
+  it('open passes on a 2xx at the first hop and fails on a sign-in, a missing live or no answer', async () => {
+    const open = entry({ id: 'app', live: HOST, demo: 'open' });
+    expect(await declared(open, { [HOST]: 200 }, 'demo')).toMatchObject({ pass: true, detail: `${HOST} answered 200 with no sign-in: usable without authentication` });
+    const walled = await declared(open, { [HOST]: redirect(302, '/login') }, 'demo');
+    expect(walled).toMatchObject({ pass: false, detail: `overstated: declares open but ${HOST} answered 302 to ${HOST}/login, so a Visitor meets something other than the application` });
+    expect((await declared(entry({ id: 'app', demo: 'open' }), {}, 'demo')).detail).toMatch(/^declares open but carries no live URL/);
+    expect((await declared(open, { [HOST]: [503, 503] }, 'demo')).detail).toBe(`cannot be verified: ${HOST} answered 503`);
+  });
+
+  it('none passes behind a sign-in and fails when the host serves anonymously, which is open (DW-332)', async () => {
+    const none = entry({ id: 'app', live: HOST, demo: 'none' });
+    expect(await declared(none, { [HOST]: redirect(307, '/login?callbackUrl=%2F') }, 'demo')).toMatchObject({
+      pass: true,
+      detail: `${HOST} answered 307 to ${HOST}/login: a sign-in stands before the application, and no demo access is declared`,
+    });
+    expect(await declared(none, { [HOST]: 200 }, 'demo')).toMatchObject({
+      pass: false,
+      detail: `understated: declares none but ${HOST} answered 200 with no sign-in, so a Visitor uses it without authentication, which is open`,
+    });
+    expect((await declared(none, { [HOST]: 404 }, 'demo')).pass).toBe(false);
+    expect((await declared(entry({ id: 'app', demo: 'none' }), {}, 'demo')).pass).toBe(false);
+  });
+
+  it('not-deployed passes with no live URL and fails while one is carried', async () => {
+    expect(await declared(entry({ id: 'app', status: 'In progress', demo: 'not-deployed' }), {}, 'demo')).toMatchObject({ pass: true });
+    const kept = await declared(entry({ id: 'app', status: 'In progress', live: HOST, demo: 'not-deployed' }), { [HOST]: 200 }, 'demo');
+    expect(kept).toMatchObject({ pass: false, detail: `declares not-deployed but carries live ${HOST}: remove the URL or correct the declaration` });
+  });
+
+  describe('demo-account: a dated observation, and the application\'s own sign-in page naming the principal', () => {
+    const account = entry({ id: 'cuatro-tracker', live: HOST, demo: 'demo-account' });
+    const behind = { [HOST]: redirect(307, '/login?callbackUrl=%2F'), [`${HOST}/login?callbackUrl=%2F`]: page(`<p>Try it as ${DEMO_PRINCIPAL}</p>`) };
+    const bare = { [HOST]: redirect(307, '/login?callbackUrl=%2F'), [`${HOST}/login?callbackUrl=%2F`]: page('<p>Sign in</p>') };
+
+    it('fails, both halves overstated, when nothing stands behind it', async () => {
+      const row = await declared(account, bare, 'demo');
+      expect(row.pass).toBe(false);
+      expect(row.detail).toBe(
+        `overstated: ${DEMO_REL} DR1 reads "_not done_", so no person has observed it yet (NFR-9); overstated: ${HOST}/login?callbackUrl=%2F answered 200 and does not name ${DEMO_PRINCIPAL}, so a Visitor cannot find the demo account (FR-25)`
+      );
+    });
+
+    it('passes when DR1 is dated and the page reached by same-origin redirects names the principal', async () => {
+      const row = await declared(account, behind, 'demo', ['DR1']);
+      expect(row).toMatchObject({ pass: true, detail: `${DEMO_REL} DR1 observed **2026-10-04.** Observed; ${HOST}/login?callbackUrl=%2F answered 200 and names ${DEMO_PRINCIPAL}` });
+      expect(row.calls.filter((url) => url.startsWith(HOST))).toEqual([HOST, `${HOST}/login?callbackUrl=%2F`]);
+    });
+
+    it('fails on either half alone', async () => {
+      expect((await declared(account, bare, 'demo', ['DR1'])).pass).toBe(false);
+      expect((await declared(account, behind, 'demo')).pass).toBe(false);
+    });
+
+    it('fails when the sign-in page is off the host, as an issuer\'s is, or the redirects do not end', async () => {
+      const off = await declared(account, { [HOST]: redirect(302, '/auth/sign-in'), [`${HOST}/auth/sign-in`]: redirect(302, authorize()) }, 'demo', ['DR1']);
+      expect(off.detail).toContain(`${HOST}/auth/sign-in answered 302 to https://issuer.example, off ${HOST}, so the sign-in page is not the application's own (FR-25)`);
+      expect(off.calls).not.toContain(authorize());
+      const loop = await declared(account, { [HOST]: redirect(302, '/'), [`${HOST}/`]: redirect(302, '/') }, 'demo', ['DR1']);
+      expect(loop.detail).toContain(`more than ${MAX_HOPS} redirects from ${HOST}`);
+      expect(loop.calls.filter((url) => url === `${HOST}/`)).toHaveLength(MAX_HOPS);
+    });
+
+    it('fails for an entry no recorded observation names', async () => {
+      const row = await declared(entry({ id: 'list-wheel', live: HOST, demo: 'demo-account' }), behind, 'demo', ['DR1', 'DR2', 'DR3']);
+      expect(row.detail).toMatch(/^overstated: no recorded observation names list-wheel/);
+    });
+  });
+});
+
+describe('identity (AD-11, AD-12, FR-24)', () => {
+  it('wallet is the recorded structural exemption for maicoin alone, and maicoin declares nothing else', async () => {
+    expect(Object.keys(WALLET_EXEMPT)).toEqual(['maicoin']);
+    expect(registry.applications.find((application) => application.id === 'maicoin')?.identity).toBe('wallet');
+    const maicoin = await declared(entry({ id: 'maicoin', status: 'In progress', identity: 'wallet' }), {}, 'identity');
+    expect(maicoin).toMatchObject({ pass: true, detail: `wallet: structurally exempt, not unimplemented: ${WALLET_EXEMPT.maicoin}` });
+    expect(maicoin.calls.filter((url) => !url.includes('github'))).toEqual([]);
+    expect((await declared(entry({ id: 'list-wheel', identity: 'wallet' }), {}, 'identity')).detail).toMatch(/^declares wallet, a structural exemption recorded for maicoin alone/);
+    expect((await declared(entry({ id: 'maicoin', status: 'In progress', identity: 'none' }), {}, 'identity')).detail).toBe(
+      'declares none, but maicoin is structurally exempt and declares wallet (AD-12, FR-24)'
+    );
+  });
+
+  it('none passes where no OIDC session route answers, and fails where one answers 401', async () => {
+    const none = entry({ id: 'app', live: HOST, identity: 'none' });
+    expect(await declared(none, { [`${HOST}/auth/session`]: 404 }, 'identity')).toMatchObject({ pass: true, detail: `${HOST}/auth/session answered 404, not an OIDC session route` });
+    expect(await declared(entry({ id: 'app', status: 'In progress', identity: 'none' }), {}, 'identity')).toMatchObject({ pass: true });
+    const serving = await declared(none, { [`${HOST}/auth/session`]: 401 }, 'identity');
+    expect(serving.pass).toBe(false);
+    expect(serving.detail).toMatch(/^understated: declares none but https:\/\/app\.cuatro\.dev\/auth\/session answered 401/);
+    expect(await declared(none, {}, 'identity')).toMatchObject({ pass: false, detail: expect.stringMatching(/^cannot be verified: /) });
+  });
+
+  describe('oidc: a dated observation, a 401 session route and an Authorization Code + PKCE redirect', () => {
+    const hub = entry({ id: 'cuatro-portfolio', live: HOST, identity: 'oidc' });
+    const serving = (location = authorize()) => ({ [`${HOST}/auth/session`]: 401, [`${HOST}/auth/sign-in`]: redirect(302, location) });
+
+    it('fails on all three halves when nothing stands behind it', async () => {
+      const row = await declared(hub, { [`${HOST}/auth/session`]: 404, [`${HOST}/auth/sign-in`]: 404 }, 'identity');
+      expect(row.pass).toBe(false);
+      expect(row.detail).toBe(
+        `overstated: ${IDENTITY_REL} H3 reads "_not done_", so no person has observed it yet (NFR-9); overstated: ${HOST}/auth/session answered 404, not 401; overstated: ${HOST}/auth/sign-in is not an Authorization Code + PKCE redirect: it answered 404, not a redirect`
+      );
+    });
+
+    it('passes when H3 is dated and the host answers as Story 5.3 built it, naming no provider', async () => {
+      const row = await declared(hub, serving(), 'identity', ['H3']);
+      expect(row).toMatchObject({
+        pass: true,
+        detail: `${IDENTITY_REL} H3 observed **2026-10-04.** Observed; ${HOST}/auth/session answered 401; ${HOST}/auth/sign-in answered 302 to an Authorization Code + PKCE request at https://issuer.example/oauth/authorize`,
+      });
+      const cs = entry({ id: 'cs-tracker', live: HOST, identity: 'oidc' });
+      expect((await declared(cs, serving(), 'identity', ['CT5'])).pass).toBe(true);
+      expect((await declared(cs, serving(), 'identity', ['H3'])).pass, 'CT5, not H3, stands behind cs-tracker').toBe(false);
+    });
+
+    it('fails on any one half alone', async () => {
+      expect((await declared(hub, serving(), 'identity')).pass).toBe(false);
+      expect((await declared(hub, { ...serving(), [`${HOST}/auth/session`]: 404 }, 'identity', ['H3'])).pass).toBe(false);
+      for (const [overrides, problem] of [
+        [{ response_type: 'token' }, 'response_type is not code'],
+        [{ code_challenge_method: 'plain' }, 'code_challenge_method is not S256'],
+        [{ code_challenge: null }, 'code_challenge is absent'],
+        [{ state: null }, 'state is absent'],
+        [{ client_id: null }, 'client_id is absent'],
+        [{ redirect_uri: 'https://elsewhere.example/auth/callback' }, `redirect_uri is not ${HOST}/auth/callback`],
+      ] as const) {
+        const row = await declared(hub, serving(authorize(overrides)), 'identity', ['H3']);
+        expect(row.pass, problem).toBe(false);
+        expect(row.detail).toContain(problem);
+      }
+      const http = await declared(hub, serving(authorize({}, 'http://issuer.example/authorize')), 'identity', ['H3']);
+      expect(http.detail).toContain('http://issuer.example is not https');
+    });
+
+    it('fails for an entry no recorded observation names', async () => {
+      const row = await declared(entry({ id: 'list-wheel', live: HOST, identity: 'oidc' }), serving(), 'identity', ['H3', 'CT5']);
+      expect(row.detail).toMatch(/^overstated: no recorded observation names list-wheel/);
+    });
+  });
+});
+
+describe('the release valve (FR-28)', () => {
+  it('an application taken offline reads not-deployed, and an oidc declaration stands on its dated row, unprobed', async () => {
+    const offline = entry({ id: 'cuatro-portfolio', status: 'In progress', demo: 'not-deployed', identity: 'oidc' });
+    const demo = await declared(offline, {}, 'demo', ['H3']);
+    expect(demo).toMatchObject({ pass: true, detail: 'not-deployed and carries no live URL: nothing to reach' });
+    const identity = await declared(offline, {}, 'identity', ['H3']);
+    expect(identity).toMatchObject({ pass: true, detail: `${IDENTITY_REL} H3 observed **2026-10-04.** Observed; no live URL, so the session route is not probed (FR-28)` });
+    expect(identity.calls.filter((url) => url.includes('/auth/'))).toEqual([]);
+  });
+
+  it('fails an offline oidc declaration whose observation row is undated, the record half alone', async () => {
+    const offline = entry({ id: 'cuatro-portfolio', status: 'In progress', demo: 'not-deployed', identity: 'oidc' });
+    const identity = await declared(offline, {}, 'identity');
+    expect(identity.pass).toBe(false);
+    expect(identity.detail.startsWith(`overstated: ${IDENTITY_REL} H3 reads "_not done_"`), identity.detail).toBe(true);
+    expect(identity.calls.filter((url) => url.includes('/auth/'))).toEqual([]);
+  });
+
+  it('fails an offline entry whose demo still offers what nothing serves', async () => {
+    for (const value of ['open', 'none', 'demo-account']) {
+      const row = await declared(entry({ id: 'cuatro-tracker', status: 'In progress', demo: value }), {}, 'demo', ['DR1']);
+      expect(row).toMatchObject({ pass: false, detail: `declares ${value} but carries no live URL, so a Visitor reaches nothing; an application taken offline reads not-deployed (FR-28)` });
+    }
+  });
+});
+
+describe('observations', () => {
+  // Not pinned: which rows are dated. All five read `_not done_` on 2026-10-03, and a session dating one
+  // edits the record alone (`ops/registry-verification.md` § The release the live steps unlock).
+  it('reads every row OBSERVED_BY names out of the real records, each exactly once', () => {
+    const seen = observations(observed);
+    expect([...seen.keys()].sort()).toEqual(
+      [`${DEMO_REL} DR1`, `${DEMO_REL} DR2`, `${DEMO_REL} DR3`, `${IDENTITY_REL} CT5`, `${IDENTITY_REL} H3`]
+    );
+    for (const { cell } of seen.values()) expect(cell).not.toBe('');
+  });
+
+  it('throws on a record not read, a row missing, or a row carried twice', () => {
+    expect(() => observations({ [IDENTITY_REL]: observed[IDENTITY_REL] })).toThrow(`${DEMO_REL} was not read`);
+    const missing = observed[DEMO_REL].replace(/^\| DR2 \|.*$/m, '');
+    expect(() => observations({ ...observed, [DEMO_REL]: missing })).toThrow(`${DEMO_REL} carries 0 rows for action DR2, not one`);
+    const twice = `${observed[IDENTITY_REL]}\n| H3 | again | note | 2026-10-04 |\n`;
+    expect(() => observations({ ...observed, [IDENTITY_REL]: twice })).toThrow(`${IDENTITY_REL} carries 2 rows for action H3, not one`);
+  });
+
+  it('reads a date behind bold or italic markup as dated, and anything else as not', () => {
+    const fragment = observedFragment();
+    const at = (cell: string) =>
+      observations({ ...fragment, [IDENTITY_REL]: fragment[IDENTITY_REL].replace('| H3 | **An action** | A note | _not done_ |', `| H3 | **An action** | A note | ${cell} |`) }).get(
+        `${IDENTITY_REL} H3`
+      )?.dated;
+    expect(at('**2026-10-04.** Signed in')).toBe(true);
+    expect(at('_2026-10-04_')).toBe(true);
+    expect(at('2026-10-04T10:00Z')).toBe(true);
+    expect(at('_not done_')).toBe(false);
+    expect(at('Due 2026-10-04')).toBe(false);
   });
 });
 

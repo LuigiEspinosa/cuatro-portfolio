@@ -267,6 +267,15 @@ sweeps under `/a-route-that-does-not-exist`. `/pdf/recommendation-letter.pdf` st
 admits a PDF, and lost the `toBe(1)` count of PDF landings with the member that produced it, so the
 number of PDF landings went from one to zero and nothing asserts on it any more.
 
+**Three more since 2026-10-02, the sign-in route handlers, which render no markup at all.** Story 5-3
+added `/auth/sign-in`, `/auth/callback` and `/auth/session` (`apps/hub/lib/oidc.ts`). They are
+registered as `AUTH_ROUTES` rather than `NON_HUB_ROUTES`, because the suite runs the Hub without OIDC
+variables and so each answers 404 with an empty body, not 2xx JSON. A standing case asserts exactly
+that, with no `Set-Cookie`, so the unconfigured Hub `main` may deploy before the issuer exists is held
+in the browser suite too; `accessibility-floor.pw.ts` excludes the same three from its surfaces. Story 5-5
+added two more the same way, `/auth/sign-out` and `/auth/backchannel-logout`, five in all; the second
+defines `POST` only and answers a `GET` 404 with an empty body whether or not the Hub is configured.
+
 ## The floor
 
 | Value | Number | Nature |

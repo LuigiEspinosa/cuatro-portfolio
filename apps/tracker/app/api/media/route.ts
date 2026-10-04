@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { z, ZodError } from 'zod'
 import { MediaType, Prisma, WatchStatus, type UserEntry } from '@prisma/client'
-import { db } from '@/lib/db'
+import { scopedDb } from '@/lib/scoped-db'
 import { logger } from '@/lib/logger'
 import { withRequest } from '@/lib/request-context'
 import { TmdbApiError } from '@/lib/api/tmdb'
@@ -34,10 +34,11 @@ const NEW_USER_ENTRY = {
   progress: 0,
 } as const
 
-function findExistingBySourceId(
+async function findExistingBySourceId(
   source: AddMediaSource,
   sourceId: number,
 ): Promise<MediaItemWithUserEntry | null> {
+  const db = await scopedDb()
   const include = { user_entry: true } as const
   switch (source) {
     case 'tmdb':
@@ -57,11 +58,12 @@ function findExistingBySourceId(
   }
 }
 
-function findCrossSourceCandidates(
+async function findCrossSourceCandidates(
   source: AddMediaSource,
   releaseYear: number,
   type: MediaType,
 ): Promise<MediaItemWithUserEntry[]> {
+  const db = await scopedDb()
   const include = { user_entry: true } as const
   const yearStart = new Date(Date.UTC(releaseYear, 0, 1))
   const yearEnd = new Date(Date.UTC(releaseYear + 1, 0, 1))
@@ -112,11 +114,12 @@ function findCrossSourceCandidates(
   }
 }
 
-function patchSourceId(
+async function patchSourceId(
   id: string,
   source: AddMediaSource,
   sourceId: number,
 ): Promise<MediaItemWithUserEntry> {
+  const db = await scopedDb()
   const include = { user_entry: true } as const
   const data: Prisma.MediaItemUpdateInput =
     source === 'tmdb'
@@ -133,6 +136,7 @@ async function ensureUserEntry(
   mediaItem: MediaItemWithUserEntry,
 ): Promise<{ mediaItem: MediaItemWithUserEntry; created: boolean }> {
   if (mediaItem.user_entry) return { mediaItem, created: false }
+  const db = await scopedDb()
   try {
     const userEntry: UserEntry = await db.userEntry.create({
       data: { media_item_id: mediaItem.id, ...NEW_USER_ENTRY },
@@ -295,6 +299,7 @@ async function persistSingleMediaItem(
   sourceId: number,
   type: MediaType,
 ): Promise<NextResponse> {
+  const db = await scopedDb()
   try {
     const releaseDate = new Date(normalised.release_date)
     const normalisedKey = normaliseTitle(normalised.title)
@@ -359,6 +364,7 @@ async function persistShowWithEpisodes(
   sourceId: number,
   type: MediaType,
 ): Promise<NextResponse> {
+  const db = await scopedDb()
   try {
     const releaseDate = new Date(normalised.show.release_date)
     const normalisedKey = normaliseTitle(normalised.show.title)

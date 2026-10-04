@@ -1,0 +1,8 @@
+# How often each participant's demo:reset runs (Story 5.10, AD-13): ops/demo-principal.md § The scheduler.
+# One line per participant, every participant named once: '<registry-id> <minutes|off>'. Minutes are a
+# multiple of 15 from 15 to 1440; 60, hourly, is the default AD-13 names. `off` starts nothing and prints
+# a skipped line on the hourly ticks. The box reads this file from its checkout of `main`, so a change
+# here takes effect at the next deploy.
+cuatro-tracker 60
+cs-tracker 60
+digital-library 60

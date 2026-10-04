@@ -9444,6 +9444,13 @@ status: done
     installed `/home/deploy/tournament-restore-verify.sh` still has the old line (read 2026-10-01) until it
     is reinstalled from the checkout, which is DW-318's; cron runs only `tournament-backup.sh`, which does
     not call the verifier, so no scheduled run leaves a volume meanwhile.
+
+    **Box copy reinstalled 2026-10-01T08:09Z (orchestrator, under the Operator's delegation).** From the
+    checkout at `d7e19ef` (`main` after PR #91): `install -m 0700` then `cmp`, installed sha256 prefix
+    `3b4017b1715a4638`, equal to the repository file. The proof run from the checkout on
+    `tournament-20261001T034501Z.dump` ended `restore=ok ... migrations=29-applied-0-pending exit=0`, and
+    afterwards `docker volume ls -f dangling=true` counted 0 and no verify container remained
+    (`ops/tournament-placement.md` § First backup run, amendment of 2026-10-01).
   status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-3-migrate-list-wheel-the-static-first-candidate.md`
   id: DW-308
@@ -9684,6 +9691,14 @@ status: done
     **Owner: the Operator's planned clean start of every application, or Epic 5, whichever comes first.**
     **Trigger: a red backup line that nobody saw**, or that clean start opening. Choose (a) or (b), build it,
     and amend the three records' named limits to name the reader.
+
+    **Story 5.10, 2026-10-03: a fourth log.** The demo reset scheduler (`ops/demo-reset.sh`, `ops/demo-principal.md`
+    § The scheduler) appends one summary line with `exit=` to `/home/deploy/demo-reset/demo-reset.log` on every
+    run that did anything, hourly with the committed schedule, and nothing reads it either. It was built to be
+    read the same way as the three backup logs: a line whose `exit=` is not 0 is a failure, and no line in the
+    last hour is a scheduler that stopped. Epic 5 does not choose between (a) and (b) here, because both
+    options are about how the box is read from off it, a decision about the estate rather than about demo
+    access. Whichever is chosen reads all four logs, and the record's named limit 1 is amended to name it.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md`
   id: DW-316
@@ -9749,4 +9764,400 @@ status: done
     **Trigger: that clean start, or the next change to any backup script.** Either run the cron lines from
     the checkout the deploy maintains, or make the deploy (or DW-315's reader) compare each installed copy's
     sha256 with the checkout's and go red on a difference; and run the library's action 9 meanwhile.
+
+    **Amended 2026-10-01: the library evidence is resolved.** Action 9 ran from 07:58Z to 07:59:02Z from the
+    checkout at `8f33ead`: all three `/usr/local/sbin/` copies now equal the committed files (the Installed
+    column of `ops/backup-digital-library.md` § What is installed on the box), and a cron-shaped run exited
+    0 with `roundtrip=sha256-match restore=verified`. At 08:09Z the tournament's verifier was reinstalled
+    after DW-307's fix (`ops/tournament-placement.md`), so every installed backup script matches the
+    checkout today. The entry stays open: nothing yet compares the two, so the next fix drifts the same way.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-1-refresh-clerk-s-pricing-and-terms.md`
+  id: DW-319
+  summary: >-
+    No Clerk page read for Story 5.1 documents logout: neither OAuth docs page mentions an
+    `end_session_endpoint`, RP-Initiated logout or Back-Channel logout, both of which AD-11 requires.
+  evidence: |-
+    Found 2026-10-02 at 14:01Z by Story 5.1, reading `https://clerk.com/docs/advanced-usage/clerk-idp`
+    and `https://clerk.com/docs/guides/configure/auth-strategies/oauth/how-clerk-implements-oauth` (both
+    "Last updated on Oct 1, 2026"): a text search of each for `logout`, `end_session` and `backchannel`
+    found nothing. Absence on two pages is not proof the issuer lacks them, and capability was outside
+    5.1's pricing scope, so it was not researched further (`ops/clerk-pricing-and-terms.md` § Found in
+    passing, filed). If the issuer advertises neither, AD-11's logout rule and FR-22 cannot be met as
+    written and the spine needs a ruling before Story 5.5.
+
+    **Owner: Story 5.2**, which creates the issuer and can read its discovery document
+    (`/.well-known/openid-configuration`) for `end_session_endpoint`, `backchannel_logout_supported` and
+    `backchannel_logout_session_supported`, and record them; **then Story 5.5**, which builds on them.
+    **Trigger: the first read of the issuer's discovery document.**
+
+    **Amended 2026-10-02 by Story 5.2: the public evidence says no.** The estate's issuer does not exist
+    yet, so its own document was not read. A live Clerk production issuer's was:
+    `https://clerk.clerk.com/.well-known/openid-configuration`, read 2026-10-02T14:38:31Z (HTTP 200; its bytes
+    vary between reads, so the fields are the evidence, not a hash), states `"backchannel_logout_supported":false` and
+    `"frontchannel_logout_supported":false` and has no `end_session_endpoint`; it does advertise a
+    `revocation_endpoint`. Clerk's sample metadata document names none of the three
+    (`ops/identity-issuer.md` § Logout, as far as it can be read today). Unless the estate's instance
+    differs, AD-11's "RP-Initiated plus Back-Channel" cannot be met as written. **Owner now: the Operator's
+    ruling on AD-11's logout rule, before Story 5.5 opens**, with `ops/identity-issuer.md` Pending Operator
+    action 3 recording the estate issuer's own values first. Still unknown until then: those values, and
+    whether any plan or instance setting changes them.
+
+    **Amended 2026-10-02 by Story 5.5, which opened with the ruling still open and built only what holds
+    either way:** each application's own sign-out, RP-Initiated Logout followed whenever discovery
+    advertises an `end_session_endpoint`, and a Back-Channel receiver in each application, proven against
+    a stand-in issuer advertising both. On an issuer advertising neither, sign-out reaches only the
+    application signed out of, its open LiveView sockets included (`ops/identity-issuer.md` § Sign-out, its
+    table). The ruling is still action 11, and Story 5.5's AC10 waits on it.
+
+    **Amended 2026-10-03T22:37:59Z with the estate issuer's own values** (`ops/identity-issuer.md` action 3,
+    § Issuer run): `https://clerk.id.cuatro.dev/.well-known/openid-configuration` answered 200 with
+    `issuer` `https://clerk.id.cuatro.dev`, no `end_session_endpoint`, `backchannel_logout_supported` false,
+    `frontchannel_logout_supported` false, `revocation_endpoint` `https://clerk.id.cuatro.dev/oauth/token/revoke`.
+    They match `clerk.clerk.com`'s, so action 11's options apply as written.
+
+    **Closed 2026-10-03T22:45Z by Operator ruling (option a):** AD-11 is amended in the spine (§ AD-11,
+    "Amended 2026-10-03"): logout is each application ending its own session, with token revocation at
+    `revocation_endpoint` binding only an application that keeps a token (none does today), the
+    `live_socket_id` broadcast unchanged, and Story 5.5's RP-Initiated and Back-Channel paths kept for an
+    issuer that offers them. `ops/identity-issuer.md` action 11 is dated; Story 5.5's AC10 is met.
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-2-one-clerk-issuer-and-one-oidc-client-per-application.md`
+  id: DW-320
+  summary: >-
+    AD-3 derives "Clerk client `<id>`", but Clerk assigns each OAuth application's Client ID itself, so
+    the client id value cannot be derived from the application id.
+  evidence: |-
+    Found 2026-10-02 at 14:38Z by Story 5.2, reading
+    `https://clerk.com/docs/guides/configure/auth-strategies/oauth/single-sign-on.md`: the Operator
+    completes "`Name` - Helps you identify your application." and then saves the Client ID Clerk shows,
+    and "the create response includes the Client ID and Client Secret". Client ID Metadata Documents let a
+    public client use a URL as its `client_id`, which is neither the id nor available to the estate's
+    confidential clients. Story 5.2 holds AD-3 where it can: the OAuth application's Name is the id and
+    every variable carrying the value is derived from it (`ops/identity-issuer.md` § The clients, held by
+    `ops/__tests__/identity-issuer.test.ts`).
+
+    **Owner: the Operator, by a ruling that narrows AD-3's "Clerk client `<id>`" to the OAuth
+    application's name and the variables that carry its credentials.** **Trigger: the next spine
+    amendment, or Story 5.7, whose replaceability evidence may point an application at an issuer that
+    does let the client id be chosen.**
+
+    **Story 5.7, 2026-10-02: the evidence, not the ruling.** `ops/provider-swap.sh` points the Hub,
+    `cs-tracker` and the dashboard's forward-auth at dex, an issuer that lets each Client ID be chosen, so
+    each was the application id itself, and all three signed in through the same variables that carry
+    Clerk's assigned values (`ops/identity-issuer.md` § Provider replaceability). Both kinds of value pass
+    through unchanged, so the narrowing this entry asks for loses nothing an application depends on. The
+    ruling stays the Operator's.
+
+    **Closed 2026-10-03 by Operator ruling (option a):** AD-3 is narrowed in the spine (§ AD-3, "Narrowed
+    2026-10-03") to the OAuth application's Name and the credential variables; `ops/identity-issuer.md`
+    action 10 is dated.
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-2-one-clerk-issuer-and-one-oidc-client-per-application.md`
+  id: DW-321
+  summary: >-
+    The Clerk issuer's own hostnames under `cuatro.dev` must be DNS only for Clerk's CNAME check, which
+    AD-26 ("Every live `cuatro.dev` hostname is proxied by Cloudflare") forbids as written.
+  evidence: |-
+    Found 2026-10-02 at 14:40Z by Story 5.2's review, reading
+    `https://clerk.com/docs/guides/development/deployment/production.md`: "Set the DNS record for this
+    subdomain to a "DNS only" mode on your host to prevent proxying." The same guide offers a Frontend API
+    proxy instead ("If you're unable to add a CNAME record for the Frontend API, you can use a proxy
+    instead"), which would put a Clerk route on the box's Traefik. Nothing exists yet: the records are
+    added by `ops/identity-issuer.md` § The sequence step 5. KV-7 is the precedent for accepting DNS-only
+    `cuatro.dev` hostnames as a standing known violation.
+
+    **Owner: the Operator's ruling, `ops/identity-issuer.md` Pending Operator action 9.** **Trigger: before
+    the issuer's DNS records are added.** Either accept them DNS only as a new KV entry in
+    `ops/known-violations.md`, or proxy the Frontend API, which then needs its own runbook.
+
+    **Closed 2026-10-03 by Operator ruling:** the issuer's hostnames are added DNS only and accepted as
+    standing, recorded as KV-9 in `ops/known-violations.md`; `ops/identity-issuer.md` action 9 is dated.
+    The domain `id.cuatro.dev` was kept at the same time.
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-3-the-hub-authenticates-over-oidc-authorization-code-pkce.md`
+  id: DW-322
+  summary: >-
+    The Registry still declares `cuatro-portfolio` as `identity: none` although the Hub now carries an OIDC
+    sign-in, because no person has yet observed it work against the live issuer.
+  evidence: |-
+    Found 2026-10-02 by Story 5.3, which built the Hub's sign-in (`apps/hub/lib/oidc.ts`, `apps/hub/app/auth/`)
+    and proved it only against a stand-in issuer in `apps/hub/lib/__tests__/oidc.test.ts`; the Clerk issuer
+    does not exist yet (`ops/identity-issuer.md` actions 1 to 7). AD-12 makes `identity` a declaration, and
+    NFR-9 forbids a declaration ahead of the fact, so the entry stays `none` until `ops/identity-issuer.md`
+    action H3 is dated. The flip is a value change, so a Registry minor release (AD-5), and Story 5.11
+    verifies every identity declaration against reality.
+
+    **Owner: the session that dates action H3, or Story 5.11.** **Trigger: action H3 dated with no
+    `.cuatro.dev` cookie.** Move `cuatro-portfolio` to `identity: oidc` in `contracts/registry.json` with a
+    minor `contract_version` bump, and update whatever pins the old value.
+
+    **Story 5.11, 2026-10-03:** prepared, not applied. The flip is order 1 of `ops/registry-verification.md`
+    § The release the live steps unlock, with its steps and the pins it moves, and the scheduled verification
+    now refuses `oidc` on this entry until H3 is dated and the host answers `/auth/session` 401 and
+    `/auth/sign-in` with an Authorization Code + PKCE redirect. From H2 the job fails `identity: none` as
+    understated until the flip is on `main`, so H2, H3 and the flip belong to one sitting. **Owner now: that
+    record's action 8.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
+  id: DW-323
+  summary: >-
+    The Registry still declares `cs-tracker` as `identity: none` although it now carries an OIDC sign-in,
+    because no person has yet observed one identity cross the boundary against the live issuer.
+  evidence: |-
+    Found 2026-10-02 by Story 5.4, which built `cs-tracker`'s sign-in on its `dev` branch and proved it only
+    against a stand-in issuer in its own suite. AD-12 makes `identity` a declaration and NFR-9 forbids one
+    ahead of the fact, so the entry stays `none` until `ops/identity-issuer.md` action CT5 is dated.
+
+    **Owner: the session that dates action CT5, or Story 5.11.** **Trigger: CT5 dated with equal subjects and
+    no `.cuatro.dev` cookie.** Move `cs-tracker` to `identity: oidc` in `contracts/registry.json` with a minor
+    `contract_version` bump (with DW-322's flip if both are due), and update whatever pins the old value.
+
+    **Story 5.11, 2026-10-03:** prepared, not applied: order 2 of `ops/registry-verification.md` § The release
+    the live steps unlock, held by the same check as DW-322 against CT5. **Owner now: that record's action 8.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
+  id: DW-324
+  summary: >-
+    `cs-tracker` pins `oidcc` 3.8.0, the version the architecture's Stack table names, and 3.8.0 carries
+    EEF-CVE-2026-75759 (HIGH, fixed in 3.9.0).
+  evidence: |-
+    Found 2026-10-02 by Story 5.4 through Hex 2.5.1's audit during `mix deps.get`, and read at
+    `https://api.osv.dev/v1/vulns/EEF-CVE-2026-75759`: 3.8.0 accepts an encrypted ID token with no signature
+    inside. `cs-tracker` unsets the ID token encryption fields after discovery so it never decrypts one, and
+    its suite reproduces the bypass with that line removed. Moving off the named version amends the spine's
+    Stack table, which is a ruling.
+
+    **Owner: the Operator, `ops/identity-issuer.md` action CT4.** **Trigger: any time; before CT3 for the
+    first rollout to carry it.** Options and a recommendation are in CT4.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
+  id: DW-325
+  summary: >-
+    Hex 2.5.1's audit flags twelve packages `cs-tracker` locked before Story 5.4 (bandit, cowboy, cowlib,
+    hpax, lazy_html, mint, phoenix, phoenix_live_view, plug, postgrex, req, swoosh), several HIGH.
+  evidence: |-
+    Found 2026-10-02 by Story 5.4: `mix deps.get` with Hex 2.5.1 in the production builder image
+    (`hexpm/elixir:1.19.5-erlang-28.5-debian-trixie-20260610-slim`) lists advisories against each, for
+    example EEF-CVE-2026-65623 and EEF-CVE-2026-74836 in Bandit 1.11.1, which serves `cs-tracker`. The
+    workstation's Hex 2.4.2 prints none. None is Story 5.4's change; `cs-tracker` has no CI and no dependency
+    automation (DW-14), so nothing else surfaced them.
+
+    **Owner: a `cs-tracker` dependency story the Operator schedules.** **Trigger: before the next `cs-tracker`
+    rollout that is not Story 5.4's.** Read each advisory's reachability, bump what applies, run
+    `mix precommit` and build the image.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
+  id: DW-326
+  summary: >-
+    `cs-tracker` keeps its Steam OpenID 2.0 sign-in beside the OIDC one, a second identity path and the one
+    piece of provider-specific sign-in logic left in an OIDC application.
+  evidence: |-
+    Found 2026-10-02 by Story 5.4, which added OIDC and left `/auth/steam` working so `main` behaves exactly
+    as before while the issuer does not exist. With OIDC configured a visitor without a session is sent to
+    OIDC, and Steam is reachable by URL only. `STEAM_ID` also names the inventory `cs-tracker` reads, so
+    retiring the sign-in does not retire the variable. AD-11 and FR-23 bind provider-specific logic, which
+    Story 5.7 evidences.
+
+    **Owner: Story 5.7, or the Operator's ruling.** **Trigger: after `ops/identity-issuer.md` action CT5.**
+    Remove `/auth/steam` and its callback, or record why a second path stays.
+
+    **Story 5.7, 2026-10-02: decided and half built.** FR-23 and AD-11 require that no provider-specific
+    sign-in answers once `cs-tracker` federates. On `cs-tracker`'s `dev` (`f1501ac`, `ee33c71`), with all four
+    OIDC values set, `/auth/steam` and its callback answer what an unrouted path answers and a Steam session
+    admits no one; unconfigured, nothing changes, and emptying one value is the break-glass
+    (`ops/identity-issuer.md` § cs-tracker's Steam sign-in). The Steam code is still in the repository.
+    **Owner now: the Operator's ruling, action PS2** (delete it after CT5, recommended, or keep it as the
+    break-glass and record FR-23's letter in `ops/known-violations.md`).
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
+  id: DW-327
+  summary: >-
+    `cs-tracker`'s OIDC session carries no lifetime: `oidc_sub` lives as long as the browser-session cookie,
+    while the Hub's session ends after 8 hours (`SESSION_SECONDS` in `apps/hub/lib/oidc.ts`).
+  evidence: |-
+    Found 2026-10-02 by Story 5.4's independent verifier (minor finding, round 1). The callback writes
+    `oidc_sub` and `oidc_email` into the Phoenix session with no expiry, as the existing Steam session does, so
+    one identity can outlive the Hub's session on the other side of the boundary. No acceptance criterion of
+    Story 5.4 binds a lifetime.
+
+    **Owner: Story 5.5 (sign-out reaches every session).** **Trigger: when Story 5.5 starts.** Give the
+    `cs-tracker` session a server-side expiry matching the Hub's, or record why it differs.
+
+    **Closed 2026-10-02 by Story 5.5, on `cs-tracker`'s `dev`.** The callback records the session's mint
+    time (`oidc_iat`), and `CsTracker.Auth.OIDC.signed_in?/1`, which the HTTP gate, the live gate and
+    `/auth/session` all call, refuses a session 8 hours old or more, the Hub's `SESSION_SECONDS`, as well as
+    a revoked one. A case holds both gates to it. It reaches the box with Story 5.5's action S3.
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-5-sign-out-reaches-every-session-including-open-liveview-socke.md`
+  id: DW-328
+  summary: >-
+    Sign-out's revocations live in each application's process memory, so a second process never sees them
+    and `docker-rollout`'s overlap can lose one.
+  evidence: |-
+    Found 2026-10-02 by Story 5.5, by design (`ops/identity-issuer.md` § Sign-out). The Hub keeps them on
+    `globalThis` and `cs-tracker` in ETS, each process refusing every session minted before it started, so a
+    restart never revives a revoked session. Two gaps remain. During a rollout's overlap, a logout that
+    reaches the old container is lost for a session the old container minted after the new one started (a
+    window of seconds, one Owner). And a second replica of either application would accept a session the
+    other revoked. Neither application runs a second replica today.
+
+    **Owner: the story that first runs a second replica of the Hub or `cs-tracker`, or the Operator's
+    ruling.** **Trigger: a second replica, or a logout observed lost at a rollout.** Move the revocations to
+    a store both processes share (the estate Postgres for `cs-tracker`; the Hub has none), or record why
+    the window is accepted.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the.md`
+  id: DW-329
+  summary: >-
+    oauth2-proxy, the dashboard's ForwardAuth service, is pinned by digest and on no schedule that re-reads
+    the pin.
+  evidence: |-
+    Found 2026-10-02 by Story 5.6 (`ops/identity-issuer.md` § The Traefik dashboard behind ForwardAuth).
+    `ops/traefik/compose.yml` pins `quay.io/oauth2-proxy/oauth2-proxy:v7.15.5` by its index digest. v7.15.5,
+    published 2026-10-01, exists to close two critical authentication bypasses, and once FA4 switches the
+    dashboard the service is its only gate. AD-22's refresh scope names Traefik, PostgreSQL, restic and
+    `docker-rollout` but not this component, and adding it is a spine amendment.
+
+    **Owner: the Operator's ruling, action FA6.** **Trigger: before FA4, or at AD-22's next refresh.** Add
+    oauth2-proxy to AD-22's scope, or record why its pin is re-read only on a published advisory.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the.md`
+  id: DW-330
+  summary: >-
+    The dashboard's ForwardAuth session is reached by no sign-out but its own `/oauth2/sign_out`, so it
+    serves up to eight hours after the Owner signs out elsewhere.
+  evidence: |-
+    Found 2026-10-02 by Story 5.6. oauth2-proxy keeps the session in a sealed cookie and receives no
+    Back-Channel logout, so neither an application's sign-out (Story 5.5) nor the issuer's reaches it. The
+    dashboard is not an application, so FR-22 does not bind it, and it is reached only through an SSH tunnel.
+
+    **Owner: the Operator's ruling on action 11 (DW-319), which decides what sign-out reaches estate-wide.**
+    **Trigger: that ruling.** Shorten `OAUTH2_PROXY_COOKIE_EXPIRE`, add a server-side session store that a
+    logout can reach, or record the eight hours as accepted.
+
+    **Closed 2026-10-03 by Operator ruling: the eight hours are accepted.** Under the amended AD-11 (logout
+    is each surface ending its own session), the dashboard's logout is its own `/oauth2/sign_out`. It is
+    reached only through an SSH tunnel and FR-22 does not bind it. No code change.
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
+  id: DW-331
+  summary: >-
+    With demo access on, `cuatro-tracker` and `cs-tracker` each open connections their role's limit in
+    `ops/postgres.md` § The budget was not sized for.
+  evidence: |-
+    Found 2026-10-03 by Story 5.8 (`ops/demo-principal.md` § By hand, DP4). The tracker's demo client holds
+    one connection per server container, opened on the first demo request, beside a budget of exactly 20;
+    `cs-tracker`'s `CsTracker.DemoRepo` holds two from boot per container beside a limit of 25 sized for two
+    containers at `POOL_SIZE=10` plus the migrator. Nothing changes while demo access is off.
+
+    **Owner: the Operator's ruling DP4.** **Trigger: before DP5 or DP6 turns demo access on.** Raise the
+    limits to 22 and 29 on the box and in `ops/postgres/10-consumers.sh` and the budget table together (the
+    sum becomes 86 of 97), or lower the pools instead.
+
+    **Story 5.9, 2026-10-03:** each `demo:reset` holds one more connection while its one-shot container runs
+    (the tracker's demo client, `cs-tracker`'s `with_repo` at `pool_size: 1`), none while demo access is off,
+    so option (a) becomes 23 and 30, a sum of 88 of 97 (`ops/demo-principal.md` DP4).
+
+    **Story 5.10, 2026-10-03:** the scheduler runs the resets one after another under one lock, so at most one
+    reset connection is open in the whole estate at any moment, and each role gets the one connection Story 5.9
+    counted, never two. The arithmetic stands: 23 and 30, a sum of 88 of 97 (`ops/demo-principal.md`
+    § The scheduler).
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
+  id: DW-332
+  summary: >-
+    `cs-tournament`'s Registry `demo` reads `none`, but its whole Visitor surface is public, which is
+    `open`.
+  evidence: |-
+    Found 2026-10-03 by Story 5.8 while deciding who participates (`ops/demo-principal.md` § Who
+    participates). `apps/tournament/app/(viewer)` reads anonymously and has no middleware. The
+    `app/api/admin/*` commands need a sign-in, the Operator's console, and a player signs in with Steam
+    (`app/auth/steam/*`) only to enroll their own SteamID64 through `POST /api/roster/enroll`
+    (`requireUser`), a sign-in `demo@cuatro.dev` cannot pass (corrected in fix round 1 of the story's
+    verification, which first said only the admin commands sign in). `ops/registry-inputs.md` § `demo`
+    listed it among the entries a login gates on 2026-09-02, when it served from Vercel. A Registry value
+    change is a minor release and Story 5.11 verifies every `demo` value.
+
+    **Owner: Story 5.11, after the Operator's ruling DP8.** **Trigger: DP8.** Move `cs-tournament`'s `demo`
+    to `open` in a Registry minor release, or, if DP8 makes it a participant, build its scope first.
+
+    **Closed 2026-10-03 by Story 5.11, without waiting on DP8.** `https://tournament.cuatro.dev` answered 200
+    anonymously at 17:09:55Z, and so did `/bracket` and `/leaderboards`, so `open` is what a Visitor meets now
+    whichever way DP8 goes, and Story 5.11's new `demo` check failed `none` as understated. Registry 1.8.0
+    reads `open` (`ops/registry-verification.md` § The correction). DP8 stays the Operator's: if it makes
+    `cs-tournament` a participant, the value moves to `demo-account` only through that record's release, once
+    its account works.
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
+  id: DW-333
+  summary: >-
+    `digital-library`'s demo principal can upload files into its library, and every Visitor shares that
+    one account.
+  evidence: |-
+    Found 2026-10-03 by Story 5.8. `POST /api/libraries/:libraryId/books` admits any user holding the
+    library, so the demo principal can write a file to the box's disk that the next Visitor can download.
+    The scope holds it to the demo library; nothing bounds what is uploaded or for how long it is served.
+    The reset (Story 5.9) removes it at the next run.
+
+    **Owner: Story 5.9 (`digital-library`'s reset), or the Operator's ruling.** **Trigger: before DP7 creates
+    the demo user.** Refuse uploads to the demo principal, bound them, or record the window between resets as
+    accepted.
+
+    **Story 5.9, 2026-10-03, on `digital-library`'s `story-5-8-demo-principal`:** the reset removes every
+    upload in the demo library with its cover and its rows (`apps/api/src/demo-reset.ts`, held by a case).
+    Whether the demo principal may upload at all narrows what a Visitor can do, so it is not this story's to
+    decide. **Owner now: the Operator's ruling DR4** (`ops/demo-principal.md`; recommendation: refuse uploads
+    to the demo principal).
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-9-demo-reset-and-a-baseline-fixture-per-application.md`
+  id: DW-334
+  summary: >-
+    `digital-library`'s upload deduplicates by `sha256` across every library, so a duplicate answers 409 with
+    the other scope's book row.
+  evidence: |-
+    Found 2026-10-03 by Story 5.9 while writing the fixture. `books.sha256` is unique across the whole table
+    and `importBook` looks a digest up with `BookRepository.findBySha256` in every library, and
+    `POST /api/libraries/:libraryId/books` answers 409 with that book (title, author, `library_id`,
+    `file_path`). So the demo principal uploading a file the Operator holds reads the Operator's book row
+    across the boundary, and the Operator uploading a file the demo library holds is refused it. The same
+    unique digest makes a reset fail (exit 1, nothing applied) if the Operator ever holds a fixture PDF, which
+    a case holds. Story 5.8's boundary (`hasAccess`) is not consulted on that path.
+
+    **Owner: the Operator's ruling DR4, then `digital-library`.** **Trigger: DR4.** If DR4 refuses demo
+    uploads, the demo side closes and the Operator's side reads only the public fixture; otherwise scope the
+    duplicate lookup and the 409's body to the uploader's scope, with a case per direction.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-11-demo-and-identity-declarations-verified-against-reality.md`
+  id: DW-335
+  summary: >-
+    No participant's own sign-in page names the demo account, so a Visitor cannot obtain its credentials
+    there (FR-25), and the Registry's `demo-account` stays refused by the scheduled verification.
+  evidence: |-
+    Found 2026-10-03 by Story 5.11. `demo@cuatro.dev` appears in no page of `apps/tracker` (`app/`,
+    `components/`), of `digital-library`'s `apps/web/src` on `story-5-8-demo-principal`, or of
+    `cs-tracker`'s `lib/cs_tracker_web` on `dev`. `ops/demo-principal.md` DP2 kept `DEMO_PASSWORD` in the `.env`
+    "until Story 5.11 publishes it on each sign-in surface"; Story 5.11 builds the check that requires it
+    (a `demo-account` entry's page, reached from `live` by same-origin redirects, must name the address) and
+    not the three pages, which are application changes in three repositories. `cs-tracker` has a design
+    question first: with OIDC configured a Visitor without a session goes straight to the issuer, whose page
+    is not the application's own, so it needs a page of its own before that redirect.
+
+    **Owner: a story the Operator schedules in Epic 5, one change per participant.** **Trigger: before
+    `ops/registry-verification.md` action 9 for that participant.** Show the demo address and, from the
+    application's environment, its password on the sign-in page (the tracker's `/login`, the library's
+    `/login`, a `cs-tracker` page before the issuer), with a case in each suite.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-11-demo-and-identity-declarations-verified-against-reality.md`
+  id: DW-336
+  summary: >-
+    The scheduled verification never signs in as the demo account, so a demo sign-in that breaks after its
+    dated observation passes while the sign-in page still names the address.
+  evidence: |-
+    Found 2026-10-03 by Story 5.11 (`ops/registry-verification.md` § Stated limits). A daily sign-in needs the
+    demo password as a workflow secret and a sign-in per application, and `cs-tracker`'s demo signs in at the
+    issuer, which a provider-neutral job cannot drive.
+
+    **Owner: the Operator's ruling, `ops/registry-verification.md` action 11.** **Trigger: the first demo
+    release (action 9).** Options and a recommendation are in that action.
   status: open

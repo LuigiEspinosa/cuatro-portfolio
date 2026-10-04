@@ -1199,6 +1199,20 @@ exited **0** on the workstation. Its start time, case count and elapsed time wer
 step 10, and again through Traefik, answering 200 with no `via` line, at 00:56:22Z after step 11 moved the
 hostname: the move rebuilt no image.
 
+## Re-run 2026-10-02, after Story 5.4 touched cs-tracker
+
+**Observed 2026-10-02** by Story 5.4, which added OIDC sign-in to `cs-tracker` on its `dev` branch
+(`3d613f2`, in the worktree `cs-tracker-workspace/cs-tracker-dev`), touching no file under `assets/`. The
+probe reads the fixed checkout beside this repository, `cs-tracker` at
+`2519fe379251e0e4d8c1a4ae2e8ddfb028fc49b8` (its `main`, with uncommitted edits to `AGENTS.md` and
+`CLAUDE.md` that are not Story 5.4's), from this repository at `43caa3b` after a fresh
+`corepack pnpm --filter hub build`. A first run at `2026-10-02T17:10:34Z` stopped at exit 3 (no Chromium on
+the host, 4 cases passed before the block); `corepack pnpm exec playwright install chromium` fixed it.
+
+| Started (UTC) | Shell | Exit | Cases | Elapsed |
+|---|---|---|---|---|
+| `2026-10-02T17:11:26Z` | Git Bash, `NO_COLOR` unset | **0** | 19, 19 PASS | 12.0s |
+
 ## Pending Operator actions
 
 This file hands the Operator work Story 1-19 may not do, in the shape `ops/token-contract.md`,

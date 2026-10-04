@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 
 // Story 4-2 (AD-7, AD-26), and Story 4-11, which hands it 80 and 443: the Traefik stack under `ops/traefik/`. Every hostname the box serves has a
 // router matching on Host, PathPrefix never routes between applications, the dashboard sits behind
-// basic auth on its loopback entrypoint, only the scratch hostname uses the DNS-01 resolver, and no
+// basic auth on its loopback entrypoint (or ForwardAuth once the Operator switches it, Story 5.6), only the scratch hostname uses the DNS-01 resolver, and no
 // secret is committed. The files are read as indented text, on the precedent of
 // `docker/__tests__/compose.test.ts`: no YAML parser is installed, and the routing file's own header
 // fixes the shape this reads (routers four spaces in, their keys six, every rule on one line).
@@ -53,6 +53,26 @@ function parseRouters(text: string): Router[] {
   return routers;
 }
 
+/** The middlewares under `http.middlewares`, each with the one kind it declares (headers, chain, ...). */
+function middlewareKinds(text: string): Map<string, string> {
+  const lines = text.split(/\r?\n/);
+  const start = lines.indexOf('  middlewares:');
+  if (start < 0) throw new Error('no `  middlewares:` block');
+  const kinds = new Map<string, string>();
+  let current = '';
+  for (const line of lines.slice(start + 1)) {
+    if (/^ {0,2}\S/.test(line)) break;
+    const name = /^ {4}([a-z0-9-]+):\s*$/.exec(line);
+    if (name) current = name[1];
+    const kind = /^ {6}([A-Za-z]+):/.exec(line);
+    if (kind && current && !kinds.has(current)) kinds.set(current, kind[1]);
+  }
+  return kinds;
+}
+
+/** The names in a router's one-line `[a, b]` middlewares list. */
+const names = (list?: string) => (list ?? '').replace(/^\[|\]$/g, '').split(',').map((s) => s.trim()).filter(Boolean);
+
 /** Hostnames in `§ Every hostname in the zone` whose origin is this box. */
 function boxHostnames(markdown: string): string[] {
   const section = markdown.split('\n## Every hostname in the zone\n')[1]?.split('\n## ')[0];
@@ -68,8 +88,23 @@ function boxHostnames(markdown: string): string[] {
 /** The one host a rule leads with, or null when it does not lead with exactly one Host. */
 const leadingHost = (rule: string) => /^Host\(`([^`]+)`\)(?:\s*&&|$)/.exec(rule)?.[1] ?? null;
 
-const routers = parseRouters(ROUTES);
-const publicRouters = routers.filter((r) => r.name !== 'dashboard');
+/**
+ * Traefik renders the routing file as a Go template. One condition switches the dashboard to ForwardAuth
+ * (Story 5.6): `DASHBOARD_FORWARD_AUTH`, read from Traefik's environment, exactly `on`. This keeps the
+ * branch the switch selects; the rehearsal in `ops/identity-issuer.md` proves Traefik renders it the same.
+ */
+const SWITCH = '{{ if eq (env "DASHBOARD_FORWARD_AUTH") "on" }}';
+function render(text: string, on: boolean): string {
+  return text.replace(/^\{\{ if eq \(env "DASHBOARD_FORWARD_AUTH"\) "on" \}\}\n([\s\S]*?)(?:^\{\{ else \}\}\n([\s\S]*?))?^\{\{ end \}\}\n/gm, (_m, a: string, b = '') => (on ? a : b));
+}
+const OFF = render(ROUTES, false);
+const ON = render(ROUTES, true);
+
+/** Loopback routers, on the dashboard's entrypoint, are not public. */
+const isPublic = (r: Router) => r.entryPoints !== '[traefik]';
+const routers = parseRouters(OFF);
+const gated = parseRouters(ON);
+const publicRouters = routers.filter(isPublic);
 
 describe('the parsers', () => {
   it('read a router block and stop at the next block', () => {
@@ -224,6 +259,128 @@ describe('the tournament router', () => {
   });
 });
 
+// Story 5.6 (AD-11): ForwardAuth gates the Traefik dashboard, a surface with no authentication of its own, and
+// is never an application's identity path. Nothing merged changes what the box serves: the gate exists only
+// once the Operator sets DASHBOARD_FORWARD_AUTH=on in Traefik's `.env` and recreates it.
+describe('ForwardAuth on the dashboard (Story 5.6)', () => {
+  /** Middlewares of the forwardAuth kind, by name. */
+  const forwardAuths = (text: string) => [...text.matchAll(/^ {4}([a-z0-9-]+):\n {6}forwardAuth:$/gm)].map((m) => m[1]);
+  const uncommented = (text: string) => text.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
+
+  it('templates only the switch and the basic-auth users, each condition on a line of its own', () => {
+    const tags = ROUTES.split('\n').filter((l) => l.includes('{{'));
+    expect(tags).toEqual([SWITCH, '{{ else }}', '{{ end }}', `          - '{{ env "TRAEFIK_DASHBOARD_USERS" }}'`, SWITCH, '{{ end }}', SWITCH, '{{ end }}']);
+    // Traefik renders comments too, so template braces in one would break the whole file.
+    expect(ROUTES.split('\n').filter((l) => /^\s*#/.test(l) && /\{\{|\}\}/.test(l))).toEqual([]);
+  });
+
+  it('switched off, renders the dashboard as before and names no forward-auth anything', () => {
+    expect(routers.find((r) => r.name === 'dashboard')?.middlewares).toBe('[dashboard-auth]');
+    expect(uncommented(OFF)).not.toMatch(/forward-auth|forwardAuth|oauth2/);
+    expect(routers.map((r) => r.name)).not.toContain('dashboard-oauth2');
+  });
+
+  it('switched on, gates the dashboard and routes its callback paths to the service, ungated', () => {
+    expect(gated.find((r) => r.name === 'dashboard')).toEqual({ name: 'dashboard', rule: 'Host(`localhost`)', entryPoints: '[traefik]', middlewares: '[dashboard-forward-auth]', service: 'api@internal' });
+    expect(gated.find((r) => r.name === 'dashboard-oauth2')).toEqual({ name: 'dashboard-oauth2', rule: 'Host(`localhost`) && PathPrefix(`/oauth2/`)', entryPoints: '[traefik]', service: 'forward-auth' });
+    // The whole block, so no added key (trustForwardHeader, authResponseHeaders) passes unseen.
+    const middleware = ON.split('\n    dashboard-forward-auth:\n')[1]?.split(/\n(?= {0,4}\S)/)[0]?.trimEnd();
+    expect(middleware).toBe(['      forwardAuth:', '        address: http://forward-auth:4180/'].join('\n'));
+    expect(ON).toContain(['    forward-auth:', '      loadBalancer:', '        servers:', '          - url: http://forward-auth:4180', ''].join('\n'));
+  });
+
+  it('is never an application identity path (AD-11): no public router, in either state, reaches it', () => {
+    for (const [text, rs, expected] of [[OFF, routers, []], [ON, gated, ['dashboard-forward-auth']]] as const) {
+      const fa = forwardAuths(text);
+      expect(fa).toEqual(expected);
+      const naming = rs.filter((r) => fa.some((m) => (r.middlewares ?? '').includes(m)));
+      expect(naming.map((r) => r.name)).toEqual(expected.length ? ['dashboard'] : []);
+      for (const r of rs.filter(isPublic)) {
+        expect(fa.some((m) => (r.middlewares ?? '').includes(m)), r.name).toBe(false);
+        expect(r.service, r.name).not.toBe('forward-auth');
+      }
+    }
+    // The public routing is the same whichever way the switch is set.
+    expect(gated.filter(isPublic)).toEqual(publicRouters);
+  });
+
+  // Matching forwardAuth by name misses a wrapper: a `chain` of dashboard-forward-auth on an application router
+  // gates it switched on and names an undefined middleware switched off. So, in both renders, every middleware
+  // a router names is defined, and a public router names only header and redirect kinds, never a chain.
+  it('lets a public router name only defined header and redirect middlewares, in either state', () => {
+    for (const [text, rs] of [[OFF, routers], [ON, gated]] as const) {
+      // A block-style list would hide a router's middlewares from the one-line parser.
+      expect(text).not.toMatch(/^ {6}middlewares:\s*$/m);
+      const kinds = middlewareKinds(text);
+      for (const r of rs) {
+        for (const m of names(r.middlewares)) {
+          expect(kinds.has(m), `${r.name} names ${m}`).toBe(true);
+          if (isPublic(r)) expect(['headers', 'redirectRegex'], `${r.name} names ${m}, a ${kinds.get(m)}`).toContain(kinds.get(m));
+        }
+      }
+    }
+  });
+
+  it('middlewareKinds reads each middleware and the kind it declares', () => {
+    const text = ['http:', '  middlewares:', '    a:', '      headers:', '        x: y', '    b:', '      chain:', '        middlewares: [a]', '  services:', '    s:', '      chain:'].join('\n');
+    expect([...middlewareKinds(text)]).toEqual([['a', 'headers'], ['b', 'chain']]);
+    expect(names('[a, b@file]')).toEqual(['a', 'b@file']);
+    expect(names(undefined)).toEqual([]);
+  });
+
+  const service = COMPOSE.split('\n  forward-auth:\n')[1]?.split(/\n(?= {0,2}\S)/)[0] ?? '';
+  /** The service's environment, every uncommented `KEY: value` line of its block. */
+  const ENV = Object.fromEntries(
+    (service.split('\n    environment:\n')[1]?.split(/\n(?= {0,4}\S)/)[0] ?? '')
+      .split('\n')
+      .filter((l) => !/^\s*#/.test(l))
+      .map((l) => /^ {6}([A-Z0-9_]+): (.+)$/.exec(l)?.slice(1) ?? [l, 'unparsed']),
+  );
+
+  it('runs oauth2-proxy pinned by digest, under a profile, published nowhere, on the shared network', () => {
+    // Its keys as an exact set: a `command:` or `entrypoint:` could pass flags the environment test never sees.
+    expect([...service.matchAll(/^ {4}([a-z_]+):/gm)].map((m) => m[1])).toEqual(['image', 'profiles', 'environment', 'configs', 'networks', 'restart']);
+    expect(service).toMatch(/^ {4}image: quay\.io\/oauth2-proxy\/oauth2-proxy:v7\.15\.5@sha256:[0-9a-f]{64}$/m);
+    expect(service).toMatch(/^ {4}profiles: \[forward-auth\]$/m);
+    expect(service).not.toMatch(/^ {4}ports:/m);
+    expect(service).toMatch(/^ {4}networks:\n {6}- cs-tracker_default$/m);
+  });
+
+  it('is a provider-neutral OIDC client with PKCE, a host-only __Host- session and the Owner alone', () => {
+    // The whole environment as an exact set: once switched on this service is the dashboard's only gate, so
+    // an added setting (SKIP_AUTH_ROUTES, SKIP_JWT_BEARER_TOKENS, INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL) or a
+    // widened one (WHITELIST_DOMAINS '*') must fail here. No COOKIE_DOMAIN (host-only, AD-11) and no
+    // EMAIL_DOMAINS, which would admit anyone the issuer knows at that domain: one address is the allowlist.
+    expect(ENV).toEqual({
+      OAUTH2_PROXY_HTTP_ADDRESS: '0.0.0.0:4180',
+      OAUTH2_PROXY_PROVIDER: 'oidc',
+      OAUTH2_PROXY_OIDC_ISSUER_URL: '${OIDC_ISSUER:-}',
+      // AD-3's derivation from the stack's name, `traefik`, as ops/identity-issuer.md records.
+      OAUTH2_PROXY_CLIENT_ID: '${TRAEFIK_OIDC_CLIENT_ID:-}',
+      OAUTH2_PROXY_CLIENT_SECRET: '${TRAEFIK_OIDC_CLIENT_SECRET:-}',
+      OAUTH2_PROXY_COOKIE_SECRET: '${TRAEFIK_FORWARD_AUTH_COOKIE_SECRET:-}',
+      OAUTH2_PROXY_SCOPE: 'openid email profile',
+      OAUTH2_PROXY_CODE_CHALLENGE_METHOD: 'S256',
+      OAUTH2_PROXY_INSECURE_OIDC_SKIP_NONCE: "'false'",
+      OAUTH2_PROXY_REDIRECT_URL: 'http://localhost:8080/oauth2/callback',
+      OAUTH2_PROXY_WHITELIST_DOMAINS: 'localhost:8080',
+      OAUTH2_PROXY_AUTHENTICATED_EMAILS_FILE: '/etc/forward-auth/owner-email',
+      OAUTH2_PROXY_COOKIE_NAME: '__Host-traefik-dashboard',
+      OAUTH2_PROXY_COOKIE_SECURE: "'true'",
+      OAUTH2_PROXY_COOKIE_SAMESITE: 'lax',
+      OAUTH2_PROXY_COOKIE_EXPIRE: '8h',
+      OAUTH2_PROXY_COOKIE_REFRESH: "'0'",
+      OAUTH2_PROXY_REVERSE_PROXY: "'true'",
+      OAUTH2_PROXY_UPSTREAMS: 'static://202',
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "'true'",
+    });
+    expect(service).toContain(['      - source: forward-auth-owner-email', '        target: /etc/forward-auth/owner-email'].join('\n'));
+    expect(COMPOSE).toContain(['  forward-auth-owner-email:', '    content: ${TRAEFIK_OIDC_OWNER_EMAIL:-}'].join('\n'));
+    // FR-23: nothing under ops/traefik/ names a provider.
+    expect([COMPOSE, ROUTES, STATIC].join('\n')).not.toMatch(/clerk/i);
+  });
+});
+
 describe('ops/traefik/traefik.yml and compose.yml', () => {
   // Story 4-9: Traefik 3 cuts a request body at 60 seconds by default and Caddy never does, so a slow
   // library upload would fail only through Traefik. Story 4-11 moves websecure to 443.
@@ -252,7 +409,7 @@ describe('ops/traefik/traefik.yml and compose.yml', () => {
     expect(ports.sort()).toEqual(['127.0.0.1:8081:8080', '443:443', '80:80']);
     // Comments name 8443 for the history; no setting may.
     expect(COMPOSE.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n')).not.toContain('8443');
-    expect([...COMPOSE.matchAll(/^ {2}([a-z_-]+):$/gm)].map((m) => m[1])).toEqual(['ingress', 'cs-tracker_default', 'origin-ca', 'acme']);
+    expect([...COMPOSE.matchAll(/^ {2}([a-z_-]+):$/gm)].map((m) => m[1])).toEqual(['ingress', 'forward-auth', 'forward-auth-owner-email', 'cs-tracker_default', 'origin-ca', 'acme']);
   });
 
   it('pins an exact Traefik v3.7 patch and mounts no Docker socket', () => {

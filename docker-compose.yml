@@ -38,6 +38,12 @@ services:
     image: ghcr.io/luigiespinosa/hub:${HUB_TAG:?ops/deploy-remote.sh sets it to the sha it deploys}
     environment:
       - NODE_ENV=production
+      # The Hub's OIDC client (Story 5.3, `ops/identity-issuer.md`). The values live in `.env.production` on
+      # the box, never here. Each defaults empty, which leaves the Hub unconfigured: its `/auth` routes
+      # answer 404 and nothing else changes, so a deploy before the issuer exists serves as before.
+      - OIDC_ISSUER=${OIDC_ISSUER:-}
+      - CUATRO_PORTFOLIO_OIDC_CLIENT_ID=${CUATRO_PORTFOLIO_OIDC_CLIENT_ID:-}
+      - CUATRO_PORTFOLIO_OIDC_CLIENT_SECRET=${CUATRO_PORTFOLIO_OIDC_CLIENT_SECRET:-}
     networks:
       # Only the shared network. The Hub has no server-side need for the database
       # or Umami; the browser reaches analytics over its public hostname.
@@ -249,6 +255,9 @@ services:
       - QBITTORRENT_PASS=${TRACKER_QBITTORRENT_PASS-}
       - DOWNLOAD_PATH=${TRACKER_DOWNLOAD_PATH-}
       - LOG_LEVEL=${TRACKER_LOG_LEVEL:-info}
+      # Demo access (AD-13, `ops/demo-principal.md` § cuatro-tracker): empty is off, the application as it
+      # was. `true` serves the demo principal from schema `demo` in this same database, migrated first.
+      - DEMO_ENABLED=${TRACKER_DEMO_ENABLED-}
     networks:
       estate-postgres:
       cuatro-tracker_default:

@@ -1,12 +1,15 @@
 // The scheduled Registry verification, Story 2.23 (AD-16, AD-18, FR-32).
 //
 // One job, off the box, reads the committed `contracts/registry.json` and holds
-// three of its claims to reality: every `source` exists (authenticated, through
+// its claims to reality: every `source` exists (authenticated, through
 // api.github.com) and resolves anonymously, except where `ops/known-violations.md`
 // KV-2 tolerates a private one; every `live` answers 2xx or 3xx at the first
-// hop; and every `token_contract` equals the `Contract vX.Y.Z` header of the
+// hop; every `token_contract` equals the `Contract vX.Y.Z` header of the
 // vendored `cuatro-contracts/tokens.css` at the path `ops/contract-adoption.md`
-// records for that adopter. A failure fails the run, which mails the Operator.
+// records for that adopter; and, from Story 5.11 (AD-12, AD-13, FR-24, FR-27),
+// every `demo` and `identity` declaration matches what an anonymous Visitor meets
+// at the entry's `live` host, backed for `demo-account` and `oidc` by the dated
+// observation in its ops record. A failure fails the run, which mails the Operator.
 //
 // Pure exports plus a thin `main`. `verify` takes the fetcher as an argument and
 // `main` takes the fetcher and the environment with defaults, so the suite
@@ -45,6 +48,37 @@ export const API = 'https://api.github.com';
 
 /** The heading of the record's table of sources tolerated to answer 404 anonymously (KV-2). */
 export const TOLERATED_HEADING = 'Sources tolerated to answer 404 anonymously';
+
+/** The two records whose dated rows stand behind an `oidc` or a `demo-account` declaration. */
+export const IDENTITY_REL = 'ops/identity-issuer.md';
+export const DEMO_REL = 'ops/demo-principal.md';
+
+/** The estate's one demo principal (AD-13), which an application's own sign-in page names (FR-25). */
+export const DEMO_PRINCIPAL = 'demo@cuatro.dev';
+
+/** Same-origin redirects followed from `live` to the sign-in page a `demo-account` entry must carry. */
+export const MAX_HOPS = 5;
+
+/**
+ * The person's observation each declaration stands on (NFR-9, AD-12): a row of a Pending Operator
+ * actions table whose last cell, Completed (UTC), carries a date once the step is done. `oidc` rests on
+ * the live sign-in observed (H3 for the Hub, CT5 for one identity across the boundary); `demo-account`
+ * on the reset run live and the demo account signed in (DR1 to DR3). An entry declaring either value
+ * and named here by nothing fails: adding a participant is an edit here, in one change with its record row.
+ */
+export const OBSERVED_BY = {
+  oidc: { 'cuatro-portfolio': [IDENTITY_REL, 'H3'], 'cs-tracker': [IDENTITY_REL, 'CT5'] },
+  'demo-account': { 'cuatro-tracker': [DEMO_REL, 'DR1'], 'cs-tracker': [DEMO_REL, 'DR2'], 'digital-library': [DEMO_REL, 'DR3'] },
+};
+
+/**
+ * `identity: wallet` is a structural exemption, not an unimplemented sign-in (AD-12, FR-24), recorded for
+ * the one entry AD-12 names. Any other entry declaring it fails, and so does this one declaring otherwise.
+ */
+export const WALLET_EXEMPT = {
+  maicoin:
+    'its identity is a wallet signature on a test network, so there is no user record for an issuer to own (AD-12, FR-24)',
+};
 
 /**
  * A `source` on github.com in one of the two shapes the API can look up: owner
@@ -138,6 +172,31 @@ export function vendoredTarget(entry, adopters) {
   return { application, path, reason: null };
 }
 
+/**
+ * Every row `OBSERVED_BY` names, read out of its record: the Completed (UTC) cell, and whether it
+ * begins with an ISO date (behind any bold or italic markup). Throws when a record is missing or a
+ * row is absent or carried twice, so a renamed action is a defect of the run on the day it happens,
+ * not on the day an entry first declares the value.
+ *
+ * @param {Record<string, string | undefined>} observed record text by repository-relative path
+ * @returns {Map<string, { cell: string, dated: boolean }>} keyed `<path> <action>`
+ */
+export function observations(observed) {
+  const found = new Map();
+  for (const byId of Object.values(OBSERVED_BY)) {
+    for (const [rel, action] of Object.values(byId)) {
+      const text = observed?.[rel];
+      if (typeof text !== 'string') throw new Error(`${rel} was not read, so no declaration it backs can be verified`);
+      const rows = text.split(/\r?\n/).filter((line) => new RegExp(`^\\|\\s*${action}\\s*\\|`).test(line));
+      if (rows.length !== 1) throw new Error(`${rel} carries ${rows.length} rows for action ${action}, not one`);
+      const cells = rows[0].split('|').slice(1, -1).map((cell) => cell.trim());
+      const cell = cells.at(-1) ?? '';
+      found.set(`${rel} ${action}`, { cell, dated: /^[\s*_]*\d{4}-\d{2}-\d{2}/.test(cell) });
+    }
+  }
+  return found;
+}
+
 // ---------------------------------------------------------------------------
 // The network
 // ---------------------------------------------------------------------------
@@ -188,16 +247,194 @@ const message = (error) => (error instanceof Error ? error.message : String(erro
 /** How an answer is printed: the status, or the error a fetch threw. Escaped once, where the line is built. */
 const answered = ({ response, error }) => (response !== null ? `answered ${response.status}` : `did not answer (${message(error)})`);
 
+// ---------------------------------------------------------------------------
+// What a Visitor meets: `demo` and `identity` (Story 5.11)
+// ---------------------------------------------------------------------------
+
+const isRedirect = (status) => status >= 300 && status < 400;
+const isSuccess = (status) => status >= 200 && status < 300;
+
+/** Where a 3xx points, resolved against the URL that answered it, for a line: origin and path only. */
+function target(response, base) {
+  const location = response.headers.get('location');
+  if (location === null || location === '') return null;
+  try {
+    return new URL(location, base);
+  } catch {
+    return null;
+  }
+}
+const shown = (url) => (url === null ? 'no usable Location' : `${url.origin}${url.pathname}`);
+
+/** The dated row an `oidc` or `demo-account` declaration needs, or why it is missing. */
+function recorded(value, id, observed) {
+  const named = OBSERVED_BY[value][id];
+  if (named === undefined) {
+    return { ok: false, detail: `no recorded observation names ${id} (OBSERVED_BY in ops/registry-verification.mjs)` };
+  }
+  const [rel, action] = named;
+  const { cell, dated } = observed.get(`${rel} ${action}`);
+  return dated
+    ? { ok: true, detail: `${rel} ${action} observed ${cell}` }
+    : { ok: false, detail: `${rel} ${action} reads "${cell}", so no person has observed it yet (NFR-9)` };
+}
+
+/**
+ * The sign-in page a Visitor reaches from `live`: same-origin redirects followed from the answer the
+ * `live` row already holds, at most `MAX_HOPS`, to a 2xx whose body names the demo principal. A chain
+ * that leaves the host is a sign-in page that is not the application's own (FR-25).
+ */
+async function signInPage(fetch, live, first) {
+  const origin = new URL(live).origin;
+  let url = live;
+  let got = first;
+  for (let hop = 0; ; hop += 1) {
+    const status = got.response?.status ?? null;
+    if (status === null) return { ok: false, detail: `${url} ${answered(got)}` };
+    if (isSuccess(status)) {
+      let body = null;
+      try {
+        body = await got.response.text();
+      } catch (error) {
+        return { ok: false, detail: `${url} answered ${status} and its body was cut: ${message(error)}` };
+      }
+      return body.includes(DEMO_PRINCIPAL)
+        ? { ok: true, detail: `${url} answered ${status} and names ${DEMO_PRINCIPAL}` }
+        : { ok: false, detail: `${url} answered ${status} and does not name ${DEMO_PRINCIPAL}, so a Visitor cannot find the demo account (FR-25)` };
+    }
+    if (!isRedirect(status)) return { ok: false, detail: `${url} answered ${status}` };
+    const next = target(got.response, url);
+    if (next === null) return { ok: false, detail: `${url} answered ${status} with no usable Location` };
+    if (next.origin !== origin) {
+      return { ok: false, detail: `${url} answered ${status} to ${next.origin}, off ${origin}, so the sign-in page is not the application's own (FR-25)` };
+    }
+    if (hop === MAX_HOPS) return { ok: false, detail: `more than ${MAX_HOPS} redirects from ${live}` };
+    url = next.href;
+    got = await get(fetch, url, {});
+  }
+}
+
+/**
+ * The `demo` row (FR-27, AD-13). `not-deployed` carries no `live`; every other value needs one, so an
+ * application the release valve takes offline (FR-28) reads `not-deployed` in the same change. `open`
+ * answers 2xx at the first hop, with no sign-in; `none` answers 3xx, a sign-in standing before the
+ * application; `demo-account` has its dated observation and an own sign-in page naming the principal.
+ *
+ * @returns {Promise<[boolean, string]>}
+ */
+async function demoVerdict(entry, atLive, { fetch, observed }) {
+  const { demo, live } = entry;
+  if (demo === 'not-deployed') {
+    return live === undefined
+      ? [true, 'not-deployed and carries no live URL: nothing to reach']
+      : [false, `declares not-deployed but carries live ${live}: remove the URL or correct the declaration`];
+  }
+  if (!['open', 'none', 'demo-account'].includes(demo)) return [false, `declares "${demo}", which is not a demo value the schema allows`];
+  if (live === undefined) {
+    return [false, `declares ${demo} but carries no live URL, so a Visitor reaches nothing; an application taken offline reads not-deployed (FR-28)`];
+  }
+  const status = atLive.response?.status ?? null;
+  if (demo === 'demo-account') {
+    const record = recorded('demo-account', entry.id, observed);
+    const page = await signInPage(fetch, live, atLive);
+    return [record.ok && page.ok, `${record.ok ? '' : 'overstated: '}${record.detail}; ${page.ok ? '' : 'overstated: '}${page.detail}`];
+  }
+  // Only a 2xx or a 3xx says what a Visitor meets; anything else is the `live` row's failure, named here too.
+  if (status === null || !(isSuccess(status) || isRedirect(status))) return [false, `cannot be verified: ${live} ${answered(atLive)}`];
+  const to = isRedirect(status) ? ` to ${shown(target(atLive.response, live))}` : '';
+  if (demo === 'open') {
+    return isSuccess(status)
+      ? [true, `${live} answered ${status} with no sign-in: usable without authentication`]
+      : [false, `overstated: declares open but ${live} answered ${status}${to}, so a Visitor meets something other than the application`];
+  }
+  // demo === 'none'
+  return isRedirect(status)
+    ? [true, `${live} answered ${status}${to}: a sign-in stands before the application, and no demo access is declared`]
+    : [false, `understated: declares none but ${live} answered ${status} with no sign-in, so a Visitor uses it without authentication, which is open`];
+}
+
+/** What is wrong with an authorization request, against what Stories 5.3 and 5.4 send. Empty when nothing is. */
+function authorizationProblems(url, live) {
+  if (url === null) return ['it carries no usable Location'];
+  const problems = [];
+  const query = url.searchParams;
+  const callback = new URL('/auth/callback', live).href;
+  if (url.protocol !== 'https:') problems.push(`${url.origin} is not https`);
+  if (query.get('response_type') !== 'code') problems.push('response_type is not code');
+  if (query.get('code_challenge_method') !== 'S256') problems.push('code_challenge_method is not S256');
+  for (const name of ['code_challenge', 'state', 'client_id']) if (!query.get(name)) problems.push(`${name} is absent`);
+  if (query.get('redirect_uri') !== callback) problems.push(`redirect_uri is not ${callback}`);
+  return problems;
+}
+
+/**
+ * The `identity` row (AD-11, AD-12, FR-24). `wallet` is the recorded structural exemption and nothing
+ * else; `none` is contradicted by an OIDC session route answering 401 on the entry's host; `oidc` has its
+ * dated observation and, wherever `live` is present, answers `/auth/session` 401 without a session and
+ * `/auth/sign-in` with a redirect into an Authorization Code + PKCE request back to its own callback.
+ * Provider-neutral: nothing here names an issuer.
+ *
+ * @returns {Promise<[boolean, string]>}
+ */
+async function identityVerdict(entry, { fetch, observed }) {
+  const { id, identity, live } = entry;
+  const exempt = Object.hasOwn(WALLET_EXEMPT, id) ? WALLET_EXEMPT[id] : null;
+  if (identity === 'wallet') {
+    return exempt === null
+      ? [false, `declares wallet, a structural exemption recorded for ${Object.keys(WALLET_EXEMPT).join(', ')} alone (AD-12)`]
+      : [true, `wallet: structurally exempt, not unimplemented: ${exempt}`];
+  }
+  if (exempt !== null) return [false, `declares ${identity}, but ${id} is structurally exempt and declares wallet (AD-12, FR-24)`];
+  if (!['oidc', 'none'].includes(identity)) return [false, `declares "${identity}", which is not an identity value the schema allows`];
+
+  const session = live === undefined ? null : new URL('/auth/session', live).href;
+  if (identity === 'none') {
+    if (session === null) return [true, 'none and carries no live URL: nothing deployed to sign in to'];
+    const got = await get(fetch, session, {});
+    const status = got.response?.status ?? null;
+    if (status === null) return [false, `cannot be verified: ${session} ${answered(got)}`];
+    return status === 401
+      ? [false, `understated: declares none but ${session} answered 401, an OIDC session route serving here; release oidc once its observation is dated (DW-322, DW-323)`]
+      : [true, `${session} answered ${status}, not an OIDC session route`];
+  }
+
+  // identity === 'oidc'
+  const record = recorded('oidc', id, observed);
+  const flag = (ok) => (ok ? '' : 'overstated: ');
+  if (session === null) {
+    return [record.ok, `${flag(record.ok)}${record.detail}; no live URL, so the session route is not probed (FR-28)`];
+  }
+  const atSession = await get(fetch, session, {});
+  const sessionOk = atSession.response?.status === 401;
+  const signIn = new URL('/auth/sign-in', live).href;
+  const atSignIn = await get(fetch, signIn, {});
+  const signInStatus = atSignIn.response?.status ?? null;
+  const request = signInStatus !== null && isRedirect(signInStatus) ? target(atSignIn.response, signIn) : null;
+  const problems = signInStatus !== null && isRedirect(signInStatus) ? authorizationProblems(request, live) : [`it ${answered(atSignIn)}, not a redirect`];
+  const signInOk = problems.length === 0;
+  return [
+    record.ok && sessionOk && signInOk,
+    [
+      `${flag(record.ok)}${record.detail}`,
+      `${flag(sessionOk)}${session} ${answered(atSession)}${sessionOk ? '' : ', not 401'}`,
+      signInOk
+        ? `${signIn} answered ${signInStatus} to an Authorization Code + PKCE request at ${shown(request)}`
+        : `overstated: ${signIn} is not an Authorization Code + PKCE redirect: ${problems.join(', ')}`,
+    ].join('; '),
+  ];
+}
+
 /**
  * Every check one entry gets, in order: the authenticated half of `source`
  * (github.com only), the anonymous half, `live` where the field is present,
- * and `token_contract` where it is declared.
+ * `demo` and `identity` wherever declared (the schema requires both), and
+ * `token_contract` where it is declared.
  *
  * @param {Entry} entry
- * @param {{ fetch: Fetcher, token: string, tolerated: Set<string>, adopters: ReturnType<typeof adopterRows> }} context
+ * @param {{ fetch: Fetcher, token: string, tolerated: Set<string>, adopters: ReturnType<typeof adopterRows>, observed: ReturnType<typeof observations> }} context
  * @returns {Promise<Row[]>}
  */
-async function checkEntry(entry, { fetch, token, tolerated, adopters }) {
+async function checkEntry(entry, { fetch, token, tolerated, adopters, observed }) {
   /** @type {Row[]} */
   const rows = [];
   const row = (check, pass, detail) => rows.push({ id: entry.id, check, pass, detail });
@@ -277,14 +514,27 @@ async function checkEntry(entry, { fetch, token, tolerated, adopters }) {
     }
   }
 
+  /** The `live` answer, reused by the `demo` row so the Visitor's first request is made once. */
+  let atLive = null;
   if (entry.live !== undefined) {
     const got = await get(fetch, entry.live, {});
+    atLive = got;
     const verdict = classify(got.response);
     row(
       'live',
       verdict === 'resolves',
       verdict === 'resolves' ? `${entry.live} ${answered(got)}` : `${verdict}: ${entry.live} ${answered(got)}`
     );
+  }
+
+  if (entry.demo !== undefined) {
+    const [pass, detail] = await demoVerdict(entry, atLive, { fetch, observed });
+    row('demo', pass, detail);
+  }
+
+  if (entry.identity !== undefined) {
+    const [pass, detail] = await identityVerdict(entry, { fetch, observed });
+    row('identity', pass, detail);
   }
 
   if (entry.token_contract !== undefined) {
@@ -370,7 +620,7 @@ function assertEntries(entries) {
     for (const field of ['id', 'source']) {
       if (typeof entry[field] !== 'string') throw new Error(`${name} carries no string ${field}, so it cannot be verified`);
     }
-    for (const field of ['live', 'token_contract']) {
+    for (const field of ['live', 'token_contract', 'demo', 'identity']) {
       if (entry[field] !== undefined && typeof entry[field] !== 'string') {
         throw new Error(`${name} carries a ${field} that is not a string, so it cannot be verified`);
       }
@@ -385,10 +635,10 @@ function assertEntries(entries) {
  * the run, not findings about the Registry. A check that throws mid-entry is
  * one FAIL row for that entry and never discards another entry's verdict.
  *
- * @param {{ registry: Registry, record: string, adoption: string, fetch: Fetcher, token: string | undefined }} input
+ * @param {{ registry: Registry, record: string, adoption: string, observed: Record<string, string | undefined>, fetch: Fetcher, token: string | undefined }} input
  * @returns {Promise<{ ok: boolean, lines: string[], rows: Row[] }>}
  */
-export async function verify({ registry, record, adoption, fetch, token }) {
+export async function verify({ registry, record, adoption, observed, fetch, token }) {
   if (typeof token !== 'string' || token === '') {
     throw new Error(`${SECRET} is not set, so nothing was fetched. Add the repository secret (${RECORD_REL}).`);
   }
@@ -399,7 +649,10 @@ export async function verify({ registry, record, adoption, fetch, token }) {
   assertEntries(entries);
   const tolerated = new Set(kv2Rows(record).filter((r) => !r.struck).map((r) => r.repository));
   const adopters = adopterRows(adoption);
-  const settled = await Promise.allSettled(entries.map((entry) => checkEntry(entry, { fetch, token, tolerated, adopters })));
+  const seen = observations(observed);
+  const settled = await Promise.allSettled(
+    entries.map((entry) => checkEntry(entry, { fetch, token, tolerated, adopters, observed: seen }))
+  );
   const rows = settled.flatMap((outcome, index) =>
     outcome.status === 'fulfilled'
       ? outcome.value
@@ -442,6 +695,10 @@ export async function main(fetch = globalThis.fetch, env = process.env) {
       registry: JSON.parse(readFileSync(beside(REGISTRY_REL), 'utf8')),
       record: readFileSync(beside(RECORD_REL), 'utf8'),
       adoption: readFileSync(beside(ADOPTION_REL), 'utf8'),
+      observed: {
+        [IDENTITY_REL]: readFileSync(beside(IDENTITY_REL), 'utf8'),
+        [DEMO_REL]: readFileSync(beside(DEMO_REL), 'utf8'),
+      },
     };
   } catch (error) {
     return { code: 2, message: `the Registry or a record could not be read: ${message(error)}` };

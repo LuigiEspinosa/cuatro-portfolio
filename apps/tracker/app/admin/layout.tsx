@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { isDemoPrincipal } from '@/lib/demo-principal'
 
 export default async function AdminLayout({
   children,
@@ -21,7 +22,9 @@ export default async function AdminLayout({
   // * This gate is defense in depth. middleware.ts is the load-bearing check
   // * because it runs on every request, whereas a shared layout does not re-run
   // * on client-side navigation between its children.
-  if (!session) {
+  // * The demo principal is never the admin (ops/demo-principal.md): the admin surfaces run jobs
+  // * against the Operator's store. middleware.ts refuses it first.
+  if (!session || isDemoPrincipal(session.user?.email)) {
     notFound()
   }
 

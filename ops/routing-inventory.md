@@ -234,6 +234,17 @@ Six A, three AAAA, three CNAME, five MX, four NS, four TXT on 2026-08-24. **Seve
 | `cuatro.dev` | TXT | `protonmail-verification=9e0a4441...` | n/a | auto |
 | `google._domainkey.cuatro.dev` | TXT | `v=DKIM1; k=rsa; p=MIIBIjANBg...` | n/a | auto |
 | `_vercel.cuatro.dev` | TXT | `vc-domain-verify=future-vizion.cuatro.dev,8f5cf281917fc876bd43,dc` | n/a | 600 |
+| `clerk.id.cuatro.dev` | CNAME | `frontend-api.clerk.services` | DNS-only | auto |
+| `accounts.id.cuatro.dev` | CNAME | `accounts.clerk.services` | DNS-only | auto |
+| `clkmail.id.cuatro.dev` | CNAME | `mail.yr6r7w44sqsh.clerk.services` | DNS-only | auto |
+| `clk._domainkey.id.cuatro.dev` | CNAME | `dkim1.yr6r7w44sqsh.clerk.services` | DNS-only | auto |
+| `clk2._domainkey.id.cuatro.dev` | CNAME | `dkim2.yr6r7w44sqsh.clerk.services` | DNS-only | auto |
+
+The five `id.cuatro.dev` rows were **added 2026-10-03** by the Operator by hand for the Clerk identity
+issuer (`ops/identity-issuer.md` § The sequence step 5, action 2), DNS only as Clerk requires and as
+KV-9 in `ops/known-violations.md` accepts. **Observed 2026-10-03T22:31Z** by `nslookup -type=CNAME` against
+the zone's authoritative `beau.ns.cloudflare.com`: each answers the CNAME and target above, which a
+proxied record would not. Record ids and TTLs were not read; the zone was not re-enumerated.
 
 The `wheel.cuatro.dev` row was **added 2026-09-13T17:37:10Z** by Story 2-25, id
 `78b65a274cd071446893928b554e3c18`; every other row is the 2026-08-24 reading.
@@ -381,6 +392,9 @@ Caddy on 443; the rule ids are in that runbook's hostname table. The DNS column 
 | `dns01-probe.scratch.cuatro.dev` | **no DNS record** | none, by design (AD-26) | its own Let's Encrypt certificate, by DNS-01 (`ops/traefik-cutover.md` step 7) | Traefik's `dns01-probe` router on `traefik-ingress-1`, reached by SNI on the box only, the certificate read from `traefik_acme` (issuer Let's Encrypt YR2, notAfter 2026-12-29T20:53:46Z, read 05:21Z) | nothing; it proves a hostname could leave the proxy | none | n/a |
 | `covidmap.cuatro.dev` | **not this box** | CNAME, DNS-only | **Vercel** | Vercel (KV-7) | A Vercel deployment, Registry `covidmap` | **unknown** | **unknown** |
 | `future-vizion.cuatro.dev` | **not this box** | CNAME, DNS-only | **Vercel** | Vercel (KV-7) | A Vercel deployment, Registry `future-vizion` | **unknown** | **unknown** |
+| `clerk.id.cuatro.dev` | **not this box** | CNAME, DNS-only (added 2026-10-03) | **Clerk** | Clerk (KV-9) | Clerk's Frontend API, the estate's OIDC issuer (`ops/identity-issuer.md`) | n/a | n/a |
+| `accounts.id.cuatro.dev` | **not this box** | CNAME, DNS-only (added 2026-10-03) | **Clerk** | Clerk (KV-9) | Clerk's hosted sign-in page (Account Portal) | n/a | n/a |
+| `clkmail.id.cuatro.dev`, `clk._domainkey.id.cuatro.dev`, `clk2._domainkey.id.cuatro.dev` | n/a | CNAME, DNS-only (added 2026-10-03) | n/a | n/a | Nothing. Clerk's mail-sending records for `@id.cuatro.dev`, not serving hostnames | n/a | n/a |
 | `_domainconnect.cuatro.dev` | **not this box** | CNAME, proxied | **unknown**, Squarespace scaffolding | n/a | Nothing of ours | **unknown** | **unknown** |
 | `google._domainkey.cuatro.dev` | n/a | TXT only | n/a | n/a | Nothing. Not a serving hostname | n/a | n/a |
 | `_vercel.cuatro.dev` | n/a | TXT only | n/a | n/a | Nothing. Not a serving hostname | n/a | n/a |
@@ -779,6 +793,14 @@ public router below serves on its 443; the box's checkout read `50fde81` at the 
 | `cs-tournament` | `Host(tournament.cuatro.dev)` | `house-headers` | `http://tournament:3000` |
 | `dns01-probe` | the scratch hostname | none; the one router naming the `cloudflare` resolver | none (`noop@internal`) |
 | `dashboard` | `Host(localhost)`, on the loopback `traefik` entrypoint only | `dashboard-auth` | `api@internal` |
+
+**Amended 2026-10-02 (Story 5.6, repository half only):** the file now holds a second state for the dashboard,
+rendered only when Traefik's environment carries `DASHBOARD_FORWARD_AUTH=on`: the `dashboard` router's
+middleware becomes `dashboard-forward-auth` (ForwardAuth to the `forward-auth` service, `http://forward-auth:4180`,
+AD-11), and a `dashboard-oauth2` router, `Host(localhost) && PathPrefix(/oauth2/)` on the same loopback
+entrypoint, reaches that service. With the variable unset, which is the box until
+`ops/identity-issuer.md` § The Traefik dashboard behind ForwardAuth action FA4, the table above is what Traefik
+loads. No public router changes in either state.
 
 **Only `cs-tracker`'s upstream serves a WebSocket through the origin**, and its router sets
 `X-Forwarded-Proto: https` because Traefik forwards an upgrade as `wss` (Story 4-10). The others were

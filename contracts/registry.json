@@ -1,6 +1,6 @@
 {
   "$schema": "./registry.schema.json",
-  "contract_version": "1.7.0",
+  "contract_version": "1.8.0",
   "applications": [
     {
       "id": "cuatro-portfolio",
@@ -57,7 +57,7 @@
       "status": "Live",
       "tech": ["Next.js", "React", "TypeScript", "Supabase", "PostgreSQL", "Go"],
       "source": "https://github.com/LuigiEspinosa/cuatro-portfolio/tree/main/apps/tournament",
-      "demo": "none",
+      "demo": "open",
       "identity": "none",
       "live": "https://tournament.cuatro.dev",
       "absorbed_into": "cuatro-portfolio"

@@ -272,7 +272,10 @@ until this commit reaches `main` the two files come from a `dev` checkout, copie
 1. `sha256sum ~/tournament-backup.sh ~/tournament-restore-verify.sh` must print, as committed on
    2026-09-30, `25fe9d02f235e0a43a579d037d06ab9ce10a9c158bfac8e1c3ea1a4edf3be35d` and
    `9ed8b79a68d2a75881edc70f0614901c4ea364b84e72460ec17e781bd70d805d`. Stop if not: a CRLF copy
-   (`.gitattributes` keeps `*.sh` LF in a checkout) or a later edit both show here.
+   (`.gitattributes` keeps `*.sh` LF in a checkout) or a later edit both show here. **Amended
+   2026-10-01:** DW-307's fix (`f76e526`) changed the verifier, so a reinstall from now on must print
+   `3b4017b1715a463818c8bdf6b1711235707d16fdf6bf3321fa3000aedff58a03` for it, the file in the
+   repository; the backup script's digest is unchanged.
 2. `chmod 0700 ~/tournament-backup.sh ~/tournament-restore-verify.sh`.
 3. One run in the shape cron runs it:
    `env -i HOME=/home/deploy LOGNAME=deploy PATH=/usr/bin:/bin SHELL=/bin/sh /home/deploy/tournament-backup.sh`.
@@ -321,6 +324,22 @@ converted to LF, and their digests matched the committed ones exactly:
 `25fe9d02f235e0a43a579d037d06ab9ce10a9c158bfac8e1c3ea1a4edf3be35d tournament-backup.sh` and
 `9ed8b79a68d2a75881edc70f0614901c4ea364b84e72460ec17e781bd70d805d tournament-restore-verify.sh`;
 both were set to mode 0700.
+
+**Amended 2026-10-01: the verifier reinstalled (DW-307).** At 08:09Z, under the Operator's delegation,
+after `main` reached `d7e19ef` (PR #91, Deploy run 36834410261 green at about 08:05Z): the box's checkout
+read `d7e19ef`, `grep` found `--volumes` in `ops/tournament-restore-verify.sh`, `install -m 0700
+ops/tournament-restore-verify.sh /home/deploy/` ran, and `cmp` printed `installed`. The installed copy's
+sha256 is now `3b4017b1715a463818c8bdf6b1711235707d16fdf6bf3321fa3000aedff58a03` (the repository file's;
+prefix `3b4017b1715a4638`), so the `9ed8b79a...` above is history; `tournament-backup.sh` was not
+touched. A first proof run invoked as `/home/deploy/tournament-restore-verify.sh <dump>` without the
+variable failed before its first stage with `cannot find the migrations at
+/home/deploy/../apps/tournament/supabase/migrations`: the script resolves its migrations from its own
+location unless `TOURNAMENT_MIGRATIONS_DIR` is set (line 33), which is why step 4 sets it for the home
+copy. Run from the checkout instead, `bash ops/tournament-restore-verify.sh` on
+`tournament-20261001T034501Z.dump` printed
+`tournament-restore-verify sha256=match restore=ok tables=19 rows=31 migrations=29-applied-0-pending exit=0`;
+afterwards `docker volume ls -f dangling=true` counted 0 and no verify container remained. Either form
+works: the checkout copy as "The proof" above runs it, or the home copy with the variable as step 4 does.
 
 - **Step 3**, in cron's shape (`env -i HOME=/home/deploy LOGNAME=deploy PATH=/usr/bin:/bin SHELL=/bin/sh`):
   `tournament-backup ts=2026-09-30T08:04:07Z file=/home/deploy/backups/cs-tournament/tournament-20260930T080402Z.dump dump=ok list=ok tables=19 rows=31 bytes=477822 sha256=f31affc2154d66e3dbc74a4b0ba2120f95fe60dc9db41a4d0077f0103728a36d prune=removed-0-aged-over-14-whole-days exit=0`.

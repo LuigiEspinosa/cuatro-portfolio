@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-01-2026 02:57
+last_updated: 10-03-2026 17:10
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1029,18 +1029,90 @@ development_status:
   4-11-retire-caddy-and-decommission-the-old-topology: done
   epic-4-retrospective: done
 
-  epic-5: backlog
-  5-1-refresh-clerk-s-pricing-and-terms: backlog
-  5-2-one-clerk-issuer-and-one-oidc-client-per-application: backlog
-  5-3-the-hub-authenticates-over-oidc-authorization-code-pkce: backlog
-  5-4-cs-tracker-authenticates-the-javascript-elixir-boundary: backlog
-  5-5-sign-out-reaches-every-session-including-open-liveview-socke: backlog
-  5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the: backlog
-  5-7-provider-replaceability-is-evidenced-not-asserted: backlog
-  5-8-the-demo-principal-contract: backlog
-  5-9-demo-reset-and-a-baseline-fixture-per-application: backlog
-  5-10-one-host-level-reset-scheduler-for-the-estate: backlog
-  5-11-demo-and-identity-declarations-verified-against-reality: backlog
+  epic-5: in-progress
+  # 5-1 awaiting-operator 2026-10-02: repository half built on dev. New record ops/clerk-pricing-and-terms.md:
+  # Clerk pricing, the Standard Terms ("Last updated: July 2, 2026") and two OAuth docs pages read 2026-10-02 at
+  # 14:01Z with URL and time; pricing unchanged since 2026-09-30, every AD-11 element a page prices is $0 on Hobby, OAuth
+  # applications named by no pricing line. The plan is a named decision against NFR-4 ($100 ceiling, $0 recorded
+  # marginal spend today), recommendation Hobby at $0, pending the Operator: ops/clerk-pricing-and-terms.md
+  # § Pending Operator actions 1 to 3 (action 1 closes the story). DW-319 filed (no logout on the docs pages read).
+  # 5-1 done 2026-10-03T22:04Z: the Operator ruled Hobby at $0 (action 1). Actions 2 and 3 run at Story 5.2's sign-up.
+  5-1-refresh-clerk-s-pricing-and-terms: done
+  # 5-2 awaiting-operator 2026-10-02: repository half built on dev. New record ops/identity-issuer.md: one Clerk
+  # issuer (application cuatro, production instance on id.cuatro.dev, decided so Clerk cookies stay off .cuatro.dev),
+  # one confidential OIDC client per FR-21 application (cuatro-portfolio, cs-tracker), each Name the Registry id and
+  # each credential named <ID>_OIDC_CLIENT_ID and _SECRET plus OIDC_ISSUER, held by ops/__tests__/identity-issuer.test.ts
+  # with a scan that no unignored file assigns one a value. Logout read from the live issuer clerk.clerk.com at 14:38Z:
+  # backchannel_logout_supported false, no end_session_endpoint; DW-319 amended to an Operator ruling before 5.5.
+  # DW-320 (Clerk assigns the Client ID, AD-3) and DW-321 (DNS-only issuer hostnames against AD-26) filed.
+  # .env.example not edited: the session permission settings deny .env.*; block and test case in the record.
+  # Box, Clerk, Cloudflare and GitHub half is the Operator: ops/identity-issuer.md Pending Operator actions 1 to 9.
+  # 5-2 done 2026-10-03T23:48Z: issuer https://clerk.id.cuatro.dev live on Hobby, both OAuth applications created,
+  # secrets set in both repositories, three lines in each box env file, .env.example documented; rulings AD-3
+  # narrowed, AD-11 logout amended (DW-319), KV-9 (DNS-only issuer hosts) and KV-10 (__client_uat) accepted.
+  5-2-one-clerk-issuer-and-one-oidc-client-per-application: done
+  # 5-3 awaiting-operator 2026-10-02: repository half built on dev. The Hub signs in over OIDC Authorization Code +
+  # PKCE from discovery alone (apps/hub/lib/oidc.ts, apps/hub/app/auth/ sign-in, callback, session; jose 6.2.2, already
+  # locked, now a root dependency), mints its own __Host-hub-session (Secure, HttpOnly, Path=/, no Domain), and answers
+  # 404 on /auth/* with OIDC_ISSUER or either CUATRO_PORTFOLIO_OIDC_ variable unset, so main may deploy before the
+  # issuer exists. Proven against a loopback stand-in issuer in apps/hub/lib/__tests__/oidc.test.ts and against the
+  # built server.js; docker-compose.yml maps the three variables into anchor-app, defaulting empty. Redirect URI
+  # https://cuatro.dev/auth/callback. Live sign-in is the Operator's: ops/identity-issuer.md actions H1 to H3 (after
+  # 5.2's actions 5 and 7); DW-322 flips the Registry's identity once H3 is dated.
+  5-3-the-hub-authenticates-over-oidc-authorization-code-pkce: awaiting-operator
+  # 5-4 awaiting-operator 2026-10-02: repository halves built. cs-tracker (its dev branch, worktree
+  # cs-tracker-workspace/cs-tracker-dev, 3d613f2 0f10ed0 687edfb a011f93, pushed after verifier round 2's clean pass) signs in over OIDC Authorization Code + PKCE
+  # through oidcc 3.8.0 from discovery alone (/auth/sign-in, /auth/callback, /auth/session), admits only
+  # CS_TRACKER_OIDC_OWNER_SUB, and with all four variables set names its session __Host-cs-tracker (Secure, HttpOnly,
+  # Path=/, no Domain); with any unset it answers there what an unrouted path answers, keeps _cs_tracker_key and sends
+  # visitors to Steam. Verifier round 1 refused it: the builder's claim that six production-image probes matched main's
+  # was wrong on the three OIDC routes (empty 404 behind the browser pipeline); fix round 1 (a011f93) moved the gate ahead
+  # of it, and the probes now match main's in status, headers and body, kill switch off and on. DW-327 filed. Proven against a stand-in issuer in its suite (mix precommit
+  # 687 tests, 0 failures on OTP 26 after fix round 1; 686 in the OTP 28.5 builder image at 687edfb). oidcc 3.8.0 carries EEF-CVE-2026-75759:
+  # unreachable here, ruling CT4 (DW-324). Live sign-in, rollout and the person observing one identity cross the
+  # boundary are the Operator's: ops/identity-issuer.md CT1 to CT6. DW-323 to DW-326 filed.
+  5-4-cs-tracker-authenticates-the-javascript-elixir-boundary: awaiting-operator
+  5-5-sign-out-reaches-every-session-including-open-liveview-socke: awaiting-operator
+  5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the: awaiting-operator
+  # 5-7 awaiting-operator 2026-10-02: repository halves built. ops/provider-swap.sh points the Hub's production image,
+  # cs-tracker's production release and the committed forward-auth at dex v2.45.1 (pinned by digest, test-time only)
+  # through their existing issuer and client variables alone, and each signs in with a __Host- session and no Domain;
+  # cs-tracker's sub equals the Hub's. CI job provider-swap runs the Hub and forward-auth on every push (cs-tracker
+  # is private and has no CI, so by hand). DW-326 decided: on cs-tracker's dev (f1501ac, ee33c71) Steam answers
+  # only while OIDC is unconfigured. Operator: ops/identity-issuer.md PS1 (live evidence ruling, closes the story),
+  # PS2 (delete the Steam code, DW-326), PS3 (make provider-swap required).
+  5-7-provider-replaceability-is-evidenced-not-asserted: awaiting-operator
+  # 5-8 awaiting-operator 2026-10-03: repository halves built. New record ops/demo-principal.md: the principal
+  # demo@cuatro.dev, derived (the issuer's subject, CS_TRACKER_OIDC_DEMO_SUB, for cs-tracker; the account address
+  # otherwise), participants from FR-25 (cuatro-tracker, cs-tracker, digital-library; cs-tournament's Visitor
+  # surface is public, ruling DP8, DW-332), each scope its own: schema demo in the tracker's and cs-tracker's own
+  # databases, the libraries the demo principal alone holds in digital-library. Off by default in each. Tracker on
+  # dev here; cs-tracker dev 8109599 e782b4c; digital-library branch story-5-8-demo-principal 4d7bea0 b94a95e. The
+  # mailbox question, credentials, issuer account, budget ruling and each switch are the Operator's: DP1 to DP8.
+  # DW-331 to DW-333 filed.
+  5-8-the-demo-principal-contract: awaiting-operator
+  # 5-9 awaiting-operator 2026-10-03: repository halves built. ops/demo-principal.md § The reset defines demo:reset
+  # once (delete by owner through an explicit key, never the Operator's rows or the principal's account, a committed
+  # fixture with fixed ids and times, one transaction, idempotent, skipped when off or absent, run from the host as
+  # a one-shot docker compose run, one line out, exit 0 or 1). Tracker on dev here (Postgres-backed suite, CI gains
+  # a Postgres service); cs-tracker dev d1adf6c 7b79f25 dcd35ee; digital-library branch story-5-8-demo-principal
+  # 353f7e0 and 6ae8df2 (fix round 1). Running each reset live (DR1 to DR3) and the uploads ruling (DR4) are the Operator's. DW-334 filed.
+  5-9-demo-reset-and-a-baseline-fixture-per-application: awaiting-operator
+  # 5-10 awaiting-operator 2026-10-03: repository half built on dev. ops/demo-reset.sh, run from the box's checkout
+  # by one committed cron file (ops/demo-reset.cron, installed as /etc/cron.d/cuatro-demo-reset) every 15 minutes,
+  # reads ops/demo-reset.schedule (60 minutes for each participant, or off) and runs the due resets one at a time
+  # under flock, by the record's commands; a failure or a timeout is named and the others still run; a drifted
+  # cron file exits 1 (DW-318 avoided); one summary line per run, unread (DW-315 amended). A full run measured
+  # 3.5 s wall and about 4.6 CPU-seconds with the real images, one connection per reset (DW-331 amended). The
+  # install and the first unattended day are the Operator's: ops/demo-principal.md DS1 to DS3.
+  5-10-one-host-level-reset-scheduler-for-the-estate: awaiting-operator
+  # 5-11 awaiting-operator 2026-10-03: repository half built on dev. The scheduled Registry verification gives
+  # every entry a demo and an identity row, held to what an anonymous Visitor meets at live (open 2xx, none 3xx,
+  # not-deployed no live, demo-account a dated DR row plus its own sign-in page naming demo@cuatro.dev; oidc a dated
+  # H3 or CT5 plus /auth/session 401 and a PKCE redirect, none no 401 there, wallet maicoin alone), 73 of 73 live.
+  # Registry 1.8.0 corrects cs-tournament to demo open on observation (DW-332 closed). The release the live steps
+  # unlock is written, unapplied: ops/registry-verification.md actions 8 to 11. DW-335 and DW-336 filed.
+  5-11-demo-and-identity-declarations-verified-against-reality: awaiting-operator
   epic-5-retrospective: optional
 
   epic-6: backlog

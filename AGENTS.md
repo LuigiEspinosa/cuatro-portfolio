@@ -36,13 +36,16 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
 - Architecture invariants AD-1 to AD-26:
   `_bmad-output/planning-artifacts/architecture/architecture-cuatro-portfolio-2026-08-15/ARCHITECTURE-SPINE.md`.
   Every story in `epics.md` names its governing AD. Read that AD before starting.
-- **`ops/` holds 36 records that are the operational source of truth, not the planning
+- **`ops/` holds 39 records that are the operational source of truth, not the planning
   artifacts.** Answer an operational question from there before inferring it from code:
   `routing-inventory.md` (the real routing table and the box as it stands), `estate.md` (every
   application and its disposition), `known-violations.md` (what is knowingly in breach, and what closes
   it), `tracker-cutover.md` and `tournament-placement.md` (how the tracker and the tournament reached the
   box, and their by-hand later rollouts), `settled-inputs-refresh.md` (AD-22's refresh before Epic 4,
-  and the rebuild's topology decisions), `traefik-cutover.md` (Traefik and each hostname's move),
+  and the rebuild's topology decisions), `clerk-pricing-and-terms.md` (Clerk's refresh before Epic 5,
+  and the identity plan's cost decision), `identity-issuer.md` (the Clerk issuer, each application's OIDC
+  client and where its credentials live), `demo-principal.md` (the demo principal every Demo Access
+  participant derives, its ownership scope and protections), `traefik-cutover.md` (Traefik and each hostname's move),
   `postgres.md` and `postgres-backup.md` (the estate Postgres, its consumers, its nightly backup),
   `cs-tracker-cutover.md`, `caddy-retirement.md` (the old topology's removal, § Retirement run is the
   end state), `capacity-threshold.md`, `contract-serving.md`,
@@ -91,13 +94,18 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   full suite is 1845 tests across 75 files in roughly 100 seconds on this host, so run all of it.
   Measured 2026-10-01 at `a9bc0d7`; treat the figure as a rough expectation, never as a number to
   assert on.
-- On this host the six suites under `ops/__tests__/` whose cases spawn WSL's bash, `deploy-remote`,
-  `library-backup`, `tracker-backup`, `postgres-backup`, `postgres-init` and `tournament-backup`
-  (`.test.ts`), sometimes fail a case after about 30 seconds with empty output and pass on the next run
-  (DW-135), all six in one run on 2026-10-01. Re-run those files before debugging such a failure; CI
+- On this host the seven suites under `ops/__tests__/` whose cases spawn WSL's bash, `deploy-remote`,
+  `library-backup`, `tracker-backup`, `postgres-backup`, `postgres-init`, `tournament-backup` and
+  `demo-reset` (`.test.ts`), sometimes fail a case after about 30 seconds with empty output and pass on the
+  next run (DW-135), all seven in one run on 2026-10-03. Re-run those files before debugging such a failure; CI
   runs a native bash and never sees it.
 - The workstation's Git Bash has no `jq`: parse JSON with `node -e`. A WebSocket upgrade probe with
   `curl` needs `--http1.1`, or it answers 400 instead of 101.
+- The workstation's own `ssh` holds no key the box accepts: reach it as `wsl -d Ubuntu-22.04 ssh
+  deploy@177.7.52.248`. Through `wsl.exe`, double quotes inside the remote command are mangled (a `"$f"`
+  arrives empty), and Git Bash rewrites a `/home/...` argument into a Windows path unless
+  `MSYS_NO_PATHCONV=1` is set. Give the remote side a command with no inner quotes, or a script file on the
+  box (2026-10-03, `ops/identity-issuer.md` § Issuer run, step 11).
 - Every compose command against `docker-compose.yml`, on the box or here, needs `HUB_TAG` exported
   first (the Hub's image line refuses an unset tag, DW-310). Use `ops/tracker-cutover.md`'s form:
   `export HUB_TAG="$(git rev-parse HEAD)"`, then `docker compose --env-file .env.production`.

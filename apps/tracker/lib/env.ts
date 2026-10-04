@@ -46,6 +46,13 @@ const EnvSchema = z.object({
     z.string().url().optional(),
   ),
 
+  // Demo access (AD-13, ops/demo-principal.md). Unset or empty is off, which is the application as it
+  // was before Story 5.8: the demo principal cannot sign in and owns nothing.
+  DEMO_ENABLED: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.enum(['true', 'false']).optional(),
+  ),
+
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),

@@ -71,6 +71,8 @@ edit, and this row is the copy.
 | KV-6 | Zero z-index literals, zero depth tells, zero clipped rings, zero synthesised weights and zero routes with no level-1 heading ship on the Hub | UX-DR44, UX-DR45 (`epics.md:665-676`), A-1 and A-7 (`EXPERIENCE.md:760,766`), the hallmark floor `epics.md:3053-3061` | **Retired** | 2026-09-13 | Story 2-33 | 2026-09-23 |
 | KV-7 | Two `Live` Registry members serve from Vercel, outside the Cloudflare proxy | AD-26, AD-17b | **Open**, accepted as standing | 2026-09-26 | nobody, by decision | _not to be retired_ |
 | KV-8 | Two rendered applications are exempt from the restyle | AD-25, SM-6, SM-12 | **Open**, accepted as standing | 2026-09-26 | nobody, by decision | _not to be retired_ |
+| KV-9 | The identity issuer's hostnames under `id.cuatro.dev` are DNS only, outside the Cloudflare proxy | AD-26, AD-17b | **Open**, accepted as standing | 2026-10-03 | nobody, by decision | _not to be retired_ |
+| KV-10 | The identity issuer sets its `__client_uat` cookie on `.cuatro.dev` | AD-11 | **Open**, accepted as standing | 2026-10-03 | nobody, by decision | _not to be retired_ |
 
 ---
 
@@ -418,6 +420,50 @@ and two rules that bind every live `cuatro.dev` hostname do not hold for them.
 | Opened | **2026-09-26** | **Decision** |
 | Retired by | **nobody, by decision** | **Decision.** It would retire if either application is restyled, leaves `Live` and `Complete`, or AD-25 is amended to admit exemptions |
 | Retired on | _not to be retired_ (Operator ruling 2026-09-26) | **Decision** |
+
+---
+
+## KV-9: The identity issuer's hostnames under `id.cuatro.dev` are DNS only, outside the Cloudflare proxy
+
+**Scope: the serving hostnames the Clerk production instance on `id.cuatro.dev` lists on its Domains
+page (`clerk.id.cuatro.dev` at least), and the two rules below.** Opened before the records exist, by
+the ruling that decides how they are added.
+
+| Field | Value | Nature |
+|---|---|---|
+| Rule breached | **AD-26** (every live `cuatro.dev` hostname is proxied by Cloudflare with Full (strict)) and **AD-17b** (the zone's bot mitigation covers every live subdomain) | **Decision.** A DNS-only record never reaches Cloudflare's proxy, as in KV-7 |
+| Offending hostnames | `clerk.id.cuatro.dev` (the Frontend API, so the issuer) and `accounts.id.cuatro.dev` (Clerk's hosted sign-in page); the three mail records beside them serve nothing | **Observed 2026-10-03T22:31Z** by `nslookup -type=CNAME` against the authoritative `beau.ns.cloudflare.com`: each answers a CNAME to `*.clerk.services`, so neither is proxied. Recorded in `ops/identity-issuer.md` § Issuer run and `ops/routing-inventory.md` |
+| Why it is an entry | Clerk's production guide requires it: "Set the DNS record for this subdomain to a "DNS only" mode on your host to prevent proxying." (read 2026-10-02T14:40Z, `https://clerk.com/docs/guides/development/deployment/production.md`) | **Observation** of the vendor's documentation, recorded in `ops/identity-issuer.md` § The issuer |
+| The ruling | **Tolerated**: add the issuer's records DNS only, as Clerk requires, rather than proxy Clerk's Frontend API through a hostname of the estate's own | **Decision**, by the Operator in session on 2026-10-03 (`ops/identity-issuer.md` action 9, closing DW-321) |
+| Why it is tolerable | Neither host reaches the box | **Decision.** Clerk terminates TLS and renews its own certificates for these names and absorbs their traffic, as Vercel does for KV-7's two. The proxy alternative would put a Clerk route on the box's Traefik, a new moving part on a CPU-bound box for a hostname the box never serves |
+| What it does not cover | Cookies on `.cuatro.dev` | **Decision.** AD-11's ban on a domain-scoped cookie is not this entry's: the instance sits on `id.cuatro.dev` so Clerk's credential stays on `.clerk.id.cuatro.dev`. Clerk's `__client_uat`, which it scopes to `.cuatro.dev` regardless, is **KV-10**, observed 2026-10-03 |
+| Status | **Open and accepted as standing** | **Decision** |
+| Ruled by | **The Operator**, in session | **Decision** |
+| Ruled on | **2026-10-03** | **Decision** |
+| Opened | **2026-10-03** | **Decision** |
+| Retired by | **nobody, by decision** | **Decision.** It would retire if Clerk's Frontend API were proxied through the estate, or the issuer left `cuatro.dev` |
+| Retired on | _not to be retired_ (Operator ruling 2026-10-03) | **Decision** |
+
+---
+
+## KV-10: The identity issuer sets its `__client_uat` cookie on `.cuatro.dev`
+
+**Scope: exactly two cookie names, `__client_uat` and its instance-suffixed copy `__client_uat_<suffix>`
+(`__client_uat_5g1jofuM` for the production instance), set by Clerk on `.cuatro.dev`.** No other cookie.
+
+| Field | Value | Nature |
+|---|---|---|
+| Rule breached | **AD-11**: "no `Domain=.cuatro.dev` cookie exists anywhere in the estate" | **Decision.** `ARCHITECTURE-SPINE.md` § AD-11 |
+| What was observed | After one sign-in at `https://accounts.id.cuatro.dev`, the browser held `__client_uat` and `__client_uat_5g1jofuM` on Domain `.cuatro.dev`, `Secure`, path `/`. Clerk's credential `__client` was on `.clerk.id.cuatro.dev` only | **Observed 2026-10-03** by the Operator in a fresh browser profile, recorded in `ops/identity-issuer.md` § Issuer run, step 7 |
+| Why it happens | Clerk scopes `__client_uat` to the registrable domain so its frontend on any subdomain can tell a session exists. Setting the instance up as a secondary application on `id.cuatro.dev` did not change that | **Observation** of the cookie, and of Clerk's documentation describing it; no Clerk setting that scopes it otherwise is known to this record |
+| What the rule prevents, and whether it happens | AD-11 prevents "a domain-scoped cookie, which forfeits `__Host-` hardening across every application and lets any one subdomain set a session its siblings accept". `__client_uat` is a timestamp, not a session: no application in the estate reads it, and each mints its own host-only `__Host-` session from a verified ID token | **Decision.** The worst a subdomain can do is overwrite the timestamp, which costs Clerk's own page a round trip; it cannot sign anyone in. Every request to every `cuatro.dev` host carries it, a sign-in time and nothing more |
+| The ruling | **Tolerated**: exempt exactly these two names; any other `.cuatro.dev` cookie still stops `ops/identity-issuer.md` § The sequence step 7 and fails H3 and CT5 | **Decision**, by the Operator in session on 2026-10-03, choosing it over moving the issuer to a registrable domain of its own |
+| Status | **Open and accepted as standing** | **Decision** |
+| Ruled by | **The Operator**, in session | **Decision** |
+| Ruled on | **2026-10-03** | **Decision** |
+| Opened | **2026-10-03** | **Decision** |
+| Retired by | **nobody, by decision** | **Decision.** It would retire if the issuer moved to a registrable domain of its own, or if Clerk scoped the cookie to the instance's domain |
+| Retired on | _not to be retired_ (Operator ruling 2026-10-03) | **Decision** |
 
 ---
 

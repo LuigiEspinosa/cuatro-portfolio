@@ -56,6 +56,53 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  # The dashboard's ForwardAuth (Story 5.6, AD-11): oauth2-proxy as the OIDC client `traefik` of the estate's
+  # issuer, found through discovery and named by no provider (FR-23). Under a profile, so the plain `up -d`
+  # above never starts it; `ops/identity-issuer.md` § The Traefik dashboard behind ForwardAuth starts it with
+  # `--profile forward-auth`. It stores nothing: the session is an encrypted cookie in the browser. The
+  # values come from the gitignored `.env` by interpolation, and an empty one stops it at start.
+  forward-auth:
+    # v7.15.5, 2026-10-01, the first release outside GHSA-63jm-59jj-478j and GHSA-wr5q-7wxw-x568 (both
+    # critical). MIT. Pinned by the multi-platform index digest, read 2026-10-02.
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.5@sha256:8498b0d0ef0a7b29686414000a08aee467f02d0299c9ed1e006a8f33fc017916
+    profiles: [forward-auth]
+    environment:
+      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      OAUTH2_PROXY_PROVIDER: oidc
+      OAUTH2_PROXY_OIDC_ISSUER_URL: ${OIDC_ISSUER:-}
+      OAUTH2_PROXY_CLIENT_ID: ${TRAEFIK_OIDC_CLIENT_ID:-}
+      OAUTH2_PROXY_CLIENT_SECRET: ${TRAEFIK_OIDC_CLIENT_SECRET:-}
+      OAUTH2_PROXY_COOKIE_SECRET: ${TRAEFIK_FORWARD_AUTH_COOKIE_SECRET:-}
+      OAUTH2_PROXY_SCOPE: openid email profile
+      OAUTH2_PROXY_CODE_CHALLENGE_METHOD: S256
+      # Sends and checks a nonce, as the Hub's and cs-tracker's clients do; oauth2-proxy skips it by default.
+      OAUTH2_PROXY_INSECURE_OIDC_SKIP_NONCE: 'false'
+      # The SSH tunnel's local end, `ssh -N -L 8080:127.0.0.1:8081`; the issuer holds this redirect URI.
+      OAUTH2_PROXY_REDIRECT_URL: http://localhost:8080/oauth2/callback
+      OAUTH2_PROXY_WHITELIST_DOMAINS: localhost:8080
+      # Only the Owner: one address, from `.env`, as a file the service reads (no flag takes a single email).
+      OAUTH2_PROXY_AUTHENTICATED_EMAILS_FILE: /etc/forward-auth/owner-email
+      # Host-only `__Host-` session, never a Domain (AD-11), eight hours as the Hub's.
+      OAUTH2_PROXY_COOKIE_NAME: __Host-traefik-dashboard
+      OAUTH2_PROXY_COOKIE_SECURE: 'true'
+      OAUTH2_PROXY_COOKIE_SAMESITE: lax
+      OAUTH2_PROXY_COOKIE_EXPIRE: 8h
+      OAUTH2_PROXY_COOKIE_REFRESH: '0'
+      # Traefik's ForwardAuth asks with X-Forwarded-Host and X-Forwarded-Uri; a 202 admits the request.
+      OAUTH2_PROXY_REVERSE_PROXY: 'true'
+      OAUTH2_PROXY_UPSTREAMS: static://202
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: 'true'
+    configs:
+      - source: forward-auth-owner-email
+        target: /etc/forward-auth/owner-email
+    networks:
+      - cs-tracker_default
+    restart: unless-stopped
+
+configs:
+  forward-auth-owner-email:
+    content: ${TRAEFIK_OIDC_OWNER_EMAIL:-}
+
 networks:
   cs-tracker_default:
     external: true
