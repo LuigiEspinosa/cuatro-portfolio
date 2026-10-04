@@ -272,7 +272,9 @@ describe('the committed Registry', () => {
     // host answers anonymously (DW-332), a value change and so a minor. 1.9.0
     // from 2026-10-04: `cuatro-portfolio`'s `identity` to `oidc` once the Hub's
     // live sign-in was observed (H3, DW-322), a value change and so a minor.
-    expect(committed.contract_version).toBe('1.9.0');
+    // 1.10.0 the same day: `cs-tracker`'s `identity` to `oidc` once one identity
+    // was observed across the boundary (CT5, DW-323), a minor.
+    expect(committed.contract_version).toBe('1.10.0');
     expect(Array.isArray(committed.applications)).toBe(true);
     expect(committed.applications.length).toBeGreaterThan(0);
     // The one entry rule the schema deliberately left open until there were

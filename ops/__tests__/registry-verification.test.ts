@@ -102,21 +102,27 @@ const STRUCK = ['LuigiEspinosa/cs-tournament'];
 /** The repositories that still answer 404 anonymously: the table less its struck rows. */
 const PRIVATE = KV2_TABLE.filter((slug) => !STRUCK.includes(slug));
 const ARCHIVED = ['LuigiEspinosa/Lumen', 'LuigiEspinosa/tcg-tracker'];
-/** The three `live` URLs that answer 3xx at the first hop, as observed 2026-09-12, with their Location as observed 2026-10-03. */
+/**
+ * The three `live` URLs that answer 3xx at the first hop, as observed 2026-09-12, with their Location as
+ * observed 2026-10-03; `cs-tracker`'s moved from `/auth/steam` to `/auth/sign-in` at its OIDC rollout
+ * (CT3, 2026-10-04T04:38Z).
+ */
 const REDIRECTING: Record<string, { status: number; headers: Record<string, string> }> = {
   'https://tracker.cuatro.dev': { status: 307, headers: { Location: '/login?callbackUrl=%2F' } },
-  'https://cs-tracker.cuatro.dev': { status: 302, headers: { Location: '/auth/steam' } },
+  'https://cs-tracker.cuatro.dev': { status: 302, headers: { Location: '/auth/sign-in' } },
   'https://library.cuatro.dev': { status: 302, headers: { Location: '/login' } },
 };
 /**
  * What `/auth/session` answered on each `live` host, anonymously, 2026-10-03T17:01Z (Story 5.11). The
  * tracker's middleware sends it to its sign-in and `wheel`'s single-page server answers 200 to any path;
- * every other host 404. From 2026-10-04 the Hub serves its OIDC session route (H2), answering 401.
+ * every other host 404. From 2026-10-04 the Hub (H2) and `cs-tracker` (CT3) serve their OIDC session
+ * routes, answering 401.
  */
 const SESSION_ANSWERS: Record<string, number> = {
   'https://tracker.cuatro.dev': 307,
   'https://wheel.cuatro.dev': 200,
   'https://cuatro.dev': 401,
+  'https://cs-tracker.cuatro.dev': 401,
 };
 /**
  * Where `/auth/sign-in` sends an `oidc` entry's Visitor: an Authorization Code + PKCE request at the
@@ -336,21 +342,23 @@ describe('the committed Registry against the estate as observed', () => {
       'https://tournament.cuatro.dev answered 200 with no sign-in: usable without authentication'
     );
     expect(demo.find((row) => row.id === 'cs-tracker')?.detail).toBe(
-      'https://cs-tracker.cuatro.dev answered 302 to https://cs-tracker.cuatro.dev/auth/steam: a sign-in stands before the application, and no demo access is declared'
+      'https://cs-tracker.cuatro.dev answered 302 to https://cs-tracker.cuatro.dev/auth/sign-in: a sign-in stands before the application, and no demo access is declared'
     );
 
     const identity = rowsOf(result, 'identity');
     expect(identity).toHaveLength(16);
     // Registry 1.9.0: the Hub's identity is `oidc`, held to H3's dated row and to what its host answers.
+    // Registry 1.10.0: `cs-tracker`'s too, held to CT5.
     expect(identity.filter((row) => valueOf(row.id, 'identity') === 'oidc')).toEqual([
       expect.objectContaining({ id: 'cuatro-portfolio', pass: true, detail: expect.stringMatching(/^ops\/identity-issuer\.md H3 observed 2026-10-04T03:51Z\..*; https:\/\/cuatro\.dev\/auth\/session answered 401; https:\/\/cuatro\.dev\/auth\/sign-in answered 302 to an Authorization Code \+ PKCE request at https:\/\/clerk\.id\.cuatro\.dev\/oauth\/authorize$/) }),
+      expect.objectContaining({ id: 'cs-tracker', pass: true, detail: expect.stringMatching(/^ops\/identity-issuer\.md CT5 observed 2026-10-04T05:41Z\..*; https:\/\/cs-tracker\.cuatro\.dev\/auth\/session answered 401; https:\/\/cs-tracker\.cuatro\.dev\/auth\/sign-in answered 302 to an Authorization Code \+ PKCE request at https:\/\/clerk\.id\.cuatro\.dev\/oauth\/authorize$/) }),
     ]);
     // MaiCoin is exempt by structure, and the row says so rather than reading as a sign-in not built.
     expect(identity.filter((row) => valueOf(row.id, 'identity') === 'wallet')).toEqual([
       { id: 'maicoin', check: 'identity', pass: true, detail: `wallet: structurally exempt, not unimplemented: ${WALLET_EXEMPT.maicoin}` },
     ]);
-    // 8 until Registry 1.9.0 moved the Hub to `oidc`.
-    expect(identity.filter((row) => row.detail.endsWith('not an OIDC session route'))).toHaveLength(7);
+    // 8 until Registry 1.9.0 moved the Hub to `oidc`, 7 until 1.10.0 moved `cs-tracker`.
+    expect(identity.filter((row) => row.detail.endsWith('not an OIDC session route'))).toHaveLength(6);
   });
 
   it('prints one PASS or FAIL line per check in the probe shape, and the same rows as a table', async () => {
@@ -369,8 +377,8 @@ describe('the committed Registry against the estate as observed', () => {
     // 44, not 41: the three tree sources Registry 1.6.0 carries (DW-285) are each probed once more,
     // inside their `source exists` row. 52 from Story 5.11: each of the eight `live` hosts declaring
     // `identity: none` is asked `/auth/session` once; the `demo` rows reuse the `live` answer. 53 from
-    // Registry 1.9.0: the Hub, now `oidc`, is asked `/auth/sign-in` as well.
-    expect(fetcher.calls, 'the happy path has no retries, so a doubled request is a defect').toHaveLength(53);
+    // Registry 1.9.0: the Hub, now `oidc`, is asked `/auth/sign-in` as well. 54 from 1.10.0, `cs-tracker` too.
+    expect(fetcher.calls, 'the happy path has no retries, so a doubled request is a defect').toHaveLength(54);
     for (const { url, init } of fetcher.calls) {
       const headers = (init?.headers ?? {}) as Record<string, string>;
       expect(headers['User-Agent'], url).toBe(USER_AGENT);
