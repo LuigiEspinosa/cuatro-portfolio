@@ -591,8 +591,8 @@ Cookies, names and Domains only:
 | `_cs_tracker_key` | `cs-tracker.cuatro.dev`, host-only; `cs-tracker`'s cookie name before OIDC, origin in this profile not established |
 | `__client_uat`, `__client_uat_5g1jofuM` | `.cuatro.dev`, KV-10 |
 
-No other `.cuatro.dev` cookie, so AD-11 holds as amended. Story 5.4's last acceptance criterion left is CT6
-(`cs-tracker`'s `.env.example`).
+No other `.cuatro.dev` cookie, so AD-11 holds as amended. CT6 (`cs-tracker`'s `.env.example`) followed at
+06:20Z, and **Story 5.4 is done**.
 
 ### Pending Operator actions, Story 5.4
 
@@ -603,7 +603,7 @@ No other `.cuatro.dev` cookie, so AD-11 holds as amended. Story 5.4's last accep
 | CT3 | **Merge `cs-tracker`'s `dev` into `main` and roll the app**, then check `/auth/session` answers 401 | After the verifier pushes `dev`; a box change | 2026-10-04T04:38Z. PR #1 merged, rolled by hand; `/auth/session` answers 401; § cs-tracker sign-in run |
 | CT4 | **Rule on `oidcc` 3.8.0 against EEF-CVE-2026-75759** | Closes DW-324 | 2026-10-04T04:27Z. Ruled (a): `oidcc` 3.9.0 on `cs-tracker` `dev`, before CT3 |
 | CT5 | **Observe one identity cross the JavaScript/Elixir boundary** and record every cookie's Domain | Story 5.4 is done when this cell is dated with equal subjects and no `.cuatro.dev` cookie but KV-10's two; then DW-323 flips the Registry's `identity`, by `ops/registry-verification.md` § The release the live steps unlock, order 2, whose job reads this cell | 2026-10-04T05:41Z. Equal subjects across the Hub and `cs-tracker`, no password asked the second time, no `.cuatro.dev` cookie but KV-10's two; § cs-tracker sign-in run |
-| CT6 | **Document the four names in `cs-tracker`'s `.env.example`** | A repository change the authoring session could not make | _not done_ |
+| CT6 | **Document the four names in `cs-tracker`'s `.env.example`** | A repository change the authoring session could not make | 2026-10-04T06:20Z. Appended by the Operator; `cs-tracker` `172a4cb`, merged by PR #2 at `d4b8bf1`; `mix precommit` 746 tests, 0 failures |
 
 ## Sign-out (Story 5.5)
 
