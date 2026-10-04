@@ -700,18 +700,33 @@ not make.
 
 ### Sign-out run
 
-_Not yet run._ S1 and S2's registrations (or that the issuer offered none), S3's status codes and S4 and
-S5's observations are written here, each with its UTC time.
+S1 and S2's registrations (or that the issuer offered none), S3's status codes and S4 and S5's
+observations are written here, each with its UTC time.
+
+**S1 and S2, 2026-10-04.** Nothing to register: the issuer's discovery document (§ Issuer run, step 6, read
+2026-10-03T22:37:59Z) advertises no `end_session_endpoint` and reports `backchannel_logout_supported` false.
+
+**S3, 2026-10-04T06:21:23Z.** Both applications run Story 5.5 since their OIDC rollouts (the Hub by PR #92,
+`cs-tracker` by CT3). Read from outside, no credential:
+
+| Host | `POST /auth/backchannel-logout` with a forged token | `GET /auth/sign-out` with `Sec-Fetch-Site: cross-site` |
+|---|---|---|
+| `cuatro.dev` | 400 | 403 |
+| `cs-tracker.cuatro.dev` | 400 | 403 |
+
+**S5, 2026-10-04.** Superseded rather than run: S2 was not possible, and action 11 ruled option (a), so
+logout is each application ending its own session and nothing crosses from the Hub to `cs-tracker` by
+design (AD-11, amended 2026-10-03).
 
 ### Pending Operator actions, Story 5.5
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| S1 | **Register the post-logout redirect URIs**, or record that the issuer advertises no `end_session_endpoint` | After action 3 | _not done_ |
-| S2 | **Register the Back-Channel Logout URIs**, or record that the issuer does not support it | After action 3 | _not done_ |
-| S3 | **Roll both applications onto Story 5.5** and check the status codes | After H2 and CT3; a box change | _not done_ |
+| S1 | **Register the post-logout redirect URIs**, or record that the issuer advertises no `end_session_endpoint` | After action 3 | 2026-10-04. Recorded: the issuer advertises no `end_session_endpoint` (§ Issuer run, step 6), so there is nothing to register |
+| S2 | **Register the Back-Channel Logout URIs**, or record that the issuer does not support it | After action 3 | 2026-10-04. Recorded: the issuer reports `backchannel_logout_supported` false (§ Issuer run, step 6), so there is nothing to register |
+| S3 | **Roll both applications onto Story 5.5** and check the status codes | After H2 and CT3; a box change | 2026-10-04T06:21Z. Both rolled (H2, CT3); each host answers 400 and 403; § Sign-out run |
 | S4 | **Observe an open `cs-tracker` socket leave on sign-out** | After S3 | _not done_ |
-| S5 | **Observe sign-out cross from the Hub to an open `cs-tracker` socket** | Only with S2 done; otherwise action 11 decides what stands in for it | _not done_ |
+| S5 | **Observe sign-out cross from the Hub to an open `cs-tracker` socket** | Only with S2 done; otherwise action 11 decides what stands in for it | 2026-10-04. Superseded: S2 was not possible, and action 11 ruled (a), logout is each application ending its own session; nothing crosses from the Hub to `cs-tracker` by design |
 
 ## The Traefik dashboard behind ForwardAuth (Story 5.6)
 
