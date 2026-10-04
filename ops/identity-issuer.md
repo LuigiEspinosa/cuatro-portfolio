@@ -554,15 +554,37 @@ sequence step 6; if it lacks one of the four, sign-in answers 502 and the rest o
 
 ### cs-tracker sign-in run
 
-_Not yet run._ CT3's status code and CT5's observations are written here, each with its UTC time.
+CT3's status code and CT5's observations are written here, each with its UTC time.
+
+**CT2, 2026-10-04T04:34Z.** The Owner's subject is H3's `sub`. Placed without reading any `.env`: on the box
+by a helper (`/home/deploy/owner-sub-append.sh`, removed after) that refused a malformed line, appended the
+one line, counted `4` OIDC names in `/home/deploy/cs-tracker/.env`, and refused a second append; as the
+secret `CS_TRACKER_OIDC_OWNER_SUB` on `LuigiEspinosa/cs-tracker` (04:34:09Z); and by the Operator in the
+local `.env`.
+
+**CT3, 2026-10-04T04:38:06Z.** First the Operator ruled CT4 (`oidcc` 3.9.0, `cs-tracker` `28181e9`, `mix
+precommit` 746 tests, 0 failures). Then `cs-tracker` PR #1 merged `dev` into `main` at `b86ec00`, and its
+redeploy ran on the box from a script file under `set -euo pipefail`: `git pull --ff-only` from `bde2b3f`
+to `b86ec00`, `docker compose build app`, `docker compose run --rm migrate`, `docker rollout -w 20 app`,
+leaving `cs-tracker-app-3` up. Read from outside at 04:38:25Z, no credential, redirects not followed:
+
+| Request | Answer |
+|---|---|
+| `/` | 302 to `/auth/sign-in` |
+| `/auth/session` | **401** |
+| `/auth/sign-in` | 302 to `https://clerk.id.cuatro.dev/oauth/authorize` with `S256` and `redirect_uri=https://cs-tracker.cuatro.dev/auth/callback`; one cookie, `__Host-cs-tracker`, host-only |
+| `/auth/steam` | 404: Steam sign-in unrouted once OIDC is configured (Story 5.7) |
+
+From this moment the scheduled Registry verification reads `cs-tracker` identity as understated until CT5
+is dated and Registry order 2 lands.
 
 ### Pending Operator actions, Story 5.4
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
 | CT1 | **Register `https://cs-tracker.cuatro.dev/auth/callback`** on the `cs-tracker` OAuth application | After action 5 | 2026-10-03T23:24Z, by the Operator at step 8, as the application's only redirect URI |
-| CT2 | **Set `CS_TRACKER_OIDC_OWNER_SUB`** on the box and as a GitHub secret, and check the four names | After H3 and action 7; a box change | _not done_ |
-| CT3 | **Merge `cs-tracker`'s `dev` into `main` and roll the app**, then check `/auth/session` answers 401 | After the verifier pushes `dev`; a box change | _not done_ |
+| CT2 | **Set `CS_TRACKER_OIDC_OWNER_SUB`** on the box and as a GitHub secret, and check the four names | After H3 and action 7; a box change | 2026-10-04T04:34Z. On the box (4 names counted), as a `cs-tracker` GitHub secret, and in the local `.env`; § cs-tracker sign-in run |
+| CT3 | **Merge `cs-tracker`'s `dev` into `main` and roll the app**, then check `/auth/session` answers 401 | After the verifier pushes `dev`; a box change | 2026-10-04T04:38Z. PR #1 merged, rolled by hand; `/auth/session` answers 401; § cs-tracker sign-in run |
 | CT4 | **Rule on `oidcc` 3.8.0 against EEF-CVE-2026-75759** | Closes DW-324 | 2026-10-04T04:27Z. Ruled (a): `oidcc` 3.9.0 on `cs-tracker` `dev`, before CT3 |
 | CT5 | **Observe one identity cross the JavaScript/Elixir boundary** and record every cookie's Domain | Story 5.4 is done when this cell is dated with equal subjects and no `.cuatro.dev` cookie but KV-10's two; then DW-323 flips the Registry's `identity`, by `ops/registry-verification.md` § The release the live steps unlock, order 2, whose job reads this cell | _not done_ |
 | CT6 | **Document the four names in `cs-tracker`'s `.env.example`** | A repository change the authoring session could not make | _not done_ |
