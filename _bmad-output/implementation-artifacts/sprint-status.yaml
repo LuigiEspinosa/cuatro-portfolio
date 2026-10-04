@@ -1073,6 +1073,8 @@ development_status:
   # 687 tests, 0 failures on OTP 26 after fix round 1; 686 in the OTP 28.5 builder image at 687edfb). oidcc 3.8.0 carries EEF-CVE-2026-75759:
   # unreachable here, ruling CT4 (DW-324). Live sign-in, rollout and the person observing one identity cross the
   # boundary are the Operator's: ops/identity-issuer.md CT1 to CT6. DW-323 to DW-326 filed.
+  # 2026-10-04: CT1 to CT5 done (oidcc 3.9.0 by CT4, rolled at 04:38Z, one identity observed across the
+  # boundary at 05:41Z, Registry 1.10.0 oidc). Still awaiting CT6 alone: cs-tracker's .env.example.
   5-4-cs-tracker-authenticates-the-javascript-elixir-boundary: awaiting-operator
   5-5-sign-out-reaches-every-session-including-open-liveview-socke: awaiting-operator
   5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the: awaiting-operator

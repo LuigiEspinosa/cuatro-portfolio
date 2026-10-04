@@ -9919,7 +9919,11 @@ status: done
 
     **Story 5.11, 2026-10-03:** prepared, not applied: order 2 of `ops/registry-verification.md` § The release
     the live steps unlock, held by the same check as DW-322 against CT5. **Owner now: that record's action 8.**
-  status: open
+
+    **Closed 2026-10-04:** CT5 dated at 05:41Z with equal subjects and no `.cuatro.dev` cookie but KV-10's two,
+    and Registry 1.10.0 sets `cs-tracker` `identity` to `oidc` (order 2). The verification read 73 of 73 live
+    at 05:42:40Z and on a GitHub runner (run 37180674016).
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
   id: DW-324
   summary: >-

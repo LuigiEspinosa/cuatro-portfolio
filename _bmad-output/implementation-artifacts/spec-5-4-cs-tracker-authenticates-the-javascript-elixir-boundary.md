@@ -65,8 +65,8 @@ context:
 - AC7: `oidcc`'s licence, dependencies, advisories and HTTP client are reviewed and recorded (Constitution rule 19).
 - AC8: `mix precommit` passes on OTP 26, the suite on OTP 28.5, the production image builds; typecheck and the full root suite pass; the adoption probe exits 0.
 - AC9: 5.3's HS256 and purpose-audience cases exist and each fails under its mutation.
-- AC10 (Operator-pending): CT1 to CT3 done, `https://cs-tracker.cuatro.dev/auth/session` answers 401.
-- AC11 (Operator-pending): CT5: a person sees the same `sub` at both `/auth/session` routes and no `.cuatro.dev` cookie (FR-21, SM-9).
+- AC10 (Operator-pending): CT1 to CT3 done, `https://cs-tracker.cuatro.dev/auth/session` answers 401. (Met 2026-10-04T04:38Z: CT1 to CT3 dated, and `/auth/session` answered 401.)
+- AC11 (Operator-pending): CT5: a person sees the same `sub` at both `/auth/session` routes and no `.cuatro.dev` cookie (FR-21, SM-9). (Met 2026-10-04T05:41Z: equal subjects, observed by the Operator; Registry 1.10.0 declares `oidc`.)
 - AC12 (Operator-pending): CT6: `cs-tracker`'s `.env.example` documents the four names.
 
 ## Design Notes
