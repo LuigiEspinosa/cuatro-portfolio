@@ -613,6 +613,17 @@ exited 60 on Traefik's Origin CA certificate, a stale check rather than a failed
 then deferred creating `demo@cuatro.dev` until `digital-library` signs in through the issuer like the others
 (DW-337); without the account every path is as before, so DR3 waits with it.
 
+**DR1 and DR2, 2026-10-06.** A script on the box, removed after its run, ran each reset twice by § The reset's
+commands (the tracker with `TRACKER_TAG` read from the serving container, `145ebc6`): all four printed
+`demo:reset cuatro-tracker reset rows=12` or `demo:reset cs-tracker reset rows=12` and exited 0 (17:08:26Z).
+After them schema `demo` held the tracker's six fixture entries and `cs-tracker`'s 2 marks and 2 wishlist
+entries. The Owner's rows read the same before and after: `cs-tracker` 130 inventory entries, 0 marks, 0 wishlist
+entries; the tracker 1 user and 0 `UserEntry` rows (his library is not in that table, so the tracker figure proves
+little). For `cs-tracker` the Operator signed in as the demo account, saw the fixture, added to it, and after a
+third reset (17:13:22Z, `reset rows=12`, exit 0, Owner inventory still 130) saw 2 owned, 2 on the wishlist and 4
+catalog items: the fixture, his addition gone. The tracker's signed-in check was skipped by the Operator's ruling:
+he plans to rework its sign-in, as for `digital-library` (DW-337).
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -625,8 +636,8 @@ then deferred creating `demo@cuatro.dev` until `digital-library` signs in throug
 | DP6 | **Turn the tracker's demo on** and check both scopes | After DP2, DP4 | 2026-10-06T15:59Z. Demo on; the demo library is empty and the Owner's is unchanged, observed by the Operator; § Demo principal run |
 | DP7 | **Merge `digital-library`'s branch, deploy it, create the demo user** (Story 5.9: the reset creates its library) | After DP2 and DR4 | Merged and deployed 2026-10-06T16:53Z (`eada53d`); the demo account deferred by the Operator until OIDC, DW-337; § Demo principal run |
 | DP8 | **Rule on `cs-tournament`'s participation** | DW-332 | 2026-10-06. Ruled (a): not a participant; its Registry `demo` already reads `open` (1.8.0), so nothing further changes |
-| DR1 | **Run the tracker's reset live, twice, and observe it** | After DP6 | _not done_ |
-| DR2 | **Run `cs-tracker`'s reset live, twice, and observe it** | After DP5 | _not done_ |
+| DR1 | **Run the tracker's reset live, twice, and observe it** | After DP6 | 2026-10-06T17:08Z. Two live runs, `reset rows=12`, exit 0, Owner unchanged; the signed-in check skipped by the Operator pending the tracker's sign-in rework; § Demo principal run |
+| DR2 | **Run `cs-tracker`'s reset live, twice, and observe it** | After DP5 | 2026-10-06T17:13Z. Three live runs, `reset rows=12`, exit 0; the Operator's addition gone, fixture shown, Owner unchanged; § Demo principal run |
 | DR3 | **Run `digital-library`'s reset live, twice, and observe it** | After DP7 | _not done_: waits on the demo account, DW-337 |
 | DR4 | **Rule on the demo principal's uploads** | DW-333, DW-334; before DP7 creates the demo user | 2026-10-06. Ruled (b): uploads refused to the demo principal, `digital-library` `aaf11a4`, verified, CI green; reaches the box with DP7; § Demo principal run |
 | DS1 | **Install the scheduler's cron file** from the checkout | After DR1 to DR3 and Story 5.10 on `main` | _not done_ |
