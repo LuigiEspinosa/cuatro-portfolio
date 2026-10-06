@@ -1077,7 +1077,9 @@ development_status:
   # boundary at 05:41Z, Registry 1.10.0 oidc). 5-4 done 2026-10-04T06:20Z: CT6, cs-tracker's .env.example
   # documents the four names (cs-tracker PR #2, main d4b8bf1). FR-21 and SM-9 observed.
   5-4-cs-tracker-authenticates-the-javascript-elixir-boundary: done
-  5-5-sign-out-reaches-every-session-including-open-liveview-socke: awaiting-operator
+  # 5-5 done 2026-10-06T05:34Z: AD-11 logout amended per application (DW-319, action 11); S1 and S2 nothing to
+  # register on this issuer, S3 400/403 on both hosts, S4 an open cs-tracker socket left on sign-out live.
+  5-5-sign-out-reaches-every-session-including-open-liveview-socke: done
   5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the: awaiting-operator
   # 5-7 awaiting-operator 2026-10-02: repository halves built. ops/provider-swap.sh points the Hub's production image,
   # cs-tracker's production release and the committed forward-auth at dex v2.45.1 (pinned by digest, test-time only)

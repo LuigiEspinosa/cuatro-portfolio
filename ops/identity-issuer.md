@@ -714,6 +714,21 @@ observations are written here, each with its UTC time.
 | `cuatro.dev` | 400 | 403 |
 | `cs-tracker.cuatro.dev` | 400 | 403 |
 
+**S4, first attempt, 2026-10-04T07:27Z, by the Operator.** Tab A's socket closed when tab B signed out
+(07:27:09Z, `oidc: signed out of cs-tracker only`), but tab A showed "Attempting to reconnect" over the old
+dashboard, and reloads kept serving it. The log explained it: a fresh `GET /auth/callback` six seconds after
+the sign-out (07:27:15Z) and again after a second sign-out (07:29:13Z, callback 07:29:15Z). The page had gone
+through `/auth/sign-in`, and the issuer's own session, still alive with the consent screen off, signed it
+straight back in. Not a defect: the per-application logout ruled under action 11 never ends the issuer's
+session.
+
+**S4, 2026-10-06T05:34Z, by the Operator**, after first signing out of the issuer itself at
+`https://accounts.id.cuatro.dev/user`: with tab A on the dashboard and its WebSocket open, tab B opened
+`https://cs-tracker.cuatro.dev/auth/sign-out` (05:34:03Z, `oidc: signed out of cs-tracker only`). Tab A's
+socket closed, the page left for `/auth/sign-in` (05:34:10Z) and **stayed on the issuer's password page**:
+no callback followed. FR-22's case, observed. The `/auth/sign-in` requests every five minutes in the same
+log are the uptime monitor's probes.
+
 **S5, 2026-10-04.** Superseded rather than run: S2 was not possible, and action 11 ruled option (a), so
 logout is each application ending its own session and nothing crosses from the Hub to `cs-tracker` by
 design (AD-11, amended 2026-10-03).
@@ -725,7 +740,7 @@ design (AD-11, amended 2026-10-03).
 | S1 | **Register the post-logout redirect URIs**, or record that the issuer advertises no `end_session_endpoint` | After action 3 | 2026-10-04. Recorded: the issuer advertises no `end_session_endpoint` (§ Issuer run, step 6), so there is nothing to register |
 | S2 | **Register the Back-Channel Logout URIs**, or record that the issuer does not support it | After action 3 | 2026-10-04. Recorded: the issuer reports `backchannel_logout_supported` false (§ Issuer run, step 6), so there is nothing to register |
 | S3 | **Roll both applications onto Story 5.5** and check the status codes | After H2 and CT3; a box change | 2026-10-04T06:21Z. Both rolled (H2, CT3); each host answers 400 and 403; § Sign-out run |
-| S4 | **Observe an open `cs-tracker` socket leave on sign-out** | After S3 | _not done_ |
+| S4 | **Observe an open `cs-tracker` socket leave on sign-out** | After S3 | 2026-10-06T05:34Z. The open socket closed, the page left for `/auth/sign-in` and stayed at the issuer's password page; § Sign-out run |
 | S5 | **Observe sign-out cross from the Hub to an open `cs-tracker` socket** | Only with S2 done; otherwise action 11 decides what stands in for it | 2026-10-04. Superseded: S2 was not possible, and action 11 ruled (a), logout is each application ending its own session; nothing crosses from the Hub to `cs-tracker` by design |
 
 ## The Traefik dashboard behind ForwardAuth (Story 5.6)
