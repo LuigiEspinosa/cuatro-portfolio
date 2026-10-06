@@ -9983,6 +9983,10 @@ status: done
     (`ops/identity-issuer.md` § cs-tracker's Steam sign-in). The Steam code is still in the repository.
     **Owner now: the Operator's ruling, action PS2** (delete it after CT5, recommended, or keep it as the
     break-glass and record FR-23's letter in `ops/known-violations.md`).
+
+    **Ruled 2026-10-06 (a): delete it.** The removal is being built and independently verified on
+    `cs-tracker` `dev`, keeping Steam inventory sync and the price refresh; this entry closes when it reaches
+    `cs-tracker` `main` and the box.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
   id: DW-327
