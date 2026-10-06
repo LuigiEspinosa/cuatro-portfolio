@@ -9989,7 +9989,7 @@ status: done
     the Steam-session branch of both owner gates), keeping Steam inventory sync, the price refresh and
     `STEAM_ID`'s boot check. An independent verifier passed it (`mix precommit` 707 tests, 0 failures; the
     production image built and booted unconfigured, failing closed). PR #3 merged it to `main` at `e4c6103` and
-    it rolled on the box; `/auth/steam` and its callback answer 404. `cs-tracker`'s `.env.example` still
+    it rolled on the box; `/auth/steam` and its callback answer 404. `cs-tracker`'s `.env.example`
     described Steam sign-in until the Operator edited it on 2026-10-06 (`dev` `3b1aa7c`, PR #5 to `main` at
     `0349d28`): `STEAM_ID` is the inventory the sync reads, and the Steam sign-in lines are gone.
   status: done
