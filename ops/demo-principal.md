@@ -519,7 +519,30 @@ into `ssh`. No step prints a credential.
 
 ## Demo principal run
 
-_Not yet run._ Each step above is written here with the UTC time and what was observed, never a credential.
+Each step above is written here with the UTC time and what was observed, never a credential.
+
+**DP2, 2026-10-06, by the Operator.** The demo password is chosen, distinct from every Operator credential,
+and kept in the local `.env` as `DEMO_PASSWORD` only. **Sign-up stays closed:** Clerk's Hobby plan names the
+setting Access mode, with Waitlist (a public form for strangers), Invite-only, and Open (an allowlist is a Pro
+feature); the Operator ruled **Invite-only**, so accounts exist only when the Operator creates or invites
+them.
+
+**DP1, 2026-10-06, answered (b): no mailbox is needed.** The Operator created `demo@cuatro.dev` from the
+issuer's dashboard (Users, Create user) with that password, and its address shows **verified** with no mail
+sent. The first sign-in as it was then refused a password-only entry: "You're signing in from a new device.
+We're asking for verification to keep your account secure." That is Clerk's **Device Trust**, which "treats
+every new device as untrusted until the user has verified their identity with a second factor"
+(`https://clerk.com/docs/guides/secure/client-trust.md`, read 2026-10-06T06:19Z), an instance-wide switch
+under Protect, Rules, with no per-user exception. Every Visitor arrives on a new device and cannot read the
+demo mailbox, so Demo Access through the issuer was impossible with it on.
+
+**Ruled 2026-10-06 by the Operator: Device Trust off** for the production instance, the Operator's account
+included. Weighed: sign-up is invite-only and the instance holds two accounts; every application admits only
+the Owner's subject or the demo principal; a stuffed Operator password would reach nothing but the Operator's
+own sign-in, which a long unique password covers. Turned off by the Operator; the demo sign-in at
+`https://cuatro.dev/auth/sign-in` then went through **without a code** (06:21Z). Alternatives not taken:
+keeping it and dropping `cs-tracker`'s demo (which signs in through the issuer), or aliasing the mailbox, which
+lets the Operator through but never a Visitor.
 
 ## Pending Operator actions
 
