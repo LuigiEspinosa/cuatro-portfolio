@@ -489,12 +489,13 @@ into `ssh`. No step prints a credential.
     ```
     cd /home/deploy/cuatro-portfolio
     git log -1 --format=%H -- ops/demo-reset.sh
-    env -i PATH=/usr/bin:/bin sh -c 'command -v docker flock timeout cmp'
+    for t in docker flock timeout cmp; do env -i PATH=/usr/bin:/bin sh -c "command -v $t"; done
     install -d -m 0700 /home/deploy/demo-reset
     sudo install -o root -g root -m 0644 ops/demo-reset.cron /etc/cron.d/cuatro-demo-reset
     cmp ops/demo-reset.cron /etc/cron.d/cuatro-demo-reset && echo installed
     ```
-    The `git log` must print a commit (Story 5.10 is on `main`); `command -v` must print four paths; the last
+    The `git log` must print a commit (Story 5.10 is on `main`); the loop must print four paths (one per tool:
+    the box's `sh` is `dash`, whose `command -v` reports only its first argument); the last
     line must print `installed`. The cron file goes by `install` from the checkout, never typed. If the box's
     `docker` is not under `/usr/bin` or `/bin`, stop: the cron file's `PATH` is a change to commit first.
     Cron picks the file up within a minute, so the first scheduled run is the next full hour. To stop it:
@@ -624,6 +625,18 @@ third reset (17:13:22Z, `reset rows=12`, exit 0, Owner inventory still 130) saw 
 catalog items: the fixture, his addition gone. The tracker's signed-in check was skipped by the Operator's ruling:
 he plans to rework its sign-in, as for `digital-library` (DW-337).
 
+**DS1, 2026-10-06T17:26:10Z, the scheduler installed** by step 13's block from a file on the box: `git log`
+printed `405f310286f27c9b391645e78bf3a8ba55b82a29` and `cmp` printed `installed`. Its single `command -v` line
+printed only `/usr/bin/docker`, because the box's `sh` is `dash`, which reports only the first argument; each
+tool checked alone resolved (`/usr/bin/docker`, `/usr/bin/flock`, `/usr/bin/timeout`, `/usr/bin/cmp`), and step
+13 now loops over them. Installed before DR3, which waits on DW-337: with no demo account `digital-library`'s
+reset reports `skipped` and exits 0, so its `60` stays and its resets start once the account exists.
+
+**DS2, 2026-10-06T17:26:41Z, one run by hand in cron's shape** (minute 26): `demo:reset cuatro-tracker reset
+rows=12`, `demo:reset cs-tracker reset rows=12`, `demo:reset digital-library skipped: the demo principal is
+absent`, then `demo-reset ts=2026-10-06T17:26:44Z tick=17:15 lock=ok schedule=ok cron=match ran=3 off=0
+failed=none exit=0`, and `exit=0`. `uptime` before and after: load average 0.01, 0.08, 0.21 both times.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -640,8 +653,8 @@ he plans to rework its sign-in, as for `digital-library` (DW-337).
 | DR2 | **Run `cs-tracker`'s reset live, twice, and observe it** | After DP5 | 2026-10-06T17:13Z. Three live runs, `reset rows=12`, exit 0; the Operator's addition gone, fixture shown, Owner unchanged; § Demo principal run |
 | DR3 | **Run `digital-library`'s reset live, twice, and observe it** | After DP7 | _not done_: waits on the demo account, DW-337 |
 | DR4 | **Rule on the demo principal's uploads** | DW-333, DW-334; before DP7 creates the demo user | 2026-10-06. Ruled (b): uploads refused to the demo principal, `digital-library` `aaf11a4`, verified, CI green; reaches the box with DP7; § Demo principal run |
-| DS1 | **Install the scheduler's cron file** from the checkout | After DR1 to DR3 and Story 5.10 on `main` | _not done_ |
-| DS2 | **Run the scheduler once by hand, in cron's shape, and observe it** | After DS1 | _not done_ |
+| DS1 | **Install the scheduler's cron file** from the checkout | After DR1 to DR3 and Story 5.10 on `main` | 2026-10-06T17:26Z. Installed, `cmp` matched; before DR3, `digital-library` skipping until DW-337; § Demo principal run |
+| DS2 | **Run the scheduler once by hand, in cron's shape, and observe it** | After DS1 | 2026-10-06T17:26Z. `ran=3 failed=none exit=0`, `digital-library` skipped as absent, load15 0.21; § Demo principal run |
 | DS3 | **Read the first unattended day** of `demo-reset.log` and the load after a run | The day after DS1 | _not done_ |
 
 Story 5.8 is done when DP1 to DP7 are dated and DP8 is ruled. Story 5.9 is done when DR1 to DR3 are dated
