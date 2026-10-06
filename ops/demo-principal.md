@@ -544,13 +544,18 @@ own sign-in, which a long unique password covers. Turned off by the Operator; th
 keeping it and dropping `cs-tracker`'s demo (which signs in through the issuer), or aliasing the mailbox, which
 lets the Operator through but never a Visitor.
 
+**DP3, 2026-10-06T06:24Z, by the Operator.** Signed in at `https://cuatro.dev/auth/sign-in` as
+`demo@cuatro.dev` in a fresh profile, without a code; `https://cuatro.dev/auth/session` showed the subject
+`user_3KJEKgwKMPfI6YqhAqnRXqx797K` (an identifier, not a credential), kept in the local `.env` as
+`CS_TRACKER_OIDC_DEMO_SUB`. Access mode confirmed **Invite-only** the same minute.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
 | DP1 | **Answer whether `demo@cuatro.dev` needs a real mailbox** | A question, not a decision this story made | 2026-10-06. Answered (b): created from the dashboard, verified without mail; no mailbox needed once Device Trust is off; § Demo principal run |
 | DP2 | **Decide the demo credentials** and whether the issuer's sign-up stays closed | Kept in the gitignored `.env` | 2026-10-06. Password chosen, in the local `.env` only; sign-up closed as Access mode Invite-only; § Demo principal run |
-| DP3 | **Create `demo@cuatro.dev` at the issuer** and record its subject as `CS_TRACKER_OIDC_DEMO_SUB` | After `ops/identity-issuer.md` actions 1 to 7 and H3 | _not done_ |
+| DP3 | **Create `demo@cuatro.dev` at the issuer** and record its subject as `CS_TRACKER_OIDC_DEMO_SUB` | After `ops/identity-issuer.md` actions 1 to 7 and H3 | 2026-10-06T06:24Z. `demo@cuatro.dev` exists at the issuer; signed in to the Hub as it without a code; subject `user_3KJEKgwKMPfI6YqhAqnRXqx797K` for `CS_TRACKER_OIDC_DEMO_SUB`; § Demo principal run |
 | DP4 | **Rule on the connection budget** with demo on | DW-331 | 2026-10-06T06:07:51Z. Ruled (a), with the reset's connection: `cuatro_tracker` 20 to 23 and `cs_tracker` 25 to 30, role and database, on the box (read before and after) and in `ops/postgres/init/10-consumers.sh` and `ops/postgres.md`; the four limits sum to 88 of 97. Set first to 22 and 29 at 06:06:54Z, the reset's connection overlooked, and corrected within a minute |
 | DP5 | **Turn `cs-tracker`'s demo on** and check both scopes | After DP3, DP4 and CT3 | _not done_ |
 | DP6 | **Turn the tracker's demo on** and check both scopes | After DP2, DP4 | _not done_ |
