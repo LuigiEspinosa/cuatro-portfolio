@@ -9990,7 +9990,8 @@ status: done
     `STEAM_ID`'s boot check. An independent verifier passed it (`mix precommit` 707 tests, 0 failures; the
     production image built and booted unconfigured, failing closed). PR #3 merged it to `main` at `e4c6103` and
     it rolled on the box; `/auth/steam` and its callback answer 404. `cs-tracker`'s `.env.example` still
-    describes Steam sign-in, the Operator's to edit by the `.env.*` deny.
+    described Steam sign-in until the Operator edited it on 2026-10-06 (`dev` `3b1aa7c`, PR #5 to `main` at
+    `0349d28`): `STEAM_ID` is the inventory the sync reads, and the Steam sign-in lines are gone.
   status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
   id: DW-327
