@@ -578,7 +578,7 @@ configured as recorded (`CsTracker.DemoPrincipal.sub()` answered `user_3KJEKgwKM
 `user_3KJFLRo2WGqNDY1sctmygDMckmd`: the account had been recreated after DP3, and a Clerk subject belongs to one
 account for its life. The Users page holds two accounts, the Operator's and the demo one, so nothing stray
 remains. At 15:46:50Z a script on the box replaced the subject in `/home/deploy/cs-tracker/.env` and rolled the
-app (it would have restored the old line on a failed start); `cs-tracker-app-7` `running`, 0 restarts, and the
+app (it would have restored the old line on a failed start); the new container `running`, 0 restarts, and the
 app computes the new subject. The Operator corrected the local `.env` the same way.
 
 **DP5's check, 2026-10-06T15:50Z, by the Operator.** Signed in as `demo@cuatro.dev`:
