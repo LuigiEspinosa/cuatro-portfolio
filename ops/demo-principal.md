@@ -594,6 +594,16 @@ green on the pushed sha. A demo upload of a file the Operator already holds, whi
 Operator's book row before (DW-334), now answers 403 with neither id. The web form still shows the upload
 control to the demo account and relays the 403: cosmetic, the API refuses.
 
+**DP6, 2026-10-06, the tracker's demo on.** Two scripts on the box, each removed after its run. At 15:53:13Z the
+tracker and its worker rolled from `5117673` onto `main`'s `145ebc6` (Image (tracker) run 37181574410 green) with
+demo still off, by `ops/tracker-cutover.md`'s recipe: `tracker-migrate`, `docker rollout`, the worker recreated;
+healthy, `/api/ready` ok. At 15:59:34Z the second, fed `DEMO_PASSWORD` by the Operator's pipe from the local
+`.env` and printing no value, migrated schema `demo` (`&schema=demo`, 11 migrations), created `demo@cuatro.dev`
+there hashed by `bcryptjs` at cost 12 (`users in schema demo: 1`), appended `TRACKER_DEMO_ENABLED=true` to
+`.env.production` and rolled the tracker; healthy with `DEMO_ENABLED=true`, `/api/ready` ok. Public users after:
+1, the Operator's account (the before count was lost in interleaved compose output). The Operator then signed in
+as `demo@cuatro.dev` to an empty library, and as himself to his library unchanged.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -603,7 +613,7 @@ control to the demo account and relays the 403: cosmetic, the API refuses.
 | DP3 | **Create `demo@cuatro.dev` at the issuer** and record its subject as `CS_TRACKER_OIDC_DEMO_SUB` | After `ops/identity-issuer.md` actions 1 to 7 and H3 | 2026-10-06T06:24Z. `demo@cuatro.dev` exists at the issuer; signed in to the Hub as it without a code; subject `user_3KJEKgwKMPfI6YqhAqnRXqx797K` then; the account was recreated afterwards and signs in as `user_3KJFLRo2WGqNDY1sctmygDMckmd` since (corrected 15:46Z); § Demo principal run |
 | DP4 | **Rule on the connection budget** with demo on | DW-331 | 2026-10-06T06:07:51Z. Ruled (a), with the reset's connection: `cuatro_tracker` 20 to 23 and `cs_tracker` 25 to 30, role and database, on the box (read before and after) and in `ops/postgres/init/10-consumers.sh` and `ops/postgres.md`; the four limits sum to 88 of 97. Set first to 22 and 29 at 06:06:54Z, the reset's connection overlooked, and corrected within a minute |
 | DP5 | **Turn `cs-tracker`'s demo on** and check both scopes | After DP3, DP4 and CT3 | 2026-10-06T15:50Z. Demo on; the demo principal signs in to its own empty scope and the Owner's inventory is unchanged, observed by the Operator; § Demo principal run |
-| DP6 | **Turn the tracker's demo on** and check both scopes | After DP2, DP4 | _not done_ |
+| DP6 | **Turn the tracker's demo on** and check both scopes | After DP2, DP4 | 2026-10-06T15:59Z. Demo on; the demo library is empty and the Owner's is unchanged, observed by the Operator; § Demo principal run |
 | DP7 | **Merge `digital-library`'s branch, deploy it, create the demo user** (Story 5.9: the reset creates its library) | After DP2 and DR4 | _not done_ |
 | DP8 | **Rule on `cs-tournament`'s participation** | DW-332 | 2026-10-06. Ruled (a): not a participant; its Registry `demo` already reads `open` (1.8.0), so nothing further changes |
 | DR1 | **Run the tracker's reset live, twice, and observe it** | After DP6 | _not done_ |
