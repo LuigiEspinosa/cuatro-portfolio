@@ -571,6 +571,20 @@ did not stay up: `git pull --ff-only` (`e4c6103` to `d5f716e`), `docker compose 
 `migrate_demo`, the demo subject appended (5 OIDC names), `docker rollout -w 20 app`; `cs-tracker-app-6`
 `running`, 0 restarts after 37 seconds; `/` 302, `/auth/session` 401.
 
+**DP5's check, 2026-10-06T15:41Z: the demo sign-in refused.** Signing in to `cs-tracker` as
+`demo@cuatro.dev` failed, logged as `oidc: refused a subject that is not the Owner`. The running app was
+configured as recorded (`CsTracker.DemoPrincipal.sub()` answered `user_3KJEKgwKMPfI6YqhAqnRXqx797K`,
+`enabled?` true), but the Hub's `/auth/session` in the same profile showed `demo@cuatro.dev` as
+`user_3KJFLRo2WGqNDY1sctmygDMckmd`: the account had been recreated after DP3, and a Clerk subject belongs to one
+account for its life. The Users page holds two accounts, the Operator's and the demo one, so nothing stray
+remains. At 15:46:50Z a script on the box replaced the subject in `/home/deploy/cs-tracker/.env` and rolled the
+app (it would have restored the old line on a failed start); `cs-tracker-app-7` `running`, 0 restarts, and the
+app computes the new subject. The Operator corrected the local `.env` the same way.
+
+**DP5's check, 2026-10-06T15:50Z, by the Operator.** Signed in as `demo@cuatro.dev`:
+`https://cs-tracker.cuatro.dev/auth/session` shows the demo subject, the inventory shows nothing of the Owner's
+(the demo scope is empty until DR2's first reset), and the Owner's own session still shows his inventory.
+
 **DR4, 2026-10-06, ruled (b) by the Operator: refuse uploads to the demo principal.** `digital-library`
 `aaf11a4` on `story-5-8-demo-principal`: `POST /api/libraries/:libraryId/books`, the only route that stores a
 file (covers are made inside the import, and the inbox watcher takes no request), answers 403 to the demo
@@ -586,9 +600,9 @@ control to the demo account and relays the 403: cosmetic, the API refuses.
 |---|---|---|---|
 | DP1 | **Answer whether `demo@cuatro.dev` needs a real mailbox** | A question, not a decision this story made | 2026-10-06. Answered (b): created from the dashboard, verified without mail; no mailbox needed once Device Trust is off; § Demo principal run |
 | DP2 | **Decide the demo credentials** and whether the issuer's sign-up stays closed | Kept in the gitignored `.env` | 2026-10-06. Password chosen, in the local `.env` only; sign-up closed as Access mode Invite-only; § Demo principal run |
-| DP3 | **Create `demo@cuatro.dev` at the issuer** and record its subject as `CS_TRACKER_OIDC_DEMO_SUB` | After `ops/identity-issuer.md` actions 1 to 7 and H3 | 2026-10-06T06:24Z. `demo@cuatro.dev` exists at the issuer; signed in to the Hub as it without a code; subject `user_3KJEKgwKMPfI6YqhAqnRXqx797K` for `CS_TRACKER_OIDC_DEMO_SUB`; § Demo principal run |
+| DP3 | **Create `demo@cuatro.dev` at the issuer** and record its subject as `CS_TRACKER_OIDC_DEMO_SUB` | After `ops/identity-issuer.md` actions 1 to 7 and H3 | 2026-10-06T06:24Z. `demo@cuatro.dev` exists at the issuer; signed in to the Hub as it without a code; subject `user_3KJEKgwKMPfI6YqhAqnRXqx797K` then; the account was recreated afterwards and signs in as `user_3KJFLRo2WGqNDY1sctmygDMckmd` since (corrected 15:46Z); § Demo principal run |
 | DP4 | **Rule on the connection budget** with demo on | DW-331 | 2026-10-06T06:07:51Z. Ruled (a), with the reset's connection: `cuatro_tracker` 20 to 23 and `cs_tracker` 25 to 30, role and database, on the box (read before and after) and in `ops/postgres/init/10-consumers.sh` and `ops/postgres.md`; the four limits sum to 88 of 97. Set first to 22 and 29 at 06:06:54Z, the reset's connection overlooked, and corrected within a minute |
-| DP5 | **Turn `cs-tracker`'s demo on** and check both scopes | After DP3, DP4 and CT3 | _not done_ |
+| DP5 | **Turn `cs-tracker`'s demo on** and check both scopes | After DP3, DP4 and CT3 | 2026-10-06T15:50Z. Demo on; the demo principal signs in to its own empty scope and the Owner's inventory is unchanged, observed by the Operator; § Demo principal run |
 | DP6 | **Turn the tracker's demo on** and check both scopes | After DP2, DP4 | _not done_ |
 | DP7 | **Merge `digital-library`'s branch, deploy it, create the demo user** (Story 5.9: the reset creates its library) | After DP2 and DR4 | _not done_ |
 | DP8 | **Rule on `cs-tournament`'s participation** | DW-332 | 2026-10-06. Ruled (a): not a participant; its Registry `demo` already reads `open` (1.8.0), so nothing further changes |
