@@ -981,20 +981,54 @@ docker volume rm traefik-origin-ca && docker network rm cs-tracker_default; rm -
 
 ### Dashboard run
 
-_Not yet run._ FA1's registration, FA2's count, FA3's `/ping`, FA4's statuses and FA5's observations are
-written here, each with its UTC time.
+FA1's registration, FA2's count, FA3's `/ping`, FA4's statuses and FA5's observations are written here,
+each with its UTC time.
+
+**FA1, 2026-10-06T05:41Z, by the Operator.** A third OAuth application on the production instance, Name
+`traefik`, scopes `openid`, `profile` and `email`, Public off, Device authorization grant off, consent screen
+off like the other two, Redirect URI `http://localhost:8080/oauth2/callback`. **The issuer accepted the
+loopback `http` URI**, so FA7 was not needed. The Client ID, the secret and the Owner's address went into the
+local `.env` only.
+
+**FA2, 2026-10-06T05:44Z.** FA2's inline commands have the `wsl.exe` quoting fault step 11 found, so a
+helper on the box (`/home/deploy/fa2-append.sh`, removed after) took `OIDC_ISSUER` and the three
+`TRAEFIK_OIDC_*` lines from the Operator's pipe out of the local `.env`, refused a malformed input first, and
+generated `TRAEFIK_FORWARD_AUTH_COOKIE_SECRET` on the box, so that value never left it. Counted by name: 5 of
+5 in `ops/traefik/.env`. `TRAEFIK_OIDC_CLIENT_ID` and `TRAEFIK_OIDC_CLIENT_SECRET` set as GitHub secrets of
+`LuigiEspinosa/cuatro-portfolio` at 05:43:49Z.
+
+**FA3, 2026-10-06T05:44:31Z.** From a script file on the box, at checkout `145ebc6` (`main`):
+`docker compose -f ops/traefik/compose.yml --profile forward-auth up -d forward-auth`. `traefik-forward-auth-1`
+running, 0 restarts; `/ping` from `cs-tracker_default` answered `OK`; 0 `invalid configuration` lines.
+
+**FA4, 2026-10-06T05:46:14Z.** From a script file on the box that would have removed the switch and recreated
+the ingress again on any configuration error: `DASHBOARD_FORWARD_AUTH=on` appended to `ops/traefik/.env`,
+`up -d --wait ingress` recreated `traefik-ingress-1` (05:46:04Z to Healthy), 0 `Error while building
+configuration` lines. Every hostname at the ingress, before (05:45:46Z) and after (05:46:15Z):
+
+| Host | Before | After |
+|---|---|---|
+| `cuatro.dev` | 200 | 200 |
+| `www.cuatro.dev` | 301 | 301 |
+| `analytics.cuatro.dev` | 200 | 200 |
+| `cs-tracker.cuatro.dev` | 302 | 302 |
+| `tracker.cuatro.dev` | 307 | 307 |
+| `library.cuatro.dev` | 302 | 302 |
+| `wheel.cuatro.dev` | 200 | 200 |
+| `tournament.cuatro.dev` | 200 | 200 |
+| `http://localhost:8081/dashboard/`, no credentials | **401** (basic auth) | **302** (to the sign-in) |
 
 ### Pending Operator actions, Story 5.6
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| FA1 | **Create the `traefik` client** with the loopback redirect URI | After action 5; stops at FA7 if refused | _not done_ |
-| FA2 | **Put the five values on the box and the two client values in GitHub** | After FA1; a box change | _not done_ |
-| FA3 | **Start `forward-auth`** under its profile and check `/ping` | After FA2; a box change that routes nothing | _not done_ |
-| FA4 | **Switch the dashboard** and check every hostname and the dashboard's `302` | After FA3; recreates the ingress | _not done_ |
+| FA1 | **Create the `traefik` client** with the loopback redirect URI | After action 5; stops at FA7 if refused | 2026-10-06. Created by the Operator; the issuer accepted `http://localhost:8080/oauth2/callback`; values in the local `.env` only; § Dashboard run |
+| FA2 | **Put the five values on the box and the two client values in GitHub** | After FA1; a box change | 2026-10-06T05:44Z. Five names on the box through a helper, the cookie secret generated there; two client secrets in GitHub; § Dashboard run |
+| FA3 | **Start `forward-auth`** under its profile and check `/ping` | After FA2; a box change that routes nothing | 2026-10-06T05:44:31Z. `traefik-forward-auth-1` running, `/ping` OK; § Dashboard run |
+| FA4 | **Switch the dashboard** and check every hostname and the dashboard's `302` | After FA3; recreates the ingress | 2026-10-06T05:46:14Z. Switched; 0 configuration errors; every hostname as before; dashboard 302; § Dashboard run |
 | FA5 | **Sign in to the dashboard through the tunnel** and record the cookie and the refused basic credentials | Story 5.6 is done when this cell is dated | _not done_ |
 | FA6 | **Rule on oauth2-proxy's place in AD-22's refresh** | Closes DW-329 | 2026-10-06. Ruled (a): oauth2-proxy added to AD-22's refresh scope in the spine |
-| FA7 | **Rule on the dashboard's address**, only if the issuer refuses the loopback redirect URI | Only if FA1 stopped | _not done_ |
+| FA7 | **Rule on the dashboard's address**, only if the issuer refuses the loopback redirect URI | Only if FA1 stopped | 2026-10-06. Not needed: FA1 did not stop, the issuer accepted the loopback redirect URI |
 
 ## Provider replaceability (Story 5.7)
 
