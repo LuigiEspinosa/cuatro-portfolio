@@ -10138,7 +10138,11 @@ status: done
     Whether the demo principal may upload at all narrows what a Visitor can do, so it is not this story's to
     decide. **Owner now: the Operator's ruling DR4** (`ops/demo-principal.md`; recommendation: refuse uploads
     to the demo principal).
-  status: open
+
+    **Closed 2026-10-06 by Operator ruling DR4 (b):** the demo principal cannot upload (`digital-library`
+    `aaf11a4`, independently verified, CI green), so no Visitor's file is ever served to the next; it reaches
+    the box with DP7.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-9-demo-reset-and-a-baseline-fixture-per-application.md`
   id: DW-334
   summary: >-
@@ -10156,7 +10160,12 @@ status: done
     **Owner: the Operator's ruling DR4, then `digital-library`.** **Trigger: DR4.** If DR4 refuses demo
     uploads, the demo side closes and the Operator's side reads only the public fixture; otherwise scope the
     duplicate lookup and the 409's body to the uploader's scope, with a case per direction.
-  status: open
+
+    **Closed 2026-10-06 by Operator ruling DR4 (b):** the demo side is unreachable, since the demo principal's
+    upload answers 403 before the duplicate lookup (a case holds it: 409 with the Operator's row before the
+    guard, 403 with neither id after). The Operator's side, which can only read the public fixture's rows, is
+    left as this entry describes, by the trigger's own terms.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-11-demo-and-identity-declarations-verified-against-reality.md`
   id: DW-335
   summary: >-

@@ -549,6 +549,37 @@ lets the Operator through but never a Visitor.
 `user_3KJEKgwKMPfI6YqhAqnRXqx797K` (an identifier, not a credential), kept in the local `.env` as
 `CS_TRACKER_OIDC_DEMO_SUB`. Access mode confirmed **Invite-only** the same minute.
 
+**DP5, first attempt, 2026-10-06T06:24Z: an outage of about a minute, then a fix.** On the box, from a script
+file: `CsTracker.Release.migrate_demo()` created schema `demo` (every migration ran), the demo subject was
+appended to `/home/deploy/cs-tracker/.env` (5 OIDC names), and `docker rollout -w 20 app` replaced the old
+container. **The new one could not start**: `bad child specification, more than one child specification has
+the id: CsTracker.Repo` (`duplicate_child_name`). `CsTracker.DemoPrincipal.children()` returned
+`{CsTracker.Repo, repo_options()}`, a second instance of the repo module under the module's default child id;
+the suite never booted the whole application with demo on, so it passed. `cs-tracker.cuatro.dev` answered
+**502** from 06:24:52Z; the line was removed and the app recreated, serving again at **06:25:28Z** (`/auth/session`
+401, `/` 302). Schema `demo` stayed, harmless with demo off.
+
+**The fix** (`cs-tracker` `b8e461a`, PR #4, `main` `d5f716e`): the demo repo's child takes its own id,
+`Supervisor.child_spec({CsTracker.Repo, repo_options()}, id: CsTracker.DemoRepo)`. A new case holds the main repo
+and demo access's children to unique ids; it failed on the unfixed code (`11 tests, 2 failures`) and passes with
+the fix; `mix precommit` 708 tests, 0 failures. The case the suite had missed was then run: the production image
+of the fix, booted against a scratch Postgres with all five OIDC values set, ran both migrations and stayed up
+(`running`, 0 restarts, `Running CsTrackerWeb.Endpoint`, no `duplicate_child_name`).
+
+**DP5, 2026-10-06T06:31:42Z.** From a script file that would turn demo off again by itself if the new container
+did not stay up: `git pull --ff-only` (`e4c6103` to `d5f716e`), `docker compose build app`, `migrate`,
+`migrate_demo`, the demo subject appended (5 OIDC names), `docker rollout -w 20 app`; `cs-tracker-app-6`
+`running`, 0 restarts after 37 seconds; `/` 302, `/auth/session` 401.
+
+**DR4, 2026-10-06, ruled (b) by the Operator: refuse uploads to the demo principal.** `digital-library`
+`aaf11a4` on `story-5-8-demo-principal`: `POST /api/libraries/:libraryId/books`, the only route that stores a
+file (covers are made inside the import, and the inbox watcher takes no request), answers 403 to the demo
+principal before the body is read, through Story 5.8's `isDemoPrincipal`. Independently verified: 536 tests
+passed, typecheck clean, and removing, inverting or re-keying the guard each fails a case; CI run 37424339943
+green on the pushed sha. A demo upload of a file the Operator already holds, which answered 409 with the
+Operator's book row before (DW-334), now answers 403 with neither id. The web form still shows the upload
+control to the demo account and relays the 403: cosmetic, the API refuses.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -564,7 +595,7 @@ lets the Operator through but never a Visitor.
 | DR1 | **Run the tracker's reset live, twice, and observe it** | After DP6 | _not done_ |
 | DR2 | **Run `cs-tracker`'s reset live, twice, and observe it** | After DP5 | _not done_ |
 | DR3 | **Run `digital-library`'s reset live, twice, and observe it** | After DP7 | _not done_ |
-| DR4 | **Rule on the demo principal's uploads** | DW-333, DW-334; before DP7 creates the demo user | _not done_ |
+| DR4 | **Rule on the demo principal's uploads** | DW-333, DW-334; before DP7 creates the demo user | 2026-10-06. Ruled (b): uploads refused to the demo principal, `digital-library` `aaf11a4`, verified, CI green; reaches the box with DP7; § Demo principal run |
 | DS1 | **Install the scheduler's cron file** from the checkout | After DR1 to DR3 and Story 5.10 on `main` | _not done_ |
 | DS2 | **Run the scheduler once by hand, in cron's shape, and observe it** | After DS1 | _not done_ |
 | DS3 | **Read the first unattended day** of `demo-reset.log` and the load after a run | The day after DS1 | _not done_ |
