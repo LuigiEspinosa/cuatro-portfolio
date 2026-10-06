@@ -9984,10 +9984,14 @@ status: done
     **Owner now: the Operator's ruling, action PS2** (delete it after CT5, recommended, or keep it as the
     break-glass and record FR-23's letter in `ops/known-violations.md`).
 
-    **Ruled 2026-10-06 (a): delete it.** The removal is being built and independently verified on
-    `cs-tracker` `dev`, keeping Steam inventory sync and the price refresh; this entry closes when it reaches
-    `cs-tracker` `main` and the box.
-  status: open
+    **Ruled 2026-10-06 (a): delete it.** Closed 2026-10-06T06:18Z: `cs-tracker` `7adfab1` and `f5974b8`
+    delete the Steam OpenID sign-in (client, nonce store, routes, controller actions, the unconfigured pipeline,
+    the Steam-session branch of both owner gates), keeping Steam inventory sync, the price refresh and
+    `STEAM_ID`'s boot check. An independent verifier passed it (`mix precommit` 707 tests, 0 failures; the
+    production image built and booted unconfigured, failing closed). PR #3 merged it to `main` at `e4c6103` and
+    it rolled on the box; `/auth/steam` and its callback answer 404. `cs-tracker`'s `.env.example` still
+    describes Steam sign-in, the Operator's to edit by the `.env.*` deny.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
   id: DW-327
   summary: >-
