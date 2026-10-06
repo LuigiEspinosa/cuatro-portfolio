@@ -1080,7 +1080,9 @@ development_status:
   # 5-5 done 2026-10-06T05:34Z: AD-11 logout amended per application (DW-319, action 11); S1 and S2 nothing to
   # register on this issuer, S3 400/403 on both hosts, S4 an open cs-tracker socket left on sign-out live.
   5-5-sign-out-reaches-every-session-including-open-liveview-socke: done
-  5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the: awaiting-operator
+  # 5-6 done 2026-10-06T05:58Z: the Traefik dashboard is behind ForwardAuth (oauth2-proxy v7.15.5, client
+  # `traefik`); every hostname unchanged at the switch; basic auth out of the chain; FA6 ruled into AD-22.
+  5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the: done
   # 5-7 awaiting-operator 2026-10-02: repository halves built. ops/provider-swap.sh points the Hub's production image,
   # cs-tracker's production release and the committed forward-auth at dex v2.45.1 (pinned by digest, test-time only)
   # through their existing issuer and client variables alone, and each signs in with a __Host- session and no Domain;

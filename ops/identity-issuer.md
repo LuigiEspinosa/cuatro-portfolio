@@ -1018,6 +1018,17 @@ configuration` lines. Every hostname at the ingress, before (05:45:46Z) and afte
 | `tournament.cuatro.dev` | 200 | 200 |
 | `http://localhost:8081/dashboard/`, no credentials | **401** (basic auth) | **302** (to the sign-in) |
 
+**FA5, 2026-10-06T05:58Z, by the Operator.** Through the tunnel, opened by WSL's key
+(`wsl -d Ubuntu-22.04 ssh -N -L 8080:127.0.0.1:8081 deploy@177.7.52.248`), `http://localhost:8080/dashboard/`
+went to the issuer, and the Operator signed in. The gate logged one `AuthSuccess` and no failure in the
+30 minutes to 05:58Z (counted, no identity printed). Cookies on `localhost`, names and Domains only:
+`__Host-traefik-dashboard`, host-only, `Secure`; and `sb-ufnumdqrhyvijreoyrxf-auth-token`, a Supabase sign-in
+cookie some earlier local application set, not the dashboard's (the profile was not entirely fresh, and
+`localhost` cookies are shared across ports). **Basic credentials no longer admit**: on the box's loopback at
+05:58:19Z, no credentials and `-u operator:<a wrong password>` both answered **302**, so basic auth is out of
+the chain. The demo principal does not exist yet, so the second-account `403` was not observed.
+**Story 5.6 is done.**
+
 ### Pending Operator actions, Story 5.6
 
 | # | Action | Note | Completed (UTC) |
@@ -1026,7 +1037,7 @@ configuration` lines. Every hostname at the ingress, before (05:45:46Z) and afte
 | FA2 | **Put the five values on the box and the two client values in GitHub** | After FA1; a box change | 2026-10-06T05:44Z. Five names on the box through a helper, the cookie secret generated there; two client secrets in GitHub; § Dashboard run |
 | FA3 | **Start `forward-auth`** under its profile and check `/ping` | After FA2; a box change that routes nothing | 2026-10-06T05:44:31Z. `traefik-forward-auth-1` running, `/ping` OK; § Dashboard run |
 | FA4 | **Switch the dashboard** and check every hostname and the dashboard's `302` | After FA3; recreates the ingress | 2026-10-06T05:46:14Z. Switched; 0 configuration errors; every hostname as before; dashboard 302; § Dashboard run |
-| FA5 | **Sign in to the dashboard through the tunnel** and record the cookie and the refused basic credentials | Story 5.6 is done when this cell is dated | _not done_ |
+| FA5 | **Sign in to the dashboard through the tunnel** and record the cookie and the refused basic credentials | Story 5.6 is done when this cell is dated | 2026-10-06T05:58Z. Signed in through the tunnel (one `AuthSuccess`); `__Host-traefik-dashboard` host-only; basic credentials answered 302; § Dashboard run |
 | FA6 | **Rule on oauth2-proxy's place in AD-22's refresh** | Closes DW-329 | 2026-10-06. Ruled (a): oauth2-proxy added to AD-22's refresh scope in the spine |
 | FA7 | **Rule on the dashboard's address**, only if the issuer refuses the loopback redirect URI | Only if FA1 stopped | 2026-10-06. Not needed: FA1 did not stop, the issuer accepted the loopback redirect URI |
 
