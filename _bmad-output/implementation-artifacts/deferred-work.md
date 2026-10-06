@@ -10185,6 +10185,10 @@ status: done
     `ops/registry-verification.md` action 9 for that participant.** Show the demo address and, from the
     application's environment, its password on the sign-in page (the tracker's `/login`, the library's
     `/login`, a `cs-tracker` page before the issuer), with a case in each suite.
+
+    **Ruled 2026-10-06 by the Operator: all three deferred to his sign-in rework** (the tracker and
+    `digital-library` onto the issuer, DW-337, and `cs-tracker`'s page beside them), so no participant's
+    demo release (action 9) lands in Epic 5. Owner: that rework.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-11-demo-and-identity-declarations-verified-against-reality.md`
   id: DW-336
@@ -10198,6 +10202,11 @@ status: done
 
     **Owner: the Operator's ruling, `ops/registry-verification.md` action 11.** **Trigger: the first demo
     release (action 9).** Options and a recommendation are in that action.
+
+    **Ruled 2026-10-06 by the Operator: (a) now, (b) later.** The stated limit stands until the first demo
+    release lands; that release then adds the demo password as a second secret on the script step and a
+    sign-in probe for `cuatro-tracker` and `digital-library`, leaving `cs-tracker` on its observation. Owner:
+    the first demo release (action 9).
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
   id: DW-337
