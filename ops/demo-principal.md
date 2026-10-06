@@ -604,6 +604,15 @@ there hashed by `bcryptjs` at cost 12 (`users in schema demo: 1`), appended `TRA
 1, the Operator's account (the before count was lost in interleaved compose output). The Operator then signed in
 as `demo@cuatro.dev` to an empty library, and as himself to his library unchanged.
 
+**DP7, 2026-10-06, merged and deployed; the demo account deferred.** `digital-library` PR #61
+(`story-5-8-demo-principal` into `dev`, `4ad020d`) and PR #62 (`dev` into `main`, `eada53d`) merged on green CI.
+The release also carried the Operator's unreleased `dev` work (C.1 to C.3 screen rebuilds and a
+`.dockerignore`), released as is by his ruling. At 16:53Z the box's `library-redeploy.sh` rebuilt `api` and
+`web` from `eada53d`, both healthy; live `/` 302, `/login` 200, `/api/health` 200. The script's smoke step
+exited 60 on Traefik's Origin CA certificate, a stale check rather than a failed deploy (DW-338). The Operator
+then deferred creating `demo@cuatro.dev` until `digital-library` signs in through the issuer like the others
+(DW-337); without the account every path is as before, so DR3 waits with it.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -614,11 +623,11 @@ as `demo@cuatro.dev` to an empty library, and as himself to his library unchange
 | DP4 | **Rule on the connection budget** with demo on | DW-331 | 2026-10-06T06:07:51Z. Ruled (a), with the reset's connection: `cuatro_tracker` 20 to 23 and `cs_tracker` 25 to 30, role and database, on the box (read before and after) and in `ops/postgres/init/10-consumers.sh` and `ops/postgres.md`; the four limits sum to 88 of 97. Set first to 22 and 29 at 06:06:54Z, the reset's connection overlooked, and corrected within a minute |
 | DP5 | **Turn `cs-tracker`'s demo on** and check both scopes | After DP3, DP4 and CT3 | 2026-10-06T15:50Z. Demo on; the demo principal signs in to its own empty scope and the Owner's inventory is unchanged, observed by the Operator; § Demo principal run |
 | DP6 | **Turn the tracker's demo on** and check both scopes | After DP2, DP4 | 2026-10-06T15:59Z. Demo on; the demo library is empty and the Owner's is unchanged, observed by the Operator; § Demo principal run |
-| DP7 | **Merge `digital-library`'s branch, deploy it, create the demo user** (Story 5.9: the reset creates its library) | After DP2 and DR4 | _not done_ |
+| DP7 | **Merge `digital-library`'s branch, deploy it, create the demo user** (Story 5.9: the reset creates its library) | After DP2 and DR4 | Merged and deployed 2026-10-06T16:53Z (`eada53d`); the demo account deferred by the Operator until OIDC, DW-337; § Demo principal run |
 | DP8 | **Rule on `cs-tournament`'s participation** | DW-332 | 2026-10-06. Ruled (a): not a participant; its Registry `demo` already reads `open` (1.8.0), so nothing further changes |
 | DR1 | **Run the tracker's reset live, twice, and observe it** | After DP6 | _not done_ |
 | DR2 | **Run `cs-tracker`'s reset live, twice, and observe it** | After DP5 | _not done_ |
-| DR3 | **Run `digital-library`'s reset live, twice, and observe it** | After DP7 | _not done_ |
+| DR3 | **Run `digital-library`'s reset live, twice, and observe it** | After DP7 | _not done_: waits on the demo account, DW-337 |
 | DR4 | **Rule on the demo principal's uploads** | DW-333, DW-334; before DP7 creates the demo user | 2026-10-06. Ruled (b): uploads refused to the demo principal, `digital-library` `aaf11a4`, verified, CI green; reaches the box with DP7; § Demo principal run |
 | DS1 | **Install the scheduler's cron file** from the checkout | After DR1 to DR3 and Story 5.10 on `main` | _not done_ |
 | DS2 | **Run the scheduler once by hand, in cron's shape, and observe it** | After DS1 | _not done_ |

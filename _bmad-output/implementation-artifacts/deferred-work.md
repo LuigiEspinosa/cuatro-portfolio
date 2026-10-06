@@ -10199,3 +10199,29 @@ status: done
     **Owner: the Operator's ruling, `ops/registry-verification.md` action 11.** **Trigger: the first demo
     release (action 9).** Options and a recommendation are in that action.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
+  id: DW-337
+  summary: >-
+    `digital-library` has no demo account: the Operator deferred creating `demo@cuatro.dev` there until the
+    application signs in through the issuer like the Hub and `cs-tracker`, so DR3 and its demo stay off.
+  evidence: |-
+    Ruled by the Operator 2026-10-06 at DP7 (`ops/demo-principal.md` § Demo principal run). Story 5.8's code is
+    on `main` at `eada53d` (PRs #61 and #62) and deployed; without the account every path is as before.
+
+    **Owner: a story the Operator schedules to move `digital-library` onto OIDC.** **Trigger: that story's
+    rollout.** Then create the account by that sign-in, run DR3, and release its Registry `demo`.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
+  id: DW-338
+  summary: >-
+    The box's `/home/deploy/library-redeploy.sh` smoke step fails every run with curl exit 60: it reaches the
+    box by IP with certificate checking on, and the box serves Cloudflare's Origin CA certificate since Epic 4.
+  evidence: |-
+    Observed 2026-10-06T16:53Z at DP7: the build and `up` succeeded (`api` and `web` healthy, live `/` 302,
+    `/api/health` 200), then the smoke printed `web HTTP 000` and the script exited 60, so a good deploy reads
+    as failed. The script lives only on the box.
+
+    **Owner: the Operator, or the story that moves `digital-library`'s deploy off the box (DW-185).**
+    **Trigger: the next `digital-library` redeploy.** Probe through Cloudflare by name, or keep the
+    `--resolve` and pass `--cacert` the Origin CA root.
+  status: open
