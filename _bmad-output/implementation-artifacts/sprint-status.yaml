@@ -1091,7 +1091,7 @@ development_status:
   # only while OIDC is unconfigured. Operator: ops/identity-issuer.md PS1 (live evidence ruling, closes the story),
   # PS2 (delete the Steam code, DW-326), PS3 (make provider-swap required).
   # 5-7 done 2026-10-06T06:18Z: PS1 the swap against the production images; PS2 Steam sign-in deleted live.
-  # PS3, provider-swap as a required check on main, waits on the Operator (a GitHub settings change).
+  # PS3 done 2026-10-06: provider-swap required on main, 14 required checks.
   5-7-provider-replaceability-is-evidenced-not-asserted: done
   # 5-8 awaiting-operator 2026-10-03: repository halves built. New record ops/demo-principal.md: the principal
   # demo@cuatro.dev, derived (the issuer's subject, CS_TRACKER_OIDC_DEMO_SUB, for cs-tracker; the account address

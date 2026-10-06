@@ -1207,7 +1207,7 @@ half on every push.
 |---|---|---|---|
 | PS1 | **Rule on how the live estate evidences FR-23**, and run the swap if (b) or (c) | Story 5.7 is done when this cell is dated | 2026-10-06T06:03Z. Ruled (a): the off-box demonstration is the evidence; run again against the production Hub and `cs-tracker` images, every participant signed in; § Provider swap run |
 | PS2 | **Rule on deleting `cs-tracker`'s Steam sign-in code** | After CT5; closes DW-326 | 2026-10-06T06:18Z. Ruled (a): deleted; `cs-tracker` PR #3, `main` `e4c6103`, rolled; `/auth/steam` answers 404 with no route behind it |
-| PS3 | **Make `provider-swap` a required check on `main`** | A GitHub settings change | _not done_ |
+| PS3 | **Make `provider-swap` a required check on `main`** | A GitHub settings change | 2026-10-06. Added by the Operator through the protection API: 14 required contexts, `provider-swap` among them |
 
 ## The demo principal (Story 5.8)
 
