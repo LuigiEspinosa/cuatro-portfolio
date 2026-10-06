@@ -993,7 +993,7 @@ written here, each with its UTC time.
 | FA3 | **Start `forward-auth`** under its profile and check `/ping` | After FA2; a box change that routes nothing | _not done_ |
 | FA4 | **Switch the dashboard** and check every hostname and the dashboard's `302` | After FA3; recreates the ingress | _not done_ |
 | FA5 | **Sign in to the dashboard through the tunnel** and record the cookie and the refused basic credentials | Story 5.6 is done when this cell is dated | _not done_ |
-| FA6 | **Rule on oauth2-proxy's place in AD-22's refresh** | Closes DW-329 | _not done_ |
+| FA6 | **Rule on oauth2-proxy's place in AD-22's refresh** | Closes DW-329 | 2026-10-06. Ruled (a): oauth2-proxy added to AD-22's refresh scope in the spine |
 | FA7 | **Rule on the dashboard's address**, only if the issuer refuses the loopback redirect URI | Only if FA1 stopped | _not done_ |
 
 ## Provider replaceability (Story 5.7)

@@ -10035,7 +10035,10 @@ status: done
 
     **Owner: the Operator's ruling, action FA6.** **Trigger: before FA4, or at AD-22's next refresh.** Add
     oauth2-proxy to AD-22's scope, or record why its pin is re-read only on a published advisory.
-  status: open
+
+    **Closed 2026-10-06 by Operator ruling (a):** AD-22's scope adds oauth2-proxy's version and digest
+    (spine § AD-22, "Amended 2026-10-06"); `ops/identity-issuer.md` FA6 is dated.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the.md`
   id: DW-330
   summary: >-
