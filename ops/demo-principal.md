@@ -528,11 +528,11 @@ _Not yet run._ Each step above is written here with the UTC time and what was ob
 | DP1 | **Answer whether `demo@cuatro.dev` needs a real mailbox** | A question, not a decision this story made | _not done_ |
 | DP2 | **Decide the demo credentials** and whether the issuer's sign-up stays closed | Kept in the gitignored `.env` | _not done_ |
 | DP3 | **Create `demo@cuatro.dev` at the issuer** and record its subject as `CS_TRACKER_OIDC_DEMO_SUB` | After `ops/identity-issuer.md` actions 1 to 7 and H3 | _not done_ |
-| DP4 | **Rule on the connection budget** with demo on | DW-331 | _not done_ |
+| DP4 | **Rule on the connection budget** with demo on | DW-331 | 2026-10-06T06:07:51Z. Ruled (a), with the reset's connection: `cuatro_tracker` 20 to 23 and `cs_tracker` 25 to 30, role and database, on the box (read before and after) and in `ops/postgres/init/10-consumers.sh` and `ops/postgres.md`; the four limits sum to 88 of 97. Set first to 22 and 29 at 06:06:54Z, the reset's connection overlooked, and corrected within a minute |
 | DP5 | **Turn `cs-tracker`'s demo on** and check both scopes | After DP3, DP4 and CT3 | _not done_ |
 | DP6 | **Turn the tracker's demo on** and check both scopes | After DP2, DP4 | _not done_ |
 | DP7 | **Merge `digital-library`'s branch, deploy it, create the demo user** (Story 5.9: the reset creates its library) | After DP2 and DR4 | _not done_ |
-| DP8 | **Rule on `cs-tournament`'s participation** | DW-332 | _not done_ |
+| DP8 | **Rule on `cs-tournament`'s participation** | DW-332 | 2026-10-06. Ruled (a): not a participant; its Registry `demo` already reads `open` (1.8.0), so nothing further changes |
 | DR1 | **Run the tracker's reset live, twice, and observe it** | After DP6 | _not done_ |
 | DR2 | **Run `cs-tracker`'s reset live, twice, and observe it** | After DP5 | _not done_ |
 | DR3 | **Run `digital-library`'s reset live, twice, and observe it** | After DP7 | _not done_ |

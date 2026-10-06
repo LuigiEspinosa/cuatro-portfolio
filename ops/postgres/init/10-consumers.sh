@@ -12,8 +12,8 @@ set -eu
 
 # name, CONNECTION LIMIT, the variable holding the role's password.
 CONSUMERS='umami 25 UMAMI_DB_PASSWORD
-cuatro_tracker 20 CUATRO_TRACKER_DB_PASSWORD
-cs_tracker 25 CS_TRACKER_DB_PASSWORD
+cuatro_tracker 23 CUATRO_TRACKER_DB_PASSWORD
+cs_tracker 30 CS_TRACKER_DB_PASSWORD
 cuatro_finance 10 CUATRO_FINANCE_DB_PASSWORD'
 
 # Every variable is checked before any statement runs. The image skips this directory on any later start

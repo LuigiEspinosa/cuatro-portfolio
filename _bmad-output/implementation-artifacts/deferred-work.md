@@ -10084,7 +10084,11 @@ status: done
     reset connection is open in the whole estate at any moment, and each role gets the one connection Story 5.9
     counted, never two. The arithmetic stands: 23 and 30, a sum of 88 of 97 (`ops/demo-principal.md`
     § The scheduler).
-  status: open
+
+    **Closed 2026-10-06T06:07:51Z by Operator ruling DP4 (a):** `cuatro_tracker` 23 and `cs_tracker` 30, role
+    and database, set on the box (read before and after) and in `ops/postgres/init/10-consumers.sh` and
+    `ops/postgres.md` § The budget, which `postgres-init.test.ts` holds equal; the sum is 88 of 97.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
   id: DW-332
   summary: >-
