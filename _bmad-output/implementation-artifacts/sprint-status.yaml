@@ -1101,14 +1101,17 @@ development_status:
   # dev here; cs-tracker dev 8109599 e782b4c; digital-library branch story-5-8-demo-principal 4d7bea0 b94a95e. The
   # mailbox question, credentials, issuer account, budget ruling and each switch are the Operator's: DP1 to DP8.
   # DW-331 to DW-333 filed.
-  5-8-the-demo-principal-contract: awaiting-operator
+  # 5-8 done 2026-10-06: DP1 to DP6 and DP8 met; cs-tracker and the tracker run demo on, both scopes observed.
+  # DP7 merged and deployed (digital-library main eada53d); its demo account deferred to the sign-in rework, DW-337.
+  5-8-the-demo-principal-contract: done
   # 5-9 awaiting-operator 2026-10-03: repository halves built. ops/demo-principal.md § The reset defines demo:reset
   # once (delete by owner through an explicit key, never the Operator's rows or the principal's account, a committed
   # fixture with fixed ids and times, one transaction, idempotent, skipped when off or absent, run from the host as
   # a one-shot docker compose run, one line out, exit 0 or 1). Tracker on dev here (Postgres-backed suite, CI gains
   # a Postgres service); cs-tracker dev d1adf6c 7b79f25 dcd35ee; digital-library branch story-5-8-demo-principal
   # 353f7e0 and 6ae8df2 (fix round 1). Running each reset live (DR1 to DR3) and the uploads ruling (DR4) are the Operator's. DW-334 filed.
-  5-9-demo-reset-and-a-baseline-fixture-per-application: awaiting-operator
+  # 5-9 done 2026-10-06: DR1 and DR2 live, rows=12, Owner unchanged; DR4 ruled (b). DR3 waits on DW-337.
+  5-9-demo-reset-and-a-baseline-fixture-per-application: done
   # 5-10 awaiting-operator 2026-10-03: repository half built on dev. ops/demo-reset.sh, run from the box's checkout
   # by one committed cron file (ops/demo-reset.cron, installed as /etc/cron.d/cuatro-demo-reset) every 15 minutes,
   # reads ops/demo-reset.schedule (60 minutes for each participant, or off) and runs the due resets one at a time
@@ -1116,6 +1119,7 @@ development_status:
   # cron file exits 1 (DW-318 avoided); one summary line per run, unread (DW-315 amended). A full run measured
   # 3.5 s wall and about 4.6 CPU-seconds with the real images, one connection per reset (DW-331 amended). The
   # install and the first unattended day are the Operator's: ops/demo-principal.md DS1 to DS3.
+  # 5-10 2026-10-06: DS1 installed, DS2 ran=3 failed=none exit=0. DS3, the first unattended day, is read 2026-10-07.
   5-10-one-host-level-reset-scheduler-for-the-estate: awaiting-operator
   # 5-11 awaiting-operator 2026-10-03: repository half built on dev. The scheduled Registry verification gives
   # every entry a demo and an identity row, held to what an anonymous Visitor meets at live (open 2xx, none 3xx,
@@ -1123,7 +1127,9 @@ development_status:
   # H3 or CT5 plus /auth/session 401 and a PKCE redirect, none no 401 there, wallet maicoin alone), 73 of 73 live.
   # Registry 1.8.0 corrects cs-tournament to demo open on observation (DW-332 closed). The release the live steps
   # unlock is written, unapplied: ops/registry-verification.md actions 8 to 11. DW-335 and DW-336 filed.
-  5-11-demo-and-identity-declarations-verified-against-reality: awaiting-operator
+  # 5-11 done 2026-10-06: the extended job 73 of 73 on a runner (runs 8 and 9); the demo release deferred with
+  # every sign-in page to the Operator's rework (DW-335), DW-336 ruled (a) now, (b) at that release.
+  5-11-demo-and-identity-declarations-verified-against-reality: done
   epic-5-retrospective: optional
 
   epic-6: backlog

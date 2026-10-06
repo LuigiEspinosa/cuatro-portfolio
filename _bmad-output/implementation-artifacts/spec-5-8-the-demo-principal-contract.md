@@ -60,9 +60,9 @@ context:
 - AC5: Given each participant with demo off, then every other principal is served as before: existing suites pass unchanged and a case per stack holds the off state.
 - AC6: The Operator's side effects (tracker admin, `cs-tracker` sync and price refresh) are refused to the demo principal.
 - AC7: Typecheck and the full root suite pass; the tracker's typecheck and suite; `cs-tracker`'s `mix precommit` and the adoption probe; `digital-library`'s suite and typecheck on Node 22.
-- AC8 (Operator-pending): DP1 to DP3, the mailbox question, credentials, the issuer account and its subject.
-- AC9 (Operator-pending): DP4 to DP7, the budget ruling and each participant turned on, both scopes observed live.
-- AC10 (Operator-pending, ruling): DP8, `cs-tournament`'s participation.
+- AC8 (Operator-pending): DP1 to DP3, the mailbox question, credentials, the issuer account and its subject. (Met 2026-10-06: Invite-only access, Device Trust off, `demo@cuatro.dev` at the issuer; its subject corrected to `user_3KJFLRo2WGqNDY1sctmygDMckmd` after the account was recreated.)
+- AC9 (Operator-pending): DP4 to DP7, the budget ruling and each participant turned on, both scopes observed live. (Met for DP4 to DP6 2026-10-06: limits 23 and 30, `cs-tracker` and the tracker demo on, both scopes observed. DP7 merged and deployed at `eada53d`; its demo account deferred by the Operator to his sign-in rework, DW-337.)
+- AC10 (Operator-pending, ruling): DP8, `cs-tournament`'s participation. (Met 2026-10-03: ruled (a), not a participant, Registry 1.8.0.)
 
 ## Design Notes
 

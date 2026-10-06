@@ -64,7 +64,7 @@ context:
 - AC4: Given `cs-tournament`, then its `demo` reads `open` in Registry 1.8.0 with its evidence recorded, and the schema gate passes.
 - AC5: Given the observations H3, CT5, DP5 to DP7, DR1 to DR3, DS1 to DS3 and DW-335, then the record gives the release's per-entry changes, version, order and moved pins, unapplied.
 - AC6: Root suite and typecheck pass; the Hub builds.
-- AC7 (Operator-pending): the release applied after those observations, and the extended job read green on a runner.
+- AC7 (Operator-pending): the release applied after those observations, and the extended job read green on a runner. (Met for the runner 2026-10-06: observed runs 8 and 9, 73 of 73. The demo release deferred by the Operator with every participant's sign-in page, DW-335; DW-336 ruled (a) now, (b) at that release.)
 
 ## Implementation Notes
 

@@ -58,8 +58,8 @@ context:
 - AC5: Given each fixture, then it is committed in its application's repository with fixed ids and times, and every table of the scope is classified as reset or structural by a case that fails on a new table.
 - AC6: `cs-tracker`'s demo item ids never equal an Owner item id; `digital-library`'s reset removes uploaded files and covers; the record says whether its admin's container routes over a demo library are closed or accepted, and why.
 - AC7: Root typecheck and suite; the tracker's typecheck, suite and build; `cs-tracker`'s `mix precommit` and the adoption probe; `digital-library`'s suite and typecheck on Node 22.
-- AC8 (Operator-pending): DR1 to DR3, each participant's reset run live after its DP5 to DP7, observed.
-- AC9 (Operator-pending, ruling): DR4, DW-333's uploads.
+- AC8 (Operator-pending): DR1 to DR3, each participant's reset run live after its DP5 to DP7, observed. (Met for DR1 and DR2 2026-10-06: live runs `reset rows=12`, exit 0, Owner unchanged, `cs-tracker`'s addition gone; the tracker's signed-in check skipped by the Operator. DR3 deferred with the demo account, DW-337.)
+- AC9 (Operator-pending, ruling): DR4, DW-333's uploads. (Met 2026-10-06: ruled (b), uploads refused, `digital-library` `aaf11a4`, on `main` at `eada53d`.)
 
 ## Implementation Notes
 
