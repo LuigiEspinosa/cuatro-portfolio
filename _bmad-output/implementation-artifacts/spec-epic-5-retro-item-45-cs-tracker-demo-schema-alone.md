@@ -2,7 +2,7 @@
 title: 'Epic 5 retro action 1 (M1): cs-tracker serves the demo principal from schema demo alone'
 type: 'bugfix'
 created: '2026-10-12'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: 'cuatro-portfolio 43dbb6a71c5bfc145b48527b0a9cbda3e3a7db51; cs-tracker 3b1aa7c14d2534e524ac258277904691d349afbb'
@@ -81,4 +81,14 @@ Implemented directly in worktree `C:/CuatroEcosystem/cs-tracker-workspace/wt-dem
 
 **Root suite (2026-10-12, after the ops edits):** `Test Files 7 failed | 73 passed (80)`, `Tests 18 failed | 1954 passed | 1 skipped (1973)`; all 18 in the seven WSL-bash suites, each a 21 to 32 second timeout (DW-135). Each re-run alone passed: deploy-remote 28, library-backup 59, tracker-backup 11, postgres-backup 20 (1 skipped), postgres-init 17, tournament-backup 15, demo-reset 26. After the board and spec edits, the five suites reading the board or the record (hit-target-floor, hub-accessibility-pass, status-mark-axes, demo-principal, registry-verification): `150 passed (150)`.
 
-**Independent verifier:** _not yet run_. The verifier opens and merges the `cs-tracker` PR to `dev`, pushes `cuatro-portfolio` `dev`, and records its verdict here.
+**Independent verifier (2026-10-12, round 1): pass with minor findings.** A separate session with no builder context read both diffs against `origin/dev` and re-ran every stage:
+
+- `mix precommit` in the worktree at `f2c005d` against a scratch `postgres:18.6`: `709 tests, 0 failures (4 excluded)`, no file changed by `format`.
+- Image `epic-scratch-cs-tracker:verify` built from `f2c005d`, against a scratch `postgres:18.6` whose database is owned by a non-superuser `cs_tracker` role: `bin/migrate` ran every migration in `public` then in `demo`; a second run printed `Migrations already up` twice and exited 0; `schema_migrations` holds 10 in each schema; `demo` holds the eight application tables, `public` those plus `oban_jobs` and `oban_peers`. With `demo.ownership_marks` and its version removed, a third run printed `Migrations already up` then `Running 20260622181145` and recreated the table in `demo` alone, exit 0.
+- The server booted with demo access on (scratch OIDC values): `GET /auth/session` answered 401, no `[error]` log line. Over `rpc` as the demo repo: `search_path` `[["demo"]]`, `Inventory.sync_in_progress?` `false`, `Inventory.last_sync_failure` `nil`, an unqualified `oban_jobs` query refused; the Owner's `search_path` `"$user", public`. DP9's own `rpc` line, as step 16 writes it, printed `[["demo"]]`. Every `epic-scratch-*` object was removed; nothing was pruned.
+- Root suite `corepack pnpm test --run`: `Test Files 4 failed | 76 passed (80)`, `Tests 4 failed | 1968 passed | 1 skipped (1973)`; the four were roughly 30 second empty-output cases in demo-reset, postgres-backup, library-backup and deploy-remote (DW-135). Each re-run alone passed: demo-reset 26, postgres-backup 20 (1 skipped), library-backup 59, deploy-remote 28.
+- Records: `ops/demo-principal.md` step 16 and Pending row DP9 (added 2026-10-12, `_not done_`), and `ops/cs-tracker-cutover.md` § Later rollouts, the standing redeploy order, carry the change. No prose dash or emoji in either diff; both commit subjects are Conventional Commit subjects alone.
+
+Merged: `cs-tracker` PR 6 (`fix/demo-schema-alone` into `dev`), rebased by GitHub to `666b85288abb4463156bbf604d3804478ecc4d0b`, the same tree as `f2c005d`. `cs-tracker` has no `.github/`, so no workflow ran on either sha (`gh run list --commit` empty for both).
+
+Minor findings, not blocking: `rel/overlays/bin/migrate.bat` still runs `migrate` alone (no Windows release is built or run, so nothing reads it); the board legend lists `open`, `in-progress` and `done` for an action item, and this row now reads `awaiting-operator` as the verifier dispatch asks, until the Operator's two steps (cs-tracker `dev` into `main`, then DP9) are dated.

@@ -128,7 +128,7 @@ read; the Operator's side effects withheld; and a suite case for each clause of 
   `CsTracker.Release.migrate/0`, so the standing redeploy order (`ops/cs-tracker-cutover.md` § Later
   rollouts) migrates both schemas. The test helper runs it before every suite, and a case drops a demo table
   inside its sandbox to show the refusal. Epic 5 retrospective M1, action 1: `cs-tracker` commit `f2c005d`
-  on branch `fix/demo-schema-alone`, reaching `dev` by its PR and the box by DP9.
+  on branch `fix/demo-schema-alone`, merged to `dev` as `666b852` by PR 6 on 2026-10-12, reaching the box by DP9.
 - **Gates:** the HTTP plug and the LiveView `on_mount` put the principal's repo on the process
   (`DemoPrincipal.put_repo/1`); the endpoint puts the Owner's back at the start of every request, because
   Bandit serves a connection's requests in one process.
