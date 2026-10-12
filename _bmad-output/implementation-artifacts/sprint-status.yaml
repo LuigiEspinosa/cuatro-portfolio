@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-03-2026 17:10
+last_updated: 10-12-2026 13:09
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1130,7 +1130,7 @@ development_status:
   # 5-11 done 2026-10-06: the extended job 73 of 73 on a runner (runs 8 and 9); the demo release deferred with
   # every sign-in page to the Operator's rework (DW-335), DW-336 ruled (a) now, (b) at that release.
   5-11-demo-and-identity-declarations-verified-against-reality: done
-  epic-5-retrospective: optional
+  epic-5-retrospective: done
 
   epic-6: backlog
   6-1-confirm-the-trigger-has-fired: backlog
@@ -1569,3 +1569,67 @@ action_items:
     owner: "Cuatro"
     status: done
     ref: "_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md"
+  - id: "epic-5-retro-item-45-cs-tracker-serve-the-demo-principal-from"
+    epic: 5
+    action: "cs-tracker: serve the demo principal from schema demo alone (Oban addressed
+      as public explicitly), and run migrate_demo in rel/overlays/bin/migrate and
+      the deployment.md redeploy order, with a case that an unmigrated demo table
+      is refused (M1)"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
+  - id: "epic-5-retro-item-46-the-tracker-migrate-schema-demo-in-every"
+    epic: 5
+    action: "The tracker: migrate schema demo in every rollout (tracker-migrate a
+      second time with the demo URL, in ops/tracker-cutover.md), and build DP6's demo
+      URL in a query-string-safe form (M2)"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
+  - id: "epic-5-retro-item-47-the-reset-scheduler-make-a-failed-or-hol"
+    epic: 5
+    action: "The reset scheduler: make a failed or hollow run visible (a heartbeat
+      monitoring reads, or exit=1 reaching an issue), and report absent as a failure
+      for a participant whose switch is on (M3)"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
+  - id: "epic-5-retro-item-48-digital-library-repair-or-remove-test-de"
+    epic: 5
+    action: "digital-library: repair or remove Test & Deploy's deploy job, red since
+      2026-07-30, and correct DP7's line in ops/demo-principal.md to name it and the
+      by-hand redeploy (M5)"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
+  - id: "epic-5-retro-item-49-before-any-visitor-gets-the-demo-sign-in"
+    epic: 5
+    action: "Before any Visitor gets the demo sign-in (DW-335): cs-tracker's demo
+      sign-out ends only its own session; digital-library recognises the principal
+      one way and refuses an administrator demo account at use (M4, m13)"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
+  - id: "epic-5-retro-item-50-spec-reconciliation-amend-epics-md-epic"
+    epic: 5
+    action: "Spec reconciliation: amend epics.md Epic 5 intents 5.2, 5.3, 5.5 and
+      5.9 and AD-13's deletes-by-owner to the rulings, and correct ops/identity-issuer.md's
+      two stale Steam passages (m14)"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
+  - id: "epic-5-retro-item-51-process-a-step-a-story-makes-by-hand-on"
+    epic: 5
+    action: "Process: a step a story makes by hand on the box is written into the
+      standing redeploy runbook in the same change, never only into the story's run
+      section"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
+  - id: "epic-5-retro-item-52-process-a-dated-row-relying-on-a-reposit"
+    epic: 5
+    action: "Process: a dated row relying on a repository's CI names every workflow
+      it read on that sha, not CI green"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
