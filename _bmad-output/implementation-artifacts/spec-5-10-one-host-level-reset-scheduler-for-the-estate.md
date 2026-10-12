@@ -64,7 +64,7 @@ context:
 - AC7: Given a PATH holding only the tools the box is recorded to run, then every case passes.
 - AC8: Given the three participants' real images run locally, then one full run's CPU cost and wall time are measured and recorded against load15 0.60, and the reset's connection is counted in DW-331.
 - AC9: Root suite and typecheck pass.
-- AC10 (Operator-pending): DS1 to DS3, the install after DP5 to DP7 and DR1 to DR3, and the first unattended runs read.
+- AC10 (Operator-pending): DS1 to DS3, the install after DP5 to DP7 and DR1 to DR3, and the first unattended runs read. (Met 2026-10-12: installed 2026-10-06T17:26Z before DR3 by the Operator's deferral, DW-337; DS2 `ran=3 exit=0`; DS3 143 of 143 hourly runs `exit=0`, load15 0.12 after a run.)
 
 ## Implementation Notes
 

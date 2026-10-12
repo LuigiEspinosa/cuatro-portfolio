@@ -637,6 +637,14 @@ rows=12`, `demo:reset cs-tracker reset rows=12`, `demo:reset digital-library ski
 absent`, then `demo-reset ts=2026-10-06T17:26:44Z tick=17:15 lock=ok schedule=ok cron=match ran=3 off=0
 failed=none exit=0`, and `exit=0`. `uptime` before and after: load average 0.01, 0.08, 0.21 both times.
 
+**DS3, read 2026-10-12, six unattended days.** `demo-reset.log` holds 143 summary lines, one for every hour
+from `ts=2026-10-06T18:00:06Z` to `ts=2026-10-12T16:00:07Z` (143 of 143 hours, 24 of 24 in the first day), every
+one `lock=ok schedule=ok cron=match ran=3 off=0 failed=none exit=0`; no `exit=1`, no `failed` participant line.
+Each run printed `demo:reset cuatro-tracker reset rows=12`, `demo:reset cs-tracker reset rows=12` and
+`demo:reset digital-library skipped: the demo principal is absent` (DW-337). The installed cron file still
+equals the checkout's. `uptime` at 2026-10-12T17:01:02Z, within the minute after the 17:00 run (`exit=0`): load
+average 0.34, 0.21, 0.12, load15 well under the gate's 0.60.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -655,7 +663,7 @@ failed=none exit=0`, and `exit=0`. `uptime` before and after: load average 0.01,
 | DR4 | **Rule on the demo principal's uploads** | DW-333, DW-334; before DP7 creates the demo user | 2026-10-06. Ruled (b): uploads refused to the demo principal, `digital-library` `aaf11a4`, verified, CI green; reaches the box with DP7; § Demo principal run |
 | DS1 | **Install the scheduler's cron file** from the checkout | After DR1 to DR3 and Story 5.10 on `main` | 2026-10-06T17:26Z. Installed, `cmp` matched; before DR3, `digital-library` skipping until DW-337; § Demo principal run |
 | DS2 | **Run the scheduler once by hand, in cron's shape, and observe it** | After DS1 | 2026-10-06T17:26Z. `ran=3 failed=none exit=0`, `digital-library` skipped as absent, load15 0.21; § Demo principal run |
-| DS3 | **Read the first unattended day** of `demo-reset.log` and the load after a run | The day after DS1 | _not done_ |
+| DS3 | **Read the first unattended day** of `demo-reset.log` and the load after a run | The day after DS1 | 2026-10-12. 143 of 143 hourly runs `exit=0` since DS1, 24 of 24 the first day; load15 0.12 after a run; § Demo principal run |
 
 Story 5.8 is done when DP1 to DP7 are dated and DP8 is ruled. Story 5.9 is done when DR1 to DR3 are dated
 and DR4 is ruled. Story 5.10 is done when DS1 to DS3 are dated.
