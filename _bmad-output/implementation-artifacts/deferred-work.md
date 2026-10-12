@@ -9983,7 +9983,16 @@ status: done
     (`ops/identity-issuer.md` § cs-tracker's Steam sign-in). The Steam code is still in the repository.
     **Owner now: the Operator's ruling, action PS2** (delete it after CT5, recommended, or keep it as the
     break-glass and record FR-23's letter in `ops/known-violations.md`).
-  status: open
+
+    **Ruled 2026-10-06 (a): delete it.** Closed 2026-10-06T06:18Z: `cs-tracker` `7adfab1` and `f5974b8`
+    delete the Steam OpenID sign-in (client, nonce store, routes, controller actions, the unconfigured pipeline,
+    the Steam-session branch of both owner gates), keeping Steam inventory sync, the price refresh and
+    `STEAM_ID`'s boot check. An independent verifier passed it (`mix precommit` 707 tests, 0 failures; the
+    production image built and booted unconfigured, failing closed). PR #3 merged it to `main` at `e4c6103` and
+    it rolled on the box; `/auth/steam` and its callback answer 404. `cs-tracker`'s `.env.example`
+    described Steam sign-in until the Operator edited it on 2026-10-06 (`dev` `3b1aa7c`, PR #5 to `main` at
+    `0349d28`): `STEAM_ID` is the inventory the sync reads, and the Steam sign-in lines are gone.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-4-cs-tracker-authenticates-the-javascript-elixir-boundary.md`
   id: DW-327
   summary: >-
@@ -10035,7 +10044,10 @@ status: done
 
     **Owner: the Operator's ruling, action FA6.** **Trigger: before FA4, or at AD-22's next refresh.** Add
     oauth2-proxy to AD-22's scope, or record why its pin is re-read only on a published advisory.
-  status: open
+
+    **Closed 2026-10-06 by Operator ruling (a):** AD-22's scope adds oauth2-proxy's version and digest
+    (spine § AD-22, "Amended 2026-10-06"); `ops/identity-issuer.md` FA6 is dated.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the.md`
   id: DW-330
   summary: >-
@@ -10077,7 +10089,11 @@ status: done
     reset connection is open in the whole estate at any moment, and each role gets the one connection Story 5.9
     counted, never two. The arithmetic stands: 23 and 30, a sum of 88 of 97 (`ops/demo-principal.md`
     § The scheduler).
-  status: open
+
+    **Closed 2026-10-06T06:07:51Z by Operator ruling DP4 (a):** `cuatro_tracker` 23 and `cs_tracker` 30, role
+    and database, set on the box (read before and after) and in `ops/postgres/init/10-consumers.sh` and
+    `ops/postgres.md` § The budget, which `postgres-init.test.ts` holds equal; the sum is 88 of 97.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
   id: DW-332
   summary: >-
@@ -10123,7 +10139,11 @@ status: done
     Whether the demo principal may upload at all narrows what a Visitor can do, so it is not this story's to
     decide. **Owner now: the Operator's ruling DR4** (`ops/demo-principal.md`; recommendation: refuse uploads
     to the demo principal).
-  status: open
+
+    **Closed 2026-10-06 by Operator ruling DR4 (b):** the demo principal cannot upload (`digital-library`
+    `aaf11a4`, independently verified, CI green), so no Visitor's file is ever served to the next; it reaches
+    the box with DP7.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-9-demo-reset-and-a-baseline-fixture-per-application.md`
   id: DW-334
   summary: >-
@@ -10141,7 +10161,12 @@ status: done
     **Owner: the Operator's ruling DR4, then `digital-library`.** **Trigger: DR4.** If DR4 refuses demo
     uploads, the demo side closes and the Operator's side reads only the public fixture; otherwise scope the
     duplicate lookup and the 409's body to the uploader's scope, with a case per direction.
-  status: open
+
+    **Closed 2026-10-06 by Operator ruling DR4 (b):** the demo side is unreachable, since the demo principal's
+    upload answers 403 before the duplicate lookup (a case holds it: 409 with the Operator's row before the
+    guard, 403 with neither id after). The Operator's side, which can only read the public fixture's rows, is
+    left as this entry describes, by the trigger's own terms.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-11-demo-and-identity-declarations-verified-against-reality.md`
   id: DW-335
   summary: >-
@@ -10161,6 +10186,10 @@ status: done
     `ops/registry-verification.md` action 9 for that participant.** Show the demo address and, from the
     application's environment, its password on the sign-in page (the tracker's `/login`, the library's
     `/login`, a `cs-tracker` page before the issuer), with a case in each suite.
+
+    **Ruled 2026-10-06 by the Operator: all three deferred to his sign-in rework** (the tracker and
+    `digital-library` onto the issuer, DW-337, and `cs-tracker`'s page beside them), so no participant's
+    demo release (action 9) lands in Epic 5. Owner: that rework.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-11-demo-and-identity-declarations-verified-against-reality.md`
   id: DW-336
@@ -10174,4 +10203,35 @@ status: done
 
     **Owner: the Operator's ruling, `ops/registry-verification.md` action 11.** **Trigger: the first demo
     release (action 9).** Options and a recommendation are in that action.
+
+    **Ruled 2026-10-06 by the Operator: (a) now, (b) later.** The stated limit stands until the first demo
+    release lands; that release then adds the demo password as a second secret on the script step and a
+    sign-in probe for `cuatro-tracker` and `digital-library`, leaving `cs-tracker` on its observation. Owner:
+    the first demo release (action 9).
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
+  id: DW-337
+  summary: >-
+    `digital-library` has no demo account: the Operator deferred creating `demo@cuatro.dev` there until the
+    application signs in through the issuer like the Hub and `cs-tracker`, so DR3 and its demo stay off.
+  evidence: |-
+    Ruled by the Operator 2026-10-06 at DP7 (`ops/demo-principal.md` § Demo principal run). Story 5.8's code is
+    on `main` at `eada53d` (PRs #61 and #62) and deployed; without the account every path is as before.
+
+    **Owner: a story the Operator schedules to move `digital-library` onto OIDC.** **Trigger: that story's
+    rollout.** Then create the account by that sign-in, run DR3, and release its Registry `demo`.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
+  id: DW-338
+  summary: >-
+    The box's `/home/deploy/library-redeploy.sh` smoke step fails every run with curl exit 60: it reaches the
+    box by IP with certificate checking on, and the box serves Cloudflare's Origin CA certificate since Epic 4.
+  evidence: |-
+    Observed 2026-10-06T16:53Z at DP7: the build and `up` succeeded (`api` and `web` healthy, live `/` 302,
+    `/api/health` 200), then the smoke printed `web HTTP 000` and the script exited 60, so a good deploy reads
+    as failed. The script lives only on the box.
+
+    **Owner: the Operator, or the story that moves `digital-library`'s deploy off the box (DW-185).**
+    **Trigger: the next `digital-library` redeploy.** Probe through Cloudflare by name, or keep the
+    `--resolve` and pass `--cacert` the Origin CA root.
   status: open

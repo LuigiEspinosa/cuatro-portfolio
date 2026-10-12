@@ -63,8 +63,8 @@ context:
 - AC5: Given the new component, then its image is pinned by digest and its licence, advisories, storage, footprint and placement status are recorded; its configuration names no provider and derives its client per AD-3; the test holds each setting.
 - AC6: Given Story 5.5's three findings, then each is closed with evidence produced here.
 - AC7: The typecheck and the full root suite pass; `cs-tracker`'s `mix precommit` passes; the adoption probe exits 0.
-- AC8 (Operator-pending): FA1 to FA5 run on the box and a person signs in to the dashboard through the tunnel, the cookie host-only and basic credentials refused.
-- AC9 (Operator-pending, ruling): FA6 (DW-329), and FA7 if the issuer refuses the loopback redirect URI.
+- AC8 (Operator-pending): FA1 to FA5 run on the box and a person signs in to the dashboard through the tunnel, the cookie host-only and basic credentials refused. (Met 2026-10-06T05:58Z: FA1 to FA5 dated; the Operator signed in through the tunnel and basic credentials answered 302.)
+- AC9 (Operator-pending, ruling): FA6 (DW-329), and FA7 if the issuer refuses the loopback redirect URI. (Met 2026-10-06: FA6 ruled (a), oauth2-proxy in AD-22's refresh; FA7 not needed, the issuer accepted the loopback URI.)
 
 ## Design Notes
 

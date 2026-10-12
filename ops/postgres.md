@@ -78,16 +78,16 @@ burst, which the estate does not have (AD-10).
 **Decision, 2026-09-30, the Operator may overrule.** One database and one role per consumer, the same
 name for both, each role the owner of its database and the only role but the superuser that may connect
 to it. The limit is set on the role and on the database. `max_connections=100`, less the 3 superuser
-slots, leaves 97; the sum below is 80, so the superuser's dumps (Story 4.5) and an Operator's `psql`
+slots, leaves 97; the sum below is 88 (80 until DP4, 2026-10-06), so the superuser's dumps (Story 4.5) and an Operator's `psql`
 always have room.
 
 | Role and database | Limit | Consumer | Its pool today | Where it sets the limit | Changed by |
 |---|---|---|---|---|---|
 | `umami` | 25 | Umami, its server and its start-time migration | node-postgres's default `max` of 10 per container: Umami 3.4.0 builds its pool as `new PrismaPg({connectionString})` on Prisma 7.10.0 (observed 2026-09-30 in `ghcr.io/umami-software/umami:postgresql-latest`, digest `sha256:85909afc...`; the box runs the 2026-08-12 digest `sha256:87312d33...`, whose version was not read; **amended 2026-09-30:** it is GHCR's `3.3.0`, § Moving Umami) | nowhere in 3.4.0: no pool option reaches it from the environment, so the role's limit is the cap. Two containers across a rollout at 10, plus the migration. Story 4.7 pins the version and re-reads this | Story 4.7 |
-| `cuatro_tracker` | 20 | the tracker: `tracker`, `tracker-worker`, `tracker-migrate` | Prisma 6 default, 5 per process, no limit (`apps/tracker/lib/db.ts`) | `connection_limit=4` on `DATABASE_URL`: two servers and two workers across a rollout at 4 each, plus one migrate | Story 4.8 |
-| `cs_tracker` | 25 | `cs-tracker`, its `app` and `migrate` | Ecto `pool_size` from `POOL_SIZE`, default 10 (`config/runtime.exs:208` in `cs-tracker`) | `POOL_SIZE=10` in its env file, stated: two containers across a rollout at 10, plus the migrator's pool | Story 4.10 |
+| `cuatro_tracker` | 23 | the tracker: `tracker`, `tracker-worker`, `tracker-migrate` | Prisma 6 default, 5 per process, no limit (`apps/tracker/lib/db.ts`) | `connection_limit=4` on `DATABASE_URL`: two servers and two workers across a rollout at 4 each, plus one migrate | Story 4.8; 20 to 23 by DP4 (DW-331, 2026-10-06): the demo client's one connection per server, and one for a running reset |
+| `cs_tracker` | 30 | `cs-tracker`, its `app` and `migrate` | Ecto `pool_size` from `POOL_SIZE`, default 10 (`config/runtime.exs:208` in `cs-tracker`) | `POOL_SIZE=10` in its env file, stated: two containers across a rollout at 10, plus the migrator's pool | Story 4.10; 25 to 30 by DP4 (DW-331, 2026-10-06): `DemoRepo`'s two per container, and one for a running reset |
 | `cuatro_finance` | 10 | finance, placed nowhere | `max: 5` per container (`apps/finance/lib/db.ts`) | already set; its `DATABASE_URL` and `provision.sql` name `finance` until it is placed (DW-300) | its placement (DW-269) |
-| **Sum** | **80** | | | of 97 usable | |
+| **Sum** | **88** | | | of 97 usable | |
 
 `ops/__tests__/postgres-init.test.ts` holds this table equal to the script's and the sum under the budget.
 Adding a consumer is one line in the script's `CONSUMERS` table, one row here, and one variable in the

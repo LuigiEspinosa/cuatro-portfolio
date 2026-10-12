@@ -61,7 +61,7 @@ context:
 - AC6: Given a `cs-tracker` OIDC session older than 8 hours, or minted before the process started, then both gates refuse it; the Hub refuses one minted before its process started.
 - AC7: Given the new modules and routes, then no provider is named and no cookie `Domain` is set.
 - AC8: `mix precommit`, typecheck, the full root suite and both floors pass; the built Hub answers unconfigured as before; the adoption probe exits 0.
-- AC9 (Operator-pending): the post-logout and back-channel URIs registered as far as the issuer allows, both rolled, and a person sees an open `cs-tracker` tab leave on sign-out.
+- AC9 (Operator-pending): the post-logout and back-channel URIs registered as far as the issuer allows, both rolled, and a person sees an open `cs-tracker` tab leave on sign-out. (Met 2026-10-06T05:34Z: the issuer offers neither URI to register (S1, S2, recorded); both applications rolled (S3, 400 and 403 on each host); and the Operator saw an open `cs-tracker` tab leave on sign-out and stay at the issuer's password page (S4).)
 - AC10 (Operator-pending, ruling): DW-319 ruled; until then, on an issuer advertising neither, sign-out reaches only the application signed out of. (Met 2026-10-03T22:45Z: the Operator ruled option a, AD-11 amended so logout is each application ending its own session.)
 
 ## Design Notes

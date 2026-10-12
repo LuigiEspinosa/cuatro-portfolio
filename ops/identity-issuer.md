@@ -591,8 +591,8 @@ Cookies, names and Domains only:
 | `_cs_tracker_key` | `cs-tracker.cuatro.dev`, host-only; `cs-tracker`'s cookie name before OIDC, origin in this profile not established |
 | `__client_uat`, `__client_uat_5g1jofuM` | `.cuatro.dev`, KV-10 |
 
-No other `.cuatro.dev` cookie, so AD-11 holds as amended. Story 5.4's last acceptance criterion left is CT6
-(`cs-tracker`'s `.env.example`).
+No other `.cuatro.dev` cookie, so AD-11 holds as amended. CT6 (`cs-tracker`'s `.env.example`) followed at
+06:20Z, and **Story 5.4 is done**.
 
 ### Pending Operator actions, Story 5.4
 
@@ -603,7 +603,7 @@ No other `.cuatro.dev` cookie, so AD-11 holds as amended. Story 5.4's last accep
 | CT3 | **Merge `cs-tracker`'s `dev` into `main` and roll the app**, then check `/auth/session` answers 401 | After the verifier pushes `dev`; a box change | 2026-10-04T04:38Z. PR #1 merged, rolled by hand; `/auth/session` answers 401; § cs-tracker sign-in run |
 | CT4 | **Rule on `oidcc` 3.8.0 against EEF-CVE-2026-75759** | Closes DW-324 | 2026-10-04T04:27Z. Ruled (a): `oidcc` 3.9.0 on `cs-tracker` `dev`, before CT3 |
 | CT5 | **Observe one identity cross the JavaScript/Elixir boundary** and record every cookie's Domain | Story 5.4 is done when this cell is dated with equal subjects and no `.cuatro.dev` cookie but KV-10's two; then DW-323 flips the Registry's `identity`, by `ops/registry-verification.md` § The release the live steps unlock, order 2, whose job reads this cell | 2026-10-04T05:41Z. Equal subjects across the Hub and `cs-tracker`, no password asked the second time, no `.cuatro.dev` cookie but KV-10's two; § cs-tracker sign-in run |
-| CT6 | **Document the four names in `cs-tracker`'s `.env.example`** | A repository change the authoring session could not make | _not done_ |
+| CT6 | **Document the four names in `cs-tracker`'s `.env.example`** | A repository change the authoring session could not make | 2026-10-04T06:20Z. Appended by the Operator; `cs-tracker` `172a4cb`, merged by PR #2 at `d4b8bf1`; `mix precommit` 746 tests, 0 failures |
 
 ## Sign-out (Story 5.5)
 
@@ -700,18 +700,48 @@ not make.
 
 ### Sign-out run
 
-_Not yet run._ S1 and S2's registrations (or that the issuer offered none), S3's status codes and S4 and
-S5's observations are written here, each with its UTC time.
+S1 and S2's registrations (or that the issuer offered none), S3's status codes and S4 and S5's
+observations are written here, each with its UTC time.
+
+**S1 and S2, 2026-10-04.** Nothing to register: the issuer's discovery document (§ Issuer run, step 6, read
+2026-10-03T22:37:59Z) advertises no `end_session_endpoint` and reports `backchannel_logout_supported` false.
+
+**S3, 2026-10-04T06:21:23Z.** Both applications run Story 5.5 since their OIDC rollouts (the Hub by PR #92,
+`cs-tracker` by CT3). Read from outside, no credential:
+
+| Host | `POST /auth/backchannel-logout` with a forged token | `GET /auth/sign-out` with `Sec-Fetch-Site: cross-site` |
+|---|---|---|
+| `cuatro.dev` | 400 | 403 |
+| `cs-tracker.cuatro.dev` | 400 | 403 |
+
+**S4, first attempt, 2026-10-04T07:27Z, by the Operator.** Tab A's socket closed when tab B signed out
+(07:27:09Z, `oidc: signed out of cs-tracker only`), but tab A showed "Attempting to reconnect" over the old
+dashboard, and reloads kept serving it. The log explained it: a fresh `GET /auth/callback` six seconds after
+the sign-out (07:27:15Z) and again after a second sign-out (07:29:13Z, callback 07:29:15Z). The page had gone
+through `/auth/sign-in`, and the issuer's own session, still alive with the consent screen off, signed it
+straight back in. Not a defect: the per-application logout ruled under action 11 never ends the issuer's
+session.
+
+**S4, 2026-10-06T05:34Z, by the Operator**, after first signing out of the issuer itself at
+`https://accounts.id.cuatro.dev/user`: with tab A on the dashboard and its WebSocket open, tab B opened
+`https://cs-tracker.cuatro.dev/auth/sign-out` (05:34:03Z, `oidc: signed out of cs-tracker only`). Tab A's
+socket closed, the page left for `/auth/sign-in` (05:34:10Z) and **stayed on the issuer's password page**:
+no callback followed. FR-22's case, observed. The `/auth/sign-in` requests every five minutes in the same
+log are the uptime monitor's probes.
+
+**S5, 2026-10-04.** Superseded rather than run: S2 was not possible, and action 11 ruled option (a), so
+logout is each application ending its own session and nothing crosses from the Hub to `cs-tracker` by
+design (AD-11, amended 2026-10-03).
 
 ### Pending Operator actions, Story 5.5
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| S1 | **Register the post-logout redirect URIs**, or record that the issuer advertises no `end_session_endpoint` | After action 3 | _not done_ |
-| S2 | **Register the Back-Channel Logout URIs**, or record that the issuer does not support it | After action 3 | _not done_ |
-| S3 | **Roll both applications onto Story 5.5** and check the status codes | After H2 and CT3; a box change | _not done_ |
-| S4 | **Observe an open `cs-tracker` socket leave on sign-out** | After S3 | _not done_ |
-| S5 | **Observe sign-out cross from the Hub to an open `cs-tracker` socket** | Only with S2 done; otherwise action 11 decides what stands in for it | _not done_ |
+| S1 | **Register the post-logout redirect URIs**, or record that the issuer advertises no `end_session_endpoint` | After action 3 | 2026-10-04. Recorded: the issuer advertises no `end_session_endpoint` (§ Issuer run, step 6), so there is nothing to register |
+| S2 | **Register the Back-Channel Logout URIs**, or record that the issuer does not support it | After action 3 | 2026-10-04. Recorded: the issuer reports `backchannel_logout_supported` false (§ Issuer run, step 6), so there is nothing to register |
+| S3 | **Roll both applications onto Story 5.5** and check the status codes | After H2 and CT3; a box change | 2026-10-04T06:21Z. Both rolled (H2, CT3); each host answers 400 and 403; § Sign-out run |
+| S4 | **Observe an open `cs-tracker` socket leave on sign-out** | After S3 | 2026-10-06T05:34Z. The open socket closed, the page left for `/auth/sign-in` and stayed at the issuer's password page; § Sign-out run |
+| S5 | **Observe sign-out cross from the Hub to an open `cs-tracker` socket** | Only with S2 done; otherwise action 11 decides what stands in for it | 2026-10-04. Superseded: S2 was not possible, and action 11 ruled (a), logout is each application ending its own session; nothing crosses from the Hub to `cs-tracker` by design |
 
 ## The Traefik dashboard behind ForwardAuth (Story 5.6)
 
@@ -951,20 +981,65 @@ docker volume rm traefik-origin-ca && docker network rm cs-tracker_default; rm -
 
 ### Dashboard run
 
-_Not yet run._ FA1's registration, FA2's count, FA3's `/ping`, FA4's statuses and FA5's observations are
-written here, each with its UTC time.
+FA1's registration, FA2's count, FA3's `/ping`, FA4's statuses and FA5's observations are written here,
+each with its UTC time.
+
+**FA1, 2026-10-06T05:41Z, by the Operator.** A third OAuth application on the production instance, Name
+`traefik`, scopes `openid`, `profile` and `email`, Public off, Device authorization grant off, consent screen
+off like the other two, Redirect URI `http://localhost:8080/oauth2/callback`. **The issuer accepted the
+loopback `http` URI**, so FA7 was not needed. The Client ID, the secret and the Owner's address went into the
+local `.env` only.
+
+**FA2, 2026-10-06T05:44Z.** FA2's inline commands have the `wsl.exe` quoting fault step 11 found, so a
+helper on the box (`/home/deploy/fa2-append.sh`, removed after) took `OIDC_ISSUER` and the three
+`TRAEFIK_OIDC_*` lines from the Operator's pipe out of the local `.env`, refused a malformed input first, and
+generated `TRAEFIK_FORWARD_AUTH_COOKIE_SECRET` on the box, so that value never left it. Counted by name: 5 of
+5 in `ops/traefik/.env`. `TRAEFIK_OIDC_CLIENT_ID` and `TRAEFIK_OIDC_CLIENT_SECRET` set as GitHub secrets of
+`LuigiEspinosa/cuatro-portfolio` at 05:43:49Z.
+
+**FA3, 2026-10-06T05:44:31Z.** From a script file on the box, at checkout `145ebc6` (`main`):
+`docker compose -f ops/traefik/compose.yml --profile forward-auth up -d forward-auth`. `traefik-forward-auth-1`
+running, 0 restarts; `/ping` from `cs-tracker_default` answered `OK`; 0 `invalid configuration` lines.
+
+**FA4, 2026-10-06T05:46:14Z.** From a script file on the box that would have removed the switch and recreated
+the ingress again on any configuration error: `DASHBOARD_FORWARD_AUTH=on` appended to `ops/traefik/.env`,
+`up -d --wait ingress` recreated `traefik-ingress-1` (05:46:04Z to Healthy), 0 `Error while building
+configuration` lines. Every hostname at the ingress, before (05:45:46Z) and after (05:46:15Z):
+
+| Host | Before | After |
+|---|---|---|
+| `cuatro.dev` | 200 | 200 |
+| `www.cuatro.dev` | 301 | 301 |
+| `analytics.cuatro.dev` | 200 | 200 |
+| `cs-tracker.cuatro.dev` | 302 | 302 |
+| `tracker.cuatro.dev` | 307 | 307 |
+| `library.cuatro.dev` | 302 | 302 |
+| `wheel.cuatro.dev` | 200 | 200 |
+| `tournament.cuatro.dev` | 200 | 200 |
+| `http://localhost:8081/dashboard/`, no credentials | **401** (basic auth) | **302** (to the sign-in) |
+
+**FA5, 2026-10-06T05:58Z, by the Operator.** Through the tunnel, opened by WSL's key
+(`wsl -d Ubuntu-22.04 ssh -N -L 8080:127.0.0.1:8081 deploy@177.7.52.248`), `http://localhost:8080/dashboard/`
+went to the issuer, and the Operator signed in. The gate logged one `AuthSuccess` and no failure in the
+30 minutes to 05:58Z (counted, no identity printed). Cookies on `localhost`, names and Domains only:
+`__Host-traefik-dashboard`, host-only, `Secure`; and `sb-ufnumdqrhyvijreoyrxf-auth-token`, a Supabase sign-in
+cookie some earlier local application set, not the dashboard's (the profile was not entirely fresh, and
+`localhost` cookies are shared across ports). **Basic credentials no longer admit**: on the box's loopback at
+05:58:19Z, no credentials and `-u operator:<a wrong password>` both answered **302**, so basic auth is out of
+the chain. The demo principal does not exist yet, so the second-account `403` was not observed.
+**Story 5.6 is done.**
 
 ### Pending Operator actions, Story 5.6
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| FA1 | **Create the `traefik` client** with the loopback redirect URI | After action 5; stops at FA7 if refused | _not done_ |
-| FA2 | **Put the five values on the box and the two client values in GitHub** | After FA1; a box change | _not done_ |
-| FA3 | **Start `forward-auth`** under its profile and check `/ping` | After FA2; a box change that routes nothing | _not done_ |
-| FA4 | **Switch the dashboard** and check every hostname and the dashboard's `302` | After FA3; recreates the ingress | _not done_ |
-| FA5 | **Sign in to the dashboard through the tunnel** and record the cookie and the refused basic credentials | Story 5.6 is done when this cell is dated | _not done_ |
-| FA6 | **Rule on oauth2-proxy's place in AD-22's refresh** | Closes DW-329 | _not done_ |
-| FA7 | **Rule on the dashboard's address**, only if the issuer refuses the loopback redirect URI | Only if FA1 stopped | _not done_ |
+| FA1 | **Create the `traefik` client** with the loopback redirect URI | After action 5; stops at FA7 if refused | 2026-10-06. Created by the Operator; the issuer accepted `http://localhost:8080/oauth2/callback`; values in the local `.env` only; § Dashboard run |
+| FA2 | **Put the five values on the box and the two client values in GitHub** | After FA1; a box change | 2026-10-06T05:44Z. Five names on the box through a helper, the cookie secret generated there; two client secrets in GitHub; § Dashboard run |
+| FA3 | **Start `forward-auth`** under its profile and check `/ping` | After FA2; a box change that routes nothing | 2026-10-06T05:44:31Z. `traefik-forward-auth-1` running, `/ping` OK; § Dashboard run |
+| FA4 | **Switch the dashboard** and check every hostname and the dashboard's `302` | After FA3; recreates the ingress | 2026-10-06T05:46:14Z. Switched; 0 configuration errors; every hostname as before; dashboard 302; § Dashboard run |
+| FA5 | **Sign in to the dashboard through the tunnel** and record the cookie and the refused basic credentials | Story 5.6 is done when this cell is dated | 2026-10-06T05:58Z. Signed in through the tunnel (one `AuthSuccess`); `__Host-traefik-dashboard` host-only; basic credentials answered 302; § Dashboard run |
+| FA6 | **Rule on oauth2-proxy's place in AD-22's refresh** | Closes DW-329 | 2026-10-06. Ruled (a): oauth2-proxy added to AD-22's refresh scope in the spine |
+| FA7 | **Rule on the dashboard's address**, only if the issuer refuses the loopback redirect URI | Only if FA1 stopped | 2026-10-06. Not needed: FA1 did not stop, the issuer accepted the loopback redirect URI |
 
 ## Provider replaceability (Story 5.7)
 
@@ -1109,15 +1184,30 @@ configured, and FR-23's letter says an application *contains* no provider-specif
 
 ### Provider swap run
 
-_Not yet run._ PS1's ruling, and the live swap if (b) or (c) is ruled, are written here with the UTC time.
+PS1's ruling, and the live swap if (b) or (c) is ruled, are written here with the UTC time.
+
+**PS1, 2026-10-06, ruled (a) by the Operator:** the off-box demonstration is FR-23's evidence; no second
+provider runs near production. Run once more against the **production artefacts** at 06:03:15Z to 06:03:56Z:
+`HUB_IMAGE=ghcr.io/luigiespinosa/hub:145ebc64cb13d74a07df831439cc65bfee5e031d` (the image `main`'s Deploy runs,
+pulled from GHCR) and `CS_TRACKER_IMAGE` built from `cs-tracker` `main` at `d4b8bf1`
+(`epic5-scratch-cs-tracker-main`, removed after), `bash ops/provider-swap.sh`, exit 0, against dex v2.45.1:
+
+| Participant | Session before | Sign-in | Cookie | Session after |
+|---|---|---|---|---|
+| the Hub | 401 | 302, `client_id=cuatro-portfolio`, `S256`, `state`, `nonce` | `__Host-hub-session`, host-only, `Secure`, `HttpOnly` | 200 with dex's `sub` |
+| `cs-tracker` | 401 | 302, `client_id=cs-tracker`, `S256`, `state`, `nonce` | `__Host-cs-tracker`, host-only, `Secure`, `HttpOnly` | 200, **the same `sub` as the Hub's** |
+| the dashboard gate | 401 | 302, `client_id=traefik`, `S256`, `state`, `nonce` | `__Host-traefik-dashboard`, host-only | 200; the forwardAuth check answered **202** |
+
+No container or network of the run was left. The CI job `provider-swap` keeps running the Hub and the gate
+half on every push.
 
 ### Pending Operator actions, Story 5.7
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| PS1 | **Rule on how the live estate evidences FR-23**, and run the swap if (b) or (c) | Story 5.7 is done when this cell is dated | _not done_ |
-| PS2 | **Rule on deleting `cs-tracker`'s Steam sign-in code** | After CT5; closes DW-326 | _not done_ |
-| PS3 | **Make `provider-swap` a required check on `main`** | A GitHub settings change | _not done_ |
+| PS1 | **Rule on how the live estate evidences FR-23**, and run the swap if (b) or (c) | Story 5.7 is done when this cell is dated | 2026-10-06T06:03Z. Ruled (a): the off-box demonstration is the evidence; run again against the production Hub and `cs-tracker` images, every participant signed in; § Provider swap run |
+| PS2 | **Rule on deleting `cs-tracker`'s Steam sign-in code** | After CT5; closes DW-326 | 2026-10-06T06:18Z. Ruled (a): deleted; `cs-tracker` PR #3, `main` `e4c6103`, rolled; `/auth/steam` answers 404 with no route behind it |
+| PS3 | **Make `provider-swap` a required check on `main`** | A GitHub settings change | 2026-10-06. Added by the Operator through the protection API: 14 required contexts, `provider-swap` among them |
 
 ## The demo principal (Story 5.8)
 

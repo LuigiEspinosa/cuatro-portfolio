@@ -489,12 +489,13 @@ into `ssh`. No step prints a credential.
     ```
     cd /home/deploy/cuatro-portfolio
     git log -1 --format=%H -- ops/demo-reset.sh
-    env -i PATH=/usr/bin:/bin sh -c 'command -v docker flock timeout cmp'
+    for t in docker flock timeout cmp; do env -i PATH=/usr/bin:/bin sh -c "command -v $t"; done
     install -d -m 0700 /home/deploy/demo-reset
     sudo install -o root -g root -m 0644 ops/demo-reset.cron /etc/cron.d/cuatro-demo-reset
     cmp ops/demo-reset.cron /etc/cron.d/cuatro-demo-reset && echo installed
     ```
-    The `git log` must print a commit (Story 5.10 is on `main`); `command -v` must print four paths; the last
+    The `git log` must print a commit (Story 5.10 is on `main`); the loop must print four paths (one per tool:
+    the box's `sh` is `dash`, whose `command -v` reports only its first argument); the last
     line must print `installed`. The cron file goes by `install` from the checkout, never typed. If the box's
     `docker` is not under `/usr/bin` or `/bin`, stop: the cron file's `PATH` is a change to commit first.
     Cron picks the file up within a minute, so the first scheduled run is the next full hour. To stop it:
@@ -519,27 +520,150 @@ into `ssh`. No step prints a credential.
 
 ## Demo principal run
 
-_Not yet run._ Each step above is written here with the UTC time and what was observed, never a credential.
+Each step above is written here with the UTC time and what was observed, never a credential.
+
+**DP2, 2026-10-06, by the Operator.** The demo password is chosen, distinct from every Operator credential,
+and kept in the local `.env` as `DEMO_PASSWORD` only. **Sign-up stays closed:** Clerk's Hobby plan names the
+setting Access mode, with Waitlist (a public form for strangers), Invite-only, and Open (an allowlist is a Pro
+feature); the Operator ruled **Invite-only**, so accounts exist only when the Operator creates or invites
+them.
+
+**DP1, 2026-10-06, answered (b): no mailbox is needed.** The Operator created `demo@cuatro.dev` from the
+issuer's dashboard (Users, Create user) with that password, and its address shows **verified** with no mail
+sent. The first sign-in as it was then refused a password-only entry: "You're signing in from a new device.
+We're asking for verification to keep your account secure." That is Clerk's **Device Trust**, which "treats
+every new device as untrusted until the user has verified their identity with a second factor"
+(`https://clerk.com/docs/guides/secure/client-trust.md`, read 2026-10-06T06:19Z), an instance-wide switch
+under Protect, Rules, with no per-user exception. Every Visitor arrives on a new device and cannot read the
+demo mailbox, so Demo Access through the issuer was impossible with it on.
+
+**Ruled 2026-10-06 by the Operator: Device Trust off** for the production instance, the Operator's account
+included. Weighed: sign-up is invite-only and the instance holds two accounts; every application admits only
+the Owner's subject or the demo principal; a stuffed Operator password would reach nothing but the Operator's
+own sign-in, which a long unique password covers. Turned off by the Operator; the demo sign-in at
+`https://cuatro.dev/auth/sign-in` then went through **without a code** (06:21Z). Alternatives not taken:
+keeping it and dropping `cs-tracker`'s demo (which signs in through the issuer), or aliasing the mailbox, which
+lets the Operator through but never a Visitor.
+
+**DP3, 2026-10-06T06:24Z, by the Operator.** Signed in at `https://cuatro.dev/auth/sign-in` as
+`demo@cuatro.dev` in a fresh profile, without a code; `https://cuatro.dev/auth/session` showed the subject
+`user_3KJEKgwKMPfI6YqhAqnRXqx797K` (an identifier, not a credential), kept in the local `.env` as
+`CS_TRACKER_OIDC_DEMO_SUB`. Access mode confirmed **Invite-only** the same minute.
+
+**DP5, first attempt, 2026-10-06T06:24Z: an outage of about a minute, then a fix.** On the box, from a script
+file: `CsTracker.Release.migrate_demo()` created schema `demo` (every migration ran), the demo subject was
+appended to `/home/deploy/cs-tracker/.env` (5 OIDC names), and `docker rollout -w 20 app` replaced the old
+container. **The new one could not start**: `bad child specification, more than one child specification has
+the id: CsTracker.Repo` (`duplicate_child_name`). `CsTracker.DemoPrincipal.children()` returned
+`{CsTracker.Repo, repo_options()}`, a second instance of the repo module under the module's default child id;
+the suite never booted the whole application with demo on, so it passed. `cs-tracker.cuatro.dev` answered
+**502** from 06:24:52Z; the line was removed and the app recreated, serving again at **06:25:28Z** (`/auth/session`
+401, `/` 302). Schema `demo` stayed, harmless with demo off.
+
+**The fix** (`cs-tracker` `b8e461a`, PR #4, `main` `d5f716e`): the demo repo's child takes its own id,
+`Supervisor.child_spec({CsTracker.Repo, repo_options()}, id: CsTracker.DemoRepo)`. A new case holds the main repo
+and demo access's children to unique ids; it failed on the unfixed code (`11 tests, 2 failures`) and passes with
+the fix; `mix precommit` 708 tests, 0 failures. The case the suite had missed was then run: the production image
+of the fix, booted against a scratch Postgres with all five OIDC values set, ran both migrations and stayed up
+(`running`, 0 restarts, `Running CsTrackerWeb.Endpoint`, no `duplicate_child_name`).
+
+**DP5, 2026-10-06T06:31:42Z.** From a script file that would turn demo off again by itself if the new container
+did not stay up: `git pull --ff-only` (`e4c6103` to `d5f716e`), `docker compose build app`, `migrate`,
+`migrate_demo`, the demo subject appended (5 OIDC names), `docker rollout -w 20 app`; `cs-tracker-app-6`
+`running`, 0 restarts after 37 seconds; `/` 302, `/auth/session` 401.
+
+**DP5's check, 2026-10-06T15:41Z: the demo sign-in refused.** Signing in to `cs-tracker` as
+`demo@cuatro.dev` failed, logged as `oidc: refused a subject that is not the Owner`. The running app was
+configured as recorded (`CsTracker.DemoPrincipal.sub()` answered `user_3KJEKgwKMPfI6YqhAqnRXqx797K`,
+`enabled?` true), but the Hub's `/auth/session` in the same profile showed `demo@cuatro.dev` as
+`user_3KJFLRo2WGqNDY1sctmygDMckmd`: the account had been recreated after DP3, and a Clerk subject belongs to one
+account for its life. The Users page holds two accounts, the Operator's and the demo one, so nothing stray
+remains. At 15:46:50Z a script on the box replaced the subject in `/home/deploy/cs-tracker/.env` and rolled the
+app (it would have restored the old line on a failed start); the new container `running`, 0 restarts, and the
+app computes the new subject. The Operator corrected the local `.env` the same way.
+
+**DP5's check, 2026-10-06T15:50Z, by the Operator.** Signed in as `demo@cuatro.dev`:
+`https://cs-tracker.cuatro.dev/auth/session` shows the demo subject, the inventory shows nothing of the Owner's
+(the demo scope is empty until DR2's first reset), and the Owner's own session still shows his inventory.
+
+**DR4, 2026-10-06, ruled (b) by the Operator: refuse uploads to the demo principal.** `digital-library`
+`aaf11a4` on `story-5-8-demo-principal`: `POST /api/libraries/:libraryId/books`, the only route that stores a
+file (covers are made inside the import, and the inbox watcher takes no request), answers 403 to the demo
+principal before the body is read, through Story 5.8's `isDemoPrincipal`. Independently verified: 536 tests
+passed, typecheck clean, and removing, inverting or re-keying the guard each fails a case; CI run 37424339943
+green on the pushed sha. A demo upload of a file the Operator already holds, which answered 409 with the
+Operator's book row before (DW-334), now answers 403 with neither id. The web form still shows the upload
+control to the demo account and relays the 403: cosmetic, the API refuses.
+
+**DP6, 2026-10-06, the tracker's demo on.** Two scripts on the box, each removed after its run. At 15:53:13Z the
+tracker and its worker rolled from `5117673` onto `main`'s `145ebc6` (Image (tracker) run 37181574410 green) with
+demo still off, by `ops/tracker-cutover.md`'s recipe: `tracker-migrate`, `docker rollout`, the worker recreated;
+healthy, `/api/ready` ok. At 15:59:34Z the second, fed `DEMO_PASSWORD` by the Operator's pipe from the local
+`.env` and printing no value, migrated schema `demo` (`&schema=demo`, 11 migrations), created `demo@cuatro.dev`
+there hashed by `bcryptjs` at cost 12 (`users in schema demo: 1`), appended `TRACKER_DEMO_ENABLED=true` to
+`.env.production` and rolled the tracker; healthy with `DEMO_ENABLED=true`, `/api/ready` ok. Public users after:
+1, the Operator's account (the before count was lost in interleaved compose output). The Operator then signed in
+as `demo@cuatro.dev` to an empty library, and as himself to his library unchanged.
+
+**DP7, 2026-10-06, merged and deployed; the demo account deferred.** `digital-library` PR #61
+(`story-5-8-demo-principal` into `dev`, `4ad020d`) and PR #62 (`dev` into `main`, `eada53d`) merged on green CI.
+The release also carried the Operator's unreleased `dev` work (C.1 to C.3 screen rebuilds and a
+`.dockerignore`), released as is by his ruling. At 16:53Z the box's `library-redeploy.sh` rebuilt `api` and
+`web` from `eada53d`, both healthy; live `/` 302, `/login` 200, `/api/health` 200. The script's smoke step
+exited 60 on Traefik's Origin CA certificate, a stale check rather than a failed deploy (DW-338). The Operator
+then deferred creating `demo@cuatro.dev` until `digital-library` signs in through the issuer like the others
+(DW-337); without the account every path is as before, so DR3 waits with it.
+
+**DR1 and DR2, 2026-10-06.** A script on the box, removed after its run, ran each reset twice by § The reset's
+commands (the tracker with `TRACKER_TAG` read from the serving container, `145ebc6`): all four printed
+`demo:reset cuatro-tracker reset rows=12` or `demo:reset cs-tracker reset rows=12` and exited 0 (17:08:26Z).
+After them schema `demo` held the tracker's six fixture entries and `cs-tracker`'s 2 marks and 2 wishlist
+entries. The Owner's rows read the same before and after: `cs-tracker` 130 inventory entries, 0 marks, 0 wishlist
+entries; the tracker 1 user and 0 `UserEntry` rows (his library is not in that table, so the tracker figure proves
+little). For `cs-tracker` the Operator signed in as the demo account, saw the fixture, added to it, and after a
+third reset (17:13:22Z, `reset rows=12`, exit 0, Owner inventory still 130) saw 2 owned, 2 on the wishlist and 4
+catalog items: the fixture, his addition gone. The tracker's signed-in check was skipped by the Operator's ruling:
+he plans to rework its sign-in, as for `digital-library` (DW-337).
+
+**DS1, 2026-10-06T17:26:10Z, the scheduler installed** by step 13's block from a file on the box: `git log`
+printed `405f310286f27c9b391645e78bf3a8ba55b82a29` and `cmp` printed `installed`. Its single `command -v` line
+printed only `/usr/bin/docker`, because the box's `sh` is `dash`, which reports only the first argument; each
+tool checked alone resolved (`/usr/bin/docker`, `/usr/bin/flock`, `/usr/bin/timeout`, `/usr/bin/cmp`), and step
+13 now loops over them. Installed before DR3, which waits on DW-337: with no demo account `digital-library`'s
+reset reports `skipped` and exits 0, so its `60` stays and its resets start once the account exists.
+
+**DS2, 2026-10-06T17:26:41Z, one run by hand in cron's shape** (minute 26): `demo:reset cuatro-tracker reset
+rows=12`, `demo:reset cs-tracker reset rows=12`, `demo:reset digital-library skipped: the demo principal is
+absent`, then `demo-reset ts=2026-10-06T17:26:44Z tick=17:15 lock=ok schedule=ok cron=match ran=3 off=0
+failed=none exit=0`, and `exit=0`. `uptime` before and after: load average 0.01, 0.08, 0.21 both times.
+
+**DS3, read 2026-10-12, six unattended days.** `demo-reset.log` holds 143 summary lines, one for every hour
+from `ts=2026-10-06T18:00:06Z` to `ts=2026-10-12T16:00:07Z` (143 of 143 hours, 24 of 24 in the first day), every
+one `lock=ok schedule=ok cron=match ran=3 off=0 failed=none exit=0`; no `exit=1`, no `failed` participant line.
+Each run printed `demo:reset cuatro-tracker reset rows=12`, `demo:reset cs-tracker reset rows=12` and
+`demo:reset digital-library skipped: the demo principal is absent` (DW-337). The installed cron file still
+equals the checkout's. `uptime` at 2026-10-12T17:01:02Z, within the minute after the 17:00 run (`exit=0`): load
+average 0.34, 0.21, 0.12, load15 well under the gate's 0.60.
 
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| DP1 | **Answer whether `demo@cuatro.dev` needs a real mailbox** | A question, not a decision this story made | _not done_ |
-| DP2 | **Decide the demo credentials** and whether the issuer's sign-up stays closed | Kept in the gitignored `.env` | _not done_ |
-| DP3 | **Create `demo@cuatro.dev` at the issuer** and record its subject as `CS_TRACKER_OIDC_DEMO_SUB` | After `ops/identity-issuer.md` actions 1 to 7 and H3 | _not done_ |
-| DP4 | **Rule on the connection budget** with demo on | DW-331 | _not done_ |
-| DP5 | **Turn `cs-tracker`'s demo on** and check both scopes | After DP3, DP4 and CT3 | _not done_ |
-| DP6 | **Turn the tracker's demo on** and check both scopes | After DP2, DP4 | _not done_ |
-| DP7 | **Merge `digital-library`'s branch, deploy it, create the demo user** (Story 5.9: the reset creates its library) | After DP2 and DR4 | _not done_ |
-| DP8 | **Rule on `cs-tournament`'s participation** | DW-332 | _not done_ |
-| DR1 | **Run the tracker's reset live, twice, and observe it** | After DP6 | _not done_ |
-| DR2 | **Run `cs-tracker`'s reset live, twice, and observe it** | After DP5 | _not done_ |
-| DR3 | **Run `digital-library`'s reset live, twice, and observe it** | After DP7 | _not done_ |
-| DR4 | **Rule on the demo principal's uploads** | DW-333, DW-334; before DP7 creates the demo user | _not done_ |
-| DS1 | **Install the scheduler's cron file** from the checkout | After DR1 to DR3 and Story 5.10 on `main` | _not done_ |
-| DS2 | **Run the scheduler once by hand, in cron's shape, and observe it** | After DS1 | _not done_ |
-| DS3 | **Read the first unattended day** of `demo-reset.log` and the load after a run | The day after DS1 | _not done_ |
+| DP1 | **Answer whether `demo@cuatro.dev` needs a real mailbox** | A question, not a decision this story made | 2026-10-06. Answered (b): created from the dashboard, verified without mail; no mailbox needed once Device Trust is off; § Demo principal run |
+| DP2 | **Decide the demo credentials** and whether the issuer's sign-up stays closed | Kept in the gitignored `.env` | 2026-10-06. Password chosen, in the local `.env` only; sign-up closed as Access mode Invite-only; § Demo principal run |
+| DP3 | **Create `demo@cuatro.dev` at the issuer** and record its subject as `CS_TRACKER_OIDC_DEMO_SUB` | After `ops/identity-issuer.md` actions 1 to 7 and H3 | 2026-10-06T06:24Z. `demo@cuatro.dev` exists at the issuer; signed in to the Hub as it without a code; subject `user_3KJEKgwKMPfI6YqhAqnRXqx797K` then; the account was recreated afterwards and signs in as `user_3KJFLRo2WGqNDY1sctmygDMckmd` since (corrected 15:46Z); § Demo principal run |
+| DP4 | **Rule on the connection budget** with demo on | DW-331 | 2026-10-06T06:07:51Z. Ruled (a), with the reset's connection: `cuatro_tracker` 20 to 23 and `cs_tracker` 25 to 30, role and database, on the box (read before and after) and in `ops/postgres/init/10-consumers.sh` and `ops/postgres.md`; the four limits sum to 88 of 97. Set first to 22 and 29 at 06:06:54Z, the reset's connection overlooked, and corrected within a minute |
+| DP5 | **Turn `cs-tracker`'s demo on** and check both scopes | After DP3, DP4 and CT3 | 2026-10-06T15:50Z. Demo on; the demo principal signs in to its own empty scope and the Owner's inventory is unchanged, observed by the Operator; § Demo principal run |
+| DP6 | **Turn the tracker's demo on** and check both scopes | After DP2, DP4 | 2026-10-06T15:59Z. Demo on; the demo library is empty and the Owner's is unchanged, observed by the Operator; § Demo principal run |
+| DP7 | **Merge `digital-library`'s branch, deploy it, create the demo user** (Story 5.9: the reset creates its library) | After DP2 and DR4 | Merged and deployed 2026-10-06T16:53Z (`eada53d`); the demo account deferred by the Operator until OIDC, DW-337; § Demo principal run |
+| DP8 | **Rule on `cs-tournament`'s participation** | DW-332 | 2026-10-06. Ruled (a): not a participant; its Registry `demo` already reads `open` (1.8.0), so nothing further changes |
+| DR1 | **Run the tracker's reset live, twice, and observe it** | After DP6 | 2026-10-06T17:08Z. Two live runs, `reset rows=12`, exit 0, Owner unchanged; the signed-in check skipped by the Operator pending the tracker's sign-in rework; § Demo principal run |
+| DR2 | **Run `cs-tracker`'s reset live, twice, and observe it** | After DP5 | 2026-10-06T17:13Z. Three live runs, `reset rows=12`, exit 0; the Operator's addition gone, fixture shown, Owner unchanged; § Demo principal run |
+| DR3 | **Run `digital-library`'s reset live, twice, and observe it** | After DP7 | _not done_: waits on the demo account, DW-337 |
+| DR4 | **Rule on the demo principal's uploads** | DW-333, DW-334; before DP7 creates the demo user | 2026-10-06. Ruled (b): uploads refused to the demo principal, `digital-library` `aaf11a4`, verified, CI green; reaches the box with DP7; § Demo principal run |
+| DS1 | **Install the scheduler's cron file** from the checkout | After DR1 to DR3 and Story 5.10 on `main` | 2026-10-06T17:26Z. Installed, `cmp` matched; before DR3, `digital-library` skipping until DW-337; § Demo principal run |
+| DS2 | **Run the scheduler once by hand, in cron's shape, and observe it** | After DS1 | 2026-10-06T17:26Z. `ran=3 failed=none exit=0`, `digital-library` skipped as absent, load15 0.21; § Demo principal run |
+| DS3 | **Read the first unattended day** of `demo-reset.log` and the load after a run | The day after DS1 | 2026-10-12. 143 of 143 hourly runs `exit=0` since DS1, 24 of 24 the first day; load15 0.12 after a run; § Demo principal run |
 
 Story 5.8 is done when DP1 to DP7 are dated and DP8 is ruled. Story 5.9 is done when DR1 to DR3 are dated
 and DR4 is ruled. Story 5.10 is done when DS1 to DS3 are dated.

@@ -58,8 +58,8 @@ context:
 - AC5: Given the script, then it is repeatable and leaves nothing behind; the CI job runs it without an account and the record says why `cs-tracker` is not in it; a test holds each participant's variables as exact sets.
 - AC6: Given DW-326, then the record states what FR-23 and AD-11 require; configured, Steam is unrouted and its session admits nothing; unconfigured, `cs-tracker` answers as `faaa642`.
 - AC7: The typecheck and the full root suite pass; `cs-tracker`'s `mix precommit` passes; the adoption probe exits 0.
-- AC8 (Operator-pending): PS1, the live estate's evidence ruled, and the swap recorded if ruled.
-- AC9 (Operator-pending, ruling): PS2, the Steam code's deletion (DW-326).
+- AC8 (Operator-pending): PS1, the live estate's evidence ruled, and the swap recorded if ruled. (Met 2026-10-06T06:03Z: ruled (a), the off-box swap re-run against the production Hub and `cs-tracker` images.)
+- AC9 (Operator-pending, ruling): PS2, the Steam code's deletion (DW-326). (Met 2026-10-06T06:18Z: ruled (a), deleted, `cs-tracker` `main` `e4c6103` rolled.)
 
 ## Design Notes
 
