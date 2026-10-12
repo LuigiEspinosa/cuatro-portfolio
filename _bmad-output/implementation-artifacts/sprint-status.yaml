@@ -1576,7 +1576,9 @@ action_items:
       the deployment.md redeploy order, with a case that an unmigrated demo table
       is refused (M1)"
     owner: "Cuatro"
-    status: open
+    # Built 2026-10-12, awaiting the independent verifier, then the Operator's DP9 roll
+    # (ops/demo-principal.md); spec-epic-5-retro-item-45-cs-tracker-demo-schema-alone.md.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-46-the-tracker-migrate-schema-demo-in-every"
     epic: 5

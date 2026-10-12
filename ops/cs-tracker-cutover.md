@@ -509,7 +509,12 @@ printed. `$Q` counts every table but Oban's (decision 1); the old side's `conns`
   `down -v`, `dropdb` or any write against `$SRC`, and never delete the dump before Story 4.11.
 
 **Later rollouts** after the move take the compose file's header: `docker compose build app`,
-`docker compose run --rm migrate`, `docker rollout -w 20 app`, each migration expand-only (AD-23).
+`docker compose run --rm migrate`, `docker rollout -w 20 app`, each migration expand-only (AD-23). Since
+`cs-tracker`'s Epic 5 retrospective action 1 (`ops/demo-principal.md` DP9), `migrate` migrates the Owner's
+schema and then the demo principal's schema `demo` (`bin/migrate` runs `CsTracker.Release.migrate` then
+`migrate_demo`), so it prints `Migrations already up` twice when neither is behind, and a release that adds a
+migration reaches both with no step by hand. The demo principal reads schema `demo` alone, so a rollout that
+skipped `migrate` would refuse it any new table rather than serve it the Owner's.
 
 ### Move run, 2026-10-01
 

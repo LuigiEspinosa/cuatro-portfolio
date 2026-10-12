@@ -120,9 +120,15 @@ read; the Operator's side effects withheld; and a suite case for each clause of 
   session route and both gates.
 - **Scope:** the Postgres schema `demo` in `cs-tracker`'s own database, same role (AD-10): a second instance
   of `CsTracker.Repo`, `CsTracker.DemoRepo`, started only while demo access is on, whose connections search
-  `demo,public`. `CsTracker.Release.migrate_demo/0` creates the schema and runs every migration through such
-  a connection, so each migration's unqualified names, raw SQL included, land in `demo`; the `pg_trgm`
-  operator class still resolves from `public`. The test helper runs it before every suite.
+  `demo` alone, so a table missing from `demo` is refused (`undefined_table`), never read from the Owner's
+  `public`; Oban's tables stay in `public` by design and `Inventory`'s four reads of `oban_jobs` name `public`
+  themselves. `CsTracker.Release.migrate_demo/0` creates the schema and runs every migration through a
+  connection searching `demo,public`, so each migration's unqualified names, raw SQL included, land in `demo`
+  while the `pg_trgm` operator class still resolves from `public`; `bin/migrate` runs it after
+  `CsTracker.Release.migrate/0`, so the standing redeploy order (`ops/cs-tracker-cutover.md` § Later
+  rollouts) migrates both schemas. The test helper runs it before every suite, and a case drops a demo table
+  inside its sandbox to show the refusal. Epic 5 retrospective M1, action 1: `cs-tracker` commit `f2c005d`
+  on branch `fix/demo-schema-alone`, reaching `dev` by its PR and the box by DP9.
 - **Gates:** the HTTP plug and the LiveView `on_mount` put the principal's repo on the process
   (`DemoPrincipal.put_repo/1`); the endpoint puts the Owner's back at the start of every request, because
   Bandit serves a connection's requests in one process.
@@ -517,6 +523,24 @@ into `ssh`. No step prints a credential.
     within the minute after a run, against the gate's load15 0.60. Write both here. A line with `exit=1`
     names its cause: `failed=<id>` (read that participant's line above it), `cron=differs` (repeat DS1's
     `install`), `lock=held` (a run outlived 15 minutes).
+16. **DP9. Roll `cs-tracker` onto schema `demo` alone** (Epic 5 retrospective M1, action 1), after its
+    `fix/demo-schema-alone` PR reaches `dev` and `dev` reaches `main` (the box pulls `main`). It is the standing
+    redeploy, `ops/cs-tracker-cutover.md` § Later rollouts, with nothing added by hand: on the box as `deploy`,
+    from a file under `set -euo pipefail` in `/home/deploy/cs-tracker`:
+    ```
+    git pull --ff-only && git log -1 --format='%H %s'
+    docker compose build app
+    docker compose run --rm migrate
+    docker rollout -w 20 app
+    docker compose exec -T app /app/bin/cs_tracker rpc 'CsTracker.Repo.put_dynamic_repo(CsTracker.DemoRepo); IO.inspect(CsTracker.Repo.query!(~s(show search_path)).rows)'
+    ```
+    `migrate` must print `Migrations already up` twice, the Owner's schema then `demo` (both hold 10
+    migrations today); a `Running` line under the second means `demo` was behind and is now level. The last
+    line must print `[["demo"]]`. Then, signed in as the demo account, `/inventory` shows the fixture's two
+    marks and its sync-button line renders (the reads of `public.oban_jobs`); the Owner's inventory is as it
+    was. The next hourly reset must still print `demo:reset cs-tracker reset rows=12`. To roll back: check out
+    the previous `main` commit, `docker compose build app`, `docker rollout -w 20 app`; nothing in the database
+    changes, since no migration is added.
 
 ## Demo principal run
 
@@ -664,6 +688,7 @@ average 0.34, 0.21, 0.12, load15 well under the gate's 0.60.
 | DS1 | **Install the scheduler's cron file** from the checkout | After DR1 to DR3 and Story 5.10 on `main` | 2026-10-06T17:26Z. Installed, `cmp` matched; before DR3, `digital-library` skipping until DW-337; § Demo principal run |
 | DS2 | **Run the scheduler once by hand, in cron's shape, and observe it** | After DS1 | 2026-10-06T17:26Z. `ran=3 failed=none exit=0`, `digital-library` skipped as absent, load15 0.21; § Demo principal run |
 | DS3 | **Read the first unattended day** of `demo-reset.log` and the load after a run | The day after DS1 | 2026-10-12. 143 of 143 hourly runs `exit=0` since DS1, 24 of 24 the first day; load15 0.12 after a run; § Demo principal run |
+| DP9 | **Roll `cs-tracker` onto schema `demo` alone**, § By hand step 16 | Added 2026-10-12 (Epic 5 retrospective action 1, M1). After `cs-tracker`'s `fix/demo-schema-alone` PR reaches `dev` and then `main`. `cs-tracker` has no CI: its gate was `mix precommit` (709 tests, 0 failures) and its production image booted against a scratch Postgres 18.6, both on 2026-10-12 | _not done_ |
 
 Story 5.8 is done when DP1 to DP7 are dated and DP8 is ruled. Story 5.9 is done when DR1 to DR3 are dated
-and DR4 is ruled. Story 5.10 is done when DS1 to DS3 are dated.
+and DR4 is ruled. Story 5.10 is done when DS1 to DS3 are dated. Epic 5 retrospective action 1 is live when DP9 is dated.
