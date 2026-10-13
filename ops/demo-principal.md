@@ -149,6 +149,13 @@ read; the Operator's side effects withheld; and a suite case for each clause of 
 - **Undeletable, unchangeable:** `cs-tracker` holds no account: the principal is a subject at the issuer
   named by configuration. A case holds that no Ecto schema has an identity or credential field and that the
   only `DELETE` route is the sign-out.
+- **Sign-out ends its own session alone:** every Visitor shares the demo subject, so a demo session carries
+  a key of its own, `oidc_ref` (the issuer's `sid` when it gave one, else a random value), and a socket topic
+  of its own, `oidc_sessions:<sub>:<oidc_ref>` (`CsTracker.Auth.OIDC.session_for/1`). Both sign-out routes
+  (`OIDCController.end_signed_in/1`) revoke that key and disconnect that topic alone; a Back-Channel logout
+  token naming the demo subject ends only the demo session holding its `sid`, and none when it names no
+  `sid`. The Owner's sign-out still ends every Owner session (FR-22). Epic 5 retrospective M4, action 5:
+  `cs-tracker` commit `e392689` on branch `fix/demo-sign-out-own-session`, for a PR to `dev` (DP10).
 - **Switch:** `CS_TRACKER_OIDC_DEMO_SUB`, unset by default (`config/runtime.exs`, `docs/deployment.md`).
 
 ### `digital-library` (its repository, branch `story-5-8-demo-principal` off `dev`, commit `4d7bea0`)
@@ -157,8 +164,10 @@ The Operator's own checkout holds uncommitted edits on `dev`, so the work sits o
 worktree `digital-library-workspace/digital-library-5-8`, based on `origin/dev` at `162f14a`, for the
 Operator to merge into `dev` (DP7).
 
-- **Principal:** `apps/api/src/acl.ts` (`DEMO_PRINCIPAL`, `isDemoPrincipal`). Derived from the address: the
-  account in `users` whose email is `demo@cuatro.dev`.
+- **Principal:** `apps/api/src/acl.ts` (`DEMO_PRINCIPAL`, `isDemoPrincipal`, `demoAccounts`). Derived from
+  the address: the account in `users` whose email, trimmed and lowercased, is `demo@cuatro.dev`. Every lookup
+  compares it that one way, in JavaScript and in SQL (`lower(trim(email))`), the ACL and the reset included,
+  so a row written by hand in another casing is still the demo principal (Epic 5 retrospective m13).
 - **Scope:** the libraries the demo principal holds in `user_libraries`. A library enters the scope only when
   granted to the demo principal while no one else holds it or has reading progress in it, and no one else is
   ever granted one in it (`grantAccess` throws `ScopeError`, the admin route answers 409). The demo
@@ -171,6 +180,12 @@ Operator to merge into `dev` (DP7).
 - **Undeletable, unchangeable:** `UserRepository.delete` throws for it and the admin route answers 403;
   `UserRepository.create` refuses it as an administrator, the first-run seed included, and the admin route
   answers 400; no source runs `UPDATE users`.
+- **Never an administrator at use:** an `is_admin` set by hand on the demo account is refused where the
+  account is used: sign-in answers 403 and mints no session, `requireAuth` answers 403 on every authenticated
+  route (the admin routes included), `hasAccess` and `getAllowedLibraryIds` never give it the admin bypass,
+  and the reset refuses with exit 1, as it does when more than one account is the demo principal. Epic 5
+  retrospective m13, action 5: `digital-library` commit `1b14ff6` on branch `fix/demo-principal-one-way`, for
+  a PR to `dev` (DP11).
 - **Switch:** the account itself. Without a `demo@cuatro.dev` account every path is as before, held by a case.
 
 ## The reset
@@ -780,7 +795,10 @@ fixture's two marks in `/inventory` (2026-10-13). `cs-tracker` has no CI, so no 
 | DL2 | **Delete `digital-library`'s four Actions secrets** `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY` and `SERVER_PORT` | Added 2026-10-13 (M5). After DL1 reaches `main`, when no workflow reads them; an SSH key secret with no reader is a credential kept for nothing. GitHub, `digital-library`, Settings, Secrets and variables, Actions | _not done_ |
 | DL3 | **Compare the box's `~/library-redeploy.sh` with the README's standing redeploy** and make them agree | Added 2026-10-13 (M5). The script's text is recorded nowhere (DW-338); the README names its fetch, reset and build from DW-185 and DW-187. At the next `digital-library` redeploy, read the script on the box and write here whether it matches, correcting whichever is wrong in the same change | _not done_ |
 
+| DP10 | **Merge `cs-tracker`'s `fix/demo-sign-out-own-session` PR into `dev`, then `dev` into `main`, then roll `cs-tracker`** by the standing redeploy (`ops/cs-tracker-cutover.md` § Later rollouts), no step of its own | Added 2026-10-13 (Epic 5 retrospective action 5, M4). Head `e392689`, from `origin/dev` `7a2ab09`. `cs-tracker` has no CI: its gate is `mix precommit`, 717 tests, 0 failures (4 excluded), at that head on 2026-10-13. Nothing changes how it starts, so no image boot. The roll makes no visible change while no Visitor holds the demo sign-in (DW-335); every restart already refuses older OIDC sessions, so the Owner signs in again after it | _not done_ |
+| DP11 | **Merge `digital-library`'s `fix/demo-principal-one-way` PR into `dev`, then `dev` into `main`, then redeploy** by the README's standing redeploy (after DL1, which writes it) | Added 2026-10-13 (Epic 5 retrospective action 5, m13). Head `1b14ff6`, from `origin/dev` `4ad020d`. Its API suite, 178 tests, and both typechecks passed on that head in a `node:22-bookworm` container on 2026-10-13. No demo account exists (DW-337), so the change is inert on the box until one does | _not done_ |
+
 Story 5.8 is done when DP1 to DP7 are dated and DP8 is ruled. Story 5.9 is done when DR1 to DR3 are dated
 and DR4 is ruled. Story 5.10 is done when DS1 to DS3 are dated. Epic 5 retrospective action 1 is live when
 DP9 is dated, and action 2 when `ops/tracker-cutover.md`'s Pending action 9 is. Action 3 is live when DS4
-and DS5 are dated. Action 4 is live when DL1 is dated.
+and DS5 are dated. Action 4 is live when DL1 is dated. Action 5 is live when DP10 and DP11 are dated.

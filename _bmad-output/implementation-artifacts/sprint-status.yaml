@@ -1633,7 +1633,12 @@ action_items:
       sign-out ends only its own session; digital-library recognises the principal
       one way and refuses an administrator demo account at use (M4, m13)"
     owner: "Cuatro"
-    status: open
+    # 2026-10-13: built, awaiting the independent verifier. cs-tracker fix/demo-sign-out-own-session (e392689):
+    # a demo session's sign-out and a demo logout token end that session alone. digital-library
+    # fix/demo-principal-one-way (1b14ff6): one normalised lookup, an admin demo account refused at sign-in,
+    # every authenticated route, the ACL and the reset. Then ops/demo-principal.md DP10 and DP11;
+    # spec-epic-5-retro-item-49-demo-sign-out-and-admin-refusal.md.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-50-spec-reconciliation-amend-epics-md-epic"
     epic: 5
