@@ -378,10 +378,12 @@ describe('the tracker services', () => {
     const of = (name: string): string => parts(text, 2).find((part) => part.startsWith(`  ${name}:\n`)) ?? '';
     const demo = of('tracker-migrate-demo');
     if (demo === '') return ['no tracker-migrate-demo service'];
-    const urlOf = (part: string): URL => new URL(/^ {6}- DATABASE_URL=(\S+)$/m.exec(part)?.[1] ?? 'invalid:');
+    const URL_LINE = /^ {6}- DATABASE_URL=(\S+)$/m;
+    const urlOf = (part: string): URL => new URL(URL_LINE.exec(part)?.[1] ?? 'invalid:');
     const faults: string[] = [];
-    const strip = (part: string): string => part.replace(/^ {2}\S+:\n/, '').replace(/^ {6}- DATABASE_URL=.*$/m, '');
+    const strip = (part: string): string => part.replace(/^ {2}\S+:\n/, '').replace(/^ {6}- DATABASE_URL=.*\n/m, '');
     if (strip(demo) !== strip(of('tracker-migrate'))) faults.push('tracker-migrate-demo differs from tracker-migrate beyond its URL');
+    if (!URL_LINE.test(demo)) return [...faults, 'tracker-migrate-demo sets no DATABASE_URL'];
     const url = urlOf(demo);
     if (url.searchParams.get('schema') !== 'demo') faults.push('tracker-migrate-demo does not set schema=demo');
     url.searchParams.delete('schema');
@@ -394,8 +396,9 @@ describe('the tracker services', () => {
     expect(parts(compose, 2).find((part) => part.startsWith('  tracker-migrate-demo:\n'))).toContain('    profiles: [migrate]');
   });
 
-  it('names a missing demo migration, a missing schema, another database and another command', () => {
+  it('names a missing demo migration, a missing URL, a missing schema, another database and another command', () => {
     expect(demoMigrateFaults(compose.replace('  tracker-migrate-demo:\n', '  tracker-demo:\n'))).toEqual(['no tracker-migrate-demo service']);
+    expect(demoMigrateFaults(compose.replace(/^ {6}- DATABASE_URL=\S+&schema=demo\n/m, ''))).toEqual(['tracker-migrate-demo sets no DATABASE_URL']);
     expect(demoMigrateFaults(compose.replace('&schema=demo', ''))).toEqual(['tracker-migrate-demo does not set schema=demo']);
     expect(demoMigrateFaults(compose.replace('/cuatro_tracker?connection_limit=4&schema=demo', '/other?connection_limit=4&schema=demo'))).toEqual([
       'tracker-migrate-demo does not reach tracker-migrate’s database',
