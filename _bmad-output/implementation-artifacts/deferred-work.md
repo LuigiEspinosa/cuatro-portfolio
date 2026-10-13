@@ -10245,3 +10245,16 @@ status: done
     **Trigger: the next `digital-library` redeploy.** Probe through Cloudflare by name, or keep the
     `--resolve` and pass `--cacert` the Origin CA root.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-epic-5-retro-item-48-digital-library-remove-deploy-job.md`
+  id: DW-339
+  summary: >-
+    `digital-library`'s `Test` workflow (`.github/workflows/test.yml`, the former `Test & Deploy`) runs the same
+    job as its `CI` workflow's `test` job on every push to `main`, so each push to `main` runs the suite twice.
+  evidence: |-
+    Found 2026-10-13 by the independent verifier of Epic 5 retrospective action 4 (minor finding 2). Kept by
+    that story because the Operator's ruling of 2026-10-12 removed the `deploy` job and kept the `test` job
+    intact. No ruleset requires either check.
+
+    **Owner: the Operator's ruling.** **Trigger: after `ops/demo-principal.md` DL1 reaches `main`.** Delete
+    `test.yml` if `CI` already runs on pushes to `main`, or keep it and close this entry.
+  status: open

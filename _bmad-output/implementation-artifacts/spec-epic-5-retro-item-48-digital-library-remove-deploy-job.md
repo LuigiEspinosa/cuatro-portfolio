@@ -32,7 +32,7 @@ context: []
 - **First commit, the previous verifier's minor findings** (`143002554cfb03223decb31eb9af95f3397f16f8`, `ops/demo-principal.md`): By hand step 18 (DS5) says the first run prints `issue=open` if a real failure after DS4 already opened an issue; § The scheduler item 11 says every exit 1, `lock=held` included, opens the issue; item 8 notes a participant's stdout is printed after it ends, so its `demo:reset` line follows its stderr in the log (cosmetic, no code change).
 - **`digital-library`**, worktree `C:/CuatroEcosystem/digital-library-workspace/wt-remove-deploy-job`, branch `chore/remove-deploy-job` from `origin/dev` `4ad020d`, commit `c05434f4153d37487e1901339514c92f9d7c5edd`: `.github/workflows/deploy.yml` renamed `test.yml`, `name: Test & Deploy` to `name: Test`, the `deploy` job deleted, the `test` job and triggers unchanged. README's "Required Secrets (GitHub Actions)" section replaced by "Deploying to library.cuatro.dev", the standing redeploy (fetch, `reset --hard origin/main`, `docker compose up -d --build`, checks, never `git clean`, rollback). One CHANGELOG line under Unreleased, Removed.
 - **Anchor** `ops/demo-principal.md`: By hand step 7 names the by-hand redeploy and the ruling, and its build citation corrected from DW-308 (`list-wheel`) to DW-185; the DP7 run entry corrected; the DP7 Pending row says "deployed by hand"; Pending rows DL1 to DL3 added; the closing paragraph says action 4 is live when DL1 is dated.
-- Board row `epic-5-retro-item-48-...` set `in-review` with the ruling dated.
+- Board row `epic-5-retro-item-48-...` set `in-progress` with the ruling dated (the board's legend has no `in-review`; corrected 2026-10-13 from the verifier's minor finding 1).
 
 Observations behind the record (2026-10-13, `gh`):
 - `gh run list --workflow deploy.yml --branch main`: every `main` run since 2026-05-29 failed in `deploy` with `test` passing (26623693302, 28205172235, 30518341072, 30519309818, 37498770241); the last green was 22458358977 on 2026-02-26. So it was red before 2026-07-30, the retro's date. Run 37498770241's failed log: `ssh: handshake failed: ssh: unable to authenticate`.
@@ -72,3 +72,6 @@ Minor findings, not blocking:
 1. § What was done says the board row was set `in-review`; the builder set it `in-progress`, as the board's legend has no `in-review`.
 2. The `Test` workflow's job duplicates `CI`'s `test` job on every push to `main`; kept as the ruling asked, a candidate for removal later.
 3. The board row's action text still says "red since 2026-07-30"; the runs show 2026-05-29, which the record and this spec carry.
+4. The worktree `C:/CuatroEcosystem/digital-library-workspace/wt-remove-deploy-job` is left in place; it can be removed once PR #63 merges.
+
+Disposition (2026-10-13, the next story's first commit): finding 1 corrected in § What was done; finding 2 filed as DW-339; finding 3 corrected in the board row's action text; finding 4 written into DL1's row in `ops/demo-principal.md` (remove the worktree once PR #63 merges, a workstation step, not a box step).
