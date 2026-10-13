@@ -639,7 +639,8 @@ path answers 404 with the Hub's 404 page: the status is the same, the body is no
   `sid` present, and a `jti` not seen before. A valid token revokes every session matching its `sub` or
   `sid` and answers 200; `cs-tracker` also broadcasts the disconnect. In `cs-tracker` a token naming the demo
   principal's subject, which every Visitor shares, reaches only the demo session holding its `sid`, and that
-  subject's own sign-out ends its own session alone (Epic 5 retrospective M4, `ops/demo-principal.md`). Anything else answers 400
+  subject's own sign-out ends its own session alone (Epic 5 retrospective M4, `ops/demo-principal.md`), once
+  `cs-tracker` PR 9 is merged and rolled (DP10, not yet dated). Anything else answers 400
   `invalid_request` and revokes nothing. Both answer `Cache-Control: no-store`.
 - **Revocation lives in each process's memory** (the Hub's `globalThis`, `cs-tracker`'s ETS). A restart
   forgets it, so each process refuses every OIDC session minted before it started: **the Owner signs in

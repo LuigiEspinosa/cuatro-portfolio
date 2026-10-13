@@ -4465,7 +4465,8 @@ issuer offers them *(amended 2026-10-13, Epic 5 retrospective action 6: this rea
 logout"; the estate's issuer advertises neither, so AD-11 was amended by Operator ruling 2026-10-03,
 DW-319, to per-application logout, and FR-22 is met per application)*. The demo principal, a subject
 every Visitor shares, is the exception: its sign-out ends its own session alone (Epic 5 retrospective
-action 5, `ops/identity-issuer.md` § Sign-out). `cs-tracker` **additionally broadcasts on
+action 5, `ops/identity-issuer.md` § Sign-out; in `cs-tracker` once PR 9 is merged and rolled,
+`ops/demo-principal.md` DP10, not yet dated). `cs-tracker` **additionally broadcasts on
 `live_socket_id`**: without it an open LiveView socket never observes the logout;
 verified against a socket that is already open at sign-out time, which is the case FR-22 names
 specifically.

@@ -66,4 +66,6 @@ Minor findings, not blocking:
 1. AD-11's 2026-10-13 sentence and 5.5's amendment state the demo own-session sign-out in the present tense, while `cs-tracker` PR 9 is still awaiting the Operator's merge (DP10). The same is already true of `ops/identity-issuer.md` § Sign-out, so this adds no new drift; it becomes exact when DP10 is dated.
 2. The spec's punctuation-scan note names the token ` -- ` in backticks; it is a quoted pattern, not a dash in prose.
 
+Addressed 2026-10-13 in the first commit of Story 6-1: finding 1 by qualifying AD-11's sentence, 5.5's amendment and `ops/identity-issuer.md` § Sign-out with "once `cs-tracker` PR 9 is merged and rolled (DP10, not yet dated)", so each reads exactly until DP10 is dated; finding 2 needs no change, the backticked token being the pattern searched for.
+
 Operator steps: none from this story. The records reach `main` with the Epic 5 per-epic merge.
