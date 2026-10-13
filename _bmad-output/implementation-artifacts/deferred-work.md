@@ -10258,3 +10258,34 @@ status: done
     **Owner: the Operator's ruling.** **Trigger: after `ops/demo-principal.md` DL1 reaches `main`.** Delete
     `test.yml` if `CI` already runs on pushes to `main`, or keep it and close this entry.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-epic-5-retro-item-49-demo-sign-out-and-admin-refusal.md`
+  id: DW-340
+  summary: >-
+    `digital-library` recognises the demo principal one way for spaces only: JavaScript's `trim()` and
+    `toLowerCase()` (`isDemoPrincipal`) also strip tabs and newlines and fold non-ASCII, SQLite's `trim()` and
+    `lower()` do not, so a row written by hand as `demo@cuatro.dev` followed by a tab is the principal for
+    `requireAuth` and `UserRepository` but not for the ACL or the reset.
+  evidence: |-
+    Found 2026-10-13 by the independent verifier of Epic 5 retrospective action 5 (minor finding 2), on
+    `digital-library` `1b14ff6` (PR #64). No administrator bypass follows: `requireAuth` still refuses an
+    administrator row like that, and a non-administrator one is an ordinary user outside the demo scope. No demo
+    account exists (DW-337), so nothing on the box can reach it today.
+
+    **Owner: the story that creates `digital-library`'s demo account (DW-337).** **Trigger: before that account
+    exists, after PR #64 reaches `dev`.** Trim tabs and newlines in the SQL predicate, or refuse such an address
+    when a user row is written.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-epic-5-retro-item-49-demo-sign-out-and-admin-refusal.md`
+  id: DW-341
+  summary: >-
+    The Anchor's `test` job once failed in the tracker's unit tests on an unhandled
+    `ReferenceError: requestAnimationFrame is not defined` thrown by gsap's `ScrollTrigger` after the test
+    environment was torn down, with nothing under `apps/tracker` changed.
+  evidence: |-
+    Seen 2026-10-13 by the independent verifier of Epic 5 retrospective action 5: `ci.yml` run 38399622554,
+    attempt 1, failed there; attempt 2 passed. One occurrence, filed so a second one is recognised.
+
+    **Owner: the next story touching `apps/tracker`'s test setup.** **Trigger: a second occurrence.** Find the
+    suite that leaves a `ScrollTrigger` alive past its teardown and kill it in that suite's cleanup, or stub
+    `requestAnimationFrame` in the tracker's Vitest setup.
+  status: open
