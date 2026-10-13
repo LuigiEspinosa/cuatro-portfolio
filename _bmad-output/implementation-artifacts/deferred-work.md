@@ -10244,7 +10244,12 @@ status: done
     **Owner: the Operator, or the story that moves `digital-library`'s deploy off the box (DW-185).**
     **Trigger: the next `digital-library` redeploy.** Probe through Cloudflare by name, or keep the
     `--resolve` and pass `--cacert` the Origin CA root.
-  status: open
+
+    **Closed 2026-10-13 by `ops/demo-principal.md` DL3:** the script's old text is recorded in that record's §
+    Demo principal run, DL3 entry, and kept on the box as `~/library-redeploy.sh.bak-2026-10-13`. By the
+    Operator's ruling of 2026-10-13 the box runs the README's standing redeploy, which has no smoke step; the
+    smoke is checked from outside the box by name (DP11's 302, 200 and 200).
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-epic-5-retro-item-48-digital-library-remove-deploy-job.md`
   id: DW-339
   summary: >-

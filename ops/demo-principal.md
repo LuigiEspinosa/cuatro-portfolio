@@ -1,4 +1,4 @@
-# The demo principal
+# The demo principalundefined2026-10-13. PR #63 into `dev` as `5b6f50f`, PR #65 `dev` into `main` as `8d48846`; the push to `main` ran `Test` (no `deploy` job) and `CI`, both success; § Demo principal run |undefined2026-10-13. The four secrets deleted by the Operator; § Demo principal run |undefined2026-10-13. Differed (a `--resolve` smoke step and an image prune); by the Operator's ruling the README is the standard, the box script replaced with its block and the old one kept as `~/library-redeploy.sh.bak-2026-10-13`; § Demo principal run |undefined2026-10-13T15:26:41Z. PR 9 `7c01f5c`, `main` `4d94dbc`, rolled: `[["demo"]]`, `/auth/session` 401; § Demo principal run |undefined2026-10-13T15:29:24Z. PR #64 `777814f`, `main` `8d48846`, redeployed: `api` and `web` healthy, `/` 302, `/login` 200, `/api/health` 200; § Demo principal run |
 
 The one definition of Demo Access's principal (AD-13, FR-25, FR-26): who it is, how each participating
 application derives it, the ownership scope its rows live in, and what no application lets anyone do to
@@ -769,6 +769,40 @@ answered 302 at `/` and 401 at `/auth/session`. The 06:00Z reset, the first afte
 cs-tracker reset rows=12` with `failed=none exit=0`. The Operator then signed in as the demo account and saw the
 fixture's two marks in `/inventory` (2026-10-13). `cs-tracker` has no CI, so no workflow was read on `e44bb69`.
 
+**DL1, 2026-10-13, `digital-library`'s `deploy` job gone from `main`.** The Operator merged PR #63 into `dev`
+(`5b6f50f`, `CI` success on that sha), then, after PR #64 (DP11), PR #65 `dev` into `main` (merge `8d48846`). The
+push to `main` ran `Test` success and `CI` success on `8d48846`, and `Test` has no `deploy` job.
+
+**DL2, 2026-10-13, the four Actions secrets deleted.** The Operator deleted `digital-library`'s `SERVER_HOST`,
+`SERVER_USER`, `SERVER_SSH_KEY` and `SERVER_PORT`, which no workflow reads since DL1.
+
+**DP10, 2026-10-13T15:26:41Z, `cs-tracker` rolled with the demo sign-out scoped to its own session.** The
+Operator merged PR 9 into `dev` (`7c01f5c`). The orchestrator merged `main` into `cs-tracker`'s `dev` as
+`0e5d0c4`, resolving one `docs/deployment.md` row conflict in favour of PR 9's wording (the tree identical to
+`dev`'s), and the Operator merged PR #10 `dev` into `main` (merge `4d94dbc`). The standing redeploy
+(`ops/cs-tracker-cutover.md` § Later rollouts) ran from a script file on the box under `set -euo pipefail`, with
+the Operator's approval: `git pull` moved `e44bb69..4d94dbc`, `migrate` printed `Migrations already up` twice,
+`docker rollout` replaced the container, and the rpc line printed `[["demo"]]` at 15:26:41Z.
+`https://cs-tracker.cuatro.dev/auth/session` answered 401. `cs-tracker` has no CI, so no workflow was read on
+`4d94dbc`.
+
+**DL3, read 2026-10-13, the box's `~/library-redeploy.sh` differed from the README, and now matches it.** Read
+before the redeploy, the script ran `git fetch origin main` and a reset, then `docker compose build api web`,
+`docker compose up -d` and `docker image prune -f`, then a smoke step with `curl --resolve` to
+`library.cuatro.dev`, which exits 60 on the Origin CA certificate (DW-338). The Operator ruled on 2026-10-13
+that the README's standing redeploy is the standard: no prune, and the smoke checked from outside the box. The
+orchestrator kept the old script as `~/library-redeploy.sh.bak-2026-10-13` and replaced `~/library-redeploy.sh`
+with the README's block (`cd /home/deploy/digital-library`, `git fetch origin`, `git reset --hard origin/main`,
+`git log -1`, `docker compose up -d --build`, `docker compose ps`); `bash -n` clean, mode 755. This entry is
+where the old script's text is recorded.
+
+**DP11, 2026-10-13T15:29:24Z, `digital-library` redeployed with the principal recognised one way.** The
+Operator merged PR #64 into `dev` (`777814f`, `CI` success on that sha), then PR #65 `dev` into `main` (merge
+`8d48846`, DL1). On the box, the README's standing redeploy reset the checkout to `8d48846`, `docker compose up
+-d --build` rebuilt, and `api` and `web` were healthy at 15:29:24Z. `https://library.cuatro.dev` answered 302 at
+`/`, 200 at `/login` and 200 at `/api/health`. No demo account exists (DW-337), so the change is inert on the
+box until one does.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -793,7 +827,7 @@ fixture's two marks in `/inventory` (2026-10-13). `cs-tracker` has no CI, so no 
 | DS5 | **Prove the issue once**, § By hand step 18 | Added 2026-10-13 (M3). After DS4, and after the Epic 5 retrospective change carrying § The scheduler item 11 reaches `main` with the Operator's merge and its Deploy run resets the box's checkout. From that Deploy on, `digital-library` is `off` in the schedule (DW-337) and a hollow or failed run exits 1 | _not done_ |
 | DL1 | **Merge `digital-library` PR #63 (`chore/remove-deploy-job`, head `c05434f`) into `dev`, then `dev` into `main`** | Added 2026-10-13 (Epic 5 retrospective action 4, M5; Operator ruling 2026-10-12: remove the `deploy` job, do not repair it). The PR removes `Test & Deploy`'s `deploy` job, renames the workflow `Test` (`.github/workflows/test.yml`, its `test` job unchanged) and writes the standing by-hand redeploy into the README. No ruleset or branch protection requires the job's check (read 2026-10-13: `protect-main` holds only deletion and non-fast-forward rules, and `dev` has none). Nothing on the box changes; the next push to `main` runs `Test` with no `deploy` job. PR #63 opened 2026-10-13 by the independent verifier; on `c05434f` the verifier read `CI` (push, run 38391849677) success and `CI` (pull_request, run 38391856226) success, and `Test` does not run on a PR to `dev`. Once PR #63 merges, the worktree `digital-library-workspace/wt-remove-deploy-job` is removed (`git -C digital-library worktree remove`, a workstation step, added 2026-10-13) | _not done_ |
 | DL2 | **Delete `digital-library`'s four Actions secrets** `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY` and `SERVER_PORT` | Added 2026-10-13 (M5). After DL1 reaches `main`, when no workflow reads them; an SSH key secret with no reader is a credential kept for nothing. GitHub, `digital-library`, Settings, Secrets and variables, Actions | _not done_ |
-| DL3 | **Compare the box's `~/library-redeploy.sh` with the README's standing redeploy** and make them agree | Added 2026-10-13 (M5). The script's text is recorded nowhere (DW-338); the README names its fetch, reset and build from DW-185 and DW-187. At the next `digital-library` redeploy, read the script on the box and write here whether it matches, correcting whichever is wrong in the same change | _not done_ |
+| DL3 | **Compare the box's `~/library-redeploy.sh` with the README's standing redeploy** and make them agree | Added 2026-10-13 (M5). The script's text was recorded nowhere (DW-338) until § Demo principal run's DL3 entry of 2026-10-13; the README names its fetch, reset and build from DW-185 and DW-187. At the next `digital-library` redeploy, read the script on the box and write here whether it matches, correcting whichever is wrong in the same change | _not done_ |
 | DP10 | **Merge `cs-tracker` PR 9 (`fix/demo-sign-out-own-session`) into `dev`, then `dev` into `main`, then roll `cs-tracker`** by the standing redeploy (`ops/cs-tracker-cutover.md` § Later rollouts), no step of its own | Added 2026-10-13 (Epic 5 retrospective action 5, M4). Head `e392689`, from `origin/dev` `7a2ab09`. `cs-tracker` has no CI: its gate is `mix precommit`, 717 tests, 0 failures (4 excluded), at that head on 2026-10-13. Nothing changes how it starts, so no image boot. The roll makes no visible change while no Visitor holds the demo sign-in (DW-335); every restart already refuses older OIDC sessions, so the Owner signs in again after it. PR 9 opened 2026-10-13 by the independent verifier, who re-ran `mix precommit` on `e392689` against a scratch Postgres 18.6: 717 tests, 0 failures (4 excluded); no workflow runs on it, `cs-tracker` has no `.github/` | _not done_ |
 | DP11 | **Merge `digital-library` PR #64 (`fix/demo-principal-one-way`) into `dev`, then `dev` into `main`, then redeploy** by the README's standing redeploy (after DL1, which writes it) | Added 2026-10-13 (Epic 5 retrospective action 5, m13). Head `1b14ff6`, from `origin/dev` `4ad020d`. Its API suite, 178 tests, and both typechecks passed on that head in a `node:22-bookworm` container on 2026-10-13. No demo account exists (DW-337), so the change is inert on the box until one does. PR #64 opened 2026-10-13 by the independent verifier; on `1b14ff6` the verifier read `CI` (push, run 38399200780) success and `CI` (pull_request, run 38399244504) success, and `Test & Deploy` (still its name on this branch, which predates PR #63) runs only for `main` | _not done_ |
 

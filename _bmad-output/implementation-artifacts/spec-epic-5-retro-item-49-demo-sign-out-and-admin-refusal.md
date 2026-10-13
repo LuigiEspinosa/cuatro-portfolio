@@ -2,7 +2,7 @@
 title: 'Epic 5 retro action 5 (M4, m13): demo sign-out scope and administrator refusal'
 type: 'bugfix'
 created: '2026-10-13'
-status: 'awaiting-operator'
+status: 'done'
 route: 'oneshot'
 review_loop_iteration: 0
 baseline_commit: 'efb0b7d'
@@ -95,3 +95,5 @@ Minor findings, not blocking:
 Disposition (2026-10-13, the next story's first commit): finding 1 was fixed in the verification commit; finding 2 filed as DW-340, owned by the story that creates `digital-library`'s demo account (DW-337), before that account exists; finding 3 needs no change, since DP10's row already says every restart refuses older OIDC sessions and DP10's roll restarts the app. The verifier's separate note on Anchor `ci.yml` run 38399622554 (attempt 1 failed in the tracker's unit tests on gsap's `ScrollTrigger` calling `requestAnimationFrame` after teardown, attempt 2 passed) is filed as DW-341, to act on at a second occurrence.
 
 Board row set `awaiting-operator`: DP10 (merge PR 9, then `dev` into `main`, then roll) and DP11 (merge PR #64, then `dev` into `main`, then redeploy after DL1) remain.
+
+Live 2026-10-13: DP10 (`cs-tracker` `main` at `4d94dbc`, rolled at 15:26:41Z) and DP11 (`digital-library` `main` at `8d48846`, redeployed at 15:29:24Z) are dated in `ops/demo-principal.md`; board row set `done`.

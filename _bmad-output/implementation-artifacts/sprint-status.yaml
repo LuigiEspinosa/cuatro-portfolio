@@ -1603,7 +1603,9 @@ action_items:
     # standing rollout); independent verifier passed it with minor findings the same day. Awaiting the
     # Operator: merge cs-tracker PR 7 (migrate.bat) to dev, bring this change to main, then
     # ops/tracker-cutover.md Pending action 9; spec-epic-5-retro-item-46-tracker-migrate-schema-demo.md.
-    status: awaiting-operator
+    # 2026-10-13: done. Anchor main at d5ecf9b (PR #96, Deploy success), Pending action 9 ran at 15:30:01Z
+    # ("No pending migrations to apply." on schema demo); the row's container name corrected. Action 9 dated.
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-47-the-reset-scheduler-make-a-failed-or-hol"
     epic: 5
@@ -1616,6 +1618,7 @@ action_items:
     # with minor findings the same day. Awaiting the Operator: ops/demo-principal.md DS4 (token header on
     # the box), the Epic 5 retrospective merge to main and its Deploy, then DS5;
     # spec-epic-5-retro-item-47-reset-failure-visible.md.
+    # 2026-10-13: the main merge (Anchor PR #96, d5ecf9b) and its Deploy ran; only DS4, then DS5, remain.
     status: awaiting-operator
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-48-digital-library-repair-or-remove-test-de"
@@ -1631,7 +1634,9 @@ action_items:
     # (head c05434f, CI green on push and pull_request). Awaiting the Operator: ops/demo-principal.md DL1
     # (merge PR #63 into dev, then dev into main), DL2 (delete the four Actions secrets) and DL3 (compare the
     # box's ~/library-redeploy.sh with the README); spec-epic-5-retro-item-48-digital-library-remove-deploy-job.md.
-    status: awaiting-operator
+    # 2026-10-13: done. digital-library main at 8d48846 (Test and CI success, no deploy job), the four secrets
+    # deleted, the box script replaced with the README's block by the Operator's ruling. DL1 to DL3 dated.
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-49-before-any-visitor-gets-the-demo-sign-in"
     epic: 5
@@ -1648,7 +1653,9 @@ action_items:
     # suite and typecheck clean, CI push run 38399200780 and pull_request run 38399244504 success).
     # Awaiting the Operator: ops/demo-principal.md DP10 (merge cs-tracker PR 9 into dev, then dev into main,
     # then roll) and DP11 (merge digital-library PR #64 into dev, then dev into main, then redeploy after DL1).
-    status: awaiting-operator
+    # 2026-10-13: done. cs-tracker main at 4d94dbc rolled at 15:26:41Z ([["demo"]]), digital-library main at
+    # 8d48846 redeployed at 15:29:24Z (api and web healthy, /api/health 200). DP10 and DP11 dated.
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-50-spec-reconciliation-amend-epics-md-epic"
     epic: 5
