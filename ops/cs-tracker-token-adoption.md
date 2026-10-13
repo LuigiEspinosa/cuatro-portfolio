@@ -349,6 +349,8 @@ action 5 below rather than an unstated gap.
 Family A's restyle already names it, and `epics.md` Story 8.1 carries a dated note pointing back here.
 Story 1-19 closed without it, and action 5 below records the move rather than an evaluation.
 
+**Evaluated 2026-10-13 by Story 8.1** (`ops/restyle-floor.md` § `cs-tracker`, Story 8.1's restyle): the restyle leaves one CSS transition, the Control's 120 ms border colour on hover, on an element LiveView patches in place, and no animated container, so no `phx-update="ignore"` was added.
+
 ## Seam S-7, taken whole
 
 `contracts/tokens.css` publishes one palette and it is dark. `EXPERIENCE.md` S-7's mitigation is

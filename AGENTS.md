@@ -36,7 +36,7 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
 - Architecture invariants AD-1 to AD-26:
   `_bmad-output/planning-artifacts/architecture/architecture-cuatro-portfolio-2026-08-15/ARCHITECTURE-SPINE.md`.
   Every story in `epics.md` names its governing AD. Read that AD before starting.
-- **`ops/` holds 39 records that are the operational source of truth, not the planning
+- **`ops/` holds 40 records that are the operational source of truth, not the planning
   artifacts.** Answer an operational question from there before inferring it from code:
   `routing-inventory.md` (the real routing table and the box as it stands), `estate.md` (every
   application and its disposition), `known-violations.md` (what is knowingly in breach, and what closes
@@ -51,7 +51,8 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   end state), `capacity-threshold.md`, `contract-serving.md`,
   `cs-tracker-token-adoption.md`, `rendered-output-harness.md`, `monitoring.md`,
   `backup-digital-library.md`, `bot-mitigation.md`, `asset-budget.md` (what the build actually ships,
-  weighed), `registry-schema.md` (the App Registry's shape and its blocking gate),
+  weighed), `restyle-floor.md` (Epic 8's floor: each wave-1 Satellite's anonymous surfaces, verified
+  stack and family, the review-finding triage, and `cs-tracker`'s restyle record), `registry-schema.md` (the App Registry's shape and its blocking gate),
   `registry-verification.md` (the scheduled check of every entry), `registry-inputs.md` (how the
   Registry's values were first chosen, frozen 2026-09-24: `contracts/registry.json` is the only
   source of Registry values).

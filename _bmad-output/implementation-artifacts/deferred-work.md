@@ -10295,3 +10295,51 @@ status: done
     suite that leaves a `ScrollTrigger` alive past its teardown and kill it in that suite's cleanup, or stub
     `requestAnimationFrame` in the tracker's Vitest setup.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-1-cs-tracker-visual-restyle.md`
+  id: DW-342
+  summary: >-
+    `ops/cs-tracker-accessibility-probe.mjs` cannot run against today's `cs-tracker`: it mints a Steam
+    session cookie and measures `/auth/steam/callback`, and Story 5.7 deleted both, so the AD-19 re-run its
+    action 2 names after Story 8.1 cannot be made with it.
+  evidence: |-
+    Found 2026-10-13 by Story 8.1, which measured its restyle with its own script instead (`ops/restyle-floor.md`
+    § `cs-tracker`, Story 8.1's restyle; the script and an OIDC session minter are kept under
+    `C:\CuatroEcosystem\epic-8-evidence\8-1-cs-tracker-visual-restyle\method\`). `CsTracker.Auth.OIDC.signed_in?/1`
+    admits a session map holding `oidc_sub` (the configured Owner subject) and an `oidc_iat` minted after the
+    server started.
+
+    **Owner: the next story that re-runs AD-19 on `cs-tracker` (AD-22's refresh, or a Tailwind or daisyUI bump).**
+    **Trigger: before that re-run.** Port the probe's cookie to the OIDC session shape and its route list to the
+    five live routes; keep its unit suite in step.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-1-cs-tracker-visual-restyle.md`
+  id: DW-343
+  summary: >-
+    `cs-tracker`'s built CSS still carries every daisyUI component rule (daisyUI 5 emits them whether or not a
+    template uses them), so F-7's grep of the built CSS finds 27 `box-shadow` and 6 gradient rules no surface
+    uses.
+  evidence: |-
+    Observed 2026-10-13 by Story 8.1 in the production image of `cs-tracker` `a0bfbb5`: 28 `box-shadow` and 6
+    gradient rules, all but one inside daisyUI component selectors, the one being `.shadow`, minted from a word in
+    an `app.css` comment. This is H-19 of `review-independent-implementation.md`, binding on Story 8.4
+    (`ops/restyle-floor.md` § O-17).
+
+    **Owner: Story 8.4, which fixes F-7's scope.** **Trigger: when 8.4 records F-7.** Either scope the grep to the
+    rules a floor surface can match, or restrict the plugin to its theme (daisyUI's `include` or `exclude` option
+    on the `@plugin` block), which the plugin-stays-installed criterion allows and `token_contract_test.exs` would
+    need to see.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-1-cs-tracker-visual-restyle.md`
+  id: DW-344
+  summary: >-
+    Two `cs-tracker` findings a restyle may not fix: the `/browse` filter selects and search field carry no
+    visible label (RESTYLE-SPEC.md § 9), and heading levels skip from `h1` to `h3` on `/browse`'s empty state
+    and the media tiles (§ 6).
+  evidence: |-
+    Found 2026-10-13 by Story 8.1's AD-19 pass and recorded as findings (`ops/restyle-floor.md`, findings 1 and
+    2): a visible label is microcopy and a field appearing, and a heading level is a semantic change, both
+    outside the ceiling.
+
+    **Owner: a `cs-tracker` story outside Epic 8.** **Trigger: the next story that touches `/browse`'s filter bar
+    or its headings.**
+  status: open

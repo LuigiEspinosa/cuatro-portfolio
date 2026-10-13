@@ -1160,8 +1160,10 @@ development_status:
   # BLOCKED by epic-2 and by the UX Restyle Specification, which does not exist yet.
   # No restyle story exists for StreamVault, MaiCoin, poketracker-go, Mutuo or
   # cuatro-finance. AD-25 creates one when the Suite Directory renders them, not before.
-  epic-8: backlog
-  8-1-cs-tracker-visual-restyle: backlog
+  epic-8: in-progress
+  # 2026-10-13: built, awaiting the independent verifier, the Operator's visual sign-off and floor
+  # ruling (ops/restyle-floor.md R1, R2) and the cs-tracker merge and roll (R3).
+  8-1-cs-tracker-visual-restyle: review
   8-2-digital-library-adopts-the-contract-and-is-restyled: backlog
   8-3-list-wheel-visual-restyle: backlog
   8-4-record-the-restyle-floor-and-the-per-application-coherence-ch: backlog
