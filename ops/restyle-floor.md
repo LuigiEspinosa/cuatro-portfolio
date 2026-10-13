@@ -172,10 +172,15 @@ dot on a solid border, Wishlisted a dashed border, Manual a solid border alone. 
 data and every string are unchanged**; the decorative icons are gone (the system has no icon set), and
 the quick links' chevron became the arrow glyph in the same place.
 
-**Seam S-8, evaluated (it was moved here, `ops/cs-tracker-token-adoption.md` action 5).** The only
-CSS transition left is the Control's 120 ms border colour on hover, on an element LiveView patches in
-place; no container animates, so no `phx-update="ignore"` was added. **Decision**, by reading the
-templates against the running application. **Seam S-7 stands.**
+**Seam S-8, evaluated (it was moved here, `ops/cs-tracker-token-adoption.md` action 5).** Two kinds
+of transition are left. The one in a stylesheet rule is the Control's 120 ms border colour on hover, on
+an element LiveView patches in place. The other is the generator's `show/2` and `hide/2` in
+`core_components.ex`, which put `transition-all` on the flash and reconnect notices for their 200 to
+300 ms entrance and exit, so `.transition-all` ships in the built CSS. Those are LiveView JS commands,
+which survive a patch, and no container animates under `phx-update`, so no `phx-update="ignore"` was
+added. **Decision**, by reading the templates against the running application. **Seam S-7 stands.**
+*(Corrected 2026-10-13 by Story 8.2's builder, from the independent verifier's round 2 note below:
+this paragraph first called the border colour the only transition left.)*
 
 ### The component-class count (for Story 8.4)
 

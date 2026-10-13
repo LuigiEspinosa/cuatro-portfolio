@@ -4835,6 +4835,11 @@ verification (O-15)
 **Then** the family recorded there governs this story
 **And** **if it is not family C, this story's strategy is rewritten before it opens** rather than
 during it.
+*(amended 2026-10-13: Story 8.1's O-15 pass found family A in its source-owned form, not C: Tailwind v4
+with a shadcn-svelte layer copied into `src/lib/components/ui/` over `bits-ui`, and no plugin. The strategy
+is family A's, neutralise that component layer and keep the utilities, with family C's two checks below
+still applied on top. The restated strategy is `ops/restyle-floor.md` § O-15, noted to the Operator as its
+row R4.)*
 
 **Given** family C has nothing to displace, so the risk moves to two quieter places that are still
 F-checks
@@ -4896,6 +4901,9 @@ verification (O-15), and family B is the assumption
 **Then** the family recorded there governs this story
 **And** **if no opinionated component framework is actually installed, this is a family C story** and
 its strategy is rewritten before it opens.
+*(amended 2026-10-13: Story 8.1's O-15 pass found no component framework, so this is a family C story:
+routes 1 and 2 below do not arise, and the work is the plain component CSS plus family C's two checks. The
+restated strategy is `ops/restyle-floor.md` § O-15, noted to the Operator as its row R4.)*
 
 **Given** family B frameworks style components from inside their own encapsulation, where a global
 stylesheet does not reach

@@ -10311,6 +10311,12 @@ status: done
     **Owner: the next story that re-runs AD-19 on `cs-tracker` (AD-22's refresh, or a Tailwind or daisyUI bump).**
     **Trigger: before that re-run.** Port the probe's cookie to the OIDC session shape and its route list to the
     five live routes; keep its unit suite in step.
+
+    **A seed for the port, noted 2026-10-13 by Story 8.2's builder from Story 8.1's verifier round 2.** That
+    verifier's `C:\CuatroEcosystem\epic-8-evidence\8-1-cs-tracker-visual-restyle\verifier-round-2\measure.mjs`
+    already measures the production image without a cookie the probe forges: it mints the session inside the
+    release (`bin/cs_tracker rpc`), and it puts a local TLS front ahead of the image, so the LiveView socket's
+    origin passes `check_origin` and the pages mount connected rather than dead. The port can take both.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-1-cs-tracker-visual-restyle.md`
   id: DW-343
@@ -10393,4 +10399,18 @@ status: done
     re-observe the `list-wheel` row in `ops/contract-adoption.md` (adopted, `2.0.0`, at
     `src/styles/cuatro-contracts/tokens.css`) and commit that dated observation; then a Registry release giving
     the `list-wheel` entry `token_contract: "2.0.0"`, whose push runs `registry-verification.yml`.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-1-cs-tracker-visual-restyle.md`
+  id: DW-348
+  summary: >-
+    `cs-tracker`'s hand-fix 3 (`:focus-visible`, Story 1.19) omits `RESTYLE-SPEC.md` § 4's third declaration,
+    `border-radius: var(--r-hair)`, so its focus ring is drawn square where the specification rounds it to the
+    hairline radius.
+  evidence: |-
+    Found 2026-10-13 by Story 8.1's independent verifier, round 2 (`ops/restyle-floor.md` § Independent
+    verification, round 2), and recorded by Story 8.2's builder (`ops/cs-tracker-token-adoption.md`, the
+    correction under the hand-fix table). Story 8.1 did not touch the rule.
+
+    **Owner: the next `cs-tracker` story that touches `assets/css/app.css`.** **Trigger: that story.** Add the
+    line to the unlayered rule, and extend `token_contract_test.exs`'s hand-fix 3 assertion to read it.
   status: open

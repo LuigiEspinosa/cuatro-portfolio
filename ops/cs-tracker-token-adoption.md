@@ -310,6 +310,11 @@ verbatim in substance: `:focus-visible` only so a mouse click paints no ring, `-
 `.btn` rather than on a bare anchor deliberately, because daisyUI ships its own `.btn:focus-visible`
 ring and a bare element would never show that the contract's rule wins over it.
 
+**Correction, 2026-10-13 (Story 8.1's independent verifier, round 2).** "Verbatim in substance" overstates
+it: `RESTYLE-SPEC.md` § 4's rule carries a third declaration, `border-radius: var(--r-hair)`, and hand-fix 3
+omits it, so the ring is drawn square. Story 8.1 did not touch the rule. DW-348 owns adding the line in
+`cs-tracker`.
+
 **Two of the five are belt and braces, and both say so in the file.** Hand-fix 1 is redundant today:
 the surviving theme block declares `color-scheme: "dark"` and daisyUI emits it onto `:root`, so the
 probe's reading would pass with the rule deleted. Hand-fix 4 is redundant for the same kind of reason:
@@ -349,7 +354,7 @@ action 5 below rather than an unstated gap.
 Family A's restyle already names it, and `epics.md` Story 8.1 carries a dated note pointing back here.
 Story 1-19 closed without it, and action 5 below records the move rather than an evaluation.
 
-**Evaluated 2026-10-13 by Story 8.1** (`ops/restyle-floor.md` § `cs-tracker`, Story 8.1's restyle): the restyle leaves one CSS transition, the Control's 120 ms border colour on hover, on an element LiveView patches in place, and no animated container, so no `phx-update="ignore"` was added.
+**Evaluated 2026-10-13 by Story 8.1** (`ops/restyle-floor.md` § `cs-tracker`, Story 8.1's restyle): the restyle leaves the Control's 120 ms border colour on hover, on an element LiveView patches in place, and the generator's `show/2` and `hide/2` `transition-all` on the flash and reconnect notices' entrance and exit, which are LiveView JS commands and survive a patch; no container animates under `phx-update`, so no `phx-update="ignore"` was added. *(Corrected 2026-10-13 by Story 8.2's builder: this line first called the border colour the only transition left.)*
 
 ## Seam S-7, taken whole
 
