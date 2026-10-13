@@ -727,6 +727,14 @@ Each run printed `demo:reset cuatro-tracker reset rows=12`, `demo:reset cs-track
 equals the checkout's. `uptime` at 2026-10-12T17:01:02Z, within the minute after the 17:00 run (`exit=0`): load
 average 0.34, 0.21, 0.12, load15 well under the gate's 0.60.
 
+**DP9, 2026-10-13T05:48Z, `cs-tracker` on schema `demo` alone.** The Operator merged PR 7 into `dev` and `dev` into
+`main` (`e44bb69`, its tree identical to the verified `666b852`). Step 16's block ran from a file on the box with
+the Operator's approval: `git pull` landed `e44bb69`, `migrate` printed `Migrations already up` twice, `docker
+rollout` replaced the container, and the rpc line printed `[["demo"]]` at 05:48:26Z. `https://cs-tracker.cuatro.dev`
+answered 302 at `/` and 401 at `/auth/session`. The 06:00Z reset, the first after the roll, printed `demo:reset
+cs-tracker reset rows=12` with `failed=none exit=0`. The Operator then signed in as the demo account and saw the
+fixture's two marks in `/inventory` (2026-10-13). `cs-tracker` has no CI, so no workflow was read on `e44bb69`.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -746,7 +754,7 @@ average 0.34, 0.21, 0.12, load15 well under the gate's 0.60.
 | DS1 | **Install the scheduler's cron file** from the checkout | After DR1 to DR3 and Story 5.10 on `main` | 2026-10-06T17:26Z. Installed, `cmp` matched; before DR3, `digital-library` skipping until DW-337; § Demo principal run |
 | DS2 | **Run the scheduler once by hand, in cron's shape, and observe it** | After DS1 | 2026-10-06T17:26Z. `ran=3 failed=none exit=0`, `digital-library` skipped as absent, load15 0.21; § Demo principal run |
 | DS3 | **Read the first unattended day** of `demo-reset.log` and the load after a run | The day after DS1 | 2026-10-12. 143 of 143 hourly runs `exit=0` since DS1, 24 of 24 the first day; load15 0.12 after a run; § Demo principal run |
-| DP9 | **Roll `cs-tracker` onto schema `demo` alone**, § By hand step 16 | Added 2026-10-12 (Epic 5 retrospective action 1, M1). After `cs-tracker`'s `fix/demo-schema-alone` PR reaches `dev` and then `main`. `cs-tracker` has no CI: its gate was `mix precommit` (709 tests, 0 failures) and its production image booted against a scratch Postgres 18.6, both on 2026-10-12. Also added 2026-10-12 (Epic 5 retrospective action 2): merge `cs-tracker` PR 7 (`fix/migrate-bat-demo`, `rel/overlays/bin/migrate.bat` runs `migrate_demo` as `bin/migrate` does; `mix precommit` 709 tests, 0 failures) into `dev` first, so the same `dev` to `main` merge carries it | _not done_ |
+| DP9 | **Roll `cs-tracker` onto schema `demo` alone**, § By hand step 16 | Added 2026-10-12 (Epic 5 retrospective action 1, M1). After `cs-tracker`'s `fix/demo-schema-alone` PR reaches `dev` and then `main`. `cs-tracker` has no CI: its gate was `mix precommit` (709 tests, 0 failures) and its production image booted against a scratch Postgres 18.6, both on 2026-10-12. Also added 2026-10-12 (Epic 5 retrospective action 2): merge `cs-tracker` PR 7 (`fix/migrate-bat-demo`, `rel/overlays/bin/migrate.bat` runs `migrate_demo` as `bin/migrate` does; `mix precommit` 709 tests, 0 failures) into `dev` first, so the same `dev` to `main` merge carries it | 2026-10-13T05:48Z, live: `[["demo"]]`, 06:00Z reset rows=12, demo inventory two marks (§ Demo principal run) |
 | DS4 | **Give the scheduler its issue header**, § By hand step 17: a fine-grained token (Issues read and write on `cuatro-portfolio` alone) in `/etc/cuatro/demo-reset-issue.header`, `root deploy 640`, and `curl` on the cron `PATH` | Added 2026-10-13 (Epic 5 retrospective action 3, M3). Any time; write the token's expiry date here, which is the date to renew it, since an expired token only reads `issue=refused` in the log | _not done_ |
 | DS5 | **Prove the issue once**, § By hand step 18 | Added 2026-10-13 (M3). After DS4, and after the Epic 5 retrospective change carrying § The scheduler item 11 reaches `main` with the Operator's merge and its Deploy run resets the box's checkout. From that Deploy on, `digital-library` is `off` in the schedule (DW-337) and a hollow or failed run exits 1 | _not done_ |
 

@@ -1583,7 +1583,9 @@ action_items:
     # and merged cs-tracker's fix/demo-schema-alone PR to dev. Awaiting the Operator:
     # bring cs-tracker dev into main, then roll it on the box and date DP9
     # (ops/demo-principal.md By hand step 16); spec-epic-5-retro-item-45-cs-tracker-demo-schema-alone.md.
-    status: awaiting-operator
+    # 2026-10-13: done. cs-tracker main at e44bb69, DP9 rolled at 05:48Z ([["demo"]]), the 06:00Z
+    # reset rows=12, and the Operator saw the demo inventory's two marks. DP9 dated.
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-46-the-tracker-migrate-schema-demo-in-every"
     epic: 5
