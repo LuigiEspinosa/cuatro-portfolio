@@ -1591,7 +1591,10 @@ action_items:
       second time with the demo URL, in ops/tracker-cutover.md), and build DP6's demo
       URL in a query-string-safe form (M2)"
     owner: "Cuatro"
-    status: open
+    # Built 2026-10-12 (tracker-migrate-demo in docker-compose.yml, run by ops/tracker-cutover.md's
+    # standing rollout); awaiting the independent verifier, then the Operator: this change on main,
+    # then ops/tracker-cutover.md Pending action 9; spec-epic-5-retro-item-46-tracker-migrate-schema-demo.md.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-47-the-reset-scheduler-make-a-failed-or-hol"
     epic: 5

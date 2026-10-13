@@ -77,6 +77,16 @@ describe('ownership scopes', () => {
     expect(url.searchParams.get('schema')).toBe('demo')
     expect(url.searchParams.get('connection_limit')).toBe('1')
   })
+
+  it('derives the demo store from a DATABASE_URL with no query string as safely as from one with a query', async () => {
+    const { demoDatabaseUrl } = await load()
+    const url = new URL(demoDatabaseUrl('postgresql://cuatro_tracker:pw@estate-postgres:5432/cuatro_tracker'))
+    expect(`${url.username}@${url.host}${url.pathname}`).toBe('cuatro_tracker@estate-postgres:5432/cuatro_tracker')
+    expect([...url.searchParams]).toEqual([
+      ['schema', 'demo'],
+      ['connection_limit', '1'],
+    ])
+  })
 })
 
 describe('scopedDb, the store of the request', () => {

@@ -96,7 +96,8 @@ read; the Operator's side effects withheld; and a suite case for each clause of 
   through a second Prisma client whose URL is `DATABASE_URL` with `schema=demo` and `connection_limit=1`
   (`lib/demo-store.ts`, `storeFor`). The demo principal's own `User` row lives there too, so the Operator's
   store holds no demo identity. Every migration applies to it unchanged: none qualifies a name with
-  `public`.
+  `public`. `tracker-migrate-demo` migrates it, run after `tracker-migrate` in every rollout
+  (`ops/tracker-cutover.md` § The sequence, Later rollouts).
 - **Gates:** `lib/scoped-db.ts` (`scopedDb`) answers the signed-in principal's store, and every request path
   reads through it; `lib/__tests__/demo-principal.test.ts` fails any module that imports the Operator's
   store directly, except the store itself, sign-in (whose lookups go through `storeFor`), `/api/ready`, the
@@ -440,11 +441,13 @@ into `ssh`. No step prints a credential.
    `https://cs-tracker.cuatro.dev/auth/session` answers 200 with its subject, `/inventory` lists nothing of the
    Owner's, and the Owner's own session still shows his inventory.
 6. **DP6. Turn the tracker's demo on**, after DP2 and DP4: migrate the schema with the tracker's image,
-   `docker compose --env-file .env.production --profile migrate run --rm -e DATABASE_URL="$demo_url"
-   tracker-migrate`, where `demo_url` is the tracker's `DATABASE_URL` with `&schema=demo` appended (built on
-   the box from `.env.production` without printing it); create the account in the demo schema with
-   `docker compose --env-file .env.production --profile tracker run --rm -e DEMO_ENABLED=true -e
-   DEMO_PASSWORD tracker node -e "..."` hashing `DEMO_PASSWORD` with `bcryptjs` and inserting through the
+   `docker compose --env-file .env.production --profile migrate run --rm tracker-migrate-demo`, whose URL is
+   `tracker-migrate`'s with `schema=demo` set in the query, written in `docker-compose.yml` so nothing on the
+   box builds one (**amended 2026-10-12**, Epic 5 retrospective M2: the step first ran `tracker-migrate` with a
+   URL built by appending `&schema=demo`, which breaks on a URL with no query string; every tracker rollout
+   now runs the service, `ops/tracker-cutover.md` § The sequence, Later rollouts, its Pending action 9);
+   create the account in the demo schema with `docker compose --env-file .env.production --profile tracker
+   run --rm -e DEMO_ENABLED=true -e DEMO_PASSWORD tracker node -e "..."` hashing `DEMO_PASSWORD` with `bcryptjs` and inserting through the
    demo store (the reset never creates it, § The reset); then set `TRACKER_DEMO_ENABLED=true` in
    `.env.production` and roll the tracker. Check: the demo account signs in and sees an empty library, the
    Owner's sees his, and `/admin` answers 404 to the demo account. Then DR1 fills the library.
@@ -691,4 +694,5 @@ average 0.34, 0.21, 0.12, load15 well under the gate's 0.60.
 | DP9 | **Roll `cs-tracker` onto schema `demo` alone**, § By hand step 16 | Added 2026-10-12 (Epic 5 retrospective action 1, M1). After `cs-tracker`'s `fix/demo-schema-alone` PR reaches `dev` and then `main`. `cs-tracker` has no CI: its gate was `mix precommit` (709 tests, 0 failures) and its production image booted against a scratch Postgres 18.6, both on 2026-10-12 | _not done_ |
 
 Story 5.8 is done when DP1 to DP7 are dated and DP8 is ruled. Story 5.9 is done when DR1 to DR3 are dated
-and DR4 is ruled. Story 5.10 is done when DS1 to DS3 are dated. Epic 5 retrospective action 1 is live when DP9 is dated.
+and DR4 is ruled. Story 5.10 is done when DS1 to DS3 are dated. Epic 5 retrospective action 1 is live when
+DP9 is dated, and action 2 when `ops/tracker-cutover.md`'s Pending action 9 is.

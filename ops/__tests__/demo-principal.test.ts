@@ -97,4 +97,19 @@ describe('the participants in this repository', () => {
     const tracker = compose.split('\n  tracker:\n')[1]?.split('\n  tracker-worker:\n')[0] ?? '';
     expect(tracker).toContain('      - DEMO_ENABLED=${TRACKER_DEMO_ENABLED-}\n');
   });
+
+  // Epic 5 retrospective M2 and action 7: the tracker's standing rollout migrates schema `demo` as well as
+  // `public`, before it rolls, so the scope never falls behind a migration.
+  it('the tracker’s standing rollout migrates public, then demo, before it rolls', () => {
+    const runbook = read('ops/tracker-cutover.md');
+    const later = runbook.split('\n**Later rollouts** of a new tracker sha')[1]?.split('\n## ')[0] ?? '';
+    const at = (command: string) => later.indexOf(command);
+    const publicMigrate = at('`$C --profile migrate run --rm tracker-migrate`');
+    const demoMigrate = at('`$C --profile migrate run --rm tracker-migrate-demo`');
+    const rollout = at('`docker rollout --env-file .env.production tracker`');
+    expect(publicMigrate, 'tracker-migrate').toBeGreaterThan(-1);
+    expect(demoMigrate, 'tracker-migrate-demo').toBeGreaterThan(publicMigrate);
+    expect(rollout, 'docker rollout').toBeGreaterThan(demoMigrate);
+    expect(RECORD).not.toContain('`&schema=demo` appended');
+  });
 });
