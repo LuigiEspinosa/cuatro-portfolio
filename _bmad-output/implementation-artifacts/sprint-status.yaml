@@ -42,7 +42,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-13-2026 08:45
+last_updated: 10-13-2026 09:05
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1139,8 +1139,10 @@ development_status:
   # count 1 of 3, the one event Contract 1.0.0 to 2.0.0 re-vendored into cs-tracker (991d0f6, 2026-09-24).
   # Epic 6 does not open, the correct outcome by the story; epic-6 stays backlog (not opened) and 6-2 to 6-4
   # stay backlog. Spec spec-6-1-confirm-the-trigger-has-fired.md; the verifier sets done.
+  # 6-1 done 2026-10-13: independent verifier round 1, pass with minor findings, the count of 1 re-read from the
+  # Anchor's contracts/ history, cs-tracker's remote branches and a gh api tree sweep. No Operator step.
   epic-6: backlog
-  6-1-confirm-the-trigger-has-fired: review
+  6-1-confirm-the-trigger-has-fired: done
   6-2-publish-the-token-contract-as-an-npm-package: backlog
   6-3-a-renovate-shareable-preset: backlog
   6-4-publish-the-reusable-ci-workflows-to-contracts-workflows: backlog
