@@ -1621,8 +1621,11 @@ action_items:
     # RULING by the Operator, 2026-10-12: REMOVE the deploy job, do not repair it. Built 2026-10-13:
     # digital-library chore/remove-deploy-job (c05434f) drops the deploy job, renames the workflow Test and
     # writes the by-hand redeploy into its README; DP7 corrected in ops/demo-principal.md, DL1 to DL3 pending.
-    # Awaiting the independent verifier; spec-epic-5-retro-item-48-digital-library-remove-deploy-job.md.
-    status: in-progress
+    # 2026-10-13: independent verifier passed it with minor findings and opened digital-library PR #63
+    # (head c05434f, CI green on push and pull_request). Awaiting the Operator: ops/demo-principal.md DL1
+    # (merge PR #63 into dev, then dev into main), DL2 (delete the four Actions secrets) and DL3 (compare the
+    # box's ~/library-redeploy.sh with the README); spec-epic-5-retro-item-48-digital-library-remove-deploy-job.md.
+    status: awaiting-operator
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-49-before-any-visitor-gets-the-demo-sign-in"
     epic: 5

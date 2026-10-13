@@ -2,7 +2,7 @@
 title: 'Epic 5 retro action 4 (M5): remove digital-library Test & Deploy deploy job'
 type: 'chore'
 created: '2026-10-13'
-status: 'in-review'
+status: 'done'
 route: 'oneshot'
 review_loop_iteration: 0
 baseline_commit: '9e998376dc39fd56495e310eff61d43247707a22'
@@ -61,4 +61,14 @@ Observations behind the record (2026-10-13, `gh`):
 
 ## Verification
 
-_The independent verifier fills this section._
+**Independent verifier (2026-10-13, round 1): pass with minor findings.** A separate session with no builder context read `1430025` and `d32e26a` against the Anchor's `origin/dev` and `c05434f` against `digital-library`'s `origin/dev`, checked the observations with `gh`, and re-ran every stage on this host:
+- `gh run list --workflow deploy.yml --branch main` on `digital-library`: runs 37498770241, 30519309818, 30518341072, 28205172235 and 26623693302 each read `test=success deploy=failure`, the oldest 2026-05-29; 22458358977 (2026-02-26) was the last success. Run 37498770241's failed log: `ssh: handshake failed: ssh: unable to authenticate`.
+- `gh api`: one ruleset, `protect-main` (active); `rules/branches/main` lists `deletion` and `non_fast_forward` alone, `rules/branches/dev` is empty, classic protection answers 404 on both. No rule requires the `deploy` check, so no Operator step for it.
+- The diff: `.github/workflows/test.yml` keeps the triggers and the `test` job byte for byte, the `deploy` job is gone, and no workflow left SSHes anywhere; the README's standing redeploy matches DW-185, DW-187 and DW-338 and the checkout path `ops/routing-inventory.md` records. No dash or emoji in the added lines of either repository; all three commit subjects are Conventional Commit subjects alone; no `.env` file touched; no box step taken.
+- Root suite `corepack pnpm test --run`: first run `Test Files 7 failed | 73 passed (80)`, `Tests 13 failed | 1966 passed | 1 skipped (1980)`, every failure a roughly 30 second case in the seven WSL-bash suites (DW-135). Each re-run alone passed: deploy-remote 28, library-backup 59, tracker-backup 11, postgres-backup 20 (1 skipped), postgres-init 17, tournament-backup 15, demo-reset 30. A later full run: `Test Files 80 passed (80)`, `Tests 1979 passed | 1 skipped (1980)`.
+- `digital-library` PR #63 (`chore/remove-deploy-job` into `dev`, head `c05434f`), opened by the verifier and **left open for the Operator** (DL1). Every workflow run on `c05434f`: `CI` (push, run 38391849677) success and `CI` (pull_request, run 38391856226) success. `Test` triggers only on `main`, so it does not run on a PR to `dev`.
+
+Minor findings, not blocking:
+1. § What was done says the board row was set `in-review`; the builder set it `in-progress`, as the board's legend has no `in-review`.
+2. The `Test` workflow's job duplicates `CI`'s `test` job on every push to `main`; kept as the ruling asked, a candidate for removal later.
+3. The board row's action text still says "red since 2026-07-30"; the runs show 2026-05-29, which the record and this spec carry.
