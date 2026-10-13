@@ -2,7 +2,7 @@
 title: 'Epic 5 retro action 2 (M2): the tracker migrates schema demo in every rollout'
 type: 'bugfix'
 created: '2026-10-12'
-status: 'in-review'
+status: 'done'
 route: 'oneshot'
 review_loop_iteration: 0
 baseline_commit: 'cuatro-portfolio 27a4d3dc3eed7fea094f75e7b1e61a4bf9c51225'
@@ -52,4 +52,15 @@ context: []
 
 **Operator steps:** this change on `main` (its Deploy resets the box's checkout), then `ops/tracker-cutover.md` Pending action 9.
 
-**Independent verifier:** _not yet run_.
+**Independent verifier (2026-10-12, round 1): pass with minor findings.** A separate session with no builder context read both diffs against `origin/dev` and re-ran every stage:
+
+- `docker/__tests__/compose.test.ts`: `Tests 29 passed (29)`; `ops/__tests__/demo-principal.test.ts`: `Tests 10 passed (10)`; `corepack pnpm --filter tracker exec vitest run lib/__tests__/demo-principal.test.ts`: `Tests 14 passed (14)`. `corepack pnpm typecheck` and `corepack pnpm --filter tracker typecheck` both exit 0.
+- `docker compose -f docker-compose.yml --profile migrate config tracker-migrate-demo tracker-migrate` (scratch values) renders the two services with the same image and command and the URLs `...cuatro_tracker?connection_limit=4` and `...cuatro_tracker?connection_limit=4&schema=demo`.
+- The two URLs' shapes against a scratch `postgres:18.6` (`epic-scratch-pg-m2`, removed after): `prisma migrate deploy` from `apps/tracker` with the public URL applied every migration; with `&schema=demo` added it applied every migration into a new schema `demo`; a second demo run printed "No pending migrations to apply."; `_prisma_migrations` holds 11 rows in each schema and each holds 9 tables.
+- Root suite `corepack pnpm test --run`: `Test Files 5 failed | 75 passed (80)`, `Tests 5 failed | 1970 passed | 1 skipped (1976)`; the five were cases in demo-reset, deploy-remote, library-backup, postgres-backup and tournament-backup (DW-135). Each re-run alone passed: demo-reset 26, deploy-remote 28, library-backup 59, postgres-backup 20 (1 skipped), tournament-backup 15.
+- `cs-tracker` `mix precommit` in `wt-migrate-bat-demo` at `8908973` against a scratch `postgres:18.6` (`epic-scratch-pg-cst`, removed after): `709 tests, 0 failures (4 excluded)`, no file changed by `format`. The `.bat` now matches `bin/migrate`'s eval.
+- Records: the standing rollout (`ops/tracker-cutover.md` § The sequence, Later rollouts) carries the new step, and Pending action 9 is a dated row (`_not done_`). `ops/deploy-remote.sh` is unchanged. No prose dash or emoji in either diff; all three commit subjects are Conventional Commit subjects alone.
+
+Minor findings, none blocking: no fault case removes `tracker-migrate-demo`'s `DATABASE_URL` line alone (it would still be named, as a missing `schema=demo`); `ops/estate.md` (Migrations, AD-23) and `ops/postgres.md`'s consumer row still name `tracker-migrate` alone; Pending action 9 uses `$C` without restating it (defined in § The sequence).
+
+`cs-tracker` PR 7 (`fix/migrate-bat-demo` into `dev`, head `8908973685c6e65bd9b08b69fd308a357abe84a2`) is open and mergeable; the verifier's merge was refused by the session's permission classifier, so merging it to `dev` is left to the Operator. `cs-tracker` has no `.github/`, so no workflow ran on that sha (`gh run list --commit` empty).
