@@ -35,9 +35,9 @@ a screenshot committed to a repository.
 
 ## Code Map
 
-- `ops/restyle-floor.md` (new) -- O-14 by route, O-15 with family per app, O-17 (32 + 6 High), cs-tracker's record, R1 to R4
-- `cs-tracker` `assets/css/app.css` -- the `ct-*` vocabulary in the components layer; theme block and hand-fixes untouched
-- `cs-tracker` `lib/cs_tracker_web/components/*.ex`, `live/*.ex`, `layouts/root.html.heex` -- markup
+- `ops/restyle-floor.md` (new): O-14 by route, O-15 with family per app, O-17 (32 + 6 High), cs-tracker's record, R1 to R4
+- `cs-tracker` `assets/css/app.css`: the `ct-*` vocabulary in the components layer; theme block and hand-fixes untouched; the daisyUI `@plugin` block includes no component (fix round 1)
+- `cs-tracker` `lib/cs_tracker_web/components/*.ex`, `live/*.ex`, `layouts/root.html.heex`: markup
 - `cs-tracker` `test/cs_tracker_web/restyle_test.exs` (new), `components/core_components_test.exs`
 
 ## Tasks & Acceptance
@@ -73,8 +73,9 @@ tracker test was already DW-341, filed by that verifier; its evidence now names 
 (`gh run view 38399622554`: attempt 2, `success`), and no duplicate was filed.
 
 **cs-tracker:** worktree `C:\CuatroEcosystem\cs-tracker-workspace\wt-8-1-cs-tracker-visual-restyle`,
-branch `restyle/8-1-visual-restyle`, commit `a0bfbb5` from `origin/dev` `0e5d0c4`, 14 files.
-DW-342 (the AD-19 probe mints a deleted Steam session), DW-343 (F-7, H-19), DW-344 (two findings
+branch `restyle/8-1-visual-restyle`, commit `a0bfbb5` from `origin/dev` `0e5d0c4`, 14 files, then the fix
+round's `32c0d73` (2 files).
+DW-342 (the AD-19 probe mints a deleted Steam session), DW-343 (F-7, H-19, closed by the fix round), DW-344 (two findings
 outside the ceiling) filed. S-8 evaluated (`ops/cs-tracker-token-adoption.md`); probe action notes
 in `ops/cs-tracker-accessibility-pass.md` action 2 and `ops/contract-adoption.md` action 4.
 
@@ -85,11 +86,35 @@ in `ops/cs-tracker-accessibility-pass.md` action 2 and `ops/contract-adoption.md
 - AD-19 pass, 360x800, seven pages, 96 interactive elements: under `--tap` 89 to **0**, transitioned rings
   45 to **0**, grounds at rest or hover 85 to **0**, radii 3 to **0**, ringless stops 0, horizontal scroll at
   359/390/759/761 none; F-1, F-2 (all three faces loaded, display was not before), F-8, F-9, F-11 pass; F-7
-  fails as written on unused daisyUI rules (DW-343); F-12 passes on a stated reading.
+  failed as written on unused daisyUI rules (DW-343, fixed in round 1 below); F-12 passes on a stated reading.
+  The traversal skipped a press that stayed on the same element, so it missed the date field's calendar stop
+  (fixed in round 1 below).
 - Production image of `a0bfbb5` booted on a scratch Postgres 16: `GET /` 302, `app.css` and three faces 200.
 - Anchor root suite, `corepack pnpm test --run`: `Test Files 6 failed | 74 passed (80)`, `Tests 6 failed | 1973 passed | 1 skipped (1980)`;
   the six were the DW-135 WSL-bash suites, each alone then passing: demo-reset 30/30, deploy-remote 28/28,
   library-backup 59/59, postgres-backup 20 + 1 skipped, tournament-backup 15/15, tracker-backup 11/11.
+
+**Fix round 1 (the independent verifier refused on F-6, F-7 and the Code Map's dashes), `cs-tracker` `32c0d73`:**
+- F-6: `.ct-field[type="date"]:focus-within` paints the section 4 ring on the field while its calendar button
+  holds focus (that stop never matches `:focus-visible`). `method-round-2/measure.mjs` reads every Tab press,
+  a press that stays on one element included, and passes a stop on the ring it paints: **0 ringless** over 72
+  presses on the seven pages at 360. `method-round-2/tabs-browse.mjs` on `/browse` at 1280: presses 10 to 13 are
+  the date field, press 13 reads `fv=false fw=true` and `solid 2px oklch(0.84 0.13 288)`
+  (`after-round-2/browse-1280-tab13.png`).
+- F-7: the daisyUI `@plugin` block reads `include: rootcolor, scrollbar;`, so no component rule is emitted, and
+  `@source not inline("shadow transition");` stops Tailwind minting `.shadow` and `.transition` from prose.
+  The production image's `app.css` (26,825 bytes): **one `box-shadow`, preflight's `box-shadow:none`;
+  0 gradients**; no rule reads `--color-primary` or `--color-accent`, and the only accent ground is
+  `::selection` (F-8). A new `restyle_test.exs` case pins the include list and the exclusion; a planted
+  `include: rootcolor, scrollbar, button;` fails it (5 tests, 1 failure), reverted.
+- Re-measure, 360x800, the same seven pages: 95 visible interactive elements (the dashboard read 11 where the
+  first run read 12: a fresh database has no recently viewed item, so one Control stands where two tiles stood,
+  `after-round-2/dashboard-360.png`), under `--tap` 0, transitioned 0, grounds 0, radii 0, horizontal scroll 0;
+  F-1, F-2 and F-11 as before.
+- `mix precommit` on `32c0d73`: `715 tests, 0 failures (4 excluded)`, exit 0.
+- Production image of `32c0d73` (`epic-scratch-8-1-cs-tracker:restyle`), `bin/migrate` then the release on a
+  scratch Postgres 16 at 2026-10-13T16:36:33Z: container up, `GET /` 302, `/assets/css/app.css` and the three
+  woff2 faces 200; every scratch object removed.
 
 Evidence: `C:\CuatroEcosystem\epic-8-evidence\8-1-cs-tracker-visual-restyle\`. Scratch Docker objects
 (`epic-scratch-8-1-*`) removed; `postgres:16` was pulled for the run and left.

@@ -10328,7 +10328,14 @@ status: done
     rules a floor surface can match, or restrict the plugin to its theme (daisyUI's `include` or `exclude` option
     on the `@plugin` block), which the plugin-stays-installed criterion allows and `token_contract_test.exs` would
     need to see.
-  status: open
+
+    **Closed 2026-10-13 by Story 8.1's fix round, `cs-tracker` `32c0d73`,** after the independent verifier held
+    F-7 binding on 8.1: the daisyUI `@plugin` block reads `include: rootcolor, scrollbar;` and Tailwind no longer
+    mints `.shadow` or `.transition` from prose. The production image's `app.css` carries one `box-shadow`
+    (preflight's `none`) and 0 gradients. `restyle_test.exs` pins the include list; `token_contract_test.exs`
+    reads only the theme block and needed no change. Story 8.4 still owns F-7's scope for the other Satellites
+    (H-19).
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-1-cs-tracker-visual-restyle.md`
   id: DW-344
   summary: >-

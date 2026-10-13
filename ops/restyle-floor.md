@@ -146,8 +146,8 @@ frontmatter counts 26 High; the file lists **32**, H-1 to H-32, and all 32 are t
 
 ## `cs-tracker`, Story 8.1's restyle
 
-The PR is on `cs-tracker` branch `restyle/8-1-visual-restyle`, commit `a0bfbb5`, from `origin/dev`
-`0e5d0c4`, for a PR to `dev` (row R3). Evidence, kept out of every repository:
+The PR is on `cs-tracker` branch `restyle/8-1-visual-restyle`, commits `a0bfbb5` and the fix round's
+`32c0d73`, from `origin/dev` `0e5d0c4`, for a PR to `dev` (row R3). Evidence, kept out of every repository:
 `C:\CuatroEcosystem\epic-8-evidence\8-1-cs-tracker-visual-restyle\` (`before/` and `after/`: each
 route at 360 and 1280 wide, the greyscale renders and each transcript; `method/`: the measurement and
 count scripts, the seed and the cookie minter; `count-before.txt`, `count-after.txt`).
@@ -208,7 +208,7 @@ its own control before reading.
 | `transition-property` naming `all`, `outline` or `outline-color` over a duration above 0 (S-2) | 45 | **0** |
 | A ground on a control at rest or on hover, fields excluded (F-4) | 85 (26 rest, 59 hover) | **0** |
 | A control with a radius above 0 (F-5) | 3 | **0** |
-| Keyboard stops without a 2px `:focus-visible` ring (F-6) | 0 | **0** |
+| Keyboard stops without a 2px `:focus-visible` ring (F-6) | 0 | **0**, corrected below the checks |
 | Horizontal scroll at 359, 390, 759, 761 on any of the seven (F-12) | 0 | **0** |
 
 | Check | After | How |
@@ -217,17 +217,30 @@ its own control before reading.
 | F-2 | **Pass**: Bricolage Grotesque, Geist and Geist Mono all `loaded` in `document.fonts` (before: Bricolage never loaded, no display face was used) | `document.fonts` status |
 | F-3 | **Pass**: every rule is `1px` `--token-border`, or `--token-border-interactive` on a control or field | the stylesheet's rules |
 | F-4, F-5, F-6, F-10 | **Pass**, the table above | browser readings |
-| F-7 | **Fail as written, pass on what a surface uses** (H-19): the production image's `app.css` carries 28 `box-shadow` and 6 gradient rules, 27 and 6 inside daisyUI component selectors no template uses (daisyUI 5 emits every component), and one, `.shadow`, a utility Tailwind mints from the word in a pre-existing `app.css` comment and no element carries | grep of the image's built CSS |
+| F-7 | **Pass from `32c0d73`**: the production image's `app.css` carries one `box-shadow`, preflight's `box-shadow:none`, and 0 gradients. At `a0bfbb5` it failed as written: 28 `box-shadow` and 6 gradient rules, 27 and 6 inside daisyUI component selectors no template uses (daisyUI 5 emits every component unless told otherwise), and `.shadow`, minted from a word in a comment. The fix: `include: rootcolor, scrollbar;` on the daisyUI `@plugin` block (the plugin stays installed, its theme block untouched) and `@source not inline("shadow transition");` | grep of the image's built CSS |
 | F-8 | **Pass**: zero `background`, `background-color` or `fill` declarations reading an accent role outside `::selection` | grep of the image's built CSS |
 | F-9 | **Pass**: `after/greyscale-masked-browse.png`, `-inventory.png`, `-item-owned.png`, words made transparent, the three marks still tell apart | greyscale render, words masked |
 | F-11 | **Pass**: `color-scheme: dark`; `::selection` accent on `--token-bg` | computed style |
 | F-12 | **Pass with a stated reading**: no list in cs-tracker is a § 2 row; its lists are § 10 Media grids (`repeat(auto-fill, minmax(9rem, 1fr))`, `gap: var(--s-md)`), and the key-value list and status line are hairline rows; controls and links meet § 1 and § 1b geometry at every width | the four widths, above |
 
+**Correction, F-6, observed 2026-10-13 by the independent verifier.** The first traversal skipped a Tab
+press that stayed on the same element, so it never read the `Released after` date field's calendar button,
+its fourth internal stop: there the input matches `:focus-within` but not `:focus-visible`, and it painted no
+ring. From `32c0d73`, `.ct-field[type="date"]:focus-within` carries the same ring. Re-measured with
+`method-round-2/measure.mjs`, which reads every press and passes a stop on the ring it paints: **0 ringless
+over 72 presses** at 360, and `method-round-2/tabs-browse.mjs` at 1280 reads press 13 (the calendar stop)
+`fv=false fw=true`, `solid 2px oklch(0.84 0.13 288)` (`after-round-2/browse-1280-tab13.png`). The rest of
+that run held: 95 visible interactive elements (the dashboard's recently viewed list was empty in the fresh
+database, so one Control stood where two tiles had), 0 under `--tap`, 0 transitioned, 0 grounds, 0 radii,
+0 horizontal scroll; F-1, F-2 and F-11 as above.
+
 **The image boot** (cs-tracker has no CI): `docker build` of `a0bfbb5` as
 `epic-scratch-8-1-cs-tracker:restyle`, `bin/migrate` then the release against a scratch Postgres 16 at
 2026-10-13T15:59:59Z: `GET /` 302, `app.css` and the three woff2 faces 200, the container up; removed
 afterwards with its network and database container. `mix precommit` on `a0bfbb5`: **714 tests,
-0 failures (4 excluded)**.
+0 failures (4 excluded)**. Again for the fix round, `32c0d73`, at 2026-10-13T16:36:33Z: `bin/migrate`, the
+release up, `GET /` 302, `app.css` and the three woff2 faces 200, every scratch object removed;
+`mix precommit`: **715 tests, 0 failures (4 excluded)**.
 
 ### Findings, recorded rather than corrected (AD-19)
 
@@ -237,7 +250,7 @@ afterwards with its network and database container. `mix precommit` on `a0bfbb5`
    changing levels is a semantic change left to a later story. DW-344.
 3. **The spec has no glyph for an icon-only control** (the menu toggle, the flash and wishlist dismiss
    keep their heroicon inside a Control): a defect for Story 8.3's list, H-30.
-4. **F-7's scope** (H-19): the bundle carries the unused daisyUI components. DW-343.
+4. **F-7's scope** (H-19): the bundle carried the unused daisyUI components. DW-343, closed by `32c0d73`.
 5. **The AD-19 probe cannot run any more**: `ops/cs-tracker-accessibility-probe.mjs` mints a Steam
    session and measures `/auth/steam/callback`, both deleted by Story 5.7, so this pass used its own
    script. DW-342.
@@ -250,7 +263,7 @@ afterwards with its network and database container. `mix precommit` on `a0bfbb5`
 |---|---|---|---|---|
 | R1 | **Sign off the `cs-tracker` restyle visually** (a ruling) | Operator | Added 2026-10-13. Look at `/`, `/browse` (and filtered to nothing), `/inventory`, `/wishlist`, `/items/:id` unowned and owned, at 360 and 1280, plus the open mobile menu and the offline banner. Before and after are `C:\CuatroEcosystem\epic-8-evidence\8-1-cs-tracker-visual-restyle\before\` and `after\` (`<route>-360.png`, `<route>-1280.png`), greyscale renders in `after\greyscale-masked-*.png`. The seed's data-URI images render as their alt text in both sets, so judge the tiles' geometry, not their pictures | _not done_ |
 | R2 | **Rule on the floor's denominator for an application whose anonymous surfaces are a redirect, plain text and the issuer's page** | Operator | Added 2026-10-13. § O-14: cs-tracker's strict floor is empty, digital-library's is `/login` and its error page. Options: (a) the demo-reachable interior counts as the floor, which Story 8.1 assumed and built; (b) the strict floor stands, Story 8.1's restyle is beyond it, and 8.2 restyles two surfaces | _not done_ |
-| R3 | **Merge the `cs-tracker` PR (`restyle/8-1-visual-restyle`, `a0bfbb5`) into `dev`, then `dev` into `main`, then roll `cs-tracker`** by the standing redeploy (`ops/cs-tracker-cutover.md` § Later rollouts), no step of its own | Operator | Added 2026-10-13. The independent verifier pushes the branch and opens the PR to `dev`. cs-tracker has no CI and no `.github/`, so no workflow runs on it; the gate is `mix precommit` (714 tests, 0 failures, 4 excluded) and the production image's boot, both above. Nothing changes how it starts; the assets change, which is why the image was booted | _not done_ |
+| R3 | **Merge the `cs-tracker` PR (`restyle/8-1-visual-restyle`, `32c0d73`) into `dev`, then `dev` into `main`, then roll `cs-tracker`** by the standing redeploy (`ops/cs-tracker-cutover.md` § Later rollouts), no step of its own | Operator | Added 2026-10-13. The independent verifier pushes the branch and opens the PR to `dev`. cs-tracker has no CI and no `.github/`, so no workflow runs on it; the gate is `mix precommit` (715 tests, 0 failures, 4 excluded, on `32c0d73`) and the production image's boot, both above. Nothing changes how it starts; the assets change, which is why the image was booted | _not done_ |
 | R4 | **Note that Stories 8.2 and 8.3 open on a changed strategy** | Operator | Added 2026-10-13. § O-15: `digital-library` is family A in its source-owned form, not C; `list-wheel` is C, not B. `epics.md` says the strategy changes before each opens; both were dispatched in parallel with this story | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
