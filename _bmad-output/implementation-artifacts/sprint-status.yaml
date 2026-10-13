@@ -1638,7 +1638,11 @@ action_items:
     # fix/demo-principal-one-way (1b14ff6): one normalised lookup, an admin demo account refused at sign-in,
     # every authenticated route, the ACL and the reset. Then ops/demo-principal.md DP10 and DP11;
     # spec-epic-5-retro-item-49-demo-sign-out-and-admin-refusal.md.
-    status: in-progress
+    # 2026-10-13: independent verifier passed it with minor findings (mix precommit 717/0; digital-library
+    # suite and typecheck clean, CI push run 38399200780 and pull_request run 38399244504 success).
+    # Awaiting the Operator: ops/demo-principal.md DP10 (merge cs-tracker PR 9 into dev, then dev into main,
+    # then roll) and DP11 (merge digital-library PR #64 into dev, then dev into main, then redeploy after DL1).
+    status: awaiting-operator
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-50-spec-reconciliation-amend-epics-md-epic"
     epic: 5

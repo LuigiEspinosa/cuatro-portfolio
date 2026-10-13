@@ -2,7 +2,7 @@
 title: 'Epic 5 retro action 5 (M4, m13): demo sign-out scope and administrator refusal'
 type: 'bugfix'
 created: '2026-10-13'
-status: 'in-progress'
+status: 'awaiting-operator'
 route: 'oneshot'
 review_loop_iteration: 0
 baseline_commit: 'efb0b7d'
@@ -79,4 +79,17 @@ context: []
 
 ## Verification
 
-_Filled by the independent verifier._
+Independent verifier, round 1, 2026-10-13: **pass with minor findings.**
+
+- Read every diff against `origin/dev`: Anchor `efb0b7d` and `0cdea64`, `cs-tracker` `e392689`, `digital-library` `1b14ff6`. Each acceptance criterion is met in code and held by a case. Commit subjects are Conventional, with no body or trailer; added lines carry no em-dash, en-dash, dash-standing double-dash or emoji; no `.env` file is touched; no box step is added.
+- `cs-tracker`: `mix precommit` on `e392689` against a scratch `postgres:18.6` (`epic-scratch-pg-verify-49`, removed): `717 tests, 0 failures (4 excluded)`, exit 0, and `format` left the tree clean. Start-up and migrations are unchanged, so no image boot. **Open PR: `cs-tracker` PR 9** (https://github.com/LuigiEspinosa/cs-tracker/pull/9), base `dev`, head `e392689`. No check runs on it: `cs-tracker` has no `.github/`.
+- `digital-library`: in `node:22-bookworm` (`epic-scratch-dl-verify-49`, removed), from a `git archive` of `1b14ff6`: `pnpm test -- --pool=forks` gave `Test Files 32 passed (32)`, `Tests 544 passed (544)` (the root config runs both workspaces); `demo-principal` and `demo-reset` alone gave 35 of 35; `pnpm typecheck` gave api done and web `svelte-check found 0 errors and 0 warnings`. **Open PR: `digital-library` PR #64** (https://github.com/LuigiEspinosa/digital-library/pull/64), base `dev`, head `1b14ff6`. Workflows read on that sha: `CI` (push, run 38399200780) success and `CI` (pull_request, run 38399244504) success; `Test & Deploy` runs only for `main`.
+- Anchor root suite `corepack pnpm test --run` with both commits in the tree: `Test Files 80 passed (80)`, `Tests 1979 passed | 1 skipped (1980)`, no WSL-bash failure this run.
+
+Minor findings, not blocking:
+
+1. `ops/demo-principal.md` had a blank line before DP10, which cut DP10 and DP11 out of the Pending table. Fixed by the verifier in the verification commit, which also names PR 9 and PR #64 in those rows.
+2. `digital-library` is not quite one way for whitespace other than spaces: JavaScript's `trim()` and `toLowerCase()` (`isDemoPrincipal`) also strip tabs and newlines and fold non-ASCII, while SQLite's `trim()` and `lower()` do not. A row written by hand as `demo@cuatro.dev` followed by a tab is the principal for `requireAuth` and `UserRepository` but not for the ACL or the reset. An admin such row is still refused by `requireAuth`, so no bypass follows; a non-admin one would be an ordinary user outside the scope. Trimming tabs and newlines in the SQL predicate, or refusing such rows at write, would close it.
+3. A demo session minted before this change carries no `oidc_ref`, so its sign-out revokes nothing beyond dropping its own cookie. Moot: every restart refuses older OIDC sessions, and the roll restarts the app.
+
+Board row set `awaiting-operator`: DP10 (merge PR 9, then `dev` into `main`, then roll) and DP11 (merge PR #64, then `dev` into `main`, then redeploy after DL1) remain.
