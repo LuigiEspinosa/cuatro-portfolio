@@ -389,6 +389,10 @@ ops/deploy-remote.test.mjs` **27 pass, 0 fail**; `npm run build` with no budget 
 2. **Spin ignores `prefers-reduced-motion`**: the turn is a `requestAnimationFrame` loop that never reads
    the setting. Instant results is the reader's own way out; honouring the setting is a behaviour change.
    DW-345.
+3. **The `Copied!` toast never renders**, before or after: copying removes the winner, and the toast sits
+   inside `@if (winner)`. It is behaviour on `main` before this story, so the `.buttons-row .toast` style
+   never shows and the `copied` screenshots carry no toast. Recorded by the independent verifier,
+   2026-10-13. DW-353.
 
 ### Where the implementer had to infer (the independent-implementation test)
 
@@ -402,15 +406,16 @@ solved locally (DW-346, row R7). What this story chose is stated so the next fra
 | I-3 | **§ 1's sibling gap on the wrap axis.** "`--s-lg` minimum" does not say whether wrapped rows of controls count as siblings | `--s-lg` on both axes |
 | I-4 | **§ 1 Disabled names `aria-disabled`.** A native `disabled` already exposes the state, and adding the attribute is a markup change | Not added |
 | I-5 | **§ 6's `wdth 85` and `wdth 100`** name a variation axis, not a property, so `font-stretch` or `font-variation-settings` is left to infer | `font-stretch`, which the contract's `@font-face` range (`75% 100%`) serves |
-| I-6 | **A scaled SVG graphic.** Nothing says whether a graphic's strokes are dividers under F-3, or what 1px means inside a `viewBox` that scales | Roles for every colour; spokes and rim 1px by `vector-effect: non-scaling-stroke`; the badge's border scales with the wheel |
+| I-6 | **A scaled SVG graphic.** Nothing says whether a graphic's strokes are dividers under F-3, or what 1px means inside a `viewBox` that scales | Roles for every colour; spokes and rim 1px by `vector-effect: non-scaling-stroke`; the badge's border scales with the wheel: it is 0.4 in the wheel's own SVG units, about 3px at 1280, a fourth stroke width beside § 3's three (R5) |
 | I-7 | **The external-navigation mark.** It is one of the system's three glyphs, but no entry says when a `target="_blank"` control must carry it, and adding it is new content | Not added |
 | I-8 | **The page-level breakpoint.** § 2 makes `760px` the row's one breakpoint; whether a page layout may keep others is unsaid | `760px` only |
 | I-9 | **The page's maximum width.** No token or entry gives one | The application's own `72rem` kept |
 | I-10 | **Carried from Story 8.1**: § 5's table gives the dot `--r-pill` where `DESIGN.md` gives `--r-none` (H-11), and there is no glyph for an icon-only control (H-30) | Not reached: `list-wheel` has neither |
+| I-11 | **§ 4's ring radius against F-5.** § 4 gives the focused element `--r-hair`; F-5 wants every field square, and H-8 reads F-5 at rest only. Added 2026-10-13 from the independent verifier's round 1 | Neither, by accident: the editor `textarea` rounds to `--r-hair` while focused, because the `:focus-visible` rule outranks the bare `textarea` selector, while the find inputs (`input[type='text']`, more specific) stay square. `cs-tracker`'s hand-fix 3 omits the radius altogether (§ cs-tracker, round 2) |
 
 The workspace's own `DESIGN.md` (`C:\CuatroEcosystem\list-wheel-workspace\DESIGN.md`, the Sentry-inspired
 system the 2026-04 theme followed) is outside the repository. It now describes a design `list-wheel` no
-longer renders; it was read and not touched.
+longer renders; it was read and not touched (row R12).
 
 ## `digital-library`, Story 8.2's adoption and restyle
 
@@ -448,7 +453,8 @@ own theme setting (light, sepia or dark). Both still work on the dark ground (`a
   unlayered in the seams inventory's order. Its theme keys read the roles: `--font-display:
   var(--font-display)` had resolved only because an unlayered `:root` rule won (AD-14's case). Tailwind's
   stone palette, which the book page wrote, reads roles too for that one step (S-7: no surface stays
-  light). The four `@fontsource` packages are gone; Vite rebases `fonts.css`'s `url()`s, so the three
+  light). Only stone and white were remapped, so on the adopt step alone the book page's format chip
+  keeps Tailwind's light `emerald-100` ground; the restyle removes it (independent verifier, 2026-10-13). The four `@fontsource` packages are gone; Vite rebases `fonts.css`'s `url()`s, so the three
   woff2 ship hashed under `_app/immutable/assets/`. **The reset (Tailwind's preflight) clears no
   outline.** The only rules that do are utilities (`.outline-none`, `focus:outline-none`), which the
   unlayered `:focus-visible` beats, and `Input`'s own read-only rule, removed in the restyle.
@@ -462,19 +468,23 @@ own theme setting (light, sepia or dark). Both still work on the dark ground (`a
   § 10 Media: `repeat(auto-fill, minmax(10rem, 1fr))` at `--s-md`, the border on the image box,
   `width="200" height="300"` on the image, the tile no card and no rule, and a missing cover the empty
   bordered box (its old in-box text sat inside an `aria-hidden` link; format, title and author still render
-  beneath). The reading state is a § 5 mark: Unread dashed, Reading solid, Finished solid with the 4px
+  beneath, but the catalogue number, `N° NN`, rendered nowhere else and is gone with the box: § 10 requires
+  the box empty, so it stands, as the independent verifier ruled). The § 10 border sits on the `.cover`
+  wrapper, which reserves the 2:3 space, not on the `img` itself; it renders the same, and an `img` that
+  has not arrived could not hold the border open. The reading state is a § 5 mark: Unread dashed, Reading solid, Finished solid with the 4px
   square. The book page's Tailwind stone classes became classes reading the roles, `Read` a Control and the
   tags § 1b Links. A new `+error.svelte` renders SvelteKit's default error markup (`<h1>` status, `<p>`
   message) with § 8's type. `src/lib/tokens.css` (the alias layer) is deleted, and `@source not
   inline("shadow ring")` stops Tailwind minting `.shadow` and `.ring` from prose. **DOM order, routes,
-  data and every string are unchanged**; the two in-box labels of a coverless tile are the only markup
-  removed.
+  data and every string are unchanged**; a coverless tile's in-box text (format and catalogue number,
+  title, author) is the only markup removed.
 - **The check left behind**: `apps/web/src/lib/__tests__/restyle-floor.test.ts`, 18 cases: the vendored
   folder is the nine files with `Contract v2.0.0`; `layout.css` imports the pair and applies the hand-fixes
   in order, unlayered; on every floor source no ground other than the page's (and § 5's dot), no shadow,
   no gradient, no radius, no removed outline, no transitioned ring, no literal colour, no Tailwind palette
   utility. A planted `background: var(--token-accent)` on `Button` failed it (`1 failed | 17 passed`),
-  then was reverted.
+  then was reverted. Its hand-fix order case fails on a checkout with `core.autocrlf=true`, because its
+  regex does not allow a carriage return before each line end (independent verifier, 2026-10-13). DW-352.
 
 ### The component layer's count (for Story 8.4)
 
@@ -557,11 +567,12 @@ images built from `apps/web/Dockerfile` with `--frozen-lockfile`.
 | R4 | **Note that Stories 8.2 and 8.3 open on a changed strategy** | Operator | Added 2026-10-13. § O-15: `digital-library` is family A in its source-owned form, not C; `list-wheel` is C, not B. `epics.md` says the strategy changes before each opens; both were dispatched in parallel with this story | _not done_ |
 | R5 | **Sign off the `list-wheel` restyle visually** (a ruling) | Operator | Added 2026-10-13. The one surface, `/`, in the nine states its controls reach: `empty`, `empty-fallback` (the file input a browser without File System Access gets), `loaded`, `banner`, `winner`, `winner-url`, `copied`, `history`, `editor`, at 360 and 1280. Before and after are `C:\CuatroEcosystem\epic-8-evidence\8-3-list-wheel-visual-restyle\before\` and `after\` (`<state>-360.png`, `<state>-1280.png`; `empty` and `winner` also at 359, 390, 759 and 761), greyscale renders in `after\greyscale-masked-*.png`. A hovered control in a 1280 shot shows its hover border, the one thing hover changes. The independent verifier's own renders of the same states are in `verifier\` beside them, with the measurement's `report.json`; look at the winner badge's border, which scales with the wheel to about 3px at 1280 (I-6) | _not done_ |
 | R6 | **Merge the `list-wheel` PR from `restyle/8-3-visual-restyle` (PR [#4](https://github.com/LuigiEspinosa/list-wheel/pull/4), head `c665ee9`, two commits, opened to `main` by the independent verifier on 2026-10-13) into `main`**, which is the deploy: `.github/workflows/deploy.yml` runs its `test` job, then its `deploy` job (the Capacity Gate, then `ops/deploy-remote.sh` on the box, which builds there, KV-1). No step by hand on the box | Operator | Added 2026-10-13. PR #4 reports no checks (`deploy.yml` runs on a push to `main` only; check-runs and statuses on `c665ee9` count 0). A dated completion names the Deploy run on the merge sha and both its jobs, never "CI green" (Epic 5 retro action 8); `main` is unprotected and no check is required, so read the run. Then `https://wheel.cuatro.dev/` answers 200 with a `styles-*.css` and three `media/*.woff2` at 200, and no `googleapis`. DW-347 follows: the adoption observation, then the Registry `token_contract` | _not done_ |
-| R7 | **Rule on Story 8.3's specification defects, I-1 to I-10** (`list-wheel` § Where the implementer had to infer): amend `RESTYLE-SPEC.md` per point, or accept what 8.3 chose as the reading | Operator | Added 2026-10-13. `epics.md` Story 8.3 sends these back to the specification rather than solving them locally; wave 2 (8.5, 8.6) meets the same points in two more frameworks. DW-346 | _not done_ |
+| R7 | **Rule on Story 8.3's specification defects, I-1 to I-11** (`list-wheel` § Where the implementer had to infer): amend `RESTYLE-SPEC.md` per point, or accept what 8.3 chose as the reading | Operator | Added 2026-10-13. `epics.md` Story 8.3 sends these back to the specification rather than solving them locally; wave 2 (8.5, 8.6) meets the same points in two more frameworks. DW-346 | _not done_ |
 | R8 | **Sign off the `digital-library` restyle visually** (a ruling) | Operator | Added 2026-10-13. Look at `/login` and the error page (`/no-such-path`) signed out, then signed in: `/`, the grid (and filtered to nothing, and the empty library), a book with a cover and one without, and `/logout`, at 360 and 1280. Before, adopt and after are `C:\CuatroEcosystem\epic-8-evidence\8-2-digital-library-adopts-the-contract-and-is-restyled\before\`, `adopt\` and `after\` (`<page>-360.png`, `<page>-1280.png`; `w359-`, `w390-`, `w759-`, `w761-` for `/login`, `/`, the grid and a book), the greyscale render `after\greyscale-masked-grid.png`, and `/admin` and the reader below the floor in `after\below-floor\`. The seed's covers are flat colour blocks; judge the geometry, not the pictures | _not done_ |
 | R9 | **Merge the adopt branch, `digital-library` `restyle/8-2-adopt-contract` (head `960050b`, one commit), (PR [#66](https://github.com/LuigiEspinosa/digital-library/pull/66), opened to `dev` by the independent verifier on 2026-10-13) into `dev`, then `dev` into `main`, then redeploy** by `digital-library`'s standing redeploy, its README § Deploying (the box's `~/library-redeploy.sh`, `ops/demo-principal.md` DL3); nothing in this change adds a step by hand on the box | Operator | Added 2026-10-13. Story 8.2 makes adopt and restyle two merges, the first verified in production before the second opens. A dated completion names the runs read on each merge sha, `ci.yml` (`CI`) and `test.yml` (`Test`, on `main`), never "CI green" (Epic 5 retro action 8). The production check: `https://library.cuatro.dev/login` 200 on the dark ground, the three woff2 under `/_app/immutable/assets/` 200, `document.fonts` loading Bricolage Grotesque, Geist and Geist Mono. Then DW-351: the dated adoption observation, then the Registry `token_contract` | _not done_ |
 | R10 | **After R9's production check, merge the restyle branch, `restyle/8-2-visual-restyle` (head `c25f830`, four commits on `960050b`), once its PR to `dev` is opened (the branch is pushed, 2026-10-13, with no PR; opening it after R9 is an agent step), then `dev` into `main`, then redeploy** the same way | Operator | Added 2026-10-13. The PR is not opened before R9 is done (`epics.md` Story 8.2: "the first is verified in production before the second opens"); after the adopt merge the branch carries only its four commits over `dev`. Name the runs read on each merge sha, as R9. The production check is R8's surfaces on `https://library.cuatro.dev` | _not done_ |
 | R11 | **Rule on the workspace's `DESIGN.md` (WIRED editorial)**, which `digital-library-workspace/AGENTS.md` calls "the law" and which the restyle supersedes for every surface it touched | Operator | Added 2026-10-13. Both files are the Operator's, at the workspace root outside any repository, and Story 8.2 did not touch them. Options: retire it, or amend it to name the Cuatro contract and `RESTYLE-SPEC.md` as the source for the floor's surfaces. Until then, an agent reading the workspace first is told to keep the light WIRED system | _not done_ |
+| R12 | **Rule on `list-wheel`'s workspace `DESIGN.md`** (`C:\CuatroEcosystem\list-wheel-workspace\DESIGN.md`, the Sentry-inspired system the 2026-04 theme followed), which no longer describes what `list-wheel` renders once PR #4 merges | Operator | Added 2026-10-13 from Story 8.3's independent verifier, as R11 is for `digital-library`. The file is the Operator's, outside any repository, and no story touched it. Options: retire it, or amend it to name the Cuatro contract and `RESTYLE-SPEC.md` | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC date and leave the row in place.

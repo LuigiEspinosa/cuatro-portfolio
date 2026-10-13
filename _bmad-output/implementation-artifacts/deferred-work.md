@@ -10463,3 +10463,28 @@ status: done
     `apps/web/src/lib/cuatro-contracts/tokens.css`) and commit that dated observation; then a Registry release
     giving the `digital-library` entry `token_contract: "2.0.0"`, whose push runs `registry-verification.yml`.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
+  id: DW-352
+  summary: >-
+    `digital-library`'s `apps/web/src/lib/__tests__/restyle-floor.test.ts` hand-fix order case fails on a checkout
+    with `core.autocrlf=true`, because its regex does not allow a carriage return before each line end.
+  evidence: |-
+    Found 2026-10-13 by Story 8.2's independent verifier, handed to Story 8.4 as a minor finding and recorded in
+    `ops/restyle-floor.md` § `digital-library`, The check left behind. CI checks out with LF, so the suite is green
+    there; a Windows contributor sees a false failure. The fix is the regex taking `\r?\n`.
+
+    **Owner: the `digital-library` restyle branch.** **Trigger: before R10's PR opens** (`restyle/8-2-visual-restyle`,
+    head `c25f830`), as one more commit on it, or the next story that touches the test after it merges.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
+  id: DW-353
+  summary: >-
+    `list-wheel`'s `Copied!` toast never renders: copying removes the winner, and the toast sits inside
+    `@if (winner)`.
+  evidence: |-
+    Found 2026-10-13 by Story 8.3's independent verifier and recorded in `ops/restyle-floor.md` § `list-wheel`,
+    finding 3. It is behaviour on `main` before Epic 8, so a restyle may not fix it; the restyled
+    `.buttons-row .toast` style never shows and the `copied` screenshots carry no toast.
+
+    **Owner: a `list-wheel` story outside Epic 8.** **Trigger: the next story that touches the copy action.**
+  status: open
