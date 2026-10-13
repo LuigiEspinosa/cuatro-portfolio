@@ -2,7 +2,7 @@
 title: 'Epic 5 retro action 3 (M3): a failed or hollow reset run is visible'
 type: 'bugfix'
 created: '2026-10-13'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: 'd29e7e91ac2e42c7ce33117cbfa6984793897e31'
@@ -87,4 +87,15 @@ Oversize check: the spec is above 1600 tokens only by the matrix row added for t
 
 ## Verification
 
-_Filled by the independent verifier._
+**Independent verifier (2026-10-13, round 1): pass with minor findings.** A separate session with no builder context read `d29e7e9` and `ebc6030` against `origin/dev`, checked each participant's reset line on `cs-tracker` and `digital-library` `origin/dev` by read-only `git grep` (`reset rows=`, `skipped: demo access is off`, `skipped: the demo principal is absent`), and re-ran every stage on this host:
+- `corepack pnpm vitest run ops/__tests__/demo-reset.test.ts`: `Tests 30 passed (30)`.
+- `corepack pnpm typecheck`: clean.
+- Root suite `corepack pnpm test --run`: `Test Files 7 failed | 73 passed (80)`, `Tests 19 failed | 1960 passed | 1 skipped (1980)`, every failure in the seven WSL-bash suites (DW-135). Each re-run alone passed: demo-reset 30, deploy-remote 28, library-backup 59, postgres-backup 20 (1 skipped), postgres-init 17, tournament-backup 15, tracker-backup 11.
+- Every acceptance criterion holds: each matrix row has a case; the POST body is parsed as JSON and carries the summary line, and the header value appears in no output; DS4 and DS5 are § By hand steps 17 and 18 and undated Pending rows; the committed schedule runs the two trackers and prints `digital-library`'s `off` line with exit 0. No dash or emoji in the added prose, subjects only, no `.env` touched.
+
+Minor findings, not blocking:
+1. DS5 expects `issue=opened`; if a real failure after DS4 already opened an issue, the marker reads `open` and DS5's first run prints `issue=open`. Close that issue and rerun once a pass has emptied the marker.
+2. A participant's stdout is now captured and printed after it ends, so its `demo:reset` line follows its stderr lines (compose's `Creating`, the scheduler's `failed:`) in the log rather than interleaving as before. Cosmetic.
+3. `lock=held` also opens an issue, which is right (a run outlived 15 minutes) but is not named in § The scheduler item 11.
+
+**Operator steps:** DS4, then the Epic 5 retrospective merge to `main` and its Deploy, then DS5 (`ops/demo-principal.md`).
