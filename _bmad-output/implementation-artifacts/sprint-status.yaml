@@ -22,6 +22,9 @@
 # Action Item Status:
 #   - open: Committed during a retrospective, not yet addressed
 #   - in-progress: Actively being worked on
+#   - awaiting-operator: Agent work is committed and verified, but what remains is an
+#       Operator step outside the repo (a merge to main, a roll on the box); the row's
+#       comment names it
 #   - done: Completed
 
 # WORKFLOW NOTES:
