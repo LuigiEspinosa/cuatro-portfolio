@@ -22,6 +22,9 @@
 # Action Item Status:
 #   - open: Committed during a retrospective, not yet addressed
 #   - in-progress: Actively being worked on
+#   - awaiting-operator: Agent work is committed and verified, but what remains is an
+#       Operator step outside the repo (a merge to main, a roll on the box); the row's
+#       comment names it
 #   - done: Completed
 
 # WORKFLOW NOTES:
@@ -39,7 +42,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-03-2026 17:10
+last_updated: 10-13-2026 09:05
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1130,10 +1133,16 @@ development_status:
   # 5-11 done 2026-10-06: the extended job 73 of 73 on a runner (runs 8 and 9); the demo release deferred with
   # every sign-in page to the Operator's rework (DW-335), DW-336 ruled (a) now, (b) at that release.
   5-11-demo-and-identity-declarations-verified-against-reality: done
-  epic-5-retrospective: optional
+  epic-5-retrospective: done
 
+  # 6-1 review 2026-10-13: the trigger has not fired. ops/contract-adoption.md § The count taken by Story 6.1:
+  # count 1 of 3, the one event Contract 1.0.0 to 2.0.0 re-vendored into cs-tracker (991d0f6, 2026-09-24).
+  # Epic 6 does not open, the correct outcome by the story; epic-6 stays backlog (not opened) and 6-2 to 6-4
+  # stay backlog. Spec spec-6-1-confirm-the-trigger-has-fired.md; the verifier sets done.
+  # 6-1 done 2026-10-13: independent verifier round 1, pass with minor findings, the count of 1 re-read from the
+  # Anchor's contracts/ history, cs-tracker's remote branches and a gh api tree sweep. No Operator step.
   epic-6: backlog
-  6-1-confirm-the-trigger-has-fired: backlog
+  6-1-confirm-the-trigger-has-fired: done
   6-2-publish-the-token-contract-as-an-npm-package: backlog
   6-3-a-renovate-shareable-preset: backlog
   6-4-publish-the-reusable-ci-workflows-to-contracts-workflows: backlog
@@ -1569,3 +1578,104 @@ action_items:
     owner: "Cuatro"
     status: done
     ref: "_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md"
+  - id: "epic-5-retro-item-45-cs-tracker-serve-the-demo-principal-from"
+    epic: 5
+    action: "cs-tracker: serve the demo principal from schema demo alone (Oban addressed
+      as public explicitly), and run migrate_demo in rel/overlays/bin/migrate and
+      the deployment.md redeploy order, with a case that an unmigrated demo table
+      is refused (M1)"
+    owner: "Cuatro"
+    # Built 2026-10-12; independent verifier passed it with minor findings the same day
+    # and merged cs-tracker's fix/demo-schema-alone PR to dev. Awaiting the Operator:
+    # bring cs-tracker dev into main, then roll it on the box and date DP9
+    # (ops/demo-principal.md By hand step 16); spec-epic-5-retro-item-45-cs-tracker-demo-schema-alone.md.
+    # 2026-10-13: done. cs-tracker main at e44bb69, DP9 rolled at 05:48Z ([["demo"]]), the 06:00Z
+    # reset rows=12, and the Operator saw the demo inventory's two marks. DP9 dated.
+    status: done
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
+  - id: "epic-5-retro-item-46-the-tracker-migrate-schema-demo-in-every"
+    epic: 5
+    action: "The tracker: migrate schema demo in every rollout (tracker-migrate a
+      second time with the demo URL, in ops/tracker-cutover.md), and build DP6's demo
+      URL in a query-string-safe form (M2)"
+    owner: "Cuatro"
+    # Built 2026-10-12 (tracker-migrate-demo in docker-compose.yml, run by ops/tracker-cutover.md's
+    # standing rollout); independent verifier passed it with minor findings the same day. Awaiting the
+    # Operator: merge cs-tracker PR 7 (migrate.bat) to dev, bring this change to main, then
+    # ops/tracker-cutover.md Pending action 9; spec-epic-5-retro-item-46-tracker-migrate-schema-demo.md.
+    status: awaiting-operator
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
+  - id: "epic-5-retro-item-47-the-reset-scheduler-make-a-failed-or-hol"
+    epic: 5
+    action: "The reset scheduler: make a failed or hollow run visible (a heartbeat
+      monitoring reads, or exit=1 reaching an issue), and report absent as a failure
+      for a participant whose switch is on (M3)"
+    owner: "Cuatro"
+    # 2026-10-13: built on dev (ebc6030): ops/demo-reset.sh fails a hollow run and opens one GitHub issue
+    # per failing streak; digital-library off in the schedule until DW-337. Independent verifier passed it
+    # with minor findings the same day. Awaiting the Operator: ops/demo-principal.md DS4 (token header on
+    # the box), the Epic 5 retrospective merge to main and its Deploy, then DS5;
+    # spec-epic-5-retro-item-47-reset-failure-visible.md.
+    status: awaiting-operator
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
+  - id: "epic-5-retro-item-48-digital-library-repair-or-remove-test-de"
+    epic: 5
+    action: "digital-library: repair or remove Test & Deploy's deploy job, red since
+      2026-05-29, and correct DP7's line in ops/demo-principal.md to name it and the
+      by-hand redeploy (M5)"
+    owner: "Cuatro"
+    # RULING by the Operator, 2026-10-12: REMOVE the deploy job, do not repair it. Built 2026-10-13:
+    # digital-library chore/remove-deploy-job (c05434f) drops the deploy job, renames the workflow Test and
+    # writes the by-hand redeploy into its README; DP7 corrected in ops/demo-principal.md, DL1 to DL3 pending.
+    # 2026-10-13: independent verifier passed it with minor findings and opened digital-library PR #63
+    # (head c05434f, CI green on push and pull_request). Awaiting the Operator: ops/demo-principal.md DL1
+    # (merge PR #63 into dev, then dev into main), DL2 (delete the four Actions secrets) and DL3 (compare the
+    # box's ~/library-redeploy.sh with the README); spec-epic-5-retro-item-48-digital-library-remove-deploy-job.md.
+    status: awaiting-operator
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
+  - id: "epic-5-retro-item-49-before-any-visitor-gets-the-demo-sign-in"
+    epic: 5
+    action: "Before any Visitor gets the demo sign-in (DW-335): cs-tracker's demo
+      sign-out ends only its own session; digital-library recognises the principal
+      one way and refuses an administrator demo account at use (M4, m13)"
+    owner: "Cuatro"
+    # 2026-10-13: built, awaiting the independent verifier. cs-tracker fix/demo-sign-out-own-session (e392689):
+    # a demo session's sign-out and a demo logout token end that session alone. digital-library
+    # fix/demo-principal-one-way (1b14ff6): one normalised lookup, an admin demo account refused at sign-in,
+    # every authenticated route, the ACL and the reset. Then ops/demo-principal.md DP10 and DP11;
+    # spec-epic-5-retro-item-49-demo-sign-out-and-admin-refusal.md.
+    # 2026-10-13: independent verifier passed it with minor findings (mix precommit 717/0; digital-library
+    # suite and typecheck clean, CI push run 38399200780 and pull_request run 38399244504 success).
+    # Awaiting the Operator: ops/demo-principal.md DP10 (merge cs-tracker PR 9 into dev, then dev into main,
+    # then roll) and DP11 (merge digital-library PR #64 into dev, then dev into main, then redeploy after DL1).
+    status: awaiting-operator
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
+  - id: "epic-5-retro-item-50-spec-reconciliation-amend-epics-md-epic"
+    epic: 5
+    action: "Spec reconciliation: amend epics.md Epic 5 intents 5.2, 5.3, 5.5 and
+      5.9 and AD-13's deletes-by-owner to the rulings, and correct ops/identity-issuer.md's
+      two stale Steam passages (m14)"
+    owner: "Cuatro"
+    # 2026-10-13: built on dev, awaiting the independent verifier. epics.md 5.2, 5.3, 5.5 and 5.9 amended
+    # in place, AD-13 (and AD-11 for the demo sign-out) amended, ops/identity-issuer.md's two Steam passages
+    # corrected to PS2's deletion. Documentation only, no Operator step;
+    # spec-epic-5-retro-item-50-spec-reconciliation.md.
+    # 2026-10-13: independent verifier passed it with minor findings (root suite clean, the seven WSL-bash
+    # suites re-run alone per DW-135). No Operator step: reaches main with the Epic 5 merge.
+    status: done
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
+  - id: "epic-5-retro-item-51-process-a-step-a-story-makes-by-hand-on"
+    epic: 5
+    action: "Process: a step a story makes by hand on the box is written into the
+      standing redeploy runbook in the same change, never only into the story's run
+      section"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
+  - id: "epic-5-retro-item-52-process-a-dated-row-relying-on-a-reposit"
+    epic: 5
+    action: "Process: a dated row relying on a repository's CI names every workflow
+      it read on that sha, not CI green"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"

@@ -807,6 +807,42 @@ commit and the Registry edit; raise the count by one and move the `0 today` pin 
 `ops/__tests__/contract-adoption.test.ts` in the same change; leave every earlier row in place. A
 row with no re-vendored Satellite is not an event and is not added.
 
+### The count taken by Story 6.1, 2026-10-13
+
+**The count is 1 of the 3 that open Epic 6, so Epic 6 does not open.** Two more events are needed.
+That is the outcome `epics.md` Story 6.1 names as correct: the machinery is earned by frequency, not
+by intent. **Decision**, by the story's own acceptance criteria; Stories 6.2 to 6.4 stay backlog.
+
+The one counted event is ledger row 1: **2026-09-24, Contract 1.0.0 to 2.0.0, `cs-tracker`
+re-vendored** (`991d0f6`). Every input below was **observed 2026-10-13**, the `gh api` sweep between 13:32:47Z and 13:33:24Z,
+read only, never by checking out or editing an adopter's tree.
+
+- **Releases published after `v1.0.0`: one.** `git log` over `contracts/` with the two Registry files
+  excluded, on `dev` and on `origin/main`, lists six commits: five from 2026-08-24 and 2026-08-25
+  (`95d8937`, `a485cb9`, `11a82bf`, `dd490c5`, `016613a`), each carrying the `Contract v1.0.0` header
+  and all before the first adopter vendored the folder on 2026-08-27 (`3f37cce`), so they are the
+  content of `v1.0.0` itself, and `40591cd` on 2026-09-24, the bump to `Contract v2.0.0`. The header
+  and `packages/tokens/package.json` read 2.0.0 today. The repository carries no git tag.
+- **Propagations of it: one, into `cs-tracker`.** `git log` on `cs-tracker`'s `origin/dev` and
+  `origin/main` over `assets/css/cuatro-contracts/` lists two commits: `3f37cce` (2026-08-27, the
+  adoption of 1.0.0 by Story 1-19, which is present at first publication and not a change) and
+  `991d0f6` (2026-09-24, the re-vendor of 2.0.0). Both branches' `tokens.css` header reads
+  `Contract v2.0.0`. Row 1's "Not pushed" describes 2026-09-24; Pending Operator action 8 dated the
+  push 2026-09-25, and `991d0f6` is on both remote branches today.
+- **No other Satellite vendors the folder.** The recursive tree of each estate repository's default
+  branch through `gh api` holds a `cuatro-contracts/` path only in `cs-tracker` (10 paths):
+  `digital-library`, `list-wheel`, `StreamVault`, `MaiCoin`, `poketracker-go`, `Mutuo`, `covidmap`
+  (`master`) and `future-vizion` hold none, and every remote branch of `digital-library` holds none.
+  The Anchor's `apps/` vendor nothing either: `git ls-files` names no `cuatro-contracts` path.
+- **Excluded, by name:** everything present at `v1.0.0`, `--token-scrim` included; Story 1-20's
+  unpublished `v1.0.1` rehearsal; every Registry release (1.1.0 to 1.10.0 today), because a Satellite fetches
+  the Registry over HTTPS and never vendors it (AD-4, AD-14); and every change to a document,
+  this subsection included.
+
+**The next event** is the next contract release re-vendored into a Satellite: it appends row 2 and
+raises the count, by the paragraph above, and the release after Epic 8's restyles reaches more
+Satellites by construction. The count is re-read here at each event, not when Epic 6 is considered.
+
 ## The AD-19 pass
 
 `cs-tracker` was measured on **2026-08-27** in Playwright's Chromium 151.0.7922.34 at a 360x800

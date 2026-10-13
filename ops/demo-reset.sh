@@ -13,13 +13,14 @@
 # nothing and prints its `skipped` line on the hourly ticks only. Ids given as arguments run now, whatever
 # their interval, `off` still honoured.
 #
-# Exit 0 when every participant that ran exited 0; 1 when one failed or timed out (the others still run),
-# another run holds the lock, the schedule cannot be read, or the installed cron file differs from the
-# committed one. Each participant's own line passes through; then one summary line, written whenever the run
-# did anything or failed, and nothing at all on a tick where nothing was due.
+# Exit 0 when every participant that ran reset; 1 when one failed, timed out or skipped for any reason but its
+# own switch being off (the others still run), another run holds the lock, the schedule cannot be read, or
+# the installed cron file differs from the committed one. Each participant's own line passes through; then
+# one summary line, written whenever the run did anything or failed, and nothing at all on a tick where
+# nothing was due. The first failing run after a passing one opens a GitHub issue (`report` below).
 #
-# Tools: bash and only what `ops/postgres-backup.sh` already runs on the box, plus `docker`, `flock` and
-# `timeout`, observed there (`ops/demo-principal.md` § The scheduler). PATH is left as cron sets it.
+# Tools: bash and only what `ops/postgres-backup.sh` already runs on the box, plus `docker`, `flock`,
+# `timeout` and `curl`, observed there (`ops/demo-principal.md` § The scheduler). PATH is left as cron sets it.
 
 set -uo pipefail
 umask 077
@@ -50,13 +51,45 @@ v_failed=''
 SPOKE=0
 tick=0
 
+# Epic 5 retrospective M3: the first failing run after a passing one opens an issue in this repository, which
+# reaches the Operator's mailbox as `deploy.yml`'s failure issues do. The header file holds one line,
+# `Authorization: Bearer <token>`, and curl reads it itself, so the token never enters this script, its argv
+# or the log. The marker holds `open` from the issue until the next passing run, so a failing streak opens one
+# issue. Neither a missing header file nor a refused request changes the exit code.
+ISSUE_HEADER="${DEMO_RESET_ISSUE_HEADER:-/etc/cuatro/demo-reset-issue.header}"
+ISSUE_URL="${DEMO_RESET_ISSUE_URL:-https://api.github.com/repos/LuigiEspinosa/cuatro-portfolio/issues}"
+ISSUE_MARKER="${STATE_DIR}/.demo-reset.issue"
+
+# Prints the summary's issue= value for a run that exited $2 with summary $1.
+report() {
+  local line="$1" code="$2" ts="$3" answer
+  if [ "${code}" -eq 0 ]; then
+    : 2>/dev/null > "${ISSUE_MARKER}"
+    printf 'none'
+    return
+  fi
+  if [ -s "${ISSUE_MARKER}" ]; then printf 'open'; return; fi
+  if [ ! -r "${ISSUE_HEADER}" ]; then printf 'unconfigured'; return; fi
+  answer="$(printf '{"title":"Demo reset failed at %s","body":"%s\\n\\nThe first failing run since the last passing one. Each participant line is above its summary in /home/deploy/demo-reset/demo-reset.log on the box: ops/demo-principal.md, The scheduler."}' "${ts}" "${line}" \
+    | curl -sS --max-time 30 -o /dev/null -w '%{http_code}' -X POST -H "@${ISSUE_HEADER}" \
+        -H 'Accept: application/vnd.github+json' --data-binary @- "${ISSUE_URL}")"
+  if [ "${answer}" = '201' ]; then
+    printf 'open' 2>/dev/null > "${ISSUE_MARKER}"
+    printf 'opened'
+  else
+    printf 'refused'
+  fi
+}
+
 # shellcheck disable=SC2329 # invoked by the EXIT trap
 finish() {
-  local code=$?
+  local code=$? ts line
   if [ "${SPOKE}" -eq 1 ] || [ "${code}" -ne 0 ]; then
-    printf '%s ts=%s tick=%s lock=%s schedule=%s cron=%s ran=%s off=%s failed=%s exit=%s\n' \
-      "${PROGRAM}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(date -u -d "@$(( tick * 60 ))" +%H:%M)" "${v_lock}" \
-      "${v_schedule}" "${v_cron}" "${v_ran}" "${v_off}" "${v_failed:-none}" "${code}"
+    ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    line="$(printf '%s ts=%s tick=%s lock=%s schedule=%s cron=%s ran=%s off=%s failed=%s' \
+      "${PROGRAM}" "${ts}" "$(date -u -d "@$(( tick * 60 ))" +%H:%M)" "${v_lock}" \
+      "${v_schedule}" "${v_cron}" "${v_ran}" "${v_off}" "${v_failed:-none}")"
+    printf '%s issue=%s exit=%s\n' "${line}" "$(report "${line} exit=${code}" "${code}" "${ts}")" "${code}"
   fi
 }
 trap finish EXIT
@@ -165,7 +198,7 @@ oneoffs() {
 }
 
 run_one() {
-  local id="$1" code hub='' tracker='' before container
+  local id="$1" code hub='' tracker='' before container out last
   command_for "${id}"
   before=$'\n'"$(oneoffs)"$'\n'
   if [ "${id}" = 'cuatro-tracker' ]; then
@@ -176,7 +209,7 @@ run_one() {
       return 1
     fi
   fi
-  (
+  out="$(
     if [ "${id}" = 'cuatro-tracker' ]; then
       HUB_TAG="${hub}"
       TRACKER_TAG="${tracker}"
@@ -184,11 +217,24 @@ run_one() {
     fi
     cd -- "${CHECKOUTS}/${DIR}" 2>/dev/null \
       || { printf 'demo:reset %s failed: no directory %s\n' "${id}" "${CHECKOUTS}/${DIR}" >&2; exit 1; }
-    exec timeout --kill-after=10 "${STEP_TIMEOUT}" "${CMD[@]}"
-  ) < /dev/null
+    exec timeout --kill-after=10 "${STEP_TIMEOUT}" "${CMD[@]}" < /dev/null
+  )"
   code=$?
+  [ -z "${out}" ] || printf '%s\n' "${out}"
   case "${code}" in
-    0) return 0 ;;
+    0)
+      # Epic 5 retrospective M3: a participant the schedule runs must reset. Its own switch off is its
+      # `demo access is off` and passes; any other skipped, the principal absent above all, is a hollow run,
+      # and so is an exit 0 whose last line is neither (§ The reset item 8 promises exactly one).
+      last="${out##*$'\n'}"
+      case "${last}" in
+        "demo:reset ${id} reset rows="*|"demo:reset ${id} skipped: demo access is off") return 0 ;;
+        "demo:reset ${id} skipped: "*)
+          printf 'demo:reset %s failed: skipped (%s) while the schedule runs it\n' "${id}" \
+            "${last#"demo:reset ${id} skipped: "}" >&2 ;;
+        *) printf 'demo:reset %s failed: exit 0 without its reset or skipped line\n' "${id}" >&2 ;;
+      esac
+      return 1 ;;
     124|137)
       printf 'demo:reset %s failed: timed out after %s s\n' "${id}" "${STEP_TIMEOUT}" >&2
       # Killing `docker compose run --rm` leaves its container running, holding its connection and its

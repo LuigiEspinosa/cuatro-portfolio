@@ -212,7 +212,8 @@ services:
   # `.github/workflows/image-tracker.yml`. It is live at tracker.cuatro.dev from the box's own
   # `cuatro-tracker` project, and nothing here starts it: the Operator's cutover in
   # `ops/tracker-cutover.md` does, once, and no deploy activates the `tracker` profile. `tracker-migrate`
-  # sits under `migrate`, from which `ops/deploy-remote.sh` runs only `anchor-app-migrate`.
+  # and `tracker-migrate-demo` sit under `migrate`, from which `ops/deploy-remote.sh` runs only
+  # `anchor-app-migrate`.
   #
   # TRACKER_TAG is the commit sha to run (AD-3), with `-` rather than `:?` for FINANCE_TAG's reason:
   # compose interpolates every service, and an unset tag is an invalid reference Docker refuses.
@@ -293,6 +294,21 @@ services:
     command: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy']
     environment:
       - DATABASE_URL=postgresql://cuatro_tracker:${CUATRO_TRACKER_DB_PASSWORD-}@estate-postgres:5432/cuatro_tracker?connection_limit=4
+    networks:
+      estate-postgres:
+    restart: 'no'
+
+  # The demo principal's scope, schema `demo` in the same database (ops/demo-principal.md), migrated by
+  # the same image and command. Its URL is `tracker-migrate`'s with `schema=demo` set in the query, written
+  # here so nothing on the box builds a URL (Epic 5 retrospective M2). The standing rollout runs it after
+  # `tracker-migrate` (ops/tracker-cutover.md § The sequence, Later rollouts); docker/__tests__/compose.test.ts
+  # holds the two URLs equal but for `schema`.
+  tracker-migrate-demo:
+    image: ghcr.io/luigiespinosa/tracker:${TRACKER_TAG-}
+    profiles: [migrate]
+    command: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy']
+    environment:
+      - DATABASE_URL=postgresql://cuatro_tracker:${CUATRO_TRACKER_DB_PASSWORD-}@estate-postgres:5432/cuatro_tracker?connection_limit=4&schema=demo
     networks:
       estate-postgres:
     restart: 'no'

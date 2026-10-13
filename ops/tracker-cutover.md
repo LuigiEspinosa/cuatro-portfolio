@@ -155,8 +155,13 @@ nothing is restored; the dump from step 2 is for a failure nobody planned.
 
 **Later rollouts** of a new tracker sha use the pull and the same two commands the Hub's deploy uses,
 by hand until a story wires the tracker into `deploy.yml` (DW-275). Not rehearsed: `docker-rollout` is not installed on the authoring machine, and Story 3-4 proved it on the Hub alone.
-`$C --profile migrate run --rm tracker-migrate`, then `docker rollout --env-file .env.production tracker`,
-then `$C --profile tracker up -d tracker-worker`.
+`$C --profile migrate run --rm tracker-migrate`, then `$C --profile migrate run --rm tracker-migrate-demo`,
+then `docker rollout --env-file .env.production tracker`, then `$C --profile tracker up -d tracker-worker`.
+The second migration is schema `demo`, the demo principal's scope (`ops/demo-principal.md`), which no other
+step migrates: each prints "No pending migrations to apply." or the migrations it applied, and a rollout
+stops at the first that exits non-zero. Run it whether the demo is on or off, so the scope never falls behind
+`public` (**amended 2026-10-12**, Epic 5 retrospective M2; until then the rollout migrated `public` alone, and
+`demo` was migrated once by hand at DP6).
 
 ## After the cutover
 
@@ -576,7 +581,7 @@ else; `echo` prints one 40-character sha.
   (its Redis and qBittorrent still serve the tracker), and never delete a dump before Story 4.11.
 
 **Later rollouts** after the move take the commands of § The sequence above: `tracker-migrate` now
-migrates `cuatro_tracker`, and `docker rollout ... tracker` rolls onto it.
+migrates `cuatro_tracker`, `tracker-migrate-demo` its schema `demo`, and `docker rollout ... tracker` rolls onto it.
 
 ### Estate Postgres move run, 2026-09-30
 
@@ -663,6 +668,7 @@ archived `/home/deploy/pg-move` and `/home/deploy/backups/cuatro-tracker` before
 | 6 | **Merge the commit carrying Story 4-8 into `main`** and let the Deploy run | It rolls the Hub alone. From then until § Moving the database step 10, no tracker `up` or rollout from the plain file (the bold note in that section). PR #88 merged as `f9ea578`, and Deploy run 36779534561 ran | 2026-09-30T21:27Z |
 | 7 | **Remove the restored copy the 2026-09-29 verification left**: the dangling volume `7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3`, created 2026-09-29T21:05:53Z | Read first: `docker ps -a --filter volume=7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3` prints no container, and `docker run --rm -v 7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3:/v:ro alpine ls /v` lists a Postgres data directory. Then `docker volume rm 7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3`. A copy of a restore, never the only copy: the live database and the dump stay. Done before step 2 of § Estate Postgres move run, 2026-09-30 | 2026-09-30 |
 | 8 | **Run § Moving the database onto the estate Postgres, steps 1 to 14**, after `ops/postgres.md` action 3 and `ops/postgres-backup.md` § Install and first run; steps 12 and 13 also after `ops/traefik-cutover.md` actions 4 and 6 and the origin rules token | Step 14 amends `ops/routing-inventory.md` and `ops/estate.md`. Done: § Estate Postgres move run, 2026-09-30, ending 2026-10-01T00:02Z | 2026-09-30 |
+| 9 | **Run the tracker's demo migration on the box once**, the standing rollout's second migration: from `/home/deploy/cuatro-portfolio`, with `HUB_TAG` exported and `TRACKER_TAG` the serving tracker's sha (`docker inspect cuatro-portfolio-tracker-1 --format '{{.Config.Image}}'`), `$C --profile migrate run --rm tracker-migrate-demo`, where `C='docker compose --env-file .env.production'` as § The sequence sets it | Added 2026-10-12 (Epic 5 retrospective action 2, M2). After the commit carrying `tracker-migrate-demo` reaches `main` and its Deploy runs, which resets the box's checkout to it. Expected "No pending migrations to apply." (schema `demo` held 11 migrations at DP6, as `public` does); a list of applied migrations means `demo` was behind and is now level, and is recorded here with the time. Nothing rolls and no data changes beyond a behind schema's migrations. From then every rollout runs it (§ The sequence, Later rollouts) | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.

@@ -597,7 +597,8 @@ already holds `cuatro-tracker` (AD-9).
   the migration. `docker-compose.yml` declares `tracker` and `tracker-worker` under a profile no deploy
   activates, and `tracker-migrate`; the cutover starts them once.
 - **Migrations (AD-23).** Never on boot; `tracker-migrate` runs `prisma migrate deploy` before a
-  rollout. The merged code carries no migration the box lacks.
+  rollout, and `tracker-migrate-demo` runs it again into schema `demo` (amended 2026-10-13, Epic 5
+  retrospective action 2: `ops/tracker-cutover.md` § The sequence, Later rollouts). The merged code carries no migration the box lacks.
 - **Data (AD-10).** It stays where it serves: database and role `tracker` in the old project's
   `cuatro-tracker-postgres-1`, with its Redis and qBittorrent, until Stories 4.4 and 4.8 move it onto
   the one Postgres. `ops/tracker-backup.sh` and `ops/tracker-restore-verify.sh` back it up and prove

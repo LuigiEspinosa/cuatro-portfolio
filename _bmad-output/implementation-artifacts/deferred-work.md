@@ -9699,6 +9699,12 @@ status: done
     last hour is a scheduler that stopped. Epic 5 does not choose between (a) and (b) here, because both
     options are about how the box is read from off it, a decision about the estate rather than about demo
     access. Whichever is chosen reads all four logs, and the record's named limit 1 is amended to name it.
+
+    **Epic 5 retrospective action 3, 2026-10-13: a third option, for the reset log only.** The scheduler now
+    opens a GitHub issue itself on the first failing run of a streak (`ops/demo-principal.md` § The scheduler
+    item 11), with a token header file on the box (DS4), so its failures no longer wait on this entry. A
+    scheduler that never runs still writes nothing, so a reader of staleness is still owed for all four logs,
+    and the same issue path is a candidate for the three backup scripts.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md`
   id: DW-316
@@ -10220,6 +10226,10 @@ status: done
 
     **Owner: a story the Operator schedules to move `digital-library` onto OIDC.** **Trigger: that story's
     rollout.** Then create the account by that sign-in, run DR3, and release its Registry `demo`.
+
+    **Amended 2026-10-13 (Epic 5 retrospective action 3):** `ops/demo-reset.schedule` sets `digital-library off`,
+    because the scheduler now fails a run whose participant reports its principal absent. The same change that
+    creates the account sets it back to `60`.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
   id: DW-338
@@ -10234,4 +10244,48 @@ status: done
     **Owner: the Operator, or the story that moves `digital-library`'s deploy off the box (DW-185).**
     **Trigger: the next `digital-library` redeploy.** Probe through Cloudflare by name, or keep the
     `--resolve` and pass `--cacert` the Origin CA root.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-epic-5-retro-item-48-digital-library-remove-deploy-job.md`
+  id: DW-339
+  summary: >-
+    `digital-library`'s `Test` workflow (`.github/workflows/test.yml`, the former `Test & Deploy`) runs the same
+    job as its `CI` workflow's `test` job on every push to `main`, so each push to `main` runs the suite twice.
+  evidence: |-
+    Found 2026-10-13 by the independent verifier of Epic 5 retrospective action 4 (minor finding 2). Kept by
+    that story because the Operator's ruling of 2026-10-12 removed the `deploy` job and kept the `test` job
+    intact. No ruleset requires either check.
+
+    **Owner: the Operator's ruling.** **Trigger: after `ops/demo-principal.md` DL1 reaches `main`.** Delete
+    `test.yml` if `CI` already runs on pushes to `main`, or keep it and close this entry.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-epic-5-retro-item-49-demo-sign-out-and-admin-refusal.md`
+  id: DW-340
+  summary: >-
+    `digital-library` recognises the demo principal one way for spaces only: JavaScript's `trim()` and
+    `toLowerCase()` (`isDemoPrincipal`) also strip tabs and newlines and fold non-ASCII, SQLite's `trim()` and
+    `lower()` do not, so a row written by hand as `demo@cuatro.dev` followed by a tab is the principal for
+    `requireAuth` and `UserRepository` but not for the ACL or the reset.
+  evidence: |-
+    Found 2026-10-13 by the independent verifier of Epic 5 retrospective action 5 (minor finding 2), on
+    `digital-library` `1b14ff6` (PR #64). No administrator bypass follows: `requireAuth` still refuses an
+    administrator row like that, and a non-administrator one is an ordinary user outside the demo scope. No demo
+    account exists (DW-337), so nothing on the box can reach it today.
+
+    **Owner: the story that creates `digital-library`'s demo account (DW-337).** **Trigger: before that account
+    exists, after PR #64 reaches `dev`.** Trim tabs and newlines in the SQL predicate, or refuse such an address
+    when a user row is written.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-epic-5-retro-item-49-demo-sign-out-and-admin-refusal.md`
+  id: DW-341
+  summary: >-
+    The Anchor's `test` job once failed in the tracker's unit tests on an unhandled
+    `ReferenceError: requestAnimationFrame is not defined` thrown by gsap's `ScrollTrigger` after the test
+    environment was torn down, with nothing under `apps/tracker` changed.
+  evidence: |-
+    Seen 2026-10-13 by the independent verifier of Epic 5 retrospective action 5: `ci.yml` run 38399622554,
+    attempt 1, failed there; attempt 2 passed. One occurrence, filed so a second one is recognised.
+
+    **Owner: the next story touching `apps/tracker`'s test setup.** **Trigger: a second occurrence.** Find the
+    suite that leaves a `ScrollTrigger` alive past its teardown and kill it in that suite's cleanup, or stub
+    `requestAnimationFrame` in the tracker's Vitest setup.
   status: open

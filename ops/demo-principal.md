@@ -96,7 +96,8 @@ read; the Operator's side effects withheld; and a suite case for each clause of 
   through a second Prisma client whose URL is `DATABASE_URL` with `schema=demo` and `connection_limit=1`
   (`lib/demo-store.ts`, `storeFor`). The demo principal's own `User` row lives there too, so the Operator's
   store holds no demo identity. Every migration applies to it unchanged: none qualifies a name with
-  `public`.
+  `public`. `tracker-migrate-demo` migrates it, run after `tracker-migrate` in every rollout
+  (`ops/tracker-cutover.md` § The sequence, Later rollouts).
 - **Gates:** `lib/scoped-db.ts` (`scopedDb`) answers the signed-in principal's store, and every request path
   reads through it; `lib/__tests__/demo-principal.test.ts` fails any module that imports the Operator's
   store directly, except the store itself, sign-in (whose lookups go through `storeFor`), `/api/ready`, the
@@ -120,9 +121,15 @@ read; the Operator's side effects withheld; and a suite case for each clause of 
   session route and both gates.
 - **Scope:** the Postgres schema `demo` in `cs-tracker`'s own database, same role (AD-10): a second instance
   of `CsTracker.Repo`, `CsTracker.DemoRepo`, started only while demo access is on, whose connections search
-  `demo,public`. `CsTracker.Release.migrate_demo/0` creates the schema and runs every migration through such
-  a connection, so each migration's unqualified names, raw SQL included, land in `demo`; the `pg_trgm`
-  operator class still resolves from `public`. The test helper runs it before every suite.
+  `demo` alone, so a table missing from `demo` is refused (`undefined_table`), never read from the Owner's
+  `public`; Oban's tables stay in `public` by design and `Inventory`'s four reads of `oban_jobs` name `public`
+  themselves. `CsTracker.Release.migrate_demo/0` creates the schema and runs every migration through a
+  connection searching `demo,public`, so each migration's unqualified names, raw SQL included, land in `demo`
+  while the `pg_trgm` operator class still resolves from `public`; `bin/migrate` runs it after
+  `CsTracker.Release.migrate/0`, so the standing redeploy order (`ops/cs-tracker-cutover.md` § Later
+  rollouts) migrates both schemas. The test helper runs it before every suite, and a case drops a demo table
+  inside its sandbox to show the refusal. Epic 5 retrospective M1, action 1: `cs-tracker` commit `f2c005d`
+  on branch `fix/demo-schema-alone`, merged to `dev` as `666b852` by PR 6 on 2026-10-12, reaching the box by DP9.
 - **Gates:** the HTTP plug and the LiveView `on_mount` put the principal's repo on the process
   (`DemoPrincipal.put_repo/1`); the endpoint puts the Owner's back at the start of every request, because
   Bandit serves a connection's requests in one process.
@@ -142,6 +149,13 @@ read; the Operator's side effects withheld; and a suite case for each clause of 
 - **Undeletable, unchangeable:** `cs-tracker` holds no account: the principal is a subject at the issuer
   named by configuration. A case holds that no Ecto schema has an identity or credential field and that the
   only `DELETE` route is the sign-out.
+- **Sign-out ends its own session alone:** every Visitor shares the demo subject, so a demo session carries
+  a key of its own, `oidc_ref` (the issuer's `sid` when it gave one, else a random value), and a socket topic
+  of its own, `oidc_sessions:<sub>:<oidc_ref>` (`CsTracker.Auth.OIDC.session_for/1`). Both sign-out routes
+  (`OIDCController.end_signed_in/1`) revoke that key and disconnect that topic alone; a Back-Channel logout
+  token naming the demo subject ends only the demo session holding its `sid`, and none when it names no
+  `sid`. The Owner's sign-out still ends every Owner session (FR-22). Epic 5 retrospective M4, action 5:
+  `cs-tracker` commit `e392689` on branch `fix/demo-sign-out-own-session`, for a PR to `dev` (DP10).
 - **Switch:** `CS_TRACKER_OIDC_DEMO_SUB`, unset by default (`config/runtime.exs`, `docs/deployment.md`).
 
 ### `digital-library` (its repository, branch `story-5-8-demo-principal` off `dev`, commit `4d7bea0`)
@@ -150,8 +164,10 @@ The Operator's own checkout holds uncommitted edits on `dev`, so the work sits o
 worktree `digital-library-workspace/digital-library-5-8`, based on `origin/dev` at `162f14a`, for the
 Operator to merge into `dev` (DP7).
 
-- **Principal:** `apps/api/src/acl.ts` (`DEMO_PRINCIPAL`, `isDemoPrincipal`). Derived from the address: the
-  account in `users` whose email is `demo@cuatro.dev`.
+- **Principal:** `apps/api/src/acl.ts` (`DEMO_PRINCIPAL`, `isDemoPrincipal`, `demoAccounts`). Derived from
+  the address: the account in `users` whose email, trimmed and lowercased, is `demo@cuatro.dev`. Every lookup
+  compares it that one way, in JavaScript and in SQL (`lower(trim(email))`), the ACL and the reset included,
+  so a row written by hand in another casing is still the demo principal (Epic 5 retrospective m13).
 - **Scope:** the libraries the demo principal holds in `user_libraries`. A library enters the scope only when
   granted to the demo principal while no one else holds it or has reading progress in it, and no one else is
   ever granted one in it (`grantAccess` throws `ScopeError`, the admin route answers 409). The demo
@@ -164,6 +180,12 @@ Operator to merge into `dev` (DP7).
 - **Undeletable, unchangeable:** `UserRepository.delete` throws for it and the admin route answers 403;
   `UserRepository.create` refuses it as an administrator, the first-run seed included, and the admin route
   answers 400; no source runs `UPDATE users`.
+- **Never an administrator at use:** an `is_admin` set by hand on the demo account is refused where the
+  account is used: sign-in answers 403 and mints no session, `requireAuth` answers 403 on every authenticated
+  route (the admin routes included), `hasAccess` and `getAllowedLibraryIds` never give it the admin bypass,
+  and the reset refuses with exit 1, as it does when more than one account is the demo principal. Epic 5
+  retrospective m13, action 5: `digital-library` commit `1b14ff6` on branch `fix/demo-principal-one-way`, for
+  a PR to `dev` (DP11).
 - **Switch:** the account itself. Without a `demo@cuatro.dev` account every path is as before, held by a case.
 
 ## The reset
@@ -261,7 +283,7 @@ install is DS1 to DS3, by hand, after each participant's demo access is on.
 | File | Role |
 |---|---|
 | `ops/demo-reset.sh` | The scheduler. Runs the due participants one after another under a lock, then one summary line |
-| `ops/demo-reset.schedule` | Each participant's interval in minutes, or `off`. Committed: `60` for all three |
+| `ops/demo-reset.schedule` | Each participant's interval in minutes, or `off`. Committed: `60` for the two trackers, `off` for `digital-library` until DW-337 (item 2) |
 | `ops/demo-reset.cron` | The one cron line, installed byte for byte as `/etc/cron.d/cuatro-demo-reset` |
 
 1. **On the host, outside every application container.** cron on the box runs the scheduler, which runs
@@ -279,7 +301,10 @@ install is DS1 to DS3, by hand, after each participant's demo access is on.
    15 from 15 to 1440. **Decision, 2026-10-03:** every participant hourly, which AD-13 names. A Visitor's
    changes then last until the next full hour at most, so a second Visitor the same day finds the fixture
    unless they arrive within that hour; a shorter interval narrows the window at a cost § What a run costs
-   gives. Minute 0 is clear of the nightly jobs at 03:15 and 03:45.
+   gives. Minute 0 is clear of the nightly jobs at 03:15 and 03:45. **Amended 2026-10-13** (Epic 5
+   retrospective action 3, M3): `digital-library` is `off` until it has a demo account (DW-337), since item 11
+   fails a run whose participant reports its principal absent; the change that creates the account sets it
+   back to `60`.
 3. **One participant at a time, and each one's failure is its own.** A participant that exits non-zero, or
    outlives its timeout (240 s, then killed 10 s later), is named in the summary's `failed=` and the run
    exits 1; every other due participant still runs. Three that each hang still end inside one tick.
@@ -298,6 +323,12 @@ install is DS1 to DS3, by hand, after each participant's demo access is on.
    A participant whose own demo access is off but whose schedule still names an interval costs one
    one-shot container, which prints the application's own `skipped` line (§ The reset item 6; its cost is
    in § What a run costs). So turning a participant's demo off is two changes: its switch, and `off` here.
+   **Amended 2026-10-13** (M3): only the application's `skipped: demo access is off` passes. Any other
+   `skipped`, `the demo principal is absent` above all, is a hollow run: the scheduler adds `demo:reset
+   <registry-id> failed: skipped (<reason>) while the schedule runs it` on stderr, names it in `failed=` and
+   exits 1. An exit 0 whose last stdout line is neither `reset rows=<n>` nor that `skipped` fails the same
+   way, as `failed: exit 0 without its reset or skipped line` (§ The reset item 8 promises one). `cs-tracker`'s off and absent are one state and print `demo access is off`; `digital-library` has
+   no switch but its account, so the schedule's `off` is its switch.
 6. **The schedule is committed, never typed on the box.** The box reads `ops/demo-reset.schedule` and runs
    `ops/demo-reset.sh` from its checkout at `/home/deploy/cuatro-portfolio`, which the deploy resets to `main`,
    so a merged change to either takes effect at the next deploy. A schedule that names an unknown id, leaves a
@@ -316,8 +347,14 @@ install is DS1 to DS3, by hand, after each participant's demo access is on.
    without one is a scheduler that stopped. `docker compose run` without a TTY also writes its own progress
    lines to stderr (`Container ... Creating`, `Created`, observed 2026-10-03 by the Story 5.10 verifier), and
    the cron line sends stderr to the log, so those lines sit beside each participant's one line; read a run
-   by its `demo:reset` and `demo-reset` lines. Nothing reads the log yet: the same gap as the three backup
-   logs, amended into DW-315 so its reader covers all four.
+   by its `demo:reset` and `demo-reset` lines. A participant's stdout is captured and printed only when its
+   one-shot ends, so its `demo:reset` line follows the stderr lines that run wrote (compose's progress, and any
+   `failed` line the application itself printed), never precedes them; a scheduler `failed` line for that
+   participant follows its stdout. Cosmetic, kept so the scheduler can read the last stdout line (item 5).
+   Nothing reads the log yet: the same gap as the three backup
+   logs, amended into DW-315 so its reader covers all four. **Amended 2026-10-13** (M3): the summary carries
+   `issue=` before `exit=`, and a failing run reaches the Operator through item 11, so the log is now where a
+   failure is read, not where it is found.
 9. **One connection at a time.** Runs never overlap and participants run in turn, so at most one reset
    connection is open in the estate at any moment, and each role sees the one Story 5.9 counted (DP4,
    DW-331).
@@ -327,7 +364,23 @@ install is DS1 to DS3, by hand, after each participant's demo access is on.
     box in that record's install step 3; `date -u -d @<seconds>` is GNU coreutils, the box's Ubuntu 24.04.4.
     The suite runs every case with a PATH holding only these and the `docker` stub, so a tool the box lacks
     fails there. The cron file sets `PATH=/usr/bin:/bin`, and DS1 checks the four that are not coreutils
-    resolve on it.
+    resolve on it. **Amended 2026-10-13** (M3): item 11 adds `curl`, observed on the box on 2026-08-24
+    (`ops/backup-digital-library.md`) and stubbed in the suite; DS4 checks it resolves on the cron `PATH`.
+11. **A failing run opens an issue** (Epic 5 retrospective action 3, M3). The first run that exits non-zero
+    after a passing one (or after none) POSTs one issue, `Demo reset failed at <UTC>`, whose body is the
+    summary line, to `LuigiEspinosa/cuatro-portfolio` through the GitHub API, so it reaches the mailbox the
+    Deploy's failure issues reach. `curl -H @/etc/cuatro/demo-reset-issue.header` reads the token's header line
+    itself, so the token never enters the script, its argv or the log. `/home/deploy/demo-reset/.demo-reset.issue`
+    then holds `open` and later failing runs print `issue=open` and post nothing, until a run that did
+    something exits 0 (`issue=none`) and empties it; the Operator closes the issue. Every exit 1 counts, not only
+    a `failed=` participant: a `lock=held` collision (item 4), `schedule=invalid` (item 6) and `cron=differs`
+    or `cron=absent` (item 7) open the issue the same way. Without the header file a
+    failing run prints `issue=unconfigured`; a request answered with anything but 201 prints `issue=refused`
+    and the next failing run tries again. Neither changes the exit code. **Decision:** an issue, not a
+    heartbeat: the UptimeRobot free plan refused the HEARTBEAT type (`ops/monitoring.md`, 2026-09-12).
+    **Named limits:** a scheduler that never runs (cron file removed, box down) opens nothing, and the box's
+    HTTP monitors see only the second; an expired token reads `issue=refused` in a log nobody reads, so its
+    expiry date is a dated row (DS4).
 
 ### What a run costs
 
@@ -434,16 +487,22 @@ into `ssh`. No step prints a credential.
    `https://cs-tracker.cuatro.dev/auth/session` answers 200 with its subject, `/inventory` lists nothing of the
    Owner's, and the Owner's own session still shows his inventory.
 6. **DP6. Turn the tracker's demo on**, after DP2 and DP4: migrate the schema with the tracker's image,
-   `docker compose --env-file .env.production --profile migrate run --rm -e DATABASE_URL="$demo_url"
-   tracker-migrate`, where `demo_url` is the tracker's `DATABASE_URL` with `&schema=demo` appended (built on
-   the box from `.env.production` without printing it); create the account in the demo schema with
-   `docker compose --env-file .env.production --profile tracker run --rm -e DEMO_ENABLED=true -e
-   DEMO_PASSWORD tracker node -e "..."` hashing `DEMO_PASSWORD` with `bcryptjs` and inserting through the
+   `docker compose --env-file .env.production --profile migrate run --rm tracker-migrate-demo`, whose URL is
+   `tracker-migrate`'s with `schema=demo` set in the query, written in `docker-compose.yml` so nothing on the
+   box builds one (**amended 2026-10-12**, Epic 5 retrospective M2: the step first ran `tracker-migrate` with a
+   URL built by appending `&schema=demo`, which breaks on a URL with no query string; every tracker rollout
+   now runs the service, `ops/tracker-cutover.md` § The sequence, Later rollouts, its Pending action 9);
+   create the account in the demo schema with `docker compose --env-file .env.production --profile tracker
+   run --rm -e DEMO_ENABLED=true -e DEMO_PASSWORD tracker node -e "..."` hashing `DEMO_PASSWORD` with `bcryptjs` and inserting through the
    demo store (the reset never creates it, § The reset); then set `TRACKER_DEMO_ENABLED=true` in
    `.env.production` and roll the tracker. Check: the demo account signs in and sees an empty library, the
    Owner's sees his, and `/admin` answers 404 to the demo account. Then DR1 fills the library.
 7. **DP7. Bring `digital-library`'s branch into its `dev`, then `main`**, the repository it deploys from (the
-   box builds it, DW-308), after reading its CI on the branch and after ruling DR4. Then, in its admin, create
+   box builds it, DW-185), after reading its CI on the branch and after ruling DR4. Nothing deploys it on the
+   merge: redeploy the box by hand by `digital-library`'s standing redeploy, its README § Deploying to
+   library.cuatro.dev. **Amended 2026-10-13** (Epic 5 retrospective action 4, M5): this step first read as if
+   the merge deployed; its `Test & Deploy` workflow's `deploy` job had failed on every push to `main` since
+   2026-05-29, and the Operator ruled on 2026-10-12 to remove it, not repair it (DL1). Then, in its admin, create
    the user `demo@cuatro.dev` (not an administrator) with the DP2 password, and nothing else: the reset
    creates the demo library and grants it (Story 5.9, § The reset), and grant the demo user no library by
    hand, which makes the reset refuse. Then DR3. Check: signed in as the demo user, `/api/libraries` lists
@@ -516,7 +575,58 @@ into `ssh`. No step prints a credential.
     must show one line per hour since DS1, each ending `exit=0`; and `uptime` read at minute 1 of an hour,
     within the minute after a run, against the gate's load15 0.60. Write both here. A line with `exit=1`
     names its cause: `failed=<id>` (read that participant's line above it), `cron=differs` (repeat DS1's
-    `install`), `lock=held` (a run outlived 15 minutes).
+    `install`), `lock=held` (a run outlived 15 minutes). **Amended 2026-10-13:** a summary now carries
+    `issue=` before `exit=`, and a `failed=<id>` may be a hollow run (item 5).
+16. **DP9. Roll `cs-tracker` onto schema `demo` alone** (Epic 5 retrospective M1, action 1), after its
+    `fix/demo-schema-alone` PR reaches `dev` and `dev` reaches `main` (the box pulls `main`). It is the standing
+    redeploy, `ops/cs-tracker-cutover.md` § Later rollouts, with nothing added by hand: on the box as `deploy`,
+    from a file under `set -euo pipefail` in `/home/deploy/cs-tracker`:
+    ```
+    git pull --ff-only && git log -1 --format='%H %s'
+    docker compose build app
+    docker compose run --rm migrate
+    docker rollout -w 20 app
+    docker compose exec -T app /app/bin/cs_tracker rpc 'CsTracker.Repo.put_dynamic_repo(CsTracker.DemoRepo); IO.inspect(CsTracker.Repo.query!(~s(show search_path)).rows)'
+    ```
+    `migrate` must print `Migrations already up` twice, the Owner's schema then `demo` (both hold 10
+    migrations today); a `Running` line under the second means `demo` was behind and is now level. The last
+    line must print `[["demo"]]`. Then, signed in as the demo account, `/inventory` shows the fixture's two
+    marks and its sync-button line renders (the reads of `public.oban_jobs`); the Owner's inventory is as it
+    was. The next hourly reset must still print `demo:reset cs-tracker reset rows=12`. To roll back: check out
+    the previous `main` commit, `docker compose build app`, `docker rollout -w 20 app`; nothing in the database
+    changes, since no migration is added.
+17. **DS4. Give the scheduler its issue header** (§ The scheduler item 11, Epic 5 retrospective action 3).
+    Any time; it changes nothing until DS5's change is on `main`. At GitHub, Settings, Developer settings,
+    Fine-grained tokens: resource owner `LuigiEspinosa`, only `cuatro-portfolio`, repository permission Issues
+    read and write and nothing else, the longest expiry offered; file it in the password manager and write
+    its expiry date in DS4's row. Then on the box as `deploy`, from a file under `set -euo pipefail`:
+    ```
+    sudo install -o root -g deploy -m 0640 /dev/null /etc/cuatro/demo-reset-issue.header
+    sudo nano /etc/cuatro/demo-reset-issue.header
+    sudo stat -c '%U %G %a' /etc/cuatro/demo-reset-issue.header
+    env -i PATH=/usr/bin:/bin sh -c 'command -v curl'
+    ```
+    The file holds one line, `Authorization: Bearer <token>`, typed in the editor so the token reaches no
+    shell history. The `stat` must print `root deploy 640` and the last line `/usr/bin/curl`. Skip the
+    `install` if the file exists: it would empty it. To renew, edit the file the same way.
+18. **DS5. Prove the issue once**, after `main` carries the commit with § The scheduler item 11 and its Deploy
+    has run, at a minute that is not a multiple of 15. On the box as `deploy`, from a file under `set -euo
+    pipefail`:
+    ```
+    cd /home/deploy/cuatro-portfolio
+    git log -1 --format=%H -- ops/demo-reset.sh
+    DEMO_RESET_CRON=/nonexistent ops/demo-reset.sh digital-library || echo "exit=$?"
+    ops/demo-reset.sh digital-library
+    ```
+    `digital-library` is `off`, so neither run starts a container. The first must end `cron=absent ran=0
+    off=1 failed=none issue=opened exit=1` and `exit=1`; the second `cron=match ran=0 off=1 failed=none
+    issue=none exit=0`. From the workstation, `gh issue list --repo LuigiEspinosa/cuatro-portfolio --search
+    "Demo reset failed"` shows the issue; confirm its mail reached the mailbox `ops/monitoring.md` names, then
+    `gh issue close <number> --repo LuigiEspinosa/cuatro-portfolio`. If a real failure after DS4 already opened
+    an issue, the marker holds `open` and the first run prints `issue=open` instead of `issue=opened` and posts
+    nothing: the issue that real failure opened is the proof, so read it, and the second run still empties the
+    marker. `issue=unconfigured` means DS4 has not
+    run; `issue=refused` means the token or its permission is wrong (curl's own line above says which).
 
 ## Demo principal run
 
@@ -606,7 +716,13 @@ there hashed by `bcryptjs` at cost 12 (`users in schema demo: 1`), appended `TRA
 as `demo@cuatro.dev` to an empty library, and as himself to his library unchanged.
 
 **DP7, 2026-10-06, merged and deployed; the demo account deferred.** `digital-library` PR #61
-(`story-5-8-demo-principal` into `dev`, `4ad020d`) and PR #62 (`dev` into `main`, `eada53d`) merged on green CI.
+(`story-5-8-demo-principal` into `dev`, `4ad020d`) and PR #62 (`dev` into `main`, `eada53d`) merged with `CI`
+green. **Corrected 2026-10-13** (Epic 5 retrospective action 4, M5): on `eada53d` the `CI` workflow passed and
+the `Test & Deploy` workflow did not: its `test` job passed and its `deploy` job failed (run 37498770241, `ssh:
+handshake failed`), as on every push to `main` since 2026-05-29 (runs 26623693302, 28205172235, 30518341072 and
+30519309818; the last green one was 2026-02-26). The box was redeployed by hand, below. The Operator ruled on
+2026-10-12 to remove the job (DL1); the by-hand redeploy is `digital-library`'s README § Deploying to
+library.cuatro.dev.
 The release also carried the Operator's unreleased `dev` work (C.1 to C.3 screen rebuilds and a
 `.dockerignore`), released as is by his ruling. At 16:53Z the box's `library-redeploy.sh` rebuilt `api` and
 `web` from `eada53d`, both healthy; live `/` 302, `/login` 200, `/api/health` 200. The script's smoke step
@@ -645,6 +761,14 @@ Each run printed `demo:reset cuatro-tracker reset rows=12`, `demo:reset cs-track
 equals the checkout's. `uptime` at 2026-10-12T17:01:02Z, within the minute after the 17:00 run (`exit=0`): load
 average 0.34, 0.21, 0.12, load15 well under the gate's 0.60.
 
+**DP9, 2026-10-13T05:48Z, `cs-tracker` on schema `demo` alone.** The Operator merged PR 7 into `dev` and `dev` into
+`main` (`e44bb69`, its tree identical to the verified `666b852`). Step 16's block ran from a file on the box with
+the Operator's approval: `git pull` landed `e44bb69`, `migrate` printed `Migrations already up` twice, `docker
+rollout` replaced the container, and the rpc line printed `[["demo"]]` at 05:48:26Z. `https://cs-tracker.cuatro.dev`
+answered 302 at `/` and 401 at `/auth/session`. The 06:00Z reset, the first after the roll, printed `demo:reset
+cs-tracker reset rows=12` with `failed=none exit=0`. The Operator then signed in as the demo account and saw the
+fixture's two marks in `/inventory` (2026-10-13). `cs-tracker` has no CI, so no workflow was read on `e44bb69`.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -655,7 +779,7 @@ average 0.34, 0.21, 0.12, load15 well under the gate's 0.60.
 | DP4 | **Rule on the connection budget** with demo on | DW-331 | 2026-10-06T06:07:51Z. Ruled (a), with the reset's connection: `cuatro_tracker` 20 to 23 and `cs_tracker` 25 to 30, role and database, on the box (read before and after) and in `ops/postgres/init/10-consumers.sh` and `ops/postgres.md`; the four limits sum to 88 of 97. Set first to 22 and 29 at 06:06:54Z, the reset's connection overlooked, and corrected within a minute |
 | DP5 | **Turn `cs-tracker`'s demo on** and check both scopes | After DP3, DP4 and CT3 | 2026-10-06T15:50Z. Demo on; the demo principal signs in to its own empty scope and the Owner's inventory is unchanged, observed by the Operator; § Demo principal run |
 | DP6 | **Turn the tracker's demo on** and check both scopes | After DP2, DP4 | 2026-10-06T15:59Z. Demo on; the demo library is empty and the Owner's is unchanged, observed by the Operator; § Demo principal run |
-| DP7 | **Merge `digital-library`'s branch, deploy it, create the demo user** (Story 5.9: the reset creates its library) | After DP2 and DR4 | Merged and deployed 2026-10-06T16:53Z (`eada53d`); the demo account deferred by the Operator until OIDC, DW-337; § Demo principal run |
+| DP7 | **Merge `digital-library`'s branch, deploy it, create the demo user** (Story 5.9: the reset creates its library) | After DP2 and DR4 | Merged and deployed by hand 2026-10-06T16:53Z (`eada53d`; `Test & Deploy`'s `deploy` job red, DL1); the demo account deferred by the Operator until OIDC, DW-337; § Demo principal run |
 | DP8 | **Rule on `cs-tournament`'s participation** | DW-332 | 2026-10-06. Ruled (a): not a participant; its Registry `demo` already reads `open` (1.8.0), so nothing further changes |
 | DR1 | **Run the tracker's reset live, twice, and observe it** | After DP6 | 2026-10-06T17:08Z. Two live runs, `reset rows=12`, exit 0, Owner unchanged; the signed-in check skipped by the Operator pending the tracker's sign-in rework; § Demo principal run |
 | DR2 | **Run `cs-tracker`'s reset live, twice, and observe it** | After DP5 | 2026-10-06T17:13Z. Three live runs, `reset rows=12`, exit 0; the Operator's addition gone, fixture shown, Owner unchanged; § Demo principal run |
@@ -664,6 +788,16 @@ average 0.34, 0.21, 0.12, load15 well under the gate's 0.60.
 | DS1 | **Install the scheduler's cron file** from the checkout | After DR1 to DR3 and Story 5.10 on `main` | 2026-10-06T17:26Z. Installed, `cmp` matched; before DR3, `digital-library` skipping until DW-337; § Demo principal run |
 | DS2 | **Run the scheduler once by hand, in cron's shape, and observe it** | After DS1 | 2026-10-06T17:26Z. `ran=3 failed=none exit=0`, `digital-library` skipped as absent, load15 0.21; § Demo principal run |
 | DS3 | **Read the first unattended day** of `demo-reset.log` and the load after a run | The day after DS1 | 2026-10-12. 143 of 143 hourly runs `exit=0` since DS1, 24 of 24 the first day; load15 0.12 after a run; § Demo principal run |
+| DP9 | **Roll `cs-tracker` onto schema `demo` alone**, § By hand step 16 | Added 2026-10-12 (Epic 5 retrospective action 1, M1). After `cs-tracker`'s `fix/demo-schema-alone` PR reaches `dev` and then `main`. `cs-tracker` has no CI: its gate was `mix precommit` (709 tests, 0 failures) and its production image booted against a scratch Postgres 18.6, both on 2026-10-12. Also added 2026-10-12 (Epic 5 retrospective action 2): merge `cs-tracker` PR 7 (`fix/migrate-bat-demo`, `rel/overlays/bin/migrate.bat` runs `migrate_demo` as `bin/migrate` does; `mix precommit` 709 tests, 0 failures) into `dev` first, so the same `dev` to `main` merge carries it | 2026-10-13T05:48Z, live: `[["demo"]]`, 06:00Z reset rows=12, demo inventory two marks (§ Demo principal run) |
+| DS4 | **Give the scheduler its issue header**, § By hand step 17: a fine-grained token (Issues read and write on `cuatro-portfolio` alone) in `/etc/cuatro/demo-reset-issue.header`, `root deploy 640`, and `curl` on the cron `PATH` | Added 2026-10-13 (Epic 5 retrospective action 3, M3). Any time; write the token's expiry date here, which is the date to renew it, since an expired token only reads `issue=refused` in the log | _not done_ |
+| DS5 | **Prove the issue once**, § By hand step 18 | Added 2026-10-13 (M3). After DS4, and after the Epic 5 retrospective change carrying § The scheduler item 11 reaches `main` with the Operator's merge and its Deploy run resets the box's checkout. From that Deploy on, `digital-library` is `off` in the schedule (DW-337) and a hollow or failed run exits 1 | _not done_ |
+| DL1 | **Merge `digital-library` PR #63 (`chore/remove-deploy-job`, head `c05434f`) into `dev`, then `dev` into `main`** | Added 2026-10-13 (Epic 5 retrospective action 4, M5; Operator ruling 2026-10-12: remove the `deploy` job, do not repair it). The PR removes `Test & Deploy`'s `deploy` job, renames the workflow `Test` (`.github/workflows/test.yml`, its `test` job unchanged) and writes the standing by-hand redeploy into the README. No ruleset or branch protection requires the job's check (read 2026-10-13: `protect-main` holds only deletion and non-fast-forward rules, and `dev` has none). Nothing on the box changes; the next push to `main` runs `Test` with no `deploy` job. PR #63 opened 2026-10-13 by the independent verifier; on `c05434f` the verifier read `CI` (push, run 38391849677) success and `CI` (pull_request, run 38391856226) success, and `Test` does not run on a PR to `dev`. Once PR #63 merges, the worktree `digital-library-workspace/wt-remove-deploy-job` is removed (`git -C digital-library worktree remove`, a workstation step, added 2026-10-13) | _not done_ |
+| DL2 | **Delete `digital-library`'s four Actions secrets** `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY` and `SERVER_PORT` | Added 2026-10-13 (M5). After DL1 reaches `main`, when no workflow reads them; an SSH key secret with no reader is a credential kept for nothing. GitHub, `digital-library`, Settings, Secrets and variables, Actions | _not done_ |
+| DL3 | **Compare the box's `~/library-redeploy.sh` with the README's standing redeploy** and make them agree | Added 2026-10-13 (M5). The script's text is recorded nowhere (DW-338); the README names its fetch, reset and build from DW-185 and DW-187. At the next `digital-library` redeploy, read the script on the box and write here whether it matches, correcting whichever is wrong in the same change | _not done_ |
+| DP10 | **Merge `cs-tracker` PR 9 (`fix/demo-sign-out-own-session`) into `dev`, then `dev` into `main`, then roll `cs-tracker`** by the standing redeploy (`ops/cs-tracker-cutover.md` § Later rollouts), no step of its own | Added 2026-10-13 (Epic 5 retrospective action 5, M4). Head `e392689`, from `origin/dev` `7a2ab09`. `cs-tracker` has no CI: its gate is `mix precommit`, 717 tests, 0 failures (4 excluded), at that head on 2026-10-13. Nothing changes how it starts, so no image boot. The roll makes no visible change while no Visitor holds the demo sign-in (DW-335); every restart already refuses older OIDC sessions, so the Owner signs in again after it. PR 9 opened 2026-10-13 by the independent verifier, who re-ran `mix precommit` on `e392689` against a scratch Postgres 18.6: 717 tests, 0 failures (4 excluded); no workflow runs on it, `cs-tracker` has no `.github/` | _not done_ |
+| DP11 | **Merge `digital-library` PR #64 (`fix/demo-principal-one-way`) into `dev`, then `dev` into `main`, then redeploy** by the README's standing redeploy (after DL1, which writes it) | Added 2026-10-13 (Epic 5 retrospective action 5, m13). Head `1b14ff6`, from `origin/dev` `4ad020d`. Its API suite, 178 tests, and both typechecks passed on that head in a `node:22-bookworm` container on 2026-10-13. No demo account exists (DW-337), so the change is inert on the box until one does. PR #64 opened 2026-10-13 by the independent verifier; on `1b14ff6` the verifier read `CI` (push, run 38399200780) success and `CI` (pull_request, run 38399244504) success, and `Test & Deploy` (still its name on this branch, which predates PR #63) runs only for `main` | _not done_ |
 
 Story 5.8 is done when DP1 to DP7 are dated and DP8 is ruled. Story 5.9 is done when DR1 to DR3 are dated
-and DR4 is ruled. Story 5.10 is done when DS1 to DS3 are dated.
+and DR4 is ruled. Story 5.10 is done when DS1 to DS3 are dated. Epic 5 retrospective action 1 is live when
+DP9 is dated, and action 2 when `ops/tracker-cutover.md`'s Pending action 9 is. Action 3 is live when DS4
+and DS5 are dated. Action 4 is live when DL1 is dated. Action 5 is live when DP10 and DP11 are dated.

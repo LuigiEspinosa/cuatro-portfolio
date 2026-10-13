@@ -371,6 +371,44 @@ describe('the tracker services', () => {
     ]);
   });
 
+  // Epic 5 retrospective M2: schema `demo` is migrated by its own one-off, whose URL is written in the file
+  // with `schema=demo` in the query, so no rollout builds a URL by appending to one.
+  /** Why `tracker-migrate-demo` would not migrate schema `demo` of `tracker-migrate`'s database the same way. */
+  const demoMigrateFaults = (text: string): string[] => {
+    const of = (name: string): string => parts(text, 2).find((part) => part.startsWith(`  ${name}:\n`)) ?? '';
+    const demo = of('tracker-migrate-demo');
+    if (demo === '') return ['no tracker-migrate-demo service'];
+    const URL_LINE = /^ {6}- DATABASE_URL=(\S+)$/m;
+    const urlOf = (part: string): URL => new URL(URL_LINE.exec(part)?.[1] ?? 'invalid:');
+    const faults: string[] = [];
+    const strip = (part: string): string => part.replace(/^ {2}\S+:\n/, '').replace(/^ {6}- DATABASE_URL=.*\n/m, '');
+    if (strip(demo) !== strip(of('tracker-migrate'))) faults.push('tracker-migrate-demo differs from tracker-migrate beyond its URL');
+    if (!URL_LINE.test(demo)) return [...faults, 'tracker-migrate-demo sets no DATABASE_URL'];
+    const url = urlOf(demo);
+    if (url.searchParams.get('schema') !== 'demo') faults.push('tracker-migrate-demo does not set schema=demo');
+    url.searchParams.delete('schema');
+    if (url.href !== urlOf(of('tracker-migrate')).href) faults.push('tracker-migrate-demo does not reach tracker-migrate’s database');
+    return faults;
+  };
+
+  it('migrates schema demo with the same image, command and database, schema=demo set in the query', () => {
+    expect(demoMigrateFaults(compose)).toEqual([]);
+    expect(parts(compose, 2).find((part) => part.startsWith('  tracker-migrate-demo:\n'))).toContain('    profiles: [migrate]');
+  });
+
+  it('names a missing demo migration, a missing URL, a missing schema, another database and another command', () => {
+    expect(demoMigrateFaults(compose.replace('  tracker-migrate-demo:\n', '  tracker-demo:\n'))).toEqual(['no tracker-migrate-demo service']);
+    expect(demoMigrateFaults(compose.replace(/^ {6}- DATABASE_URL=\S+&schema=demo\n/m, ''))).toEqual(['tracker-migrate-demo sets no DATABASE_URL']);
+    expect(demoMigrateFaults(compose.replace('&schema=demo', ''))).toEqual(['tracker-migrate-demo does not set schema=demo']);
+    expect(demoMigrateFaults(compose.replace('/cuatro_tracker?connection_limit=4&schema=demo', '/other?connection_limit=4&schema=demo'))).toEqual([
+      'tracker-migrate-demo does not reach tracker-migrate’s database',
+    ]);
+    const demo = parts(compose, 2).find((part) => part.startsWith('  tracker-migrate-demo:\n')) ?? '';
+    expect(demoMigrateFaults(compose.replace(demo, demo.replace("'migrate', 'deploy'", "'migrate', 'reset'")))).toEqual([
+      'tracker-migrate-demo differs from tracker-migrate beyond its URL',
+    ]);
+  });
+
   it(`probes ${READY} with the Hub's probe, so the runs above cover its handling`, () => {
     expect(probeOf(tracker)).toBe(probeOf(compose).replace(HEALTH, READY));
   });
