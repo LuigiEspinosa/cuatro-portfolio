@@ -1161,9 +1161,10 @@ development_status:
   # No restyle story exists for StreamVault, MaiCoin, poketracker-go, Mutuo or
   # cuatro-finance. AD-25 creates one when the Suite Directory renders them, not before.
   epic-8: in-progress
-  # 2026-10-13: built, awaiting the independent verifier, the Operator's visual sign-off and floor
-  # ruling (ops/restyle-floor.md R1, R2) and the cs-tracker merge and roll (R3).
-  8-1-cs-tracker-visual-restyle: review
+  # 2026-10-13: built; the independent verifier passed it with minor findings in round 2 and opened
+  # cs-tracker PR #11 to dev (head 32c0d73). awaiting-operator on ops/restyle-floor.md R1 (visual
+  # sign-off), R2 (floor ruling), R3 (merge PR #11 to dev, dev to main, roll cs-tracker) and R4.
+  8-1-cs-tracker-visual-restyle: awaiting-operator
   8-2-digital-library-adopts-the-contract-and-is-restyled: backlog
   8-3-list-wheel-visual-restyle: backlog
   8-4-record-the-restyle-floor-and-the-per-application-coherence-ch: backlog

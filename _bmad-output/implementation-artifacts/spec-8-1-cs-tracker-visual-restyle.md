@@ -2,7 +2,7 @@
 title: 'Story 8.1: cs-tracker visual restyle, with O-14, O-15 and O-17 for wave 1'
 type: 'feature'
 created: '2026-10-13'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: '3a57510fe87ad56cd04e3451432bd8afc15266f6'
@@ -121,4 +121,38 @@ Evidence: `C:\CuatroEcosystem\epic-8-evidence\8-1-cs-tracker-visual-restyle\`. S
 
 ## Verification
 
-_For the independent verifier._
+**Independent verifier, round 2, 2026-10-13: pass with minor findings.** Round 1 refused on F-6, F-7 and the
+Code Map's dashes; all three are fixed at `cs-tracker` `32c0d73`.
+
+**Open PR:** `cs-tracker` [#11](https://github.com/LuigiEspinosa/cs-tracker/pull/11), `restyle/8-1-visual-restyle`
+into `dev`, head `32c0d73`. It reports no checks, because cs-tracker has no CI. Merging it is the Operator's job
+(`ops/restyle-floor.md` R3), as are the visual sign-off (R1), the floor ruling (R2) and R4.
+
+**What the verifier checked:**
+- **Templates.** Every template diff was read against `0e5d0c4`. DOM order, destinations, interactions and every
+  string are unchanged. Only decorative icons and illustrations are gone, and the quick links' chevron became the
+  arrow glyph.
+- **Daisy call sites.** None is left (held by `restyle_test.exs`). The plugin is still installed. The vendored
+  contract reads `v2.0.0` and the Registry `token_contract` reads `2.0.0`. Nothing is imported from the Anchor
+  beyond `cuatro-contracts/`.
+- **Gates.**
+  - `mix precommit`: 715 tests, 0 failures (4 excluded), exit 0, and the tree was clean afterwards.
+  - The production image booted on a scratch Postgres 16: `GET /` 302, `app.css` and the three woff2 faces 200.
+  - The image's CSS has one `box-shadow` (`none`), 0 gradients, and no accent ground but `::selection`.
+  - Anchor root suite: 73 files passed. The 7 DW-135 WSL-bash files failed in the full run and each passed alone:
+    demo-reset 30, deploy-remote 28, library-backup 59, postgres-backup 20 + 1 skipped, postgres-init 17,
+    tournament-backup 15, tracker-backup 11.
+- **AD-19, re-measured** against the production image: eight pages at 360 and 1280, with the menu open at 360.
+  - 296 target readings: 0 under 44px, 0 filled, 0 radii, 0 transitioned.
+  - 188 keyboard stops: 0 without the ring, 0 rings transitioned, and no ring on a click.
+  - The ring is visible on `--token-bg` and on the flash's `--token-bg-raised`.
+  - No horizontal scroll at the four widths. F-1, F-2, F-9 and F-11 hold.
+  - The record is in `ops/restyle-floor.md` § Independent verification, round 2.
+
+**Minor findings (not blocking):**
+1. The S-8 note says one transition is left. In fact the generator's `show/2` and `hide/2` also put `transition-all`
+   on the notices' entrance and exit. They are LiveView JS commands, so the conclusion stands.
+2. Hand-fix 3's `:focus-visible` rule omits § 4's `border-radius: var(--r-hair)`. It dates from Story 1.19 and this
+   story did not touch it.
+3. The epics' Stories 8.2 and 8.3 still state the assumed families. Only `ops/restyle-floor.md` and R4 carry the
+   restated strategies.

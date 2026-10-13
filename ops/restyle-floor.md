@@ -257,13 +257,42 @@ release up, `GET /` 302, `app.css` and the three woff2 faces 200, every scratch 
 6. **The reconnect notice still spins an icon** (`motion-safe:animate-spin`), inside the S-5 overlay
    cs-tracker keeps as its own.
 
+### Independent verification, round 2 (2026-10-13)
+
+**Observed 2026-10-13 by the independent verifier** on `cs-tracker` `32c0d73`, with its own script
+(`C:\CuatroEcosystem\epic-8-evidence\8-1-cs-tracker-visual-restyle\verifier-round-2\`: `measure.mjs`, `transcript.txt`,
+screenshots). The script ran against the **production image** (`bin/migrate`, then the release on a scratch Postgres 16,
+seeded with `method/seed.exs`, a session minted inside the release, a local TLS front so the socket meets
+`check_origin`). Chromium `151.0.7922.34`, device scale factor 1. Eight pages (the seven above plus `/items/5`,
+wishlisted), each at 360 and 1280, with the mobile menu open at 360.
+
+- **Targets:** 296 visible readings, 0 under 44px on either axis, 0 filled at rest or on hover, 0 radii, 0 transitions
+  naming `all` or `outline`. There are 15 overlaps, all at 360 with the menu open: the open menu sits inside the sticky
+  header and covers the content scrolled beneath it, so no two adjacent targets overlap (`menu-open-360.png`).
+- **Keyboard:** 188 stops (the date field's four stops included), 0 without a solid 2px ring, and 0 rings transitioned.
+  Clicking the menu toggle paints no ring. The ring is `oklch(0.84 0.13 288)` on `--token-bg`. On the third ground,
+  the flash notice on `--token-bg-raised`, the close Control's ring was read as `solid 2px` (`flash-1280-focus.png`).
+- **Other checks:** no horizontal scroll at 359, 390, 759 or 761. F-1, F-2 (`document.fonts.check` true for all three)
+  and F-11 hold. F-9 holds: the greyscale masked renders tell Owned, Wishlisted and Manual apart.
+- **The image's `app.css`** is 26,825 bytes. It has one `box-shadow` (`none`), 0 gradients, and no accent ground but
+  `::selection`.
+- **Gates:** `mix precommit` 715 tests, 0 failures (4 excluded). Anchor root suite: 73 files passed, and the 7 DW-135
+  WSL-bash files failed in the full run and each passed alone.
+- **Two corrections to the record above, neither a floor failure.**
+  - The S-8 paragraph says the Control's border colour is the only CSS transition left. That is not quite true:
+    the generator's `show/2` and `hide/2` still put `transition-all` on the flash and reconnect notices for their
+    200 to 300 ms entrance and exit, so `.transition-all` is in the built CSS. These are LiveView JS commands, which
+    survive a patch, so no `phx-update="ignore"` is needed.
+  - Hand-fix 3's `:focus-visible` rule omits § 4's `border-radius: var(--r-hair)`, a Story 1.19 rule this story
+    did not touch.
+
 ## Pending Operator actions
 
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
 | R1 | **Sign off the `cs-tracker` restyle visually** (a ruling) | Operator | Added 2026-10-13. Look at `/`, `/browse` (and filtered to nothing), `/inventory`, `/wishlist`, `/items/:id` unowned and owned, at 360 and 1280, plus the open mobile menu and the offline banner. Before and after are `C:\CuatroEcosystem\epic-8-evidence\8-1-cs-tracker-visual-restyle\before\` and `after\` (`<route>-360.png`, `<route>-1280.png`), greyscale renders in `after\greyscale-masked-*.png`. The seed's data-URI images render as their alt text in both sets, so judge the tiles' geometry, not their pictures | _not done_ |
 | R2 | **Rule on the floor's denominator for an application whose anonymous surfaces are a redirect, plain text and the issuer's page** | Operator | Added 2026-10-13. § O-14: cs-tracker's strict floor is empty, digital-library's is `/login` and its error page. Options: (a) the demo-reachable interior counts as the floor, which Story 8.1 assumed and built; (b) the strict floor stands, Story 8.1's restyle is beyond it, and 8.2 restyles two surfaces | _not done_ |
-| R3 | **Merge the `cs-tracker` PR (`restyle/8-1-visual-restyle`, `32c0d73`) into `dev`, then `dev` into `main`, then roll `cs-tracker`** by the standing redeploy (`ops/cs-tracker-cutover.md` § Later rollouts), no step of its own | Operator | Added 2026-10-13. The independent verifier pushes the branch and opens the PR to `dev`. cs-tracker has no CI and no `.github/`, so no workflow runs on it; the gate is `mix precommit` (715 tests, 0 failures, 4 excluded, on `32c0d73`) and the production image's boot, both above. Nothing changes how it starts; the assets change, which is why the image was booted | _not done_ |
+| R3 | **Merge `cs-tracker` PR #11 (`restyle/8-1-visual-restyle`, `32c0d73`, opened by the independent verifier on 2026-10-13) into `dev`, then `dev` into `main`, then roll `cs-tracker`** by the standing redeploy (`ops/cs-tracker-cutover.md` § Later rollouts), no step of its own | Operator | Added 2026-10-13. The independent verifier pushed the branch and opened PR #11 to `dev` on 2026-10-13; `gh pr checks 11` reports no checks and the check-runs and status APIs on `32c0d73` count 0, because cs-tracker has no CI and no `.github/`; the gate is `mix precommit` (715 tests, 0 failures, 4 excluded, on `32c0d73`) and the production image's boot, both above. Nothing changes how it starts; the assets change, which is why the image was booted | _not done_ |
 | R4 | **Note that Stories 8.2 and 8.3 open on a changed strategy** | Operator | Added 2026-10-13. § O-15: `digital-library` is family A in its source-owned form, not C; `list-wheel` is C, not B. `epics.md` says the strategy changes before each opens; both were dispatched in parallel with this story | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
