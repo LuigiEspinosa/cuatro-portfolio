@@ -1165,10 +1165,12 @@ development_status:
   # cs-tracker PR #11 to dev (head 32c0d73). awaiting-operator on ops/restyle-floor.md R1 (visual
   # sign-off), R2 (floor ruling), R3 (merge PR #11 to dev, dev to main, roll cs-tracker) and R4.
   8-1-cs-tracker-visual-restyle: awaiting-operator
-  # 2026-10-13: built, awaiting the independent verifier. digital-library branches restyle/8-2-adopt-contract
-  # (960050b) and restyle/8-2-visual-restyle (c25f830) are local; the adopt PR first, the restyle PR only after
-  # the adopt merge is verified in production (ops/restyle-floor.md R9, R10). R8 and R11 are rulings.
-  8-2-digital-library-adopts-the-contract-and-is-restyled: review
+  # 2026-10-13: built; the independent verifier passed it with minor findings in round 1 and opened
+  # digital-library PR #66 (restyle/8-2-adopt-contract, head 960050b) to dev. restyle/8-2-visual-restyle (c25f830)
+  # is pushed with no PR until the adopt merge is verified in production. awaiting-operator on ops/restyle-floor.md
+  # R8 (visual sign-off), R9 (merge PR #66, dev to main, redeploy, production check), R10 (the restyle PR, merge,
+  # redeploy), R11 (the workspace DESIGN.md) and R2 (the floor ruling).
+  8-2-digital-library-adopts-the-contract-and-is-restyled: awaiting-operator
   # 2026-10-13: built (adoption e7b7887, restyle c665ee9); the independent verifier passed it with minor
   # findings in round 1 and opened list-wheel PR #4 to main (head c665ee9). awaiting-operator on
   # ops/restyle-floor.md R5 (visual sign-off), R6 (merge PR #4 to main, which deploys) and R7 (the spec

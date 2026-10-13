@@ -2,7 +2,7 @@
 title: 'Story 8.2: digital-library adopts the contract and is restyled'
 type: 'feature'
 created: '2026-10-13'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: 'aea9b97d4b0c8518274ff7459625da0da1a9dd71'
@@ -102,4 +102,53 @@ Scratch Docker objects are `epic-scratch-8-2-*`; removed at handover (see Verifi
 
 ## Verification
 
-_Left for the independent verifier._
+**Independent verifier, round 1 (2026-10-13): pass with minor findings.** No builder context; every claim
+re-run, not read.
+
+- **Diffs read against their bases**, templates included: `777814f..960050b` and `960050b..c25f830`. The nine
+  vendored blobs hash equal to `contracts/` at `46c8b68` and at `origin/dev`. Script and markup of every
+  component and of `/`, `/login` are byte-identical to the adopt step; the grid's only markup change is the
+  coverless tile's emptied box, the reading-state classes and `width`/`height` on the image; the book page and
+  `/logout` change class attributes only (the book page's `FORMAT_COLORS` map goes); `+error.svelte` renders
+  SvelteKit's default `<h1>` status and `<p>` message. DOM order, routes, data and strings unchanged otherwise.
+  No import from the Anchor beyond `cuatro-contracts/`; no floor route imports `ui/`.
+- **`digital-library` gates**, in `node:22-bookworm` with CI's canvas packages, from exports of each sha:
+  `960050b` `pnpm test -- --coverage` 32 files, 544 passed, `pnpm typecheck` 0 errors and 0 warnings, the web
+  build done; `c25f830` 33 files, 560 passed (a first run from a CRLF export failed one `restyle-floor.test.ts`
+  case; re-exported with LF, as CI checks out, all 560 passed), typecheck 0 errors and 0 warnings, build done.
+  GitHub, workflow `CI`: on `960050b` push run 38451924411 success and pull_request run 38451957664 success; on
+  `c25f830` push run 38451928868 success.
+- **Anchor root suite**, `corepack pnpm test --run` in this worktree at `c6087b5`: 80 files passed, 1979 tests
+  passed, 1 skipped; no DW-135 failure this run.
+- **AD-19, measured again by the verifier** with its own script (`verifier/method/verify.mjs` in the evidence
+  folder), Playwright `1.62.1` Chromium, device scale factor 1, against production images built from each sha
+  on a scratch stack (seed as the builder's: seven books, two coverless, Unread, Reading, Finished). Ten pages,
+  `/login` and `/no-such-path` signed out, then `/`, the grid, the grid filtered to nothing, the empty library,
+  `/logout`, a book with and without a cover. `c25f830` at 360: 66 visible interactive elements (excluding the
+  `aria-hidden` cover links), 0 under 44px, 0 overlaps, 0 grounds at rest or hover, 0 radii, 0 transitions on
+  `all` or `outline`, 0 shadows; 132 keyboard stops at 360 and 1280, every one a solid 2px
+  `oklch(0.84 0.13 288)` ring, none eased; no horizontal scroll at 359, 390, 759, 761. F-1 pixel `6,5,9` equals
+  `--token-bg`; F-2 the three faces `loaded`; F-11 `color-scheme: dark`, `::selection` accent on `--token-bg`;
+  F-8 the one accent ground is `::selection`; F-9 the masked greyscale grid tells dashed, solid and solid with
+  the square apart; § 10's throttled load (400 ms, 50 KB/s, five images pending at `DOMContentLoaded`) moved no
+  title, CLS 0.0008. F-7 fails as written exactly as recorded: six Tailwind `box-shadow` utilities in the
+  built CSS, sourced only from `ui/`, `/admin` and the reader (DW-350). The adopt image `960050b` served every
+  page on the dark ground with the three faces loaded and a ring at every stop. Screenshots:
+  `C:\CuatroEcosystem\epic-8-evidence\8-2-digital-library-adopts-the-contract-and-is-restyled\verifier\` (`restyle\`,
+  `adopt\`, each with `transcript.txt`).
+
+**Minor findings, none blocking:**
+1. The coverless grid tile also loses its catalogue number (`N° 01`, numbered across the result set), which
+   rendered nowhere else; `ops/restyle-floor.md` says only format, title and author remain beneath, and the
+   spec's Design Notes name it. § 10 and the story's criterion require the empty box, so it stands; recorded.
+2. On the adopt step alone the book page's format chip keeps Tailwind's light `emerald-100` ground (only stone
+   and white were remapped); the restyle removes it. Transitional, not on the floor's strict reading.
+3. The border sits on the image's wrapper box (`.cover`, which reserves the 2:3 space), not on `<img>`; the
+   image fills it, so it renders as § 10 asks.
+4. `restyle-floor.test.ts`'s hand-fix order case fails on a CRLF checkout (a Windows clone with
+   `core.autocrlf=true`); CI is unaffected.
+
+**PRs.** `digital-library` PR [#66](https://github.com/LuigiEspinosa/digital-library/pull/66), `restyle/8-2-adopt-contract`
+to `dev`, head `960050b`, opened by the verifier and left open (row R9). `restyle/8-2-visual-restyle` (head
+`c25f830`) is pushed with **no PR**: Story 8.2 opens it only after the adopt merge is verified in production
+(row R10).
