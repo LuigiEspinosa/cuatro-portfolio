@@ -5,7 +5,7 @@ The written answers Story 8.1 owes the three wave-1 Satellites before any restyl
 `list-wheel`'s (Story 8.3, the same day).
 Stories 8.2 and 8.3 consume § O-14 and § O-15 rather than re-deriving them; Story 8.4 records SM-12
 from this file and extends it with its per-application table (`RESTYLE-SPEC.md` § Recording a
-restyle).
+restyle), § SM-12 per application, Story 8.4's record.
 
 Written during Story 8.1 on **2026-10-13** (ISO 8601 UTC). Every value is marked **Observed** with
 its method or **Decision** with its reason (NFR-9). This file is a record, not Registry data.
@@ -557,6 +557,121 @@ images built from `apps/web/Dockerfile` with `--frozen-lockfile`.
    deleted variable. A story that renders one restyles it first. DW-349.
 5. **F-7's scope**, above. DW-350.
 
+## SM-12 per application, Story 8.4's record
+
+**The record `RESTYLE-SPEC.md` § Recording a restyle asks for, per application**, written by Story 8.4 on
+**2026-10-13** from the three sections above and from Story 8.4's own runs (evidence, kept out of every repository:
+`C:\CuatroEcosystem\epic-8-evidence\8-4-record-the-restyle-floor-and-the-per-application-coherence-ch\`). **It is
+recorded against the branch heads, not the live hostnames**: on 2026-10-13 every restyle is a branch or an open PR
+awaiting the Operator, and `cs-tracker.cuatro.dev`, `library.cuatro.dev` and `wheel.cuatro.dev` still serve the
+presentation from before Epic 8. SM-12 holds on a live hostname once its merge rolls (R3, R6, R9 then R10), and each of
+those rows already names the production check.
+
+| Field | `cs-tracker` | `digital-library` | `list-wheel` |
+|---|---|---|---|
+| Application id | `cs-tracker` | `digital-library` | `list-wheel` |
+| Head measured | `restyle/8-1-visual-restyle` `32c0d73`, PR #11 to `dev`, open | `restyle/8-2-visual-restyle` `c25f830` (on adopt `960050b`, PR #66 to `dev`, open; the restyle PR opens after R9) | `restyle/8-3-visual-restyle` `c665ee9`, PR #4 to `main`, open |
+| Framework family, as verified in Story 8.1 (§ O-15) | **A** (daisyUI 5.0.35 on Tailwind v4, plus `core_components.ex`) | **A, source-owned** (Tailwind v4, shadcn-svelte copied into `ui/`; the floor's layer is the in-house `primitives/` and `shell/`) | **C** (Angular only, no component library) |
+| Surfaces inside the floor, by route (§ O-14) | Strict floor **empty** (every anonymous answer is a redirect, JSON or plain text). Restyled on reading R2 (a): `/`, `/browse`, `/inventory`, `/wishlist`, `/items/:id` and their shell | Strict floor `/login` and the error page. Restyled on reading R2 (a) as well: `/`, `/libraries/[id]`, `/libraries/[id]/books/[bookId]`, `/logout` | `/`, whole, in the nine states its controls reach |
+| Component-class call sites, before and after (family A) | **98 to 0**, 13 distinct components, by the bundle's own class list | `ui/` call sites on floor routes **0 and 0**; declarations the vocabulary forbids in the in-house layer **92 to 0** | Not applicable (family C) |
+| AD-19 manual pass | **2026-10-13**, 15:37:20Z and 15:55:10Z, then the independent verifier's round 2 on the production image of `32c0d73`; found: 89 targets under `--tap` and 45 transitions naming `all` or `outline` before, 0 and 0 after; F-6 missed the date field's calendar stop until `32c0d73` (§ cs-tracker, correction); findings 1 to 6, and finding 7 from Story 8.4 below | **2026-10-13**, 18:07:02Z, 18:09:21Z, 18:12:09Z on the production images; found: 41 targets under `--tap` and 46 of 132 stops without a ring before, 0 and 0 after; findings 1 to 5, F-7 among them | **2026-10-13**, 17:31:29Z and 17:32:05Z on production builds; found: 73 targets under `--tap` and 3 ringless stops before, 0 and 0 after; findings 1 to 3 |
+| Greyscale render, words masked | `greyscale\cs-tracker-greyscale-masked-browse.png`, `-inventory.png`, `-item-owned.png` | `greyscale\digital-library-greyscale-masked-grid.png` | `greyscale\list-wheel-greyscale-masked-empty.png`, `-history.png`, `-editor.png` |
+| Contract version consumed, the Registry `token_contract` (`contracts/registry.json` 1.10.0) | **`2.0.0`** | **none**: the field is absent until the adopt branch is on `main` (DW-351, after R9) | **none**: absent until PR #4 is on `main` (DW-347, after R6) |
+
+The greyscale files are copies, gathered in one folder under the evidence path above, of each story's own `after\`
+renders.
+
+### F-1 to F-12, pass or fail, each by the method `RESTYLE-SPEC.md` § The floor states
+
+| # | `cs-tracker` | `digital-library` | `list-wheel` | The method each used |
+|---|---|---|---|---|
+| F-1 | **Pass** | **Pass** | **Pass** | Rendered pixel against `--token-bg` drawn to a canvas: `6,5,9` on every page sampled. For `cs-tracker` Story 8.1 read the computed ground, so Story 8.4 sampled it: `pixels-cs-tracker.txt`, four routes at 360 and 1280 |
+| F-2 | **Pass** | **Pass** | **Pass** | `document.fonts.check()` true for all three families (`cs-tracker`, verifier round 2); each `FontFace` `loaded`, which needs the woff2 fetched and parsed (`digital-library`); `loaded` and the three woff2 at 200 in the network (`list-wheel`). None used `getComputedStyle().fontFamily` |
+| F-3 | **Pass** | **Pass** | **Pass** | A sampled rule against its own token at device scale factor 1 (H-5): the Hairline reads `40,40,48`, equal to `--token-border`, in all three; on `cs-tracker` (sampled by Story 8.4) a Control's border reads `101,100,113`, equal to `--token-border-interactive`, and the disabled sync Control's reads the Hairline, as § 1 Disabled says (`probe-offline.txt`) |
+| F-4 | **Pass** | **Pass** | **Pass** | Every surface screenshotted at 360 and 1280, and every control read for a ground at rest and on hover: 0 in each |
+| F-5 | **Pass** | **Pass** | **Pass** | Computed `border-radius` at rest (H-8): 0 above 0 in each |
+| F-6 | **Pass** | **Pass** | **Pass** | Keyboard-only traversal, every Tab press read: 188 stops, 132 stops, and every stop of the nine states, 0 without the solid 2px ring and 0 rings eased in |
+| F-7 | **Pass** | **Fail** | **Pass** | Grep of the built CSS. `digital-library`'s image CSS carries 7 `box-shadow` rules, preflight's `none` and six Tailwind utilities that only `/admin`'s `ui/` components and the reader write, below the floor; no floor element carries one. The method is binding, so this is a fail, recorded as a finding (DW-350, row R13). `cs-tracker` passes from `32c0d73` (DW-343); `list-wheel` 0 in its CSS and in the bundle where Angular inlines component styles |
+| F-8 | **Pass** | **Pass** | **Pass** | Grep of the built CSS: the one accent ground in each is `::selection` |
+| F-9 | **Pass** | **Pass** | **Pass** | The greyscale renders above, words made transparent: Owned, Wishlisted and Manual; Unread, Reading and Finished; enabled and disabled, checked and unchecked, each still told apart |
+| F-10 | **Pass** | **Pass** | **Pass** | Boxes measured in Chromium at device scale factor 1, never read off the CSS: 0 under 44px on either axis; 0 adjacent overlaps (`cs-tracker`'s 15 are the open menu over content scrolled beneath the sticky header) |
+| F-11 | **Pass** | **Pass** | **Pass** | Computed `color-scheme: dark` on `:root`; `::selection` `oklch(0.66 0.165 288)` on `oklch(0.12 0.011 288)` |
+| F-12 | **Pass, on a stated reading** | **Pass** | **Pass, on a stated reading** | The four widths, 359, 390, 759 and 761. `digital-library`'s `/` rows are § 2's grid at both widths. `cs-tracker` and `list-wheel` render no § 2 row (Media grids, hairline rows, a seam S-6 table), so F-12 is read on their § 1 and § 1b geometry and the one 760px breakpoint |
+
+**Restyled, as § The floor counts it** (all twelve hold): **`cs-tracker` yes and `list-wheel` yes; `digital-library`
+no**, on F-7 alone, until R13 is ruled and acted on. `cs-tracker`'s yes stands on reading R2 (a), because its strict
+floor is empty. No F-check covers motion, so the floor count does not see the one manual check that fails in all three
+(below): **SM-12's four checks are clean in no application**, and each failure is a finding, not a correction. **F-4, F-6 and F-10 were the three that failed most often before**, as the epic expected: 85, 0 and 89
+in `cs-tracker`, 38, 46 and 41 in `digital-library`, 61, 3 and 73 in `list-wheel`. F-6 also failed while appearing to
+pass in `cs-tracker`, the one stop the first traversal never pressed.
+
+### SM-12's four manual checks, and AD-19's measured floor
+
+| Check | `cs-tracker` | `digital-library` | `list-wheel` |
+|---|---|---|---|
+| Keyboard-only traversal | **Pass** (F-6) | **Pass** (F-6) | **Pass** (F-6) |
+| 360px, no horizontal scroll (also 359, 390, 759, 761) | **Pass** | **Pass** | **Pass** |
+| Greyscale, the Status taxonomy still tellable | **Pass** (F-9) | **Pass** (F-9) | **Pass** (F-9) |
+| `prefers-reduced-motion` forced | **Fail, finding**: the disconnect notice still fades in and slides 16px over 300 ms; everything else stops | **Fail, finding**: the GSAP route transition and the book page's entrance still move (finding 2, DW-349) | **Fail, finding**: Spin still turns the wheel (finding 2, DW-345) |
+| AD-19's 44 by 44, measured in a browser | **0 under** | **0 under** | **0 under** |
+| The ring against all three grounds | **Visible**: read in the browser on `--token-bg` and on the flash's `--token-bg-raised` | **Visible**: read on `--token-bg` | **Visible**: read on `--token-bg` |
+| The ring not transitioned | **0 eased** | **0 eased** | **0 eased** |
+
+**Observed 2026-10-13, Story 8.4: `cs-tracker`'s reduced-motion check**, which Story 8.1 had not run. `method/rm-cs-tracker.mjs`
+against the production image of `32c0d73` (`docker build` from `git archive`, `epic-scratch-8-4-cs-tracker:32c0d73`,
+`bin/migrate` then the release on a scratch `postgres:16` with an empty database, the kill switch on, a session minted
+inside the release, `method/tls-proxy.mjs` in front so the socket meets `check_origin`), Chromium `151.0.7922.34`,
+360x800, at 19:33:38Z (`reduce`) and 19:33:52Z (`no-preference`). With `reduce` forced: 0 running animations after load,
+0 elements with a transition or animation over 1ms (6 without it: the Controls' 120 ms border colour and the reconnect
+icon's spin), and the reconnect icon's `animation-name` `none`. Then the app's container was stopped so the socket
+dropped: the generator's disconnect notice runs `show/2`'s `transition-all ease-out duration-300` from `opacity-0
+translate-y-4`, and under `reduce` it still went from opacity 0 and `translate 0px 16px` to 1 and `0px 0px` over about
+300 ms, frame for frame the same as `no-preference` (`rm-cs-tracker-reduce.txt`, `rm-cs-tracker-no-preference.txt`). The
+Controls' transition collapses because it reads `--dur-micro`, which the contract sets to 1ms under `reduce`; the
+generator's `duration-300` is a literal Tailwind utility the contract cannot reach. Finding 7 below. Every scratch
+object was removed afterwards.
+
+**The ring against all three grounds, computed.** The ring is `--c-focus`, and the three grounds are `--token-bg`,
+`--token-bg-raised` and `--token-bg-raised-2`. The vendored `tokens.css` is byte for byte the Anchor's on all three heads
+(sha256 `dd7bf3c2ab826c8480e1fdca1ea51ba0d5377d202b4024976b9f9a6dc0e43e32` for the Anchor's `contracts/tokens.css` at
+`5b7395b`, `cs-tracker` `32c0d73` and `origin/main` `4d94dbc`, `digital-library` `960050b`, `list-wheel` `c665ee9`), so
+the ring's contrast is the same in each: **11.70:1, 11.19:1 and 10.45:1** (`method/ring-contrast.mjs`, OKLCH to sRGB
+relative luminance, `ring-contrast.txt`), every one above the 3:1 a non-text indicator needs. No restyled surface
+in `digital-library` or `list-wheel` paints `--token-bg-raised` or `--token-bg-raised-2`, so the browser readings there
+are on the page ground only.
+
+**Finding 7, recorded rather than corrected (AD-19).** `cs-tracker`'s disconnect notices ignore `prefers-reduced-motion`:
+`show/2` and `hide/2` in `core_components.ex` carry literal `duration-300` and `duration-200` utilities. Adding a
+`motion-reduce:` variant would change no behaviour, but it is a change to the generator's JS commands that Story 8.1 did
+not make and Story 8.4 does not make (it records). DW-354.
+
+### Each application's vendored contract version, against the current one
+
+| | The contract now | `cs-tracker` | `digital-library` | `list-wheel` |
+|---|---|---|---|---|
+| Vendored on the default branch (what the live hostname serves) | `Contract v2.0.0` (`contracts/tokens.css`) | `v2.0.0` at `assets/css/cuatro-contracts/` (`main` `4d94dbc`) | **none** (`main` `8d48846` has no `cuatro-contracts/`) | **none** (`main` `718f194`) |
+| Vendored on the restyle head | | `v2.0.0` (`32c0d73`) | `v2.0.0` at `apps/web/src/lib/cuatro-contracts/` (`960050b`) | `v2.0.0` at `src/styles/cuatro-contracts/` (`c665ee9`) |
+| Behind? | | **No** | **Not adopted** until R9 | **Not adopted** until R6 |
+
+Remote heads read by `git ls-remote` at 2026-10-13T19:39:35Z, each equal to the local `origin/` ref the blobs were read
+from. **This is the gap AD-18 does not cover, by design, not a duplicate of it.** AD-18's scheduled check compares each
+Satellite's `token_contract` with **its own vendored file**, so an application that vendored `v2.0.0` and declares
+`2.0.0` passes it whether the contract has since moved to `v3.0.0` or not. Only a row like this one, the vendored version
+beside the current one, shows who is behind; on 2026-10-13 no adopter is.
+
+### SM-C6
+
+**SM-C6 reads zero.** All three are `status: Live` in every Registry release from `1.1.0` to `1.10.0` (the 14 commits to
+`contracts/registry.json` since 2026-09-01, read one by one), so the Suite Directory, which renders `Live` and `Complete`
+(`apps/hub/lib/registry.ts`, `selectRendered`), rendered each before any restyle opened. Observed live too:
+`https://cuatro.dev/` answered 200 at 2026-10-13T19:35:30Z and links `https://cs-tracker.cuatro.dev`,
+`https://library.cuatro.dev` and `https://wheel.cuatro.dev` once each. No restyle work item exists for an unrendered
+application.
+
+**`RESTYLE-SPEC.md` counts twelve.** The epic's note that § Recording a restyle reads `F-1 … F-11` and § The floor
+"eleven" is resolved: both read twelve in the file as it stands (§ The floor, "all **twelve** hold"; § Recording a
+restyle, `F-1 … F-12`).
+
 ## Pending Operator actions
 
 | # | Action | Owner | Note | Completed (UTC) |
@@ -573,6 +688,7 @@ images built from `apps/web/Dockerfile` with `--frozen-lockfile`.
 | R10 | **After R9's production check, merge the restyle branch, `restyle/8-2-visual-restyle` (head `c25f830`, four commits on `960050b`), once its PR to `dev` is opened (the branch is pushed, 2026-10-13, with no PR; opening it after R9 is an agent step), then `dev` into `main`, then redeploy** the same way | Operator | Added 2026-10-13. The PR is not opened before R9 is done (`epics.md` Story 8.2: "the first is verified in production before the second opens"); after the adopt merge the branch carries only its four commits over `dev`. Name the runs read on each merge sha, as R9. The production check is R8's surfaces on `https://library.cuatro.dev` | _not done_ |
 | R11 | **Rule on the workspace's `DESIGN.md` (WIRED editorial)**, which `digital-library-workspace/AGENTS.md` calls "the law" and which the restyle supersedes for every surface it touched | Operator | Added 2026-10-13. Both files are the Operator's, at the workspace root outside any repository, and Story 8.2 did not touch them. Options: retire it, or amend it to name the Cuatro contract and `RESTYLE-SPEC.md` as the source for the floor's surfaces. Until then, an agent reading the workspace first is told to keep the light WIRED system | _not done_ |
 | R12 | **Rule on `list-wheel`'s workspace `DESIGN.md`** (`C:\CuatroEcosystem\list-wheel-workspace\DESIGN.md`, the Sentry-inspired system the 2026-04 theme followed), which no longer describes what `list-wheel` renders once PR #4 merges | Operator | Added 2026-10-13 from Story 8.3's independent verifier, as R11 is for `digital-library`. The file is the Operator's, outside any repository, and no story touched it. Options: retire it, or amend it to name the Cuatro contract and `RESTYLE-SPEC.md` | _not done_ |
+| R13 | **Rule on F-7's scope for `digital-library`** (DW-350): (a) amend `RESTYLE-SPEC.md` § The floor so F-7 greps only the rules a floor surface can match, which passes `digital-library` as it stands; or (b) keep F-7 as written, so `digital-library` counts as restyled only once `/admin`'s `ui/` components and the reader stop writing the six `box-shadow` utilities, a restyle of surfaces below the floor | Operator | Added 2026-10-13 by Story 8.4, which recorded F-7 as a fail by the binding method (§ SM-12 per application). `cs-tracker` met F-7 as written by not emitting daisyUI's unused rules (DW-343); `digital-library` cannot do the same without touching `/admin`. Until this is ruled, `digital-library` reads restyled: no | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC date and leave the row in place.

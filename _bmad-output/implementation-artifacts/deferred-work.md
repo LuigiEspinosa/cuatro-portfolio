@@ -10445,6 +10445,11 @@ status: done
 
     **Owner: Story 8.4, which fixes F-7's scope.** **Trigger: when 8.4 records F-7.** Either scope the grep to the
     rules a floor surface can match, or restyle `/admin` and the reader off those utilities.
+
+    **2026-10-13, Story 8.4:** F-7 recorded as a **fail** for `digital-library` by the binding method (grep of the
+    built CSS), as a finding, in `ops/restyle-floor.md` § SM-12 per application. Which of the two ways closes it is a
+    specification choice, so it went to the Operator as row R13 rather than being made here. **Owner now: the session
+    that acts on R13's ruling.** **Trigger: R13 done.**
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
   id: DW-351
@@ -10487,4 +10492,21 @@ status: done
     `.buttons-row .toast` style never shows and the `copied` screenshots carry no toast.
 
     **Owner: a `list-wheel` story outside Epic 8.** **Trigger: the next story that touches the copy action.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-4-record-the-restyle-floor-and-the-per-application-coherence-ch.md`
+  id: DW-354
+  summary: >-
+    `cs-tracker`'s disconnect notices ignore `prefers-reduced-motion`: `show/2` and `hide/2` in `core_components.ex`
+    carry literal `transition-all ease-out duration-300` and `duration-200` utilities, so under a forced `reduce` the
+    notice still fades in and slides 16px over about 300 ms.
+  evidence: |-
+    Observed 2026-10-13 by Story 8.4 against the production image of `cs-tracker` `32c0d73` (`ops/restyle-floor.md`
+    § SM-12 per application, finding 7; the evidence folder `epic-8-evidence\8-4-record-the-restyle-floor-and-the-per-application-coherence-ch\`, `rm-cs-tracker-reduce.txt`).
+    Every other motion collapses under `reduce`: the Controls' border colour reads `--dur-micro`, which the contract
+    sets to 1ms, and the reconnect icon is `motion-safe:`. SM-12's fourth manual check fails here, as it does in
+    `digital-library` (DW-349) and `list-wheel` (DW-345).
+
+    **Owner: a `cs-tracker` story.** **Trigger: the next story that touches `core_components.ex`, or Story 8.5 if the
+    Operator wants wave 1 clean before wave 2.** A `motion-reduce:transition-none` beside each literal is the likely
+    shape; `mix precommit` and the image boot are its gate.
   status: open
