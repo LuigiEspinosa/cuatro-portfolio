@@ -1654,7 +1654,9 @@ action_items:
     # in place, AD-13 (and AD-11 for the demo sign-out) amended, ops/identity-issuer.md's two Steam passages
     # corrected to PS2's deletion. Documentation only, no Operator step;
     # spec-epic-5-retro-item-50-spec-reconciliation.md.
-    status: in-progress
+    # 2026-10-13: independent verifier passed it with minor findings (root suite clean, the seven WSL-bash
+    # suites re-run alone per DW-135). No Operator step: reaches main with the Epic 5 merge.
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-51-process-a-step-a-story-makes-by-hand-on"
     epic: 5

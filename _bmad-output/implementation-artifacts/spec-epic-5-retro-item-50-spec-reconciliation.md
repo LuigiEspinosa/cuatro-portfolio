@@ -2,7 +2,7 @@
 title: 'Epic 5 retro action 6 (m14): spec reconciliation'
 type: 'chore'
 created: '2026-10-13'
-status: 'in-review'
+status: 'done'
 route: 'oneshot'
 review_loop_iteration: 0
 baseline_commit: '63c5a1fa'
@@ -51,4 +51,19 @@ None. Documentation only: no box step, no setting, no other repository. These re
 
 ## Verification
 
-_Filled by the independent verifier._
+Independent verifier, round 1, 2026-10-13: **pass with minor findings**. No PR: documentation only, Anchor alone.
+
+- Diff read against `origin/dev` (`63c5a1f`): seven files, all documentation. Both commits are a single Conventional Commit subject, no body, no trailer; no `.env*` file touched; no box step.
+- AC1 met: 5.2, 5.3, 5.5 and 5.9 each state the ruling, name its source (DW-320, KV-10, DW-319, `ops/demo-principal.md` § The reset, DW-337) and keep the replaced wording in the inline note. Checked against AD-3's 2026-10-03 narrowing, `ops/known-violations.md` KV-10, AD-11's 2026-10-03 amendment and `spec-5-9-...` (Checkpoint 1 Approve).
+- AC2 met: AD-13's amendment matches `ops/demo-principal.md` § The reset items 1 and 2.
+- AC3 met: both Steam passages name PS2. Checked read only in `cs-tracker`: `7adfab1` deletes `steam_openid.ex`, `nonce_store.ex`, `/auth/steam` and its callback and the `:oidc_unconfigured` pipeline, and is an ancestor of `e4c6103` (PR #3) on `origin/main`; `RequireOwner` and `docs/deployment.md` on `origin/main` say an unconfigured app admits no session and redirects to `/auth/sign-in`, which answers 404; `STEAM_ID` signs no one in.
+- AC4 met: `corepack pnpm test --run`: 73 files passed, 7 failed, exactly the seven WSL-bash suites (DW-135, 16 cases); those seven re-run alone with `--no-file-parallelism`: 7 files passed, 180 passed and 1 skipped.
+- The AD-11 sentence the builder added is accepted: it restates `ops/identity-issuer.md` § Sign-out's own text for the demo subject, and without it 5.5's amendment would contradict AD-11.
+- DW-341's citation checked: `ci.yml` run 38399622554 on `63c5a1f`, attempt 1 `test` failure, attempt 2 success.
+
+Minor findings, not blocking:
+
+1. AD-11's 2026-10-13 sentence and 5.5's amendment state the demo own-session sign-out in the present tense, while `cs-tracker` PR 9 is still awaiting the Operator's merge (DP10). The same is already true of `ops/identity-issuer.md` § Sign-out, so this adds no new drift; it becomes exact when DP10 is dated.
+2. The spec's punctuation-scan note names the token ` -- ` in backticks; it is a quoted pattern, not a dash in prose.
+
+Operator steps: none from this story. The records reach `main` with the Epic 5 per-epic merge.
