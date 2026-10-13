@@ -2,7 +2,7 @@
 title: 'Story 8.4: record the restyle floor and the per-application coherence check'
 type: 'chore'
 created: '2026-10-13'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 context:
@@ -87,4 +87,39 @@ postgres-init, tournament-backup; 9 failed, 1970 passed, 1 skipped). Each of the
 library-backup 59, tracker-backup 11, postgres-backup 20 + 1 skipped, postgres-init 17, tournament-backup 15,
 demo-reset 30, all passed. Nothing else failed. The change is documentation only.
 
-**Independent verifier:** not yet run; the verdict goes here.
+**Independent verifier, round 1, 2026-10-13: pass with minor findings.**
+
+**Open PRs the record stands on** (none opened or merged by this story; every merge is the Operator's): `cs-tracker`
+[#11](https://github.com/LuigiEspinosa/cs-tracker/pull/11) to `dev`, head `32c0d73`; `digital-library`
+[#66](https://github.com/LuigiEspinosa/digital-library/pull/66) to `dev`, head `960050b` (the restyle branch, `c25f830`,
+has no PR until R9); `list-wheel` [#4](https://github.com/LuigiEspinosa/list-wheel/pull/4) to `main`, head `c665ee9`.
+All three read `OPEN` at those heads by `gh pr view`, and `git ls-remote` gave the same heads and `main`s the record names.
+
+Re-run by the verifier, with its own scripts (Playwright `1.62.1`, Chromium `151.0.7922.34`, device scale factor 1):
+- `list-wheel` built from `git archive c665ee9` (`npm ci`, `ng build`), served statically: empty, loaded, winner, history
+  and editor at 360 and 1280: 0 targets under 44px, 0 overlaps, 0 horizontal scroll, every Tab stop a solid 2px ring with
+  0 eased, the three families loaded, no request off the host. Built CSS and JS: 0 `box-shadow`, 0 gradients, the one
+  accent ground `::selection`. Under forced `reduce` no CSS transition runs and Spin still turns the wheel (DW-345).
+- `digital-library` built from `git archive c25f830` (`apps/web`, adapter-node): `/login` and the 404 at 359, 360, 390, 759,
+  761 and 1280: 0 under 44px, 0 horizontal scroll, every stop ringed, 0 eased. Its built CSS carries 7 `box-shadow` rules
+  (`:-moz-ui-invalid{box-shadow:none}` and six utilities); the utilities are written only by `ui/` and the reader, and
+  only `/admin` imports `ui/`. So F-7 fails as recorded. The GSAP calls in `+layout.svelte` and the book page read no
+  motion preference (DW-349).
+- `cs-tracker` production image built from `git archive 32c0d73`, `bin/migrate` and the release on a scratch `postgres:16`,
+  the 8.1 seed, a session minted inside the release, a plain HTTP front rewriting the socket's Origin (no TLS: the
+  verifier's attempt to make a scratch key pair was refused by a permission rule and not retried). `/`, `/browse`,
+  `/inventory`, `/wishlist`, `/items/1`, `/items/8` at 360 and 1280: ground pixel `6,5,9` on every page, 0 under 44px,
+  0 overlaps, 0 radii, 0 horizontal scroll, every stop ringed, 0 eased. Forced `reduce`: nothing moves at rest; the
+  disconnect notice still goes from opacity 0 and `0px 16px` to 1 over about 300 ms (finding 7, DW-354). Every
+  `epic-scratch-8-4v-*` object was removed.
+- The vendored `tokens.css` sha256 `dd7bf3c2...` on all five heads and the Anchor, recomputed; the ring's contrast
+  recomputed from OKLCH as 11.70, 11.19 and 10.45 to 1. All 14 commits to `contracts/registry.json` since 2026-09-01
+  give the three `Live`; `https://cuatro.dev/` answered 200 and links each once. `RESTYLE-SPEC.md` reads twelve.
+- `corepack pnpm test --run`: 80 files, 1980 tests; 6 files failed (15 cases, each about 30 s with empty output), all
+  DW-135 WSL-bash files; alone, demo-reset 30, deploy-remote 28, library-backup 59, postgres-backup 20 + 1 skipped,
+  tournament-backup 15, tracker-backup 11, all passed. No Satellite was edited, so neither `mix precommit` nor a Satellite
+  suite applies.
+
+Minor findings, not blocking: `cs-tracker`'s and `list-wheel`'s "restyled: yes" also stand on F-12's stated reading
+(neither renders a § 2 row), which no Pending row asked the Operator to rule; the verifier added row R14. The record's
+"preflight's `none`" for `digital-library` is the `:-moz-ui-invalid` rule.

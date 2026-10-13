@@ -1176,11 +1176,13 @@ development_status:
   # ops/restyle-floor.md R5 (visual sign-off), R6 (merge PR #4 to main, which deploys) and R7 (the spec
   # defects ruling); DW-347 (adoption record, then the Registry token_contract) follows R6.
   8-3-list-wheel-visual-restyle: awaiting-operator
-  # 2026-10-13: built, awaiting the independent verifier. ops/restyle-floor.md § SM-12 per application records
-  # the three wave-1 applications against their branch heads (every restyle PR awaits the Operator): the floor holds
-  # for cs-tracker (on R2 reading (a)) and list-wheel, digital-library fails F-7 (R13), reduced motion fails in all
-  # three (DW-345, DW-349, DW-354). Operator rows R12 and R13 added.
-  8-4-record-the-restyle-floor-and-the-per-application-coherence-ch: review
+  # 2026-10-13: built; the independent verifier passed it with minor findings in round 1. ops/restyle-floor.md
+  # § SM-12 per application records the three wave-1 applications against their branch heads (every restyle PR awaits
+  # the Operator): the floor holds for cs-tracker (on R2 reading (a)) and list-wheel, digital-library fails F-7 (R13),
+  # reduced motion fails in all three (DW-345, DW-349, DW-354). awaiting-operator on ops/restyle-floor.md R2, R13
+  # and R14 (rulings the record's verdicts stand on), R12, R7, the sign-offs R1, R5, R8, and the merges R3 (cs-tracker PR #11),
+  # R6 (list-wheel PR #4), R9 then R10 (digital-library PR #66, then the restyle PR), after which SM-12 holds live.
+  8-4-record-the-restyle-floor-and-the-per-application-coherence-ch: awaiting-operator
   8-5-cuatro-tracker-visual-restyle: backlog
   8-6-cs-tournament-visual-restyle: backlog
   epic-8-retrospective: optional
