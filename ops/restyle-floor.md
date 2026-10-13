@@ -1,7 +1,8 @@
 # The restyle floor, Epic 8
 
 The written answers Story 8.1 owes the three wave-1 Satellites before any restyle is estimated
-(`epics.md` § Epic 8, Prerequisite: O-14, O-15 and O-17), and `cs-tracker`'s own restyle record.
+(`epics.md` § Epic 8, Prerequisite: O-14, O-15 and O-17), `cs-tracker`'s own restyle record, and
+`list-wheel`'s (Story 8.3, the same day).
 Stories 8.2 and 8.3 consume § O-14 and § O-15 rather than re-deriving them; Story 8.4 records SM-12
 from this file and extends it with its per-application table (`RESTYLE-SPEC.md` § Recording a
 restyle).
@@ -286,6 +287,126 @@ wishlisted), each at 360 and 1280, with the mobile menu open at 360.
   - Hand-fix 3's `:focus-visible` rule omits § 4's `border-radius: var(--r-hair)`, a Story 1.19 rule this story
     did not touch.
 
+## `list-wheel`, Story 8.3's adoption and restyle
+
+The branch is `list-wheel` `restyle/8-3-visual-restyle`, from `origin/main` `718f194`, for a PR to
+`main` (row R6): `e7b7887` adopts the contract and `c665ee9` restyles. They are two commits on one branch,
+so the adoption and the restyle each land as their own commit and reach the Visitor as one merge (AD-20,
+`epics.md` Story 8.3). Story 2.25's relocation is verified and merged (`main` `00f5957`, PR #3; its board
+row reads `done`), so the restyle is a separate step after it. Evidence, kept out of every repository:
+`C:\CuatroEcosystem\epic-8-evidence\8-3-list-wheel-visual-restyle\` (`before/` and `after/`: nine states
+at 360 and 1280, `empty` and `winner` also at 359, 390, 759 and 761, the greyscale masked renders and each
+`transcript.txt`; `method/measure.mjs`).
+
+### What changed
+
+**Decision: family C, as § O-15 recorded.** There is nothing to displace, so route 1 and route 2 do not
+arise; the work is the plain component CSS plus family C's two checks. No reset ships: the only rules
+that cleared `outline` were the editor's own `:focus { outline: none }` pair, deleted.
+
+- **The adoption** (`e7b7887`). `list-wheel` was `not adopted` (`ops/contract-adoption.md`). The nine
+  token-contract files are vendored at `src/styles/cuatro-contracts/`, each blob equal to this
+  repository's `contracts/` blob at `46c8b68` (`git rev-parse` on both sides), and loaded first in
+  `angular.json` (build and test). Hand-fix lines 1 to 4 are in `src/styles.css`; line 5 mapped the
+  application's own variables onto the roles. The Google Fonts stylesheet and Rubik went: `ng build`
+  copies the three woff2 faces into `media/`, so the build fetches no font host, and the Dockerfile
+  comment says so now.
+- **The restyle** (`c665ee9`). The vocabulary is written once in `src/styles.css`: § 1 Control for every
+  `button`, the button-styled links and the file input's button; § 9 Field; a checkbox (I-1 below). The
+  component stylesheets only lay it out. The glass panel and the wheel's box became sections on a 1px
+  hairline; the display line is § 6 Display; the history table keeps seam S-6 with the separator, the
+  Label and `tabular-nums`; the error banner is text in `--token-text` on a boundary (S-4). The wheel's
+  colours left the SVG attributes for classes reading the roles, its spokes and rim are 1px at any size
+  (`vector-effect: non-scaling-stroke`), and its pointer is `--token-text`, not accent. The winner badge
+  is opaque `--token-bg`, square, on `--token-border-interactive`. `src/styles/tokens.css` is deleted.
+  **DOM order, routes, data and every string are unchanged**: the template diff is the wheel's colour
+  attributes turned into classes and the three font links removed from `<head>`.
+- **The check left behind**: `src/app/restyle.spec.ts`, 3 cases on the rendered page in Karma's Chrome:
+  every control unfilled, square, unshadowed, `border-color` its only transition, at least 44px on both
+  axes; no radius and no shadow on any element; fields square on the page ground. A planted
+  `background: var(--token-accent); border-radius: 4px` on the Control failed it (`1 FAILED, 147 SUCCESS`),
+  then was reverted.
+
+### The floor, measured once by hand (AD-19)
+
+**Observed 2026-10-13**, before at 17:31:29Z and after at 17:32:05Z, by `method/measure.mjs` in
+Playwright `1.62.1`'s Chromium `151.0.7922.34`, device scale factor 1, against each production build
+served statically (`718f194`, built in a scratch worktree removed afterwards, and `c665ee9`). The floor
+is one surface, `/` (§ O-14), read in the nine states its own controls reach, with `showOpenFilePicker`
+stubbed so a file opens headless: `empty`, `empty-fallback` (no File System Access, so the file input),
+`loaded`, `banner` (write permission denied), `winner`, `winner-url` (Link 1 and Link 2), `copied`,
+`history`, `editor`. Autofocus is dropped before reading, because F-5 is read at rest (§ O-17 H-8).
+
+| Reading, at 360x800 | Before | After |
+|---|---|---|
+| Visible interactive elements read | 75 | 75 |
+| Under `--tap` on either axis (F-10); a checkbox measured by its wrapping label | 73 | **0** |
+| Two adjacent targets overlapping | 0 | **0** |
+| A ground on a control at rest (F-4), fields and checkboxes excluded | 61 | **0** |
+| A ground, shadow or transform on hover (F-4) | 45 | **0** |
+| A radius above 0 (F-5) | 65 | **0** |
+| A `box-shadow` | 49 | **0** |
+| `opacity` below 1 | 15 | **0** |
+| `transition-property` naming `all` or `outline` over a duration | 0 | **0** |
+| Keyboard stops without a solid 2px `:focus-visible` ring (F-6) | 3 (the editor's two find fields and its textarea) | **0** |
+| A mouse click painting a ring | 0 | **0** |
+| Horizontal scroll at 359, 390, 759, 761 | 2 (`empty-fallback` at 359 and 390) | **0** |
+
+| Check | After | How |
+|---|---|---|
+| F-1 | **Pass**: pixel (2,2) reads `6,5,9`, equal to `--token-bg` drawn to a canvas, `6,5,9` (before `31,22,51`, `#1f1633`) | the page's own screenshot, decoded in the page |
+| F-2 | **Pass**: Bricolage Grotesque `700 800`, Geist `300 600` and Geist Mono `400` all `loaded` in `document.fonts`; the three woff2 answered 200 from `media/`; no Rubik face (before: Rubik from fonts.gstatic.com and no contract face) | `document.fonts` status and the network |
+| F-3 | **Pass**: the section hairline's pixel `40,40,48` equals `--token-border`, `40,40,48`, computed `1px` | a sampled rule |
+| F-4, F-5, F-6, F-10 | **Pass**, the table above | browser readings |
+| F-7 | **Pass**: 0 `box-shadow` and 0 `gradient(` in `styles-W6ATMQFT.css` and in `main-QUMLPMPG.js`, where Angular inlines the component styles (before: 12 `box-shadow` in the bundle) | grep of the built CSS and bundle |
+| F-8 | **Pass**: the one accent ground is `::selection{background-color:var(--token-accent)}`, which F-8 excludes; no `fill` reads an accent role | the same grep |
+| F-9 | **Pass**: in `after/greyscale-masked-empty.png`, `-history.png` and `-editor.png`, every word transparent, an enabled control (Boundary) tells from a disabled one (Hairline), and a checked box (a square mark inside it) from an unchecked one | greyscale render, words masked |
+| F-11 | **Pass**: `:root` `color-scheme: dark` (before `normal`); `::selection` `oklch(0.66 0.165 288)` on `oklch(0.12 0.011 288)` | computed style |
+| F-12 | **Pass with a stated reading**: the surface has no § 2 row (its one list, the history, is a table under seam S-6); controls and links meet § 1 geometry at every width; `760px` is the one breakpoint (the old `640px` and `768px` are gone) | the four widths, above |
+
+**SM-12's four manual checks.** Keyboard-only traversal, 360 with no horizontal scroll and the greyscale
+render are above. **`prefers-reduced-motion` forced** (`reduce`, Instant results off): Spin still turns
+the wheel, `rotate(0)` at the click and about `rotate(200)` 500 ms later. Finding 2.
+
+**The image.** `docker build` of `c665ee9` as `epic-scratch-8-3-list-wheel:c665ee9`, run on loopback,
+twice: `GET /` 200 at 3,151 bytes (the live page was 11,619 with Google's CSS inlined, § O-14),
+`styles-W6ATMQFT.css` 200, the three woff2 200 `font/woff2` (58,992, 24,124 and 11,284 bytes on the first
+run; the second, at 2026-10-13T17:37:53Z, read the statuses and types), `/no-such-path` 200 (the
+fallback), no `googleapis` in the page; container and image removed both times. **Gates on
+`c665ee9`**: `npm test` **148 SUCCESS** (145 at `718f194`, plus the 3 restyle cases); `node --test
+ops/deploy-remote.test.mjs` **27 pass, 0 fail**; `npm run build` with no budget warning.
+
+### Findings, recorded rather than corrected (AD-19)
+
+1. **The editor's two find fields and its textarea have no visible label** (§ 9 forbids a field with no
+   visible label; they carry `aria-label` and a placeholder). A visible label is microcopy and a field
+   appearing, so it is outside the ceiling. DW-345.
+2. **Spin ignores `prefers-reduced-motion`**: the turn is a `requestAnimationFrame` loop that never reads
+   the setting. Instant results is the reader's own way out; honouring the setting is a behaviour change.
+   DW-345.
+
+### Where the implementer had to infer (the independent-implementation test)
+
+These are recorded as defects in `RESTYLE-SPEC.md`, per Story 8.3, and go back to it rather than being
+solved locally (DW-346, row R7). What this story chose is stated so the next framework can see it.
+
+| # | Point | What 8.3 chose |
+|---|---|---|
+| I-1 | **A checkbox is in no entry.** § 1 is boxed actions and § 9 is text input; F-4 says no control has a ground, and a checked mark is one | A square unfilled box (`--s-md`, Boundary); checked draws a `--token-text` square inside it, never accent |
+| I-2 | **A checkbox's target.** H-24 puts `--tap` on the element itself, but a native checkbox's hit area is its wrapping `<label>` | `--tap` on the label; F-10 measured the label |
+| I-3 | **§ 1's sibling gap on the wrap axis.** "`--s-lg` minimum" does not say whether wrapped rows of controls count as siblings | `--s-lg` on both axes |
+| I-4 | **§ 1 Disabled names `aria-disabled`.** A native `disabled` already exposes the state, and adding the attribute is a markup change | Not added |
+| I-5 | **§ 6's `wdth 85` and `wdth 100`** name a variation axis, not a property, so `font-stretch` or `font-variation-settings` is left to infer | `font-stretch`, which the contract's `@font-face` range (`75% 100%`) serves |
+| I-6 | **A scaled SVG graphic.** Nothing says whether a graphic's strokes are dividers under F-3, or what 1px means inside a `viewBox` that scales | Roles for every colour; spokes and rim 1px by `vector-effect: non-scaling-stroke`; the badge's border scales with the wheel |
+| I-7 | **The external-navigation mark.** It is one of the system's three glyphs, but no entry says when a `target="_blank"` control must carry it, and adding it is new content | Not added |
+| I-8 | **The page-level breakpoint.** § 2 makes `760px` the row's one breakpoint; whether a page layout may keep others is unsaid | `760px` only |
+| I-9 | **The page's maximum width.** No token or entry gives one | The application's own `72rem` kept |
+| I-10 | **Carried from Story 8.1**: § 5's table gives the dot `--r-pill` where `DESIGN.md` gives `--r-none` (H-11), and there is no glyph for an icon-only control (H-30) | Not reached: `list-wheel` has neither |
+
+The workspace's own `DESIGN.md` (`C:\CuatroEcosystem\list-wheel-workspace\DESIGN.md`, the Sentry-inspired
+system the 2026-04 theme followed) is outside the repository. It now describes a design `list-wheel` no
+longer renders; it was read and not touched.
+
 ## Pending Operator actions
 
 | # | Action | Owner | Note | Completed (UTC) |
@@ -294,6 +415,9 @@ wishlisted), each at 360 and 1280, with the mobile menu open at 360.
 | R2 | **Rule on the floor's denominator for an application whose anonymous surfaces are a redirect, plain text and the issuer's page** | Operator | Added 2026-10-13. § O-14: cs-tracker's strict floor is empty, digital-library's is `/login` and its error page. Options: (a) the demo-reachable interior counts as the floor, which Story 8.1 assumed and built; (b) the strict floor stands, Story 8.1's restyle is beyond it, and 8.2 restyles two surfaces | _not done_ |
 | R3 | **Merge `cs-tracker` PR #11 (`restyle/8-1-visual-restyle`, `32c0d73`, opened by the independent verifier on 2026-10-13) into `dev`, then `dev` into `main`, then roll `cs-tracker`** by the standing redeploy (`ops/cs-tracker-cutover.md` § Later rollouts), no step of its own | Operator | Added 2026-10-13. The independent verifier pushed the branch and opened PR #11 to `dev` on 2026-10-13; `gh pr checks 11` reports no checks and the check-runs and status APIs on `32c0d73` count 0, because cs-tracker has no CI and no `.github/`; the gate is `mix precommit` (715 tests, 0 failures, 4 excluded, on `32c0d73`) and the production image's boot, both above. Nothing changes how it starts; the assets change, which is why the image was booted | _not done_ |
 | R4 | **Note that Stories 8.2 and 8.3 open on a changed strategy** | Operator | Added 2026-10-13. § O-15: `digital-library` is family A in its source-owned form, not C; `list-wheel` is C, not B. `epics.md` says the strategy changes before each opens; both were dispatched in parallel with this story | _not done_ |
+| R5 | **Sign off the `list-wheel` restyle visually** (a ruling) | Operator | Added 2026-10-13. The one surface, `/`, in the nine states its controls reach: `empty`, `empty-fallback` (the file input a browser without File System Access gets), `loaded`, `banner`, `winner`, `winner-url`, `copied`, `history`, `editor`, at 360 and 1280. Before and after are `C:\CuatroEcosystem\epic-8-evidence\8-3-list-wheel-visual-restyle\before\` and `after\` (`<state>-360.png`, `<state>-1280.png`; `empty` and `winner` also at 359, 390, 759 and 761), greyscale renders in `after\greyscale-masked-*.png`. A hovered control in a 1280 shot shows its hover border, the one thing hover changes | _not done_ |
+| R6 | **Merge the `list-wheel` PR from `restyle/8-3-visual-restyle` (`c665ee9`, two commits, opened to `main` by the independent verifier) into `main`**, which is the deploy: `.github/workflows/deploy.yml` runs its `test` job, then its `deploy` job (the Capacity Gate, then `ops/deploy-remote.sh` on the box, which builds there, KV-1). No step by hand on the box | Operator | Added 2026-10-13. A dated completion names the Deploy run on the merge sha and both its jobs, never "CI green" (Epic 5 retro action 8); `main` is unprotected and no check is required, so read the run. Then `https://wheel.cuatro.dev/` answers 200 with a `styles-*.css` and three `media/*.woff2` at 200, and no `googleapis`. DW-347 follows: the adoption observation, then the Registry `token_contract` | _not done_ |
+| R7 | **Rule on Story 8.3's specification defects, I-1 to I-10** (`list-wheel` § Where the implementer had to infer): amend `RESTYLE-SPEC.md` per point, or accept what 8.3 chose as the reading | Operator | Added 2026-10-13. `epics.md` Story 8.3 sends these back to the specification rather than solving them locally; wave 2 (8.5, 8.6) meets the same points in two more frameworks. DW-346 | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC date and leave the row in place.

@@ -10350,3 +10350,47 @@ status: done
     **Owner: a `cs-tracker` story outside Epic 8.** **Trigger: the next story that touches `/browse`'s filter bar
     or its headings.**
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
+  id: DW-345
+  summary: >-
+    Two `list-wheel` findings a restyle may not fix: the editor's find fields and textarea carry no visible label
+    (RESTYLE-SPEC.md § 9), and Spin ignores `prefers-reduced-motion`.
+  evidence: |-
+    Found 2026-10-13 by Story 8.3's AD-19 pass and recorded as findings (`ops/restyle-floor.md` § `list-wheel`,
+    findings 1 and 2): a visible label is microcopy and a field appearing, and the spin's `requestAnimationFrame`
+    loop reading the setting is a behaviour change, both outside the ceiling. Forced `reduce` with Instant results
+    off, the wheel still turned about 200 degrees in 500 ms.
+
+    **Owner: a `list-wheel` story outside Epic 8.** **Trigger: the next story that touches the editor or the
+    wheel's spin.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
+  id: DW-346
+  summary: >-
+    Story 8.3's independent-implementation test found ten points in `RESTYLE-SPEC.md` an implementer has to infer
+    (I-1 to I-10: the checkbox, its target, the wrap-axis gap, `aria-disabled`, `wdth`, scaled SVG strokes, the
+    external mark, the page breakpoint, the page width, and 8.1's H-11 and H-30); they go back to the specification.
+  evidence: |-
+    Recorded 2026-10-13 in `ops/restyle-floor.md` § `list-wheel`, Where the implementer had to infer, each with
+    what 8.3 chose. `epics.md` Story 8.3 says such findings go back to the specification rather than being solved
+    locally, because a point that needed inferring here will need inferring in four more frameworks.
+
+    **Owner: the specification's owner, on the Operator's ruling (`ops/restyle-floor.md` row R7).** **Trigger:
+    before Story 8.5 or 8.6 opens.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
+  id: DW-347
+  summary: >-
+    `list-wheel` adopts Contract 2.0.0 in Story 8.3 (vendored at `src/styles/cuatro-contracts/`), but nothing
+    records the adoption and the Registry declares no `token_contract` for it until the branch is on `main`.
+  evidence: |-
+    Story 8.3, 2026-10-13: the adoption is `list-wheel` `e7b7887` on `restyle/8-3-visual-restyle`, not yet on
+    `main`. `ops/contract-adoption.md`'s row reads `not adopted` and the scheduled Registry verification reads the
+    adopter's `main`, so an earlier record or `token_contract` would describe a commit ahead of the remote and fail
+    the verification ("declared but no recorded target", or the path absent).
+
+    **Owner: the session that observes the merge.** **Trigger: `ops/restyle-floor.md` row R6 done.** In order:
+    re-observe the `list-wheel` row in `ops/contract-adoption.md` (adopted, `2.0.0`, at
+    `src/styles/cuatro-contracts/tokens.css`) and commit that dated observation; then a Registry release giving
+    the `list-wheel` entry `token_contract: "2.0.0"`, whose push runs `registry-verification.yml`.
+  status: open
