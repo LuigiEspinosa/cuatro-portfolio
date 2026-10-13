@@ -10414,3 +10414,52 @@ status: done
     **Owner: the next `cs-tracker` story that touches `assets/css/app.css`.** **Trigger: that story.** Add the
     line to the unlayered rule, and extend `token_contract_test.exs`'s hand-fix 3 assertion to read it.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
+  id: DW-349
+  summary: >-
+    Four `digital-library` findings a restyle may not fix: the grid's search field has no visible label
+    (RESTYLE-SPEC.md § 9); the GSAP route transition and book-page entrance ignore `prefers-reduced-motion` and
+    use literal durations; the book page's coverless box keeps its `No cover` text (§ 10); and `Breadcrumb`,
+    `StatusTag` and `EditorialTable`, rendered nowhere, keep the WIRED geometry.
+  evidence: |-
+    Found 2026-10-13 by Story 8.2's AD-19 pass and recorded as findings (`ops/restyle-floor.md` § `digital-library`,
+    findings 1 to 4): a visible label and removing read text are microcopy, and reading the motion setting is a
+    behaviour change, all outside the ceiling. Forced `reduce`, the book page's cover still slid in
+    (`matrix(..., -22.87, 0)` at 80 ms; `after/reduced-motion.txt` in the evidence folder).
+
+    **Owner: a `digital-library` story outside Epic 8.** **Trigger: the next story that touches the grid's
+    filter strip, the book page, the layout's transition, or renders one of the three components.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
+  id: DW-350
+  summary: >-
+    `digital-library`'s built CSS carries six Tailwind `box-shadow` utilities (`shadow-xs`, `-sm`, `-xl`, `-2xl`,
+    `focus-visible:ring-1`, `-[3px]`), written only by `/admin`'s shadcn-svelte `ui/` components and the reader,
+    so F-7's grep of the built CSS fails as written while no floor element carries one.
+  evidence: |-
+    Observed 2026-10-13 by Story 8.2 in the production image of `digital-library` `c25f830`
+    (`after/image-css/grep.txt`): 7 `box-shadow` rules, preflight's `none` and the six above; 0 gradients. This is
+    H-19 of `review-independent-implementation.md`, binding on Story 8.4 (`ops/restyle-floor.md` § O-17), and the
+    case Story 8.1's DW-343 closed in `cs-tracker` by stopping the rules being emitted, which here means restyling
+    `/admin` below the floor.
+
+    **Owner: Story 8.4, which fixes F-7's scope.** **Trigger: when 8.4 records F-7.** Either scope the grep to the
+    rules a floor surface can match, or restyle `/admin` and the reader off those utilities.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
+  id: DW-351
+  summary: >-
+    `digital-library` adopts Contract 2.0.0 in Story 8.2 (vendored at `apps/web/src/lib/cuatro-contracts/`), but
+    nothing records the adoption and the Registry declares no `token_contract` for it until the adopt branch is on
+    `main`, as the story's criterion requires once adoption ships.
+  evidence: |-
+    Story 8.2, 2026-10-13: the adoption is `digital-library` `960050b` on `restyle/8-2-adopt-contract`, not yet on
+    `main`. `ops/contract-adoption.md`'s row reads `not adopted` and the scheduled Registry verification reads the
+    adopter's `main`, so an earlier record or `token_contract` would describe a commit ahead of the remote and fail
+    the verification.
+
+    **Owner: the session that observes the merge.** **Trigger: `ops/restyle-floor.md` row R9 done.** In order:
+    re-observe the `digital-library` row in `ops/contract-adoption.md` (adopted, `2.0.0`, at
+    `apps/web/src/lib/cuatro-contracts/tokens.css`) and commit that dated observation; then a Registry release
+    giving the `digital-library` entry `token_contract: "2.0.0"`, whose push runs `registry-verification.yml`.
+  status: open

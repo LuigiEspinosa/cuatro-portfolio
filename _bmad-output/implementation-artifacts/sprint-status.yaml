@@ -42,7 +42,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-13-2026 09:05
+last_updated: 10-13-2026 18:21
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1165,7 +1165,10 @@ development_status:
   # cs-tracker PR #11 to dev (head 32c0d73). awaiting-operator on ops/restyle-floor.md R1 (visual
   # sign-off), R2 (floor ruling), R3 (merge PR #11 to dev, dev to main, roll cs-tracker) and R4.
   8-1-cs-tracker-visual-restyle: awaiting-operator
-  8-2-digital-library-adopts-the-contract-and-is-restyled: backlog
+  # 2026-10-13: built, awaiting the independent verifier. digital-library branches restyle/8-2-adopt-contract
+  # (960050b) and restyle/8-2-visual-restyle (c25f830) are local; the adopt PR first, the restyle PR only after
+  # the adopt merge is verified in production (ops/restyle-floor.md R9, R10). R8 and R11 are rulings.
+  8-2-digital-library-adopts-the-contract-and-is-restyled: review
   # 2026-10-13: built (adoption e7b7887, restyle c665ee9); the independent verifier passed it with minor
   # findings in round 1 and opened list-wheel PR #4 to main (head c665ee9). awaiting-operator on
   # ops/restyle-floor.md R5 (visual sign-off), R6 (merge PR #4 to main, which deploys) and R7 (the spec
