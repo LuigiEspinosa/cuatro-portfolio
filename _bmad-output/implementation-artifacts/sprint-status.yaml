@@ -1166,10 +1166,11 @@ development_status:
   # sign-off), R2 (floor ruling), R3 (merge PR #11 to dev, dev to main, roll cs-tracker) and R4.
   8-1-cs-tracker-visual-restyle: awaiting-operator
   8-2-digital-library-adopts-the-contract-and-is-restyled: backlog
-  # 2026-10-13: built, adoption e7b7887 and restyle c665ee9 on list-wheel restyle/8-3-visual-restyle (local,
-  # not pushed); awaiting the independent verifier, then ops/restyle-floor.md R5 (visual sign-off), R6 (merge
-  # the PR to main, which deploys) and R7 (the spec defects ruling).
-  8-3-list-wheel-visual-restyle: review
+  # 2026-10-13: built (adoption e7b7887, restyle c665ee9); the independent verifier passed it with minor
+  # findings in round 1 and opened list-wheel PR #4 to main (head c665ee9). awaiting-operator on
+  # ops/restyle-floor.md R5 (visual sign-off), R6 (merge PR #4 to main, which deploys) and R7 (the spec
+  # defects ruling); DW-347 (adoption record, then the Registry token_contract) follows R6.
+  8-3-list-wheel-visual-restyle: awaiting-operator
   8-4-record-the-restyle-floor-and-the-per-application-coherence-ch: backlog
   8-5-cuatro-tracker-visual-restyle: backlog
   8-6-cs-tournament-visual-restyle: backlog

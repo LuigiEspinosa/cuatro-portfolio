@@ -2,7 +2,7 @@
 title: 'Story 8.3: list-wheel visual restyle (Angular, static build)'
 type: 'feature'
 created: '2026-10-13'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: '46c8b685ee53d64999d028cf6f340361f797e124'
@@ -92,4 +92,48 @@ passed, 1 skipped, 5 failed in 109 s. The five are DW-135's WSL-bash suites fail
 30, 28, 59, 20 (1 skipped) and 11. `list-wheel` on `c665ee9`: `npm test` 148 SUCCESS, `node --test
 ops/deploy-remote.test.mjs` 27 pass, `npm run build` clean.
 
-**Independent verifier:** _to be filled by the verifier: verdict, what was re-run, findings._
+**Independent verifier, round 1, 2026-10-13: pass with minor findings.**
+
+**Open PR:** `list-wheel` [#4](https://github.com/LuigiEspinosa/list-wheel/pull/4), `restyle/8-3-visual-restyle`
+into `main`, head `c665ee9`. It reports no checks: `gh pr checks 4` says none, and the check-runs and status APIs
+on `c665ee9` count 0 and 0, because `deploy.yml`, the repository's only workflow, runs on a push to `main` and
+on dispatch, never on a pull request. Merging it is the Operator's job and is the deploy (`ops/restyle-floor.md`
+R6), as are the visual sign-off (R5) and the specification ruling (R7).
+
+**Re-run by the verifier:** every diff read against its base (`list-wheel` `718f194...c665ee9`, the Anchor
+`46c8b68...0360410`), templates included: the only template changes are the wheel's colour attributes becoming
+classes and the three font links leaving `<head>`, so DOM order and every string are unchanged. Story 2.25 is on
+`list-wheel` `main` (`00f5957`, PRs #2 and #3 merged 2026-09-13). The nine vendored files are blob-equal to
+`contracts/` at `46c8b68` (Contract v2.0.0) by `git rev-parse` on both sides; `package.json` carries no component
+framework, so family C holds. `list-wheel` on `c665ee9`: `npm test` 148 SUCCESS; `node --test
+ops/deploy-remote.test.mjs` 27 pass, 0 fail; `npm run build` clean; the built CSS and bundle carry 0
+`box-shadow`, 0 `gradient`, 0 `backdrop-filter`, and one accent ground, `::selection`. The production image,
+built as `epic-scratch-8-3-verify:c665ee9`, served `/` 200 with no `googleapis`, `styles-W6ATMQFT.css` 200, and
+the three woff2 200 `font/woff2` (58,992, 24,124, 11,284 bytes); container and image removed. Anchor root suite
+`corepack pnpm test --run` in this worktree: 80 files, 74 passed; 1973 passed, 1 skipped, 6 failed, all six
+DW-135 WSL-bash suites (`demo-reset`, `library-backup`, `postgres-backup`, `postgres-init`, `tournament-backup`,
+`tracker-backup`), each passing alone: 30, 59, 20 (1 skipped), 17, 15 and 11.
+
+**The floor, re-measured by the verifier's own script** (Playwright 1.62.1 driving the host's Chrome, against
+the `c665ee9` production build served statically; screenshots and `report.json` in
+`C:\CuatroEcosystem\epic-8-evidence\8-3-list-wheel-visual-restyle\verifier\`): nine states at 360 and 1280, 148
+interactive readings (a checkbox read by its wrapping label). F-10: none under 44px on either axis, no two
+adjacent boxes overlapping. F-4: no ground at rest, and on hover only the border colour changes (no ground,
+shadow, transform, border width or label colour). F-5: radius 0 at rest everywhere; the textarea reads 2px only
+while focused (minor finding 2). F-6: every keyboard stop in every state shows a 2px solid `--token-focus` ring at
+a 3px offset, no stop transitions `outline` (the controls transition `border-color` alone), and a mouse click
+paints none. F-1: the ground pixel reads `6,5,9`, equal to `--token-bg` drawn to a canvas. F-2: the three faces
+`loaded` in `document.fonts`, the three woff2 200 from `media/`. F-3: the section hairline computes `1px solid`
+`--token-border`. F-11: `color-scheme: dark`, `::selection` accent on `--token-bg`. F-12, at its four widths
+and 360: no horizontal scroll in any state, and no § 2 row exists to compare, the reading the record states. F-9
+read from the builder's masked greyscale renders: an enabled control tells from a disabled one by its border. AD-24 and AD-25 hold: nothing imported
+beyond `cuatro-contracts/`, and `list-wheel` is a rendered, `Live` Registry entry.
+
+**Minor findings, none blocking:**
+1. The winner badge's border is `0.4px` in the wheel's own units, so it renders about 3px wide at 1280, a fourth
+   stroke width beside § 3's three. Recorded as I-6 already; worth the Operator's eye under R5.
+2. The editor textarea rounds to `--r-hair` while focused, because `:focus-visible`'s radius outranks the bare
+   `textarea` selector, while the two find inputs (`input[type='text']`, higher specificity) stay square. § 4's
+   ring radius and F-5 meet here; a candidate for R7.
+3. The `copied` state never shows `Copied!`: copying removes the winner and the toast sits inside `@if (winner)`.
+   Unchanged behaviour on `main`, outside this story, so the `copied` screenshots show no toast.
