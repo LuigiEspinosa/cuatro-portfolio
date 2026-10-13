@@ -10287,8 +10287,9 @@ status: done
     `ReferenceError: requestAnimationFrame is not defined` thrown by gsap's `ScrollTrigger` after the test
     environment was torn down, with nothing under `apps/tracker` changed.
   evidence: |-
-    Seen 2026-10-13 by the independent verifier of Epic 5 retrospective action 5: `ci.yml` run 38399622554,
-    attempt 1, failed there; attempt 2 passed. One occurrence, filed so a second one is recognised.
+    Seen 2026-10-13 by the independent verifier of Epic 5 retrospective action 5: `ci.yml` run 38399622554
+    on `dev` at `63c5a1f` (`63c5a1fb8bff814a0e78a3fcf7f4291eba5712d7`), attempt 1, failed there; attempt 2
+    passed (`gh run view 38399622554`, read 2026-10-13: attempt 2, conclusion `success`). One occurrence, filed so a second one is recognised.
 
     **Owner: the next story touching `apps/tracker`'s test setup.** **Trigger: a second occurrence.** Find the
     suite that leaves a `ScrollTrigger` alive past its teardown and kill it in that suite's cleanup, or stub

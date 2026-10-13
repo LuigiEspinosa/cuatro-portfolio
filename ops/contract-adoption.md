@@ -803,8 +803,8 @@ that was never published and never reached an adopter. **Decision.**
 **How to append an event.** Add a row with the ISO 8601 UTC date, the from and to versions, every
 Satellite whose folder was re-vendored, the deprecated names and their removal version or `none`,
 the detector run and what it said, and the pointer to the adopter's work item, naming the re-vendor
-commit and the Registry edit; raise the count by one and move the `0 today` pin in
-`ops/__tests__/contract-adoption.test.ts` in the same change; leave every earlier row in place. A
+commit and the Registry edit; raise the count by one and move the `1 today` pin in
+`ops/__tests__/contract-adoption.test.ts` (it read `0 today` until event 1) in the same change; leave every earlier row in place. A
 row with no re-vendored Satellite is not an event and is not added.
 
 ### The count taken by Story 6.1, 2026-10-13
@@ -830,7 +830,8 @@ read only, never by checking out or editing an adopter's tree.
   `Contract v2.0.0`. Row 1's "Not pushed" describes 2026-09-24; Pending Operator action 8 dated the
   push 2026-09-25, and `991d0f6` is on both remote branches today.
 - **No other Satellite vendors the folder.** The recursive tree of each estate repository's default
-  branch through `gh api` holds a `cuatro-contracts/` path only in `cs-tracker` (10 paths):
+  branch through `gh api` holds a `cuatro-contracts/` path only in `cs-tracker` (11 entries on `main`: the folder and its
+  `fonts/` as 2 trees, and 9 blobs, the nine `TOKEN_CONTRACT_PATHS`):
   `digital-library`, `list-wheel`, `StreamVault`, `MaiCoin`, `poketracker-go`, `Mutuo`, `covidmap`
   (`master`) and `future-vizion` hold none, and every remote branch of `digital-library` holds none.
   The Anchor's `apps/` vendor nothing either: `git ls-files` names no `cuatro-contracts` path.
