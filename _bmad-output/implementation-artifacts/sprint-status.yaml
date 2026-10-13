@@ -1603,7 +1603,11 @@ action_items:
       monitoring reads, or exit=1 reaching an issue), and report absent as a failure
       for a participant whose switch is on (M3)"
     owner: "Cuatro"
-    status: open
+    # Built 2026-10-13, committed on dev, not pushed: ops/demo-reset.sh fails a hollow run and opens one
+    # GitHub issue per failing streak; digital-library off in the schedule until DW-337. Awaiting the
+    # independent verifier, then the Operator: ops/demo-principal.md DS4 (token header on the box) and,
+    # after the Epic 5 retrospective merge to main, DS5; spec-epic-5-retro-item-47-reset-failure-visible.md.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-48-digital-library-repair-or-remove-test-de"
     epic: 5

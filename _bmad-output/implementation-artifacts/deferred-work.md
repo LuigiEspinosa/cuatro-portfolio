@@ -9699,6 +9699,12 @@ status: done
     last hour is a scheduler that stopped. Epic 5 does not choose between (a) and (b) here, because both
     options are about how the box is read from off it, a decision about the estate rather than about demo
     access. Whichever is chosen reads all four logs, and the record's named limit 1 is amended to name it.
+
+    **Epic 5 retrospective action 3, 2026-10-13: a third option, for the reset log only.** The scheduler now
+    opens a GitHub issue itself on the first failing run of a streak (`ops/demo-principal.md` § The scheduler
+    item 11), with a token header file on the box (DS4), so its failures no longer wait on this entry. A
+    scheduler that never runs still writes nothing, so a reader of staleness is still owed for all four logs,
+    and the same issue path is a candidate for the three backup scripts.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md`
   id: DW-316
@@ -10220,6 +10226,10 @@ status: done
 
     **Owner: a story the Operator schedules to move `digital-library` onto OIDC.** **Trigger: that story's
     rollout.** Then create the account by that sign-in, run DR3, and release its Registry `demo`.
+
+    **Amended 2026-10-13 (Epic 5 retrospective action 3):** `ops/demo-reset.schedule` sets `digital-library off`,
+    because the scheduler now fails a run whose participant reports its principal absent. The same change that
+    creates the account sets it back to `60`.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
   id: DW-338

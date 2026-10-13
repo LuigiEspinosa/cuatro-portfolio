@@ -72,7 +72,17 @@ esac
 case " \${STUB_HANG-} " in *" $id "*) : > "$STUB_LOG.hung"; exec /bin/sleep 30 ;; esac
 case " \${STUB_FAIL-} " in *" $id "*) printf 'demo:reset %s failed: Postgrex.Error\\n' "$id" >&2; exit 1 ;; esac
 case " \${STUB_SKIP-} " in *" $id "*) printf 'demo:reset %s skipped: demo access is off\\n' "$id"; exit 0 ;; esac
+case " \${STUB_ABSENT-} " in *" $id "*) printf 'demo:reset %s skipped: the demo principal is absent\\n' "$id"; exit 0 ;; esac
+case " \${STUB_SILENT-} " in *" $id "*) exit 0 ;; esac
 printf 'demo:reset %s reset rows=12\\n' "$id"
+`;
+
+// Answers as the GitHub issues API: records its argv and its body, prints STUB_CURL_CODE (201, created).
+const CURL_STUB = `#!/bin/bash
+printf '%s\\n' "$*" >> "$STUB_CURL_LOG"
+/bin/cat >> "$STUB_CURL_LOG"
+printf '\\n' >> "$STUB_CURL_LOG"
+printf '%s' "\${STUB_CURL_CODE:-201}"
 `;
 
 interface Box {
@@ -81,6 +91,8 @@ interface Box {
   log: string;
   installedCron: string;
   state: string;
+  curlLog: string;
+  header: string;
   env: Record<string, string>;
 }
 
@@ -103,16 +115,26 @@ const makeBox = (schedule: string | null = DEFAULT_SCHEDULE): Box => {
   const installedCron = join(root, 'cuatro-demo-reset');
   writeFileSync(installedCron, lf(readFileSync(CRON, 'utf8')));
   writeFileSync(join(stubs, 'docker'), DOCKER_STUB.replace(/\r\n/g, '\n'));
+  writeFileSync(join(stubs, 'curl'), CURL_STUB.replace(/\r\n/g, '\n'));
   const log = join(root, 'docker.log');
   writeFileSync(log, '');
+  const curlLog = join(root, 'curl.log');
+  writeFileSync(curlLog, '');
+  // Absent until a case writes it, as on a box where DS4 has not run.
+  const header = join(root, 'demo-reset-issue.header');
   return {
     root,
     ops,
     log,
     installedCron,
     state,
+    curlLog,
+    header,
     env: {
       STUB_LOG: bashPath(log),
+      STUB_CURL_LOG: bashPath(curlLog),
+      DEMO_RESET_ISSUE_HEADER: bashPath(header),
+      DEMO_RESET_ISSUE_URL: 'https://api.github.invalid/repos/owner/repo/issues',
       STUB_HUB: 'f9ea578',
       STUB_TRACKER: '5117673f',
       DEMO_RESET_CRON: bashPath(installedCron),
@@ -141,7 +163,9 @@ const run = (box: Box, args: string[] = [], env: Record<string, string> = {}, pr
       '#!/bin/bash',
       `rm -rf ${shellQuote(bin)} && mkdir -p ${shellQuote(bin)}`,
       ...BOX_TOOLS.map((tool) => `ln -s "$(command -v ${tool})" ${shellQuote(`${bin}/${tool}`)}`),
-      `cp ${shellQuote(bashPath(join(box.root, 'stubs', 'docker')))} ${shellQuote(`${bin}/docker`)} && chmod 755 ${shellQuote(`${bin}/docker`)}`,
+      ...['docker', 'curl'].map(
+        (stub) => `cp ${shellQuote(bashPath(join(box.root, 'stubs', stub)))} ${shellQuote(`${bin}/${stub}`)} && chmod 755 ${shellQuote(`${bin}/${stub}`)}`
+      ),
       `chmod 755 ${shellQuote(bashPath(join(box.ops, 'demo-reset.sh')))}`,
       prelude,
       ...Object.entries(merged).map(([k, v]) => `export ${k}=${shellQuote(v)}`),
@@ -185,7 +209,7 @@ describe('ops/demo-reset.sh', () => {
       'demo:reset cuatro-tracker reset rows=12',
       'demo:reset cs-tracker reset rows=12',
       'demo:reset digital-library reset rows=12',
-      expect.stringMatching(/^demo-reset ts=\S+ tick=00:00 lock=ok schedule=ok cron=match ran=3 off=0 failed=none exit=0$/),
+      expect.stringMatching(/^demo-reset ts=\S+ tick=00:00 lock=ok schedule=ok cron=match ran=3 off=0 failed=none issue=none exit=0$/),
     ]);
     const record = recordCommands();
     expect([...record.keys()]).toEqual(['cuatro-tracker', 'cs-tracker', 'digital-library']);
@@ -225,7 +249,7 @@ describe('ops/demo-reset.sh', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('demo:reset cuatro-tracker failed: anchor-app or tracker is not running');
     expect(result.composeCalls.map((call) => call.dir)).toEqual(['cs-tracker', 'digital-library']);
-    expect(result.summary).toMatch(/ ran=3 off=0 failed=cuatro-tracker exit=1$/);
+    expect(result.summary).toMatch(/ ran=3 off=0 failed=cuatro-tracker issue=unconfigured exit=1$/);
   });
 
   it('runs every other participant when one fails, and exits 1 naming it', () => {
@@ -235,7 +259,7 @@ describe('ops/demo-reset.sh', () => {
     expect(result.stderr).toContain('demo:reset cs-tracker failed: Postgrex.Error');
     expect(result.composeCalls.map((call) => call.dir)).toEqual(['cuatro-portfolio', 'cs-tracker', 'digital-library']);
     expect(result.lines.slice(0, 2)).toEqual(['demo:reset cuatro-tracker reset rows=12', 'demo:reset digital-library reset rows=12']);
-    expect(result.summary).toMatch(/ ran=3 off=0 failed=cs-tracker exit=1$/);
+    expect(result.summary).toMatch(/ ran=3 off=0 failed=cs-tracker issue=unconfigured exit=1$/);
   });
 
   it('stops a participant that outlives its timeout, removes the container it started and no other, names it, and runs the next', () => {
@@ -249,7 +273,7 @@ describe('ops/demo-reset.sh', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('demo:reset cuatro-tracker failed: timed out after 2 s');
     expect(result.lines[0]).toBe('demo:reset cs-tracker reset rows=12');
-    expect(result.summary).toMatch(/ failed=cuatro-tracker,digital-library exit=1$/);
+    expect(result.summary).toMatch(/ failed=cuatro-tracker,digital-library issue=unconfigured exit=1$/);
     const oneoffs = result.calls.filter((call) => call.argv.includes('oneoff=True'));
     expect(oneoffs[0].argv).toBe(
       `ps -q --filter label=com.docker.compose.project.working_dir=${box.env.DEMO_RESET_CHECKOUTS}/cuatro-portfolio --filter label=com.docker.compose.service=tracker --filter label=com.docker.compose.oneoff=True`
@@ -273,6 +297,74 @@ describe('ops/demo-reset.sh', () => {
     expect(result.lines).toContain('demo:reset digital-library skipped: demo access is off');
   });
 
+  // Epic 5 retrospective M3: a participant the schedule runs whose principal is absent is a hollow run.
+  it('fails a participant the schedule runs that skips for any reason but its own switch, and runs the others', () => {
+    const box = makeBox();
+    const result = run(box, [], { STUB_ABSENT: 'cs-tracker' });
+    expect(result.status).toBe(1);
+    expect(result.lines.slice(0, 3)).toEqual([
+      'demo:reset cuatro-tracker reset rows=12',
+      'demo:reset cs-tracker skipped: the demo principal is absent',
+      'demo:reset digital-library reset rows=12',
+    ]);
+    expect(result.stderr).toContain('demo:reset cs-tracker failed: skipped (the demo principal is absent) while the schedule runs it');
+    expect(result.summary).toMatch(/ ran=3 off=0 failed=cs-tracker issue=unconfigured exit=1$/);
+    expect(readFileSync(box.curlLog, 'utf8')).toBe('');
+  });
+
+  it('fails a participant that exits 0 without its reset or skipped line', () => {
+    const result = run(makeBox(), [], { STUB_SILENT: 'cuatro-tracker' });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('demo:reset cuatro-tracker failed: exit 0 without its reset or skipped line');
+    expect(result.summary).toMatch(/ ran=3 off=0 failed=cuatro-tracker issue=unconfigured exit=1$/);
+  });
+
+  const curlCalls = (box: Box): string[][] => {
+    const lines = readFileSync(box.curlLog, 'utf8').split('\n');
+    const calls: string[][] = [];
+    for (let i = 0; i + 1 < lines.length; i += 2) calls.push([lines[i], lines[i + 1]]);
+    return calls;
+  };
+
+  it('opens one issue per failing streak through the header file, never handling the token, and again after a pass', () => {
+    const box = makeBox();
+    writeFileSync(box.header, 'Authorization: Bearer token-value-never-read\n');
+    const first = run(box, [], { STUB_FAIL: 'cs-tracker' });
+    expect(first.status).toBe(1);
+    expect(first.summary).toMatch(/ failed=cs-tracker issue=opened exit=1$/);
+    const [[argv, body]] = curlCalls(box);
+    expect(argv).toBe(
+      `-sS --max-time 30 -o /dev/null -w %{http_code} -X POST -H @${box.env.DEMO_RESET_ISSUE_HEADER} -H Accept: application/vnd.github+json --data-binary @- https://api.github.invalid/repos/owner/repo/issues`
+    );
+    const issue = JSON.parse(body) as { title: string; body: string };
+    expect(issue.title).toMatch(/^Demo reset failed at \d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/);
+    expect(issue.body.split('\n')[0]).toBe(first.summary.replace(' issue=opened', ''));
+    expect(`${first.stdout}${first.stderr}${readFileSync(box.curlLog, 'utf8')}`).not.toContain('token-value-never-read');
+
+    const second = run(box, [], { STUB_FAIL: 'cs-tracker' });
+    expect(second.summary).toMatch(/ issue=open exit=1$/);
+    expect(curlCalls(box)).toHaveLength(1);
+
+    const passed = run(box);
+    expect([passed.status, passed.summary]).toEqual([0, expect.stringMatching(/ failed=none issue=none exit=0$/)]);
+    const quiet = run(box, [], { DEMO_RESET_NOW: String(at(9, 45)) });
+    expect([quiet.status, quiet.stdout]).toEqual([0, '']);
+
+    const again = run(box, [], { STUB_ABSENT: 'digital-library' });
+    expect(again.summary).toMatch(/ failed=digital-library issue=opened exit=1$/);
+    expect(curlCalls(box)).toHaveLength(2);
+  });
+
+  it('keeps the exit code and tries again on the next failing run when the issue is refused', () => {
+    const box = makeBox();
+    writeFileSync(box.header, 'Authorization: Bearer token-value-never-read\n');
+    const refused = run(box, [], { STUB_FAIL: 'cs-tracker', STUB_CURL_CODE: '401' });
+    expect([refused.status, refused.summary]).toEqual([1, expect.stringMatching(/ issue=refused exit=1$/)]);
+    const next = run(box, [], { STUB_FAIL: 'cs-tracker' });
+    expect(next.summary).toMatch(/ issue=opened exit=1$/);
+    expect(curlCalls(box)).toHaveLength(2);
+  });
+
   it('starts nothing while another run holds the lock, and says so', () => {
     const box = makeBox();
     const lock = shellQuote(`${bashPath(box.state)}/.demo-reset.lock`);
@@ -281,7 +373,7 @@ describe('ops/demo-reset.sh', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('another run holds the lock; this one started nothing');
     expect(result.calls).toEqual([]);
-    expect(result.summary).toMatch(/ lock=held schedule=not-reached cron=not-reached ran=0 off=0 failed=none exit=1$/);
+    expect(result.summary).toMatch(/ lock=held schedule=not-reached cron=not-reached ran=0 off=0 failed=none issue=unconfigured exit=1$/);
   });
 
   it('runs normally over a lock file a killed run left behind', () => {
@@ -300,7 +392,7 @@ describe('ops/demo-reset.sh', () => {
     expect(result.lines[0]).toBe('demo:reset cuatro-tracker skipped: off in ops/demo-reset.schedule');
     expect(result.composeCalls.map((call) => call.dir)).toEqual(['cs-tracker', 'digital-library']);
     expect(result.calls.filter((call) => /cuatro-portfolio|service=tracker|service=anchor-app/.test(call.argv))).toEqual([]);
-    expect(result.summary).toMatch(/ ran=2 off=1 failed=none exit=0$/);
+    expect(result.summary).toMatch(/ ran=2 off=1 failed=none issue=none exit=0$/);
     const allOff = makeBox('cuatro-tracker off\ncs-tracker off\ndigital-library off\n');
     const hourly = run(allOff, [], { DEMO_RESET_NOW: String(at(5, 0)) });
     expect(hourly.status).toBe(0);
@@ -383,16 +475,19 @@ describe('ops/demo-reset.sh', () => {
     expect(differs.status).toBe(1);
     expect(differs.stderr).toContain('differs from ops/demo-reset.cron');
     expect(differs.composeCalls).toHaveLength(3);
-    expect(differs.summary).toMatch(/ cron=differs ran=3 off=0 failed=none exit=1$/);
+    expect(differs.summary).toMatch(/ cron=differs ran=3 off=0 failed=none issue=unconfigured exit=1$/);
     rmSync(box.installedCron);
     const absent = run(box, [], { DEMO_RESET_NOW: String(at(9, 45)) });
     expect(absent.status).toBe(1);
-    expect(absent.summary).toMatch(/ cron=absent ran=0 off=0 failed=none exit=1$/);
+    expect(absent.summary).toMatch(/ cron=absent ran=0 off=0 failed=none issue=unconfigured exit=1$/);
   });
 
-  it('reads the committed schedule: every participant hourly, none due off the hour', () => {
+  it('reads the committed schedule: the two trackers hourly, digital-library off until DW-337, none due off the hour', () => {
     const box = makeBox(null);
-    expect(run(box).composeCalls).toHaveLength(3);
+    const hourly = run(box);
+    expect(hourly.status).toBe(0);
+    expect(hourly.composeCalls.map((call) => call.dir)).toEqual(['cuatro-portfolio', 'cs-tracker']);
+    expect(hourly.lines).toContain('demo:reset digital-library skipped: off in ops/demo-reset.schedule');
     writeFileSync(box.log, '');
     expect(run(box, [], { DEMO_RESET_NOW: String(at(0, 30)) }).calls).toEqual([]);
   });
@@ -417,6 +512,8 @@ describe('ops/demo-reset.cron', () => {
   it('is named in the record with the tools the box runs', () => {
     const record = lf(readFileSync(RECORD, 'utf8'));
     expect(record).toContain('/etc/cron.d/cuatro-demo-reset');
-    for (const tool of BOX_TOOLS) expect(record).toContain(`\`${tool}\``);
+    for (const tool of [...BOX_TOOLS, 'curl']) expect(record).toContain(`\`${tool}\``);
+    expect(record).toContain('/etc/cuatro/demo-reset-issue.header');
+    expect(readFileSync(SCRIPT, 'utf8')).toContain('ISSUE_HEADER="${DEMO_RESET_ISSUE_HEADER:-/etc/cuatro/demo-reset-issue.header}"');
   });
 });

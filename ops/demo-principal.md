@@ -268,7 +268,7 @@ install is DS1 to DS3, by hand, after each participant's demo access is on.
 | File | Role |
 |---|---|
 | `ops/demo-reset.sh` | The scheduler. Runs the due participants one after another under a lock, then one summary line |
-| `ops/demo-reset.schedule` | Each participant's interval in minutes, or `off`. Committed: `60` for all three |
+| `ops/demo-reset.schedule` | Each participant's interval in minutes, or `off`. Committed: `60` for the two trackers, `off` for `digital-library` until DW-337 (item 2) |
 | `ops/demo-reset.cron` | The one cron line, installed byte for byte as `/etc/cron.d/cuatro-demo-reset` |
 
 1. **On the host, outside every application container.** cron on the box runs the scheduler, which runs
@@ -286,7 +286,10 @@ install is DS1 to DS3, by hand, after each participant's demo access is on.
    15 from 15 to 1440. **Decision, 2026-10-03:** every participant hourly, which AD-13 names. A Visitor's
    changes then last until the next full hour at most, so a second Visitor the same day finds the fixture
    unless they arrive within that hour; a shorter interval narrows the window at a cost § What a run costs
-   gives. Minute 0 is clear of the nightly jobs at 03:15 and 03:45.
+   gives. Minute 0 is clear of the nightly jobs at 03:15 and 03:45. **Amended 2026-10-13** (Epic 5
+   retrospective action 3, M3): `digital-library` is `off` until it has a demo account (DW-337), since item 11
+   fails a run whose participant reports its principal absent; the change that creates the account sets it
+   back to `60`.
 3. **One participant at a time, and each one's failure is its own.** A participant that exits non-zero, or
    outlives its timeout (240 s, then killed 10 s later), is named in the summary's `failed=` and the run
    exits 1; every other due participant still runs. Three that each hang still end inside one tick.
@@ -305,6 +308,12 @@ install is DS1 to DS3, by hand, after each participant's demo access is on.
    A participant whose own demo access is off but whose schedule still names an interval costs one
    one-shot container, which prints the application's own `skipped` line (§ The reset item 6; its cost is
    in § What a run costs). So turning a participant's demo off is two changes: its switch, and `off` here.
+   **Amended 2026-10-13** (M3): only the application's `skipped: demo access is off` passes. Any other
+   `skipped`, `the demo principal is absent` above all, is a hollow run: the scheduler adds `demo:reset
+   <registry-id> failed: skipped (<reason>) while the schedule runs it` on stderr, names it in `failed=` and
+   exits 1. An exit 0 whose last stdout line is neither `reset rows=<n>` nor that `skipped` fails the same
+   way, as `failed: exit 0 without its reset or skipped line` (§ The reset item 8 promises one). `cs-tracker`'s off and absent are one state and print `demo access is off`; `digital-library` has
+   no switch but its account, so the schedule's `off` is its switch.
 6. **The schedule is committed, never typed on the box.** The box reads `ops/demo-reset.schedule` and runs
    `ops/demo-reset.sh` from its checkout at `/home/deploy/cuatro-portfolio`, which the deploy resets to `main`,
    so a merged change to either takes effect at the next deploy. A schedule that names an unknown id, leaves a
@@ -324,7 +333,9 @@ install is DS1 to DS3, by hand, after each participant's demo access is on.
    lines to stderr (`Container ... Creating`, `Created`, observed 2026-10-03 by the Story 5.10 verifier), and
    the cron line sends stderr to the log, so those lines sit beside each participant's one line; read a run
    by its `demo:reset` and `demo-reset` lines. Nothing reads the log yet: the same gap as the three backup
-   logs, amended into DW-315 so its reader covers all four.
+   logs, amended into DW-315 so its reader covers all four. **Amended 2026-10-13** (M3): the summary carries
+   `issue=` before `exit=`, and a failing run reaches the Operator through item 11, so the log is now where a
+   failure is read, not where it is found.
 9. **One connection at a time.** Runs never overlap and participants run in turn, so at most one reset
    connection is open in the estate at any moment, and each role sees the one Story 5.9 counted (DP4,
    DW-331).
@@ -334,7 +345,21 @@ install is DS1 to DS3, by hand, after each participant's demo access is on.
     box in that record's install step 3; `date -u -d @<seconds>` is GNU coreutils, the box's Ubuntu 24.04.4.
     The suite runs every case with a PATH holding only these and the `docker` stub, so a tool the box lacks
     fails there. The cron file sets `PATH=/usr/bin:/bin`, and DS1 checks the four that are not coreutils
-    resolve on it.
+    resolve on it. **Amended 2026-10-13** (M3): item 11 adds `curl`, observed on the box on 2026-08-24
+    (`ops/backup-digital-library.md`) and stubbed in the suite; DS4 checks it resolves on the cron `PATH`.
+11. **A failing run opens an issue** (Epic 5 retrospective action 3, M3). The first run that exits non-zero
+    after a passing one (or after none) POSTs one issue, `Demo reset failed at <UTC>`, whose body is the
+    summary line, to `LuigiEspinosa/cuatro-portfolio` through the GitHub API, so it reaches the mailbox the
+    Deploy's failure issues reach. `curl -H @/etc/cuatro/demo-reset-issue.header` reads the token's header line
+    itself, so the token never enters the script, its argv or the log. `/home/deploy/demo-reset/.demo-reset.issue`
+    then holds `open` and later failing runs print `issue=open` and post nothing, until a run that did
+    something exits 0 (`issue=none`) and empties it; the Operator closes the issue. Without the header file a
+    failing run prints `issue=unconfigured`; a request answered with anything but 201 prints `issue=refused`
+    and the next failing run tries again. Neither changes the exit code. **Decision:** an issue, not a
+    heartbeat: the UptimeRobot free plan refused the HEARTBEAT type (`ops/monitoring.md`, 2026-09-12).
+    **Named limits:** a scheduler that never runs (cron file removed, box down) opens nothing, and the box's
+    HTTP monitors see only the second; an expired token reads `issue=refused` in a log nobody reads, so its
+    expiry date is a dated row (DS4).
 
 ### What a run costs
 
@@ -525,7 +550,8 @@ into `ssh`. No step prints a credential.
     must show one line per hour since DS1, each ending `exit=0`; and `uptime` read at minute 1 of an hour,
     within the minute after a run, against the gate's load15 0.60. Write both here. A line with `exit=1`
     names its cause: `failed=<id>` (read that participant's line above it), `cron=differs` (repeat DS1's
-    `install`), `lock=held` (a run outlived 15 minutes).
+    `install`), `lock=held` (a run outlived 15 minutes). **Amended 2026-10-13:** a summary now carries
+    `issue=` before `exit=`, and a `failed=<id>` may be a hollow run (item 5).
 16. **DP9. Roll `cs-tracker` onto schema `demo` alone** (Epic 5 retrospective M1, action 1), after its
     `fix/demo-schema-alone` PR reaches `dev` and `dev` reaches `main` (the box pulls `main`). It is the standing
     redeploy, `ops/cs-tracker-cutover.md` § Later rollouts, with nothing added by hand: on the box as `deploy`,
@@ -544,6 +570,35 @@ into `ssh`. No step prints a credential.
     was. The next hourly reset must still print `demo:reset cs-tracker reset rows=12`. To roll back: check out
     the previous `main` commit, `docker compose build app`, `docker rollout -w 20 app`; nothing in the database
     changes, since no migration is added.
+17. **DS4. Give the scheduler its issue header** (§ The scheduler item 11, Epic 5 retrospective action 3).
+    Any time; it changes nothing until DS5's change is on `main`. At GitHub, Settings, Developer settings,
+    Fine-grained tokens: resource owner `LuigiEspinosa`, only `cuatro-portfolio`, repository permission Issues
+    read and write and nothing else, the longest expiry offered; file it in the password manager and write
+    its expiry date in DS4's row. Then on the box as `deploy`, from a file under `set -euo pipefail`:
+    ```
+    sudo install -o root -g deploy -m 0640 /dev/null /etc/cuatro/demo-reset-issue.header
+    sudo nano /etc/cuatro/demo-reset-issue.header
+    sudo stat -c '%U %G %a' /etc/cuatro/demo-reset-issue.header
+    env -i PATH=/usr/bin:/bin sh -c 'command -v curl'
+    ```
+    The file holds one line, `Authorization: Bearer <token>`, typed in the editor so the token reaches no
+    shell history. The `stat` must print `root deploy 640` and the last line `/usr/bin/curl`. Skip the
+    `install` if the file exists: it would empty it. To renew, edit the file the same way.
+18. **DS5. Prove the issue once**, after `main` carries the commit with § The scheduler item 11 and its Deploy
+    has run, at a minute that is not a multiple of 15. On the box as `deploy`, from a file under `set -euo
+    pipefail`:
+    ```
+    cd /home/deploy/cuatro-portfolio
+    git log -1 --format=%H -- ops/demo-reset.sh
+    DEMO_RESET_CRON=/nonexistent ops/demo-reset.sh digital-library || echo "exit=$?"
+    ops/demo-reset.sh digital-library
+    ```
+    `digital-library` is `off`, so neither run starts a container. The first must end `cron=absent ran=0
+    off=1 failed=none issue=opened exit=1` and `exit=1`; the second `cron=match ran=0 off=1 failed=none
+    issue=none exit=0`. From the workstation, `gh issue list --repo LuigiEspinosa/cuatro-portfolio --search
+    "Demo reset failed"` shows the issue; confirm its mail reached the mailbox `ops/monitoring.md` names, then
+    `gh issue close <number> --repo LuigiEspinosa/cuatro-portfolio`. `issue=unconfigured` means DS4 has not
+    run; `issue=refused` means the token or its permission is wrong (curl's own line above says which).
 
 ## Demo principal run
 
@@ -692,7 +747,10 @@ average 0.34, 0.21, 0.12, load15 well under the gate's 0.60.
 | DS2 | **Run the scheduler once by hand, in cron's shape, and observe it** | After DS1 | 2026-10-06T17:26Z. `ran=3 failed=none exit=0`, `digital-library` skipped as absent, load15 0.21; § Demo principal run |
 | DS3 | **Read the first unattended day** of `demo-reset.log` and the load after a run | The day after DS1 | 2026-10-12. 143 of 143 hourly runs `exit=0` since DS1, 24 of 24 the first day; load15 0.12 after a run; § Demo principal run |
 | DP9 | **Roll `cs-tracker` onto schema `demo` alone**, § By hand step 16 | Added 2026-10-12 (Epic 5 retrospective action 1, M1). After `cs-tracker`'s `fix/demo-schema-alone` PR reaches `dev` and then `main`. `cs-tracker` has no CI: its gate was `mix precommit` (709 tests, 0 failures) and its production image booted against a scratch Postgres 18.6, both on 2026-10-12. Also added 2026-10-12 (Epic 5 retrospective action 2): merge `cs-tracker` PR 7 (`fix/migrate-bat-demo`, `rel/overlays/bin/migrate.bat` runs `migrate_demo` as `bin/migrate` does; `mix precommit` 709 tests, 0 failures) into `dev` first, so the same `dev` to `main` merge carries it | _not done_ |
+| DS4 | **Give the scheduler its issue header**, § By hand step 17: a fine-grained token (Issues read and write on `cuatro-portfolio` alone) in `/etc/cuatro/demo-reset-issue.header`, `root deploy 640`, and `curl` on the cron `PATH` | Added 2026-10-13 (Epic 5 retrospective action 3, M3). Any time; write the token's expiry date here, which is the date to renew it, since an expired token only reads `issue=refused` in the log | _not done_ |
+| DS5 | **Prove the issue once**, § By hand step 18 | Added 2026-10-13 (M3). After DS4, and after the Epic 5 retrospective change carrying § The scheduler item 11 reaches `main` with the Operator's merge and its Deploy run resets the box's checkout. From that Deploy on, `digital-library` is `off` in the schedule (DW-337) and a hollow or failed run exits 1 | _not done_ |
 
 Story 5.8 is done when DP1 to DP7 are dated and DP8 is ruled. Story 5.9 is done when DR1 to DR3 are dated
 and DR4 is ruled. Story 5.10 is done when DS1 to DS3 are dated. Epic 5 retrospective action 1 is live when
-DP9 is dated, and action 2 when `ops/tracker-cutover.md`'s Pending action 9 is.
+DP9 is dated, and action 2 when `ops/tracker-cutover.md`'s Pending action 9 is. Action 3 is live when DS4
+and DS5 are dated.

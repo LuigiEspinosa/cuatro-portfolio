@@ -5,4 +5,6 @@
 # here takes effect at the next deploy.
 cuatro-tracker 60
 cs-tracker 60
-digital-library 60
+# digital-library is off until it has a demo account (DW-337): the scheduler fails a run whose participant
+# reports its principal absent, so the same change that creates the account sets it back to 60.
+digital-library off

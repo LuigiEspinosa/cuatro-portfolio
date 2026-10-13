@@ -1147,3 +1147,9 @@ explicit "not checked" records that somebody looked and failed. The same applies
 individual field: a certificate that could not be read is "not checked" rather than a blank
 cell or a value carried forward from the previous gathering. Carrying a stale value forward
 into a freshly dated table is the one thing that would make this section actively misleading.
+
+**Added 2026-10-13, Epic 5 retrospective action 3 (M3).** Because of that refusal, the demo reset
+scheduler alerts by GitHub issue instead of a heartbeat: its first failing or hollow
+run of a streak opens one issue in this repository, which reaches the same mailbox the Deploy's
+failure issues reach (`ops/demo-principal.md` § The scheduler item 11, DS4 and DS5). It is not a
+dead-man's switch either: a scheduler that never runs opens nothing.
