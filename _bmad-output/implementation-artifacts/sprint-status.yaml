@@ -1618,7 +1618,11 @@ action_items:
       2026-07-30, and correct DP7's line in ops/demo-principal.md to name it and the
       by-hand redeploy (M5)"
     owner: "Cuatro"
-    status: open
+    # RULING by the Operator, 2026-10-12: REMOVE the deploy job, do not repair it. Built 2026-10-13:
+    # digital-library chore/remove-deploy-job (c05434f) drops the deploy job, renames the workflow Test and
+    # writes the by-hand redeploy into its README; DP7 corrected in ops/demo-principal.md, DL1 to DL3 pending.
+    # Awaiting the independent verifier; spec-epic-5-retro-item-48-digital-library-remove-deploy-job.md.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-49-before-any-visitor-gets-the-demo-sign-in"
     epic: 5

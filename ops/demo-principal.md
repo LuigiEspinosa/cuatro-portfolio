@@ -483,7 +483,11 @@ into `ssh`. No step prints a credential.
    `.env.production` and roll the tracker. Check: the demo account signs in and sees an empty library, the
    Owner's sees his, and `/admin` answers 404 to the demo account. Then DR1 fills the library.
 7. **DP7. Bring `digital-library`'s branch into its `dev`, then `main`**, the repository it deploys from (the
-   box builds it, DW-308), after reading its CI on the branch and after ruling DR4. Then, in its admin, create
+   box builds it, DW-185), after reading its CI on the branch and after ruling DR4. Nothing deploys it on the
+   merge: redeploy the box by hand by `digital-library`'s standing redeploy, its README § Deploying to
+   library.cuatro.dev. **Amended 2026-10-13** (Epic 5 retrospective action 4, M5): this step first read as if
+   the merge deployed; its `Test & Deploy` workflow's `deploy` job had failed on every push to `main` since
+   2026-05-29, and the Operator ruled on 2026-10-12 to remove it, not repair it (DL1). Then, in its admin, create
    the user `demo@cuatro.dev` (not an administrator) with the DP2 password, and nothing else: the reset
    creates the demo library and grants it (Story 5.9, § The reset), and grant the demo user no library by
    hand, which makes the reset refuse. Then DR3. Check: signed in as the demo user, `/api/libraries` lists
@@ -697,7 +701,13 @@ there hashed by `bcryptjs` at cost 12 (`users in schema demo: 1`), appended `TRA
 as `demo@cuatro.dev` to an empty library, and as himself to his library unchanged.
 
 **DP7, 2026-10-06, merged and deployed; the demo account deferred.** `digital-library` PR #61
-(`story-5-8-demo-principal` into `dev`, `4ad020d`) and PR #62 (`dev` into `main`, `eada53d`) merged on green CI.
+(`story-5-8-demo-principal` into `dev`, `4ad020d`) and PR #62 (`dev` into `main`, `eada53d`) merged with `CI`
+green. **Corrected 2026-10-13** (Epic 5 retrospective action 4, M5): on `eada53d` the `CI` workflow passed and
+the `Test & Deploy` workflow did not: its `test` job passed and its `deploy` job failed (run 37498770241, `ssh:
+handshake failed`), as on every push to `main` since 2026-05-29 (runs 26623693302, 28205172235, 30518341072 and
+30519309818; the last green one was 2026-02-26). The box was redeployed by hand, below. The Operator ruled on
+2026-10-12 to remove the job (DL1); the by-hand redeploy is `digital-library`'s README § Deploying to
+library.cuatro.dev.
 The release also carried the Operator's unreleased `dev` work (C.1 to C.3 screen rebuilds and a
 `.dockerignore`), released as is by his ruling. At 16:53Z the box's `library-redeploy.sh` rebuilt `api` and
 `web` from `eada53d`, both healthy; live `/` 302, `/login` 200, `/api/health` 200. The script's smoke step
@@ -754,7 +764,7 @@ fixture's two marks in `/inventory` (2026-10-13). `cs-tracker` has no CI, so no 
 | DP4 | **Rule on the connection budget** with demo on | DW-331 | 2026-10-06T06:07:51Z. Ruled (a), with the reset's connection: `cuatro_tracker` 20 to 23 and `cs_tracker` 25 to 30, role and database, on the box (read before and after) and in `ops/postgres/init/10-consumers.sh` and `ops/postgres.md`; the four limits sum to 88 of 97. Set first to 22 and 29 at 06:06:54Z, the reset's connection overlooked, and corrected within a minute |
 | DP5 | **Turn `cs-tracker`'s demo on** and check both scopes | After DP3, DP4 and CT3 | 2026-10-06T15:50Z. Demo on; the demo principal signs in to its own empty scope and the Owner's inventory is unchanged, observed by the Operator; § Demo principal run |
 | DP6 | **Turn the tracker's demo on** and check both scopes | After DP2, DP4 | 2026-10-06T15:59Z. Demo on; the demo library is empty and the Owner's is unchanged, observed by the Operator; § Demo principal run |
-| DP7 | **Merge `digital-library`'s branch, deploy it, create the demo user** (Story 5.9: the reset creates its library) | After DP2 and DR4 | Merged and deployed 2026-10-06T16:53Z (`eada53d`); the demo account deferred by the Operator until OIDC, DW-337; § Demo principal run |
+| DP7 | **Merge `digital-library`'s branch, deploy it, create the demo user** (Story 5.9: the reset creates its library) | After DP2 and DR4 | Merged and deployed by hand 2026-10-06T16:53Z (`eada53d`; `Test & Deploy`'s `deploy` job red, DL1); the demo account deferred by the Operator until OIDC, DW-337; § Demo principal run |
 | DP8 | **Rule on `cs-tournament`'s participation** | DW-332 | 2026-10-06. Ruled (a): not a participant; its Registry `demo` already reads `open` (1.8.0), so nothing further changes |
 | DR1 | **Run the tracker's reset live, twice, and observe it** | After DP6 | 2026-10-06T17:08Z. Two live runs, `reset rows=12`, exit 0, Owner unchanged; the signed-in check skipped by the Operator pending the tracker's sign-in rework; § Demo principal run |
 | DR2 | **Run `cs-tracker`'s reset live, twice, and observe it** | After DP5 | 2026-10-06T17:13Z. Three live runs, `reset rows=12`, exit 0; the Operator's addition gone, fixture shown, Owner unchanged; § Demo principal run |
@@ -766,8 +776,11 @@ fixture's two marks in `/inventory` (2026-10-13). `cs-tracker` has no CI, so no 
 | DP9 | **Roll `cs-tracker` onto schema `demo` alone**, § By hand step 16 | Added 2026-10-12 (Epic 5 retrospective action 1, M1). After `cs-tracker`'s `fix/demo-schema-alone` PR reaches `dev` and then `main`. `cs-tracker` has no CI: its gate was `mix precommit` (709 tests, 0 failures) and its production image booted against a scratch Postgres 18.6, both on 2026-10-12. Also added 2026-10-12 (Epic 5 retrospective action 2): merge `cs-tracker` PR 7 (`fix/migrate-bat-demo`, `rel/overlays/bin/migrate.bat` runs `migrate_demo` as `bin/migrate` does; `mix precommit` 709 tests, 0 failures) into `dev` first, so the same `dev` to `main` merge carries it | 2026-10-13T05:48Z, live: `[["demo"]]`, 06:00Z reset rows=12, demo inventory two marks (§ Demo principal run) |
 | DS4 | **Give the scheduler its issue header**, § By hand step 17: a fine-grained token (Issues read and write on `cuatro-portfolio` alone) in `/etc/cuatro/demo-reset-issue.header`, `root deploy 640`, and `curl` on the cron `PATH` | Added 2026-10-13 (Epic 5 retrospective action 3, M3). Any time; write the token's expiry date here, which is the date to renew it, since an expired token only reads `issue=refused` in the log | _not done_ |
 | DS5 | **Prove the issue once**, § By hand step 18 | Added 2026-10-13 (M3). After DS4, and after the Epic 5 retrospective change carrying § The scheduler item 11 reaches `main` with the Operator's merge and its Deploy run resets the box's checkout. From that Deploy on, `digital-library` is `off` in the schedule (DW-337) and a hollow or failed run exits 1 | _not done_ |
+| DL1 | **Merge `digital-library`'s `chore/remove-deploy-job` PR into `dev`, then `dev` into `main`** | Added 2026-10-13 (Epic 5 retrospective action 4, M5; Operator ruling 2026-10-12: remove the `deploy` job, do not repair it). The PR removes `Test & Deploy`'s `deploy` job, renames the workflow `Test` (`.github/workflows/test.yml`, its `test` job unchanged) and writes the standing by-hand redeploy into the README. No ruleset or branch protection requires the job's check (read 2026-10-13: `protect-main` holds only deletion and non-fast-forward rules, and `dev` has none). Nothing on the box changes; the next push to `main` runs `Test` with no `deploy` job | _not done_ |
+| DL2 | **Delete `digital-library`'s four Actions secrets** `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY` and `SERVER_PORT` | Added 2026-10-13 (M5). After DL1 reaches `main`, when no workflow reads them; an SSH key secret with no reader is a credential kept for nothing. GitHub, `digital-library`, Settings, Secrets and variables, Actions | _not done_ |
+| DL3 | **Compare the box's `~/library-redeploy.sh` with the README's standing redeploy** and make them agree | Added 2026-10-13 (M5). The script's text is recorded nowhere (DW-338); the README names its fetch, reset and build from DW-185 and DW-187. At the next `digital-library` redeploy, read the script on the box and write here whether it matches, correcting whichever is wrong in the same change | _not done_ |
 
 Story 5.8 is done when DP1 to DP7 are dated and DP8 is ruled. Story 5.9 is done when DR1 to DR3 are dated
 and DR4 is ruled. Story 5.10 is done when DS1 to DS3 are dated. Epic 5 retrospective action 1 is live when
 DP9 is dated, and action 2 when `ops/tracker-cutover.md`'s Pending action 9 is. Action 3 is live when DS4
-and DS5 are dated.
+and DS5 are dated. Action 4 is live when DL1 is dated.
