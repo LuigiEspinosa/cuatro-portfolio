@@ -1650,7 +1650,11 @@ action_items:
       5.9 and AD-13's deletes-by-owner to the rulings, and correct ops/identity-issuer.md's
       two stale Steam passages (m14)"
     owner: "Cuatro"
-    status: open
+    # 2026-10-13: built on dev, awaiting the independent verifier. epics.md 5.2, 5.3, 5.5 and 5.9 amended
+    # in place, AD-13 (and AD-11 for the demo sign-out) amended, ops/identity-issuer.md's two Steam passages
+    # corrected to PS2's deletion. Documentation only, no Operator step;
+    # spec-epic-5-retro-item-50-spec-reconciliation.md.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-51-process-a-step-a-story-makes-by-hand-on"
     epic: 5

@@ -4432,8 +4432,12 @@ decision against the NFR-4 ceiling, not absorbed as an incidental subscription.
 
 ### Story 5.2: One Clerk issuer and one OIDC client per application
 **Depends on:** 5.1.
-**Acceptance intent:** client ids are derived mechanically from the application id per AD-3;
-credentials live in GitHub Actions secrets and the on-box env file, never in a repository;
+**Acceptance intent:** each client's Name and the variables that carry its credentials
+(`<ID>_OIDC_CLIENT_ID`, `<ID>_OIDC_CLIENT_SECRET`) are derived mechanically from the application id
+per AD-3, and the Client ID value is the one the issuer assigns, read only through those variables
+*(amended 2026-10-13, Epic 5 retrospective action 6: this read "client ids are derived mechanically from the
+application id per AD-3"; Clerk assigns the Client ID and it cannot be chosen, so AD-3 was narrowed
+by Operator ruling 2026-10-03, DW-320)*; credentials live in GitHub Actions secrets and the on-box env file, never in a repository;
 `.env.example` documents every required variable.
 
 ### Story 5.3: The Hub authenticates over OIDC Authorization Code + PKCE
@@ -4441,6 +4445,11 @@ credentials live in GitHub Actions secrets and the on-box env file, never in a r
 **Acceptance intent:** the Hub mints its own host-only `__Host-` session; **no `Domain=.cuatro.dev`
 cookie exists anywhere in the estate**, because a domain-scoped cookie forfeits `__Host-`
 hardening across every application and lets any one subdomain set a session its siblings accept.
+The one exception is the issuer's own `__client_uat` timestamp cookie, which Clerk sets on
+`.cuatro.dev` with no setting known to scope it otherwise: it is no session and no application
+reads it, so it is tolerated by name as KV-10 in `ops/known-violations.md` *(amended 2026-10-13,
+Epic 5 retrospective action 6: AD-11's exception, recorded by Operator ruling 2026-10-03; no estate code sets a
+`Domain` cookie)*.
 
 ### Story 5.4: `cs-tracker` authenticates, the JavaScript/Elixir boundary
 **Depends on:** 5.3.
@@ -4450,8 +4459,14 @@ is observed carrying across the boundary by a person, not inferred from configur
 
 ### Story 5.5: Sign-out reaches every session, including open LiveView sockets
 **Depends on:** 5.4.
-**Acceptance intent:** RP-Initiated plus Back-Channel logout, and `cs-tracker` **additionally
-broadcasts on `live_socket_id`**: without it an open LiveView socket never observes the logout;
+**Acceptance intent:** each application ends its own session, every session of the subject in
+that application, following RP-Initiated Logout and receiving Back-Channel logout tokens when the
+issuer offers them *(amended 2026-10-13, Epic 5 retrospective action 6: this read "RP-Initiated plus Back-Channel
+logout"; the estate's issuer advertises neither, so AD-11 was amended by Operator ruling 2026-10-03,
+DW-319, to per-application logout, and FR-22 is met per application)*. The demo principal, a subject
+every Visitor shares, is the exception: its sign-out ends its own session alone (Epic 5 retrospective
+action 5, `ops/identity-issuer.md` § Sign-out). `cs-tracker` **additionally broadcasts on
+`live_socket_id`**: without it an open LiveView socket never observes the logout;
 verified against a socket that is already open at sign-out time, which is the case FR-22 names
 specifically.
 
@@ -4476,9 +4491,14 @@ the principal cannot be deleted and its credentials cannot be changed from insid
 
 ### Story 5.9: `demo:reset` and a baseline fixture, per application
 **Depends on:** 5.8.
-**Acceptance intent:** each application exposes an **idempotent** reset that deletes by owner and
-reseeds a baseline fixture committed in that application's own repository; one story per
-participating application, since five stacks would otherwise invent five reset semantics.
+**Acceptance intent:** each application exposes an **idempotent** reset that deletes by owner, which
+is emptying its demo scope, and reseeds a baseline fixture committed in that application's own
+repository; the reset is defined once (`ops/demo-principal.md` § The reset), since five stacks would
+otherwise invent five reset semantics, and each participant implements it to that definition
+*(amended 2026-10-13, Epic 5 retrospective action 6: this read "one story per participating application"; one
+story built all three participants' resets to the one definition, approved at its Checkpoint 1 and
+accepted with the epic by the Operator 2026-10-12, and `digital-library`'s run, DR3, waits on its
+demo account, DW-337)*.
 
 ### Story 5.10: One host-level reset scheduler for the estate
 **Depends on:** 5.9.

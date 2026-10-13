@@ -448,17 +448,21 @@ Owner's subject into `cs-tracker`'s own session; `GET /auth/session` answers `{ 
 session and 401 without one, the counterpart of the Hub's route, so a person can compare the two. The
 request is pinned to what the Hub sends, whatever discovery offers: PKCE `S256` only, a plain query (no
 request object, no PAR), `client_secret_basic`, `RS256`, `PS256`, `ES256` or `EdDSA` for the ID token, an
-audience naming this client only, and no encrypted ID token. Steam's sign-in stays beside it (DW-326). Code:
+audience naming this client only, and no encrypted ID token. Steam's sign-in stood beside it until PS2
+deleted it on 2026-10-06 (DW-326, § cs-tracker's Steam sign-in), so OIDC is `cs-tracker`'s only sign-in. Code:
 `lib/cs_tracker/auth/oidc.ex`, `lib/cs_tracker_web/controllers/oidc_controller.ex`; tests:
 `test/cs_tracker_web/controllers/oidc_controller_test.exs`, all in `LuigiEspinosa/cs-tracker`.
 
 **Four values, all or none.** `OIDC_ISSUER`, `CS_TRACKER_OIDC_CLIENT_ID`, `CS_TRACKER_OIDC_CLIENT_SECRET`, and
-`CS_TRACKER_OIDC_OWNER_SUB`, the Owner's subject at the issuer. The last is the allowlist, the OIDC
-counterpart of `STEAM_ID`: `cs-tracker` holds one person's inventory, so a subject the issuer verifies is
+`CS_TRACKER_OIDC_OWNER_SUB`, the Owner's subject at the issuer. The last is the allowlist, which
+`STEAM_ID` was for the deleted Steam sign-in (`STEAM_ID` now names only the account the inventory sync
+reads, and signs no one in): `cs-tracker` holds one person's inventory, so a subject the issuer verifies is
 still refused unless it is that one. It is an identifier, not a credential, and the Hub shows it at
-`https://cuatro.dev/auth/session`. With any of the four empty `cs-tracker` is unconfigured and behaves
-exactly as before: the three routes answer what an unrouted path answers (404, `Not Found`), a visitor without a session is sent to Steam, and the
-session cookie keeps the name `_cs_tracker_key`. With all four set (and in production, where the cookie is
+`https://cuatro.dev/auth/session`. With any of the four empty `cs-tracker` is unconfigured and cannot be
+signed into: the OIDC routes answer what an unrouted path answers (404, `Not Found`), no session is
+admitted, a visitor without a session is sent to `/auth/sign-in`, which answers 404, and the session
+cookie keeps the name `_cs_tracker_key`. There is no fallback sign-in (corrected 2026-10-13, Epic 5
+retrospective action 6: until PS2 an unconfigured `cs-tracker` sent the visitor to Steam). With all four set (and in production, where the cookie is
 `Secure`) the session cookie is `__Host-cs-tracker`, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, never a
 `Domain`, and a visitor without a session is sent to `/auth/sign-in`. The rename ends every session once, at
 the rollout that first reads all four.
@@ -1156,8 +1160,13 @@ and return address masked, and body length; 2026-10-02T22:55:24Z). Emptying any 
 break-glass that brings Steam back. `mix precommit` exit 0, 726 tests, 0 failures, 4 excluded; dropping the
 plug's, the live gate's or the router's new check, or the sign-out's new target, each fails a case.
 
-**What remains is a ruling** (action PS2): the Steam code itself is still in `cs-tracker`, unreachable once
-configured, and FR-23's letter says an application *contains* no provider-specific logic.
+**What the ruling did** (action PS2, ruled (a) 2026-10-06): the Steam code is deleted, not kept unreachable.
+`cs-tracker` `7adfab1` removed `/auth/steam`, its callback, `CsTracker.Auth.SteamOpenID`, the nonce store and
+the `:oidc_unconfigured` pipeline, so emptying an OIDC value no longer brings Steam back: it leaves
+`cs-tracker` with no sign-in at all, and the recovery from an issuer outage is a second issuer by
+configuration. `STEAM_ID` stays, naming the inventory. On `main` through PR #3 (`e4c6103`) and rolled; FR-23's
+letter, that an application *contains* no provider-specific logic, now holds (corrected 2026-10-13, Epic 5
+retrospective action 6: this paragraph said the code was still present).
 
 ### By hand
 
