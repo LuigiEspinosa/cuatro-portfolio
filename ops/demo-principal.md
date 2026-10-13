@@ -332,7 +332,11 @@ install is DS1 to DS3, by hand, after each participant's demo access is on.
    without one is a scheduler that stopped. `docker compose run` without a TTY also writes its own progress
    lines to stderr (`Container ... Creating`, `Created`, observed 2026-10-03 by the Story 5.10 verifier), and
    the cron line sends stderr to the log, so those lines sit beside each participant's one line; read a run
-   by its `demo:reset` and `demo-reset` lines. Nothing reads the log yet: the same gap as the three backup
+   by its `demo:reset` and `demo-reset` lines. A participant's stdout is captured and printed only when its
+   one-shot ends, so its `demo:reset` line follows the stderr lines that run wrote (compose's progress, and any
+   `failed` line the application itself printed), never precedes them; a scheduler `failed` line for that
+   participant follows its stdout. Cosmetic, kept so the scheduler can read the last stdout line (item 5).
+   Nothing reads the log yet: the same gap as the three backup
    logs, amended into DW-315 so its reader covers all four. **Amended 2026-10-13** (M3): the summary carries
    `issue=` before `exit=`, and a failing run reaches the Operator through item 11, so the log is now where a
    failure is read, not where it is found.
@@ -353,7 +357,9 @@ install is DS1 to DS3, by hand, after each participant's demo access is on.
     Deploy's failure issues reach. `curl -H @/etc/cuatro/demo-reset-issue.header` reads the token's header line
     itself, so the token never enters the script, its argv or the log. `/home/deploy/demo-reset/.demo-reset.issue`
     then holds `open` and later failing runs print `issue=open` and post nothing, until a run that did
-    something exits 0 (`issue=none`) and empties it; the Operator closes the issue. Without the header file a
+    something exits 0 (`issue=none`) and empties it; the Operator closes the issue. Every exit 1 counts, not only
+    a `failed=` participant: a `lock=held` collision (item 4), `schedule=invalid` (item 6) and `cron=differs`
+    or `cron=absent` (item 7) open the issue the same way. Without the header file a
     failing run prints `issue=unconfigured`; a request answered with anything but 201 prints `issue=refused`
     and the next failing run tries again. Neither changes the exit code. **Decision:** an issue, not a
     heartbeat: the UptimeRobot free plan refused the HEARTBEAT type (`ops/monitoring.md`, 2026-09-12).
@@ -597,7 +603,10 @@ into `ssh`. No step prints a credential.
     off=1 failed=none issue=opened exit=1` and `exit=1`; the second `cron=match ran=0 off=1 failed=none
     issue=none exit=0`. From the workstation, `gh issue list --repo LuigiEspinosa/cuatro-portfolio --search
     "Demo reset failed"` shows the issue; confirm its mail reached the mailbox `ops/monitoring.md` names, then
-    `gh issue close <number> --repo LuigiEspinosa/cuatro-portfolio`. `issue=unconfigured` means DS4 has not
+    `gh issue close <number> --repo LuigiEspinosa/cuatro-portfolio`. If a real failure after DS4 already opened
+    an issue, the marker holds `open` and the first run prints `issue=open` instead of `issue=opened` and posts
+    nothing: the issue that real failure opened is the proof, so read it, and the second run still empties the
+    marker. `issue=unconfigured` means DS4 has not
     run; `issue=refused` means the token or its permission is wrong (curl's own line above says which).
 
 ## Demo principal run
