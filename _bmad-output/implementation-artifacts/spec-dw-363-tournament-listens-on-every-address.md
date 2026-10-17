@@ -2,7 +2,7 @@
 title: 'DW-363: the tournament server listens on every address'
 type: 'bugfix'
 created: '2026-10-17'
-status: 'in-review'
+status: 'done'
 route: 'oneshot'
 review_loop_iteration: 0
 context: []
@@ -155,3 +155,29 @@ address too.
   its readings close DW-363.
 
 ## Verification
+
+**Independent verifier, round 1, 2026-10-17: pass with one minor finding.** Re-run from scratch in
+`C:/CuatroEcosystem/cuatro-portfolio-wt-dw-363` on `f0ba341`, trusting none of the builder's figures:
+
+- Diff read against `origin/dev` (`9a4817c`): `docker-compose.yml` adds `HOSTNAME=0.0.0.0` to `tournament` and
+  fixes its probe at `127.0.0.1`; the compose case asserts both and that no `process.env.HOSTNAME` remains; the
+  runbook amendment keeps the Traefik probe as the check and drops the second recreate once on `main`; Pending
+  action 8 is dated. No dash or emoji in any added line; the commit is one subject line.
+- AC3 checked independently: the tracker's image is `apps/tracker/Dockerfile` (`image-tracker.yml` line 36),
+  whose `CMD` is `next start` with no `-H`; in the installed Next 15.5.13, `cli/next-start.js` takes its hostname
+  from `options.hostname` alone and the `start` command binds no `HOSTNAME` env, so it listens on every address.
+  `anchor-umami` already probes `127.0.0.1` on an image setting `HOSTNAME=0.0.0.0`. `anchor-app` and `finance`
+  join one network each. Agreed: only the tournament is exposed.
+- Own two-network proof, the image `tournament:3f8a12e9864fe6e406cdc6575cfb4618b0f5b5f9` pulled, each container
+  created on `epic-scratch-v363-a`, connected to `epic-scratch-v363-b` before start, health command the new
+  compose probe: without the variable, `Network: http://638f79079dfc:3000`, `a` 200, `b` `ECONNREFUSED`, health
+  `unhealthy`; with `HOSTNAME=0.0.0.0`, `Network: http://0.0.0.0:3000`, 200 on both, health `healthy`. Every
+  `epic-scratch-*` container and network, and the pulled image, removed; none left.
+- `HUB_TAG=x TOURNAMENT_TAG=y docker compose --profile tournament config tournament` renders `HOSTNAME: 0.0.0.0`
+  and the `127.0.0.1` probe. The four suites reading `docker-compose.yml` (`docker/__tests__/compose.test.ts`,
+  `tracker-image.test.ts`, `ops/__tests__/demo-principal.test.ts`, `traefik-config.test.ts`) are in the root run.
+- `corepack pnpm test --run` (root): the first run failed ten cases, and the seven its truncated output listed were
+  all in DW-135 WSL-bash suites (none reads the compose file); the full suite re-run: `Test Files 80 passed (80)`, `Tests 1981 passed | 1 skipped (1982)`.
+
+Minor finding: the new compose comment, like DW-363's summary, says Docker sets `HOSTNAME` to the container's
+name; it is the container's short id (`638f79079dfc` above). The reasoning and the fix are unaffected.
