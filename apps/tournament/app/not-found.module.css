@@ -1,0 +1,43 @@
+/* The 404 (Story 8.6, RESTYLE-SPEC.md § 8, an error surface): a heading and one line, on the page ground. */
+.page {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-md);
+  text-align: center;
+}
+
+.inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--s-xs) var(--s-md);
+}
+
+.code {
+  margin: 0;
+  padding-inline-end: var(--s-md);
+  border-inline-end: var(--stroke-hair) solid var(--token-border);
+  color: var(--token-text);
+  font-family: var(--f-display);
+  font-size: var(--t-md);
+  font-weight: var(--w-bold);
+  font-stretch: 85%;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tr-heading);
+  text-transform: uppercase;
+}
+
+.message {
+  margin: 0;
+  color: var(--token-text-secondary);
+  font-family: var(--f-display);
+  font-size: var(--t-md);
+  font-weight: var(--w-bold);
+  font-stretch: 85%;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tr-heading);
+}

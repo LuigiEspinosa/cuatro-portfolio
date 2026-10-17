@@ -1,42 +1,29 @@
 /*
- * The ceremony REVEAL (Story 6.10, AC1/AC3/AC4/AC10/AC11 — FR-30 / AD-24 / UX-DR32/42).
+ * The ceremony reveal (Story 6.10), restyled onto the Cuatro vocabulary (Story 8.6, RESTYLE-SPEC.md).
  *
- * ⭐⭐ THIS FILE EXISTS SO THAT `ceremonia.module.css` CAN KEEP ITS ZERO-GOLD INVARIANT. 6.9b made
- * "the gold token appears nowhere in that file" a grep-checkable rule (`ceremonia.module.css:5-15`),
- * and the reveal is exactly the surface where gold BELONGS — so the reveal's rules live here, in a
- * sibling, rather than reopening a file whose whole point is that a plain grep returns zero.
+ * The reveal's highlight is the contract's accent, and it keeps the discipline the gold had: it appears
+ * only on the revealed category name, the winner names, the trophy marks tied to a win and the prize
+ * glyph, never on anything locked, muted, on a focus ring or on the verify chrome (`ceremonia.module.css`
+ * carries none). Accent is always text or a stroke, never a ground (F-8).
  *
- * ⛔ THE GOLD RULE, ENFORCED BY THIS FILE'S OWN STRUCTURE (DESIGN.md:220 — *"Treat any gold pixel
- * outside the reveal set as a bug"*). `var(--gold)` appears below ONLY on: the INCLUSIV360 outer ring
- * and its pointer, the revealed category name, the winner name and avatar, the trophy/shelf marks
- * tied to a win, and the prize chip. ⛔ It appears on NOTHING locked, nothing muted, no focus ring, no
- * lock glyph and no verify chrome — the verify strip is `ceremonia.module.css`'s and is BLUE, because
- * provenance is system trust and not reveal drama.
+ * Every animated element's base state is its final state, and each `@keyframes` runs `both`, so turning
+ * the animations off changes nothing about the document (AC3, DECISION U). The reduced-motion block and
+ * the one width breakpoint are at the bottom. No gradient and no shadow anywhere (F-7).
  *
- * ⭐⭐ THE REPO'S FIRST `@media (prefers-reduced-motion: reduce)`, AND THE FIRST `@media (min-width)`.
- * Both are at the bottom. Read the reduced-motion block with DECISION U in hand: every animated
- * element's BASE state below is its FINAL state, and each `@keyframes` runs `both` so it merely
- * TRAVELS to a place the element already sits. Turning the animations off therefore changes nothing
- * about the rendered document — which is what makes AC3 provable by diffing two captures rather than
- * by assertion. ⛔ If you add an animation whose base state is not its resting state, you have broken
- * AC3 and the diff is the only thing that will tell you.
- *
- * ⚠ NO GRADIENTS AS DECORATION (DESIGN.md:224), no shadows for hierarchy (`:248-250`) — hairlines and
- * tone only. The single `conic-gradient` below is the wheel's Stage-1 sweep, which DESIGN.md:271
- * specifies by name, and every one of its alphas is ≤ 0.18 exactly as the mock sets them.
+ * The wheel stays round: it is the roulette the page is about, a graphic rather than a control or a
+ * container, and its rings and ticks are 1px opaque rules at token values (§ 3, read as I-12 in
+ * ops/restyle-floor.md for the Operator's ruling).
  */
-
 .reveal {
-  padding: 0 var(--sp-4) var(--sp-6);
+  padding: 0 var(--s-md) var(--s-lg);
 }
 
-/* Mirrors feed.module.css:302 — `srOnly` is per-module, never global, never `composes:`. */
 .srOnly {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  width: var(--stroke-hair);
+  height: var(--stroke-hair);
   padding: 0;
-  margin: -1px;
+  margin: calc(-1 * var(--stroke-hair));
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
@@ -44,17 +31,15 @@
 }
 
 /*
- * ⭐ DECISION V — THE STAGE IS ONE GRID, AND THE SHARED SCREEN IS THE SAME GRID AT A WIDE
- * BREAKPOINT. On the phone the three cells stack in reading order (wheel → award → prize + verify);
- * at the cast breakpoint they become the `320px 1fr 300px` three-column banner the mock specifies
- * (`mock-ceremony.html:492,500`). ⛔ Not a second route, not a second reader, not a second copy of a
- * string — divergence is impossible by construction, which is what DESIGN.md:295 actually asks for.
+ * DECISION V: the stage is one grid. On the phone the three cells stack in reading order (wheel, award,
+ * prize and verify); at the one breakpoint they become three columns. Not a second route.
  */
 .stage {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--sp-4);
-  padding: var(--sp-4) 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-md);
+  padding: var(--s-md) 0;
+  border-bottom: var(--stroke-hair) solid var(--token-border);
 }
 
 .stageCol {
@@ -67,8 +52,6 @@
   align-items: center;
 }
 
-/* ── the INCLUSIV360 wheel: the one true circle (DESIGN.md:256) ─────────────────────────────── */
-
 .wheelWrap {
   position: relative;
   width: 248px;
@@ -76,42 +59,40 @@
   max-width: 100%;
 }
 
-/* Gold, and legitimately so — the wheel and its pointer are named in the reveal set. */
 .pointer {
   position: absolute;
-  top: -3px;
+  top: calc(-1 * var(--s-2xs));
   left: 50%;
-  transform: translateX(-50%);
+  z-index: var(--z-raised);
   width: 0;
   height: 0;
+  transform: translateX(-50%);
   border-left: 11px solid transparent;
   border-right: 11px solid transparent;
-  border-top: 18px solid var(--gold);
-  z-index: 5;
+  border-top: 18px solid var(--token-text);
 }
 
 .wheel {
+  position: relative;
   width: 248px;
   height: 248px;
   max-width: 100%;
+  border: var(--stroke-hair) solid var(--token-border);
   border-radius: 50%;
-  position: relative;
-  border: 1px solid var(--line);
 }
 
 .ringGold {
   position: absolute;
-  inset: 6px;
+  inset: calc(var(--s-2xs) * 1.5);
+  border: var(--stroke-hair) solid var(--token-accent);
   border-radius: 50%;
-  border: 2px solid var(--gold);
-  opacity: 0.85;
 }
 
 .ringBlue {
   position: absolute;
-  inset: 18px;
+  inset: calc(var(--s-md) + var(--s-2xs) / 2);
+  border: var(--stroke-hair) solid var(--token-border-interactive);
   border-radius: 50%;
-  border: 0.5px solid rgba(47, 129, 247, 0.45);
 }
 
 .ticks {
@@ -120,17 +101,16 @@
 }
 
 /*
- * 36 hairline ticks at 10°. ⚠ EACH ROTATION IS A RULE RATHER THAN AN INLINE `style=`: nothing under
- * `app/` carries an inline style, and CSS Modules cannot interpolate. `transform-origin: 50% 118px`
- * is the mock's (`:262`) — the wheel's centre, measured from the tick's own top edge.
+ * 36 hairline ticks at 10 degrees. Each rotation is a rule rather than an inline style: nothing under
+ * `app/` carries one. `transform-origin: 50% 118px` is the wheel's centre measured from the tick's top.
  */
 .tick {
   position: absolute;
-  top: 6px;
+  top: calc(var(--s-2xs) * 1.5);
   left: 50%;
-  width: 0.5px;
+  width: var(--stroke-hair);
   height: 12px;
-  background: var(--line);
+  background-color: var(--token-border);
   transform-origin: 50% 118px;
 }
 
@@ -172,592 +152,484 @@
 .tick:nth-child(36) { transform: rotate(350deg); }
 
 /*
- * Stage 1's decelerating conic sweep (DESIGN.md:271, mock `:251-265` — six 60° segments, every alpha
- * ≤ 0.18, masked to an annulus at 52/53%).
- *
- * ⛔ ITS RESTING OPACITY IS `0` AND THE ANIMATION ONLY EVER TRAVELS BACK TO IT. That is DECISION U's
- * rule made concrete: with the animation removed the sweep is simply absent, which is the same
- * document a viewer who waited 4.6 s ends up with.
+ * Stage 1's sweep: a dashed accent annulus that is seen only while the wheel turns. The conic gradient it
+ * was drawn with is gone (F-7). Its resting opacity is `0` and the animation only ever travels back to it,
+ * so with the animation removed the sweep is simply absent (DECISION U).
  */
 .sweep {
   position: absolute;
-  inset: 6px;
+  inset: calc(var(--s-2xs) * 1.5);
+  border: var(--stroke-hair) dashed var(--token-accent);
   border-radius: 50%;
   opacity: 0;
-  background: conic-gradient(
-    from 0deg,
-    rgba(47, 129, 247, 0.18) 0deg 60deg,
-    rgba(255, 178, 62, 0.1) 60deg 120deg,
-    rgba(47, 129, 247, 0.1) 120deg 180deg,
-    rgba(240, 85, 106, 0.1) 180deg 240deg,
-    rgba(47, 129, 247, 0.18) 240deg 300deg,
-    rgba(255, 178, 62, 0.1) 300deg 360deg
-  );
-  -webkit-mask: radial-gradient(circle, transparent 52%, #000 53%);
-  mask: radial-gradient(circle, transparent 52%, #000 53%);
 }
 
 .hub {
   position: absolute;
   inset: 0;
-  margin: auto;
+  display: flex;
   width: 168px;
   height: 168px;
-  border-radius: 50%;
-  background: var(--s1);
-  border: 0.5px solid var(--line);
-  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  margin: auto;
+  padding: 0 var(--s-md);
+  background-color: var(--token-bg);
+  border: var(--stroke-hair) solid var(--token-border);
+  border-radius: 50%;
   text-align: center;
-  padding: 0 18px;
 }
 
 .hubEyebrow {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
   text-transform: uppercase;
-  color: var(--tm);
 }
 
 .hubGlyph {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 34px;
-  color: var(--ts);
-  letter-spacing: 0.02em;
-  line-height: 1;
-  margin: 4px 0 2px;
+  margin: var(--s-2xs) 0;
+  color: var(--token-text);
+  font-family: var(--f-display);
+  font-size: var(--t-xl);
+  font-weight: var(--w-black);
+  font-stretch: 100%;
+  line-height: var(--lh-display);
 }
 
 .hubSub {
-  font-size: 10.5px;
-  color: var(--tm);
+  color: var(--token-text-secondary);
+  font-size: var(--t-2xs);
+  line-height: var(--lh-label);
 }
 
-/* ── the phase rail (AC7) ───────────────────────────────────────────────────────────────────── */
-
 /*
- * ⭐ ALL THREE STEPS ARE ALWAYS IN THE DOM, AND THAT IS THE PARITY DESIGN. ⛔ A rail that MOUNTED
- * steps as the choreography advanced would make the reduced-motion DOM a different document, which is
- * precisely what AC3 forbids — so the rail states the choreography as COPY, not as state, and reads
- * identically on both paths.
- *
- * ⚠ CODE REVIEW 2026-08-11 — THIS COMMENT USED TO DESCRIBE A FEATURE THAT WAS NEVER BUILT: *"the
- * animated path walks the highlight along them; the reduced-motion path shows the same three strings
- * with the last one lit."* Neither half was true — `.phaseDone` is applied to all three steps
- * unconditionally and nothing animates or transitions the rail — and the project's own rule is *"do
- * not leave a lie in the tree."* `.phaseStep`'s muted colour is kept as the base only so the two
- * classes remain meaningful if a future story does build the walk.
+ * The phase rail (AC7). All three steps are always in the DOM, so the reduced-motion document is the same
+ * document; `.phaseDone` is applied to every step and nothing animates the rail.
  */
 .phaseRail {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-2) var(--sp-3);
-  margin-top: var(--sp-4);
   justify-content: center;
+  gap: var(--s-xs) var(--s-sm);
+  margin: var(--s-md) 0 0;
 }
 
 .phaseStep {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  color: var(--tm);
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-meta);
+  text-transform: uppercase;
 }
 
 .phaseDone {
-  color: var(--blue);
+  color: var(--token-text);
 }
 
 .oneTrophy {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 11px;
-  color: var(--tm);
-  margin-top: var(--sp-3);
+  gap: var(--s-xs);
+  margin: var(--s-sm) 0 0;
+  color: var(--token-text-secondary);
+  font-size: var(--t-2xs);
 }
 
 .pin {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 9.5px;
-  letter-spacing: 0.06em;
+  padding: 0 var(--s-2xs);
+  border: var(--stroke-hair) solid var(--token-border);
+  border-radius: var(--r-none);
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
   text-transform: uppercase;
-  color: var(--ts);
-  border: 0.5px solid var(--line);
-  border-radius: 4px;
-  padding: 2px 7px;
 }
 
-/* ── the category card + the winner block ───────────────────────────────────────────────────── */
-
+/* The category, never a card: a hairline above it, the name in the reveal's accent. */
 .catCard {
-  background: var(--s1);
-  border: 0.5px solid var(--line);
-  border-radius: var(--r-md);
-  padding: 13px 15px;
+  padding-block: var(--s-sm);
+  border-top: var(--stroke-hair) solid var(--token-border);
   text-align: center;
 }
 
-/* Revealed: the hairline warms and the name takes gold (DESIGN.md:269). */
 .catRevealed {
-  border-color: rgba(255, 178, 62, 0.45);
+  border-top-color: var(--token-border-interactive);
 }
 
 .bucketTag {
   display: inline-block;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 9.5px;
-  letter-spacing: 0.12em;
+  margin-bottom: var(--s-xs);
+  padding: 0 var(--s-xs);
+  border: var(--stroke-hair) solid var(--token-border);
+  border-radius: var(--r-none);
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
   text-transform: uppercase;
-  color: var(--tm);
-  border: 0.5px solid var(--line);
-  border-radius: var(--r-pill);
-  padding: 3px 10px;
-  margin-bottom: 9px;
 }
 
 .catName {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 21px;
-  letter-spacing: 0.01em;
-  color: var(--gold);
-  line-height: 1.05;
   overflow-wrap: anywhere;
+  color: var(--token-accent);
+  font-family: var(--f-display);
+  font-size: var(--t-lg);
+  font-weight: var(--w-bold);
+  font-stretch: 85%;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tr-heading);
+  text-transform: uppercase;
 }
 
 .catStat {
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--ts);
-  /*
-   * ⚠ CODE REVIEW 2026-08-11 — THE ONE STRING ON THIS SURFACE THAT NEVER PASSES `checkViewerText`
-   * (it goes through `numericText`), and the rate pair renders as `${num}/${den}` — two bigints, an
-   * unbroken token up to 37 characters. `.catName`, `.winnerName` and `.pityName` all carry this;
-   * this one did not, and no ancestor scrolls, so a 320px viewport got a horizontally scrolling body.
-   */
+  margin-top: var(--s-2xs);
   overflow-wrap: anywhere;
+  color: var(--token-text-secondary);
+  font-size: var(--t-xs);
 }
 
-/*
- * The zero-winner statement. ⭐ It is `--ts`, NOT `--loss`: nobody clearing the FR-21 floors is a
- * fact about the ceremony, not an error, and tinting it red would editorialise a measured zero.
- */
+/* The zero-winner statement is a fact about the ceremony, so it is secondary text, never an alarm. */
 .outcomeLine {
-  margin: var(--sp-3) 0 0;
-  color: var(--ts);
-  font-size: 13px;
-  line-height: 1.5;
+  margin: var(--s-sm) 0 0;
+  color: var(--token-text-secondary);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
 }
 
+/* DECISION Y: one element per winner. */
 .winners {
-  list-style: none;
-  margin: var(--sp-3) 0 0;
-  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
+  gap: var(--s-xs);
+  margin: var(--s-sm) 0 0;
+  padding: 0;
+  list-style: none;
 }
 
-/*
- * ⭐ DECISION Y — ONE ELEMENT PER WINNER. A shared trophy is ONE card with N of these, never a
- * `' · '`-joined string, because a joined aggregate judged against `VIEWER_TEXT_MAX` sends the whole
- * line to the fallback when a single co-winner has an emoji-ZWJ Steam name (`6-9b:354`).
- */
 .winnerRow {
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
+  gap: var(--s-sm);
   text-align: left;
 }
 
-/*
- * ⛔ CODE REVIEW 2026-08-11 — THE AVATAR IS OFF GOLD, AND AC11's LIST IS BACK TO BEING CLOSED. It
- * carried `border: 1px solid var(--gold)` and `color: var(--gold)` while appearing in NONE of AC11's
- * seven allowed entries; the fix that had been applied was to widen this file's header prose to *"the
- * winner name and avatar"* rather than to remove the pixel. `DESIGN.md:220` — *"Treat any gold pixel
- * outside the reveal set as a bug."* The winner's NAME stays the gold focal point of the block, which
- * is what the enumeration actually names.
- */
 .avatar {
-  width: 44px;
-  height: 44px;
-  flex: none;
-  border-radius: 50%;
-  background: var(--s2);
-  border: 1px solid var(--line);
   display: flex;
+  width: var(--s-xl);
+  height: var(--s-xl);
+  flex: none;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 17px;
-  color: var(--tp);
+  border: var(--stroke-hair) solid var(--token-border-interactive);
+  border-radius: var(--r-none);
+  color: var(--token-text);
+  font-family: var(--f-mono);
+  font-size: var(--t-sm);
 }
 
-/* The label-over-name stack inside `.winnerRow`'s flex row. See the note on `.pity`. */
 .winnerText {
   display: flex;
-  flex-direction: column;
   min-width: 0;
+  flex-direction: column;
 }
 
 .winnerLabel {
-  font-size: 10.5px;
-  letter-spacing: 0.1em;
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
   text-transform: uppercase;
-  color: var(--tm);
-  font-family: var(--font-display);
-  font-weight: 700;
 }
 
 .winnerName {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 22px;
-  color: var(--gold);
-  letter-spacing: 0.01em;
-  line-height: 1.05;
   overflow-wrap: anywhere;
+  color: var(--token-accent);
+  font-family: var(--f-display);
+  font-size: var(--t-lg);
+  font-weight: var(--w-bold);
+  font-stretch: 85%;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tr-name);
+  text-transform: uppercase;
 }
 
-/* A name that could not be shown keeps its slot and takes MUTED ink — never gold, never dropped. */
 .winnerMissing {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--tm);
-  line-height: 1.2;
+  color: var(--token-text-secondary);
+  font-family: var(--f-body);
+  font-size: var(--t-base);
+  font-weight: var(--w-medium);
+  line-height: var(--lh-heading);
 }
 
 .avatarMissing {
-  border-color: var(--line);
-  color: var(--tm);
+  border-color: var(--token-border);
+  color: var(--token-text-secondary);
 }
 
-/* ── the prize chip (DESIGN.md:270 — gold is legitimate, a prize is a reveal artifact) ───────── */
-
+/* The prize: a side-ruled note, its tag a § 5 status mark. */
 .prizeChip {
   display: flex;
   align-items: center;
-  gap: 11px;
-  background: var(--s2);
-  border: 0.5px solid rgba(255, 178, 62, 0.4);
-  border-radius: var(--r-md);
-  padding: 11px 13px;
+  gap: var(--s-sm);
+  padding-inline-start: var(--s-sm);
+  border-inline-start: var(--stroke-hair) solid var(--token-border-interactive);
 }
 
 .prizeGlyph {
-  width: 34px;
-  height: 34px;
-  flex: none;
-  color: var(--gold);
   display: flex;
+  width: var(--s-xl);
+  height: var(--s-xl);
+  flex: none;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  line-height: 1;
+  color: var(--token-accent);
+  font-size: var(--t-lg);
+  line-height: var(--lh-display);
 }
 
-/* The title-over-sub stack inside `.prizeChip`'s flex row. See the note on `.pity`. */
 .prizeText {
   display: flex;
-  flex-direction: column;
   min-width: 0;
+  flex-direction: column;
 }
 
 .prizeTitle {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 12.5px;
-  color: var(--tp);
+  color: var(--token-text);
+  font-family: var(--f-display);
+  font-size: var(--t-sm);
+  font-weight: var(--w-bold);
+  font-stretch: 85%;
 }
 
 .prizeSub {
-  font-size: 11px;
-  color: var(--ts);
-  margin-top: 2px;
+  margin-top: var(--s-2xs);
+  color: var(--token-text-secondary);
+  font-size: var(--t-2xs);
 }
 
 .prizeTag {
-  margin-left: auto;
   flex: none;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 9.5px;
-  letter-spacing: 0.08em;
+  margin-left: auto;
+  padding: 0 var(--s-xs);
+  border: var(--stroke-boundary) solid var(--token-border-interactive);
+  border-radius: var(--r-none);
+  color: var(--token-text);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
   text-transform: uppercase;
-  color: var(--gold);
-  border: 0.5px solid rgba(255, 178, 62, 0.4);
-  border-radius: var(--r-pill);
-  padding: 3px 9px;
 }
 
-/* ── the trophy shelf ───────────────────────────────────────────────────────────────────────── */
-
 .section {
-  margin-top: var(--sp-6);
+  margin-top: var(--s-lg);
 }
 
 .sectionHead {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: var(--sp-2);
+  margin-bottom: var(--s-xs);
+  padding-bottom: var(--s-2xs);
+  border-bottom: var(--stroke-hair) solid var(--token-border);
 }
 
 .sectionTitle {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.06em;
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
   text-transform: uppercase;
-  color: var(--ts);
 }
 
 .sectionCount {
-  font-family: var(--font-display);
-  font-size: 11px;
-  color: var(--tm);
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  letter-spacing: var(--tr-meta);
 }
 
+/*
+ * The shelf: one square per catalog position. The four states differ by structure (§ 5): still to come
+ * is dashed, decided and unclaimed has no border, won is solid with the star in accent, and the newest win
+ * also carries the 4px square dot.
+ */
 .shelf {
   display: flex;
-  gap: 7px;
   flex-wrap: wrap;
+  gap: var(--s-xs);
 }
 
 .slot {
-  flex: 1 1 22px;
+  position: relative;
+  display: flex;
   min-width: 22px;
   height: 42px;
-  border-radius: 8px;
-  background: var(--s1);
-  border: 0.5px solid var(--line);
-  display: flex;
+  flex: 1 1 22px;
   align-items: center;
   justify-content: center;
-  color: var(--line);
-  font-size: 15px;
-  line-height: 1;
+  border: var(--stroke-boundary) solid transparent;
+  border-radius: var(--r-none);
+  color: var(--token-text-secondary);
+  line-height: var(--lh-display);
 }
 
-.slotWon {
-  border-color: rgba(255, 178, 62, 0.45);
-  background: rgba(255, 178, 62, 0.06);
-  color: var(--gold);
-}
-
-/*
- * ⭐ Q2's "brief non-animated emphasis", HELD STATICALLY AND WITH NO TIMER (Cuatro, 2026-08-11).
- * Full-strength gold border over a 0.12 fill against `.slotWon`'s 0.45/0.06 — the mock's `.new` slot
- * treatment (`:414-418`), which is purely tonal and carries no motion at all. ⛔ A timed decay back
- * to `.slotWon` would be a state change on a timer, which is motion-adjacent and would make the two
- * captures AC13 diffs depend on WHEN they were taken.
- */
+.slotWon,
 .slotNewest {
-  border-color: var(--gold);
-  background: rgba(255, 178, 62, 0.12);
-  color: var(--gold);
+  border-color: var(--token-border-interactive);
+  color: var(--token-accent);
 }
 
-/* An empty slot is a spin that produced no trophy — muted, never red, never gold. */
-/*
- * ⭐⭐ CODE REVIEW 2026-08-11 — `empty` AND `locked` ARE TWO FACTS AND NOW LOOK LIKE IT. `SHELF_STATES`
- * has three members and the model computed all three, but the renderer collapsed them to
- * `won ? … : slotEmpty` with glyph `'★' : '·'`, so a position that HAD SPUN and gone unclaimed was
- * pixel-identical to one that had not spun yet. Over the standing corpus all 12 main spins resolve
- * `no_eligible_players`, which made the shelf twelve identical dots that never changed from the first
- * spin to the last — a progress indicator that reported no progress.
- * ⛔ `empty` is NOT a failure colour: nobody clearing a floor is a fact about the floors, not about
- * the players (`--loss` would editorialise). It is the settled ink; `locked` stays the faintest.
- */
+.slotNewest::after {
+  content: '';
+  position: absolute;
+  top: var(--s-2xs);
+  right: var(--s-2xs);
+  width: 0;
+  height: 0;
+  border: calc(var(--s-2xs) / 2) solid var(--token-accent);
+}
+
 .slotEmpty {
-  color: var(--tm);
-  border-style: solid;
+  color: var(--token-text-secondary);
 }
 
 .slotLocked {
-  color: var(--ink-locked);
+  border-color: var(--token-border-interactive);
   border-style: dashed;
+  color: var(--token-text-secondary);
 }
 
-/* ── the locked grid (AC11 — secrecy is the ABSENCE of data, not a blur) ─────────────────────── */
-
-/*
- * ⛔⛔ FOLLOW `LockedAwards.tsx:7-12`: the identity is never sent to the client and the blur sits over
- * a placeholder that never held anything. AD-22 exists precisely to prevent *"CSS blur being the only
- * secrecy"* — the mock blurs the REAL names (`mock-leaderboards.html:483-515`), which view-source,
- * DevTools or a screen reader defeat instantly.
- * ⚠ 7px, not the mock's 4.5px — `leaderboards.module.css:268-273` already records that correction.
- */
 .lockRows {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .lockRow {
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
-  padding: 10px 12px;
-  background: var(--s1);
-  border: 0.5px solid var(--line);
-  border-radius: var(--r-sm);
+  gap: var(--s-sm);
+  padding-block: var(--s-xs);
+  border-bottom: var(--stroke-hair) solid var(--token-border);
 }
 
 .lockNum {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 12px;
-  color: var(--ink-locked);
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-2xs);
+  letter-spacing: var(--tr-meta);
 }
 
+/* The blurred placeholder stands over something that never held anything (AD-22). */
 .redact {
+  height: var(--s-sm);
   flex: 1;
-  height: 12px;
-  border-radius: 3px;
-  background: var(--s2);
+  background-color: var(--token-border);
   filter: blur(7px);
 }
 
-/* ⛔ NEVER GOLD. A locked card carrying gold is a defect (UX-DR6, DESIGN.md:274). */
 .lockGlyph {
-  color: var(--ink-locked);
-  font-size: 13px;
-  line-height: 1;
+  color: var(--token-text-secondary);
+  line-height: var(--lh-display);
 }
 
-/* ── the record of revealed spins, and the pity round ───────────────────────────────────────── */
-
 .record {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
+  gap: var(--s-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .recordItem {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-1);
+  gap: var(--s-2xs);
 }
 
 .recordCounter {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 10.5px;
-  letter-spacing: 0.08em;
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
   text-transform: uppercase;
-  color: var(--tm);
 }
 
-/*
- * ⭐⭐ CODE REVIEW 2026-08-11 — THIS BOX HAD NO `display` AND ITS CHILDREN ARE `<span>`s, so the whole
- * consolation card laid out on ONE LINE BOX with no separating whitespace (JSX strips the newline
- * between sibling elements): `Ronda de consolaciónNadie se va con las manos vacíasUn giro aparte, con
- * la misma semilla.` The `margin-top`s on `.pityPromise`/`.pitySub` were inert too — vertical margins
- * do nothing on inline non-replaced boxes. ⚠ `.hub` and `.recordItem` already set
- * `flex-direction: column` for the identical span-stack pattern; these three were the ones that
- * missed it. Over the standing corpus this is the DOMINANT surface — 28 of 28 consolation prizes.
- */
 .pity {
-  margin-top: var(--sp-6);
-  padding: 14px;
-  background: var(--s2);
-  border: 0.5px solid var(--line);
-  border-radius: var(--r-md);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  margin-top: var(--s-lg);
+  padding-top: var(--s-sm);
+  border-top: var(--stroke-hair) solid var(--token-border-interactive);
 }
 
 .pityTitle {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 13px;
-  color: var(--tp);
+  color: var(--token-text);
+  font-family: var(--f-display);
+  font-size: var(--t-md);
+  font-weight: var(--w-bold);
+  font-stretch: 85%;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tr-heading);
+  text-transform: uppercase;
 }
 
 .pityPromise {
-  font-size: 12px;
-  color: var(--ts);
-  margin-top: 2px;
+  margin-top: var(--s-2xs);
+  color: var(--token-text);
+  font-size: var(--t-sm);
 }
 
 .pitySub {
-  font-size: 11px;
-  color: var(--tm);
-  margin-top: var(--sp-1);
+  margin-top: var(--s-2xs);
+  color: var(--token-text-secondary);
+  font-size: var(--t-2xs);
 }
 
 .pityNames {
-  list-style: none;
-  margin: var(--sp-3) 0 0;
-  padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-2);
+  gap: var(--s-xs);
+  margin: var(--s-sm) 0 0;
+  padding: 0;
+  list-style: none;
 }
 
-/*
- * A consolation winner. ⚠ GOLD IS LEGITIMATE HERE — `0026:104-113` says a consolation prize is not a
- * category, but it IS a win, and DESIGN.md:220 gives gold to *award winners* and to *the Inclusiv
- * token-shirt prize*. The pity round is a spotlight, not a pity-pat (EXPERIENCE.md:180).
- */
 .pityName {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 12.5px;
-  color: var(--gold);
-  border: 0.5px solid rgba(255, 178, 62, 0.4);
-  border-radius: var(--r-pill);
-  padding: 4px 10px;
+  padding: var(--s-2xs) var(--s-xs);
+  border: var(--stroke-boundary) solid var(--token-border-interactive);
+  border-radius: var(--r-none);
   overflow-wrap: anywhere;
+  color: var(--token-accent);
+  font-family: var(--f-display);
+  font-size: var(--t-sm);
+  font-weight: var(--w-bold);
+  font-stretch: 85%;
 }
 
 .pityNameMissing {
-  color: var(--tm);
-  border-color: var(--line);
+  border-color: var(--token-border);
+  color: var(--token-text-secondary);
 }
 
-/* ── the animation layer (AC1) ──────────────────────────────────────────────────────────────── */
+/* ── the choreography ────────────────────────────────────────────────────────────────────────── */
 
-/*
- * ⛔⛔ EVERY KEYFRAME BELOW ENDS WHERE ITS ELEMENT ALREADY RESTS. `wheelSpin` travels 1800deg — FIVE
- * whole turns — so its final frame is visually identical to `rotate(0)`; `sweepOut` ends at the
- * sweep's base `opacity: 0`; `flipIn` ends at no transform and full opacity. That is not a
- * coincidence, it is the mechanism, and it is why AC3 holds: the DOM is the same document on both
- * paths and the resting pixels are the same too.
- *
- * ⚠ CODE REVIEW 2026-08-11 — THE OLD WORDING HERE OVERCLAIMED AND IS CORRECTED. It said *"removing
- * these three declarations cannot change the rendered document"*, full stop. That is exactly true of
- * `wheelSpin` and `sweepOut`, and NOT true of `flipIn`: its `both` fill includes BACKWARDS fill, so
- * during its 4600 ms delay the card is held at the `from` frame (`rotateX(90deg)`, `opacity: 0`)
- * while `.catCard`'s own base state has neither. Removing it therefore DOES change what is painted
- * for those 4.6 s — the card is simply there immediately.
- * ⭐ THAT IS THE CHOREOGRAPHY, NOT A PARITY BUG. AC1 asks for Stage-1 wheel → Stage-2 flip, so the
- * card being withheld while the wheel turns IS the feature, and DECISION U explicitly permits *"a
- * brief pre-reveal presentation for the newest spin … a presentational overlay, never absent data"*.
- * The data is in the DOM the whole time; only the paint is deferred, and only on the animated path.
- *
- * ⚠ ONLY THE NEWEST SPIN CARRIES `.newest`, and only when there is something to animate — a
- * COMPLETED ceremony and a CONSOLATION spin both render resting (see `CeremonyReveal.tsx`).
- * Everything already revealed is static on both paths.
- */
 @keyframes wheelSpin {
   from {
     transform: rotate(0deg);
@@ -802,14 +674,6 @@
   animation: flipIn 520ms ease-out 4600ms both;
 }
 
-/*
- * ⭐⭐ UX-DR32 (CRITICAL) — THE REPO'S FIRST REDUCED-MOTION BLOCK, AND THE WHOLE OF THE REDUCED-MOTION
- * IMPLEMENTATION. The wheel does not spin, the sweep never appears and the flip does not animate; the
- * category resolves and the winner appears directly in gold with the static `.slotNewest` emphasis.
- * ⛔ The OUTCOME and the PUBLISHED SPIN ORDER are untouched, because nothing above this line ever
- * decided them: they were resolved on the server, by `lib/ceremony/reveal-model.ts`, which has no
- * motion parameter and nowhere to put one.
- */
 @media (prefers-reduced-motion: reduce) {
   .newest .wheel,
   .newest .sweep,
@@ -818,45 +682,28 @@
   }
 }
 
-/*
- * The banner's eyebrow names the mode on the cast screen and is hidden on the phone — ⚠ hidden with
- * `display: none`, NOT rendered conditionally, so the DOM is the same document at every width and the
- * phone/banner comparison AC13 runs is a comparison of one tree with itself.
- * ⚠ IT IS DECLARED BEFORE THE MEDIA BLOCK ON PURPOSE: a media query adds no specificity, so a base
- * rule written AFTER it would win at every width and the eyebrow would never appear.
- */
 .bannerEyebrow {
   display: none;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
+  margin-bottom: var(--s-xs);
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
   text-transform: uppercase;
-  color: var(--tm);
-  margin-bottom: var(--sp-2);
 }
 
 /*
- * ⭐ AC4 / DECISION V — THE SHARED SCREEN. The repo's first `@media (min-width: …)`: the same tree,
- * the same server-read data and the same strings, re-flowed into the three-column recap banner at a
- * cast width. `320px 1fr 300px` inside `max-width: 1180px` are the only wide-breakpoint numbers that
- * exist anywhere in the project (`mock-ceremony.html:492,500`).
- *
- * ⚠ `.shell { max-width: 430px }` (`viewer.module.css:7`) caps every viewer surface, so the cap is
- * relaxed there — scoped to a page that actually renders this banner, via the `data-ceremony-wide`
- * attribute below, so no other route widens. An attribute is used rather than a class because CSS
- * Modules hash class names per file and `viewer.module.css` cannot name one of ours.
+ * The shared screen: the same tree at the restyle's one breakpoint (RESTYLE-SPEC.md § 2, I-8), the wheel's
+ * own width first and the other two columns sharing the rest, inside the application's own 1180px cap.
  */
-@media (min-width: 1024px) {
+@media (min-width: 760px) {
   .stage {
-    grid-template-columns: 320px 1fr 300px;
+    grid-template-columns: 248px minmax(0, 1fr) minmax(0, 1fr);
     align-items: start;
     max-width: 1180px;
     margin: 0 auto;
-    background: var(--s1);
-    border: 0.5px solid var(--line);
-    border-radius: var(--r-lg);
-    padding: var(--sp-6);
+    column-gap: var(--s-lg);
   }
 
   .reveal {

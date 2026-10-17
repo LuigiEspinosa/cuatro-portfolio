@@ -933,7 +933,9 @@ describe('the Anchor consumes the contract in its global stylesheet and its toke
     // rather than silently escaping the scan below.
     const roots = new Set(
       gitLsFiles(['.'])
-        .filter((path) => !isOtherApplication(path))
+        // Another application under `apps/` is not a Hub source root, whether or not it has adopted the
+        // contract (the tournament adopted it in Story 8.6 and left `OTHER_APPLICATIONS`).
+        .filter((path) => !(path.startsWith('apps/') && !path.startsWith(`${HUB}/`)))
         // The Hub's paths from `apps/hub`, so its roots read as they did at the repository root.
         .map(fromHub)
         .filter((path) => path.includes('/'))
@@ -1379,7 +1381,7 @@ describe('the migration is closed (Story 2-22, migration step 7)', () => {
     expect(isSearchExcluded('app/app.scss')).toBe(false);
     expect(isSearchExcluded('apps/finance/app/tokens.css')).toBe(true);
     expect(isSearchExcluded('apps/tracker/app/global.css')).toBe(true);
-    expect(isSearchExcluded('apps/tournament/app/globals.css')).toBe(true);
+    expect(isSearchExcluded('apps/tournament/app/globals.css')).toBe(false);
     expect(isSearchExcluded('apps/hub/app/app.scss')).toBe(false);
   });
 

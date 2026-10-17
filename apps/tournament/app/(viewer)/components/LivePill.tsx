@@ -11,7 +11,7 @@ import styles from '../viewer.module.css';
  *
  * Copy is ALL from `lib/i18n/es` (AD-24 — no inline literals); this is the extended `PILL_COPY` the story
  * calls for, with `reconnecting`/`loading` added (the strings already existed at `es.live.*`). Variants
- * reuse `viewer.module.css` `.pill*` + `@keyframes pulse` — no new palette, no new component shell. The
+ * reuse `viewer.module.css` `.pill*` (the Story 8.6 status treatment), no new palette, no new component shell. The
  * reconnect tone is the MUTED `.pillSoft` (never alarm-red — DESIGN.md:263). `aria-live="polite"` announces
  * every state change (EXPERIENCE.md:145).
  */

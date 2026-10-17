@@ -64,6 +64,13 @@ const EXEMPTIONS = [
       'The same F-11 selection ground in the tracker, hand-fix line 2 of its token adoption (Story 8.5). The ' +
       'literal gate does not read apps/tracker/ (OTHER_APPLICATIONS), but this check reads every tracked stylesheet.',
   },
+  {
+    path: 'apps/tournament/app/globals.css',
+    selector: '::selection',
+    reason:
+      'RESTYLE-SPEC F-11, in the tournament since it adopted the contract (Story 8.6): the same permitted ' +
+      'selection ground. Its status dots are drawn by their borders, so they are no fill.',
+  },
 ] as const;
 
 interface Fill {
@@ -160,7 +167,7 @@ describe('no accent role is a fill, but the Live dot and the selection (RESTYLE-
   });
 
   it('finds each exempt fill exactly once, so no exemption outlives its fill', () => {
-    expect(verdict(fills).used, EXEMPTIONS.map((exemption) => `${exemption.path} ${exemption.selector}`).join(', ')).toEqual([1, 1, 1]);
+    expect(verdict(fills).used, EXEMPTIONS.map((exemption) => `${exemption.path} ${exemption.selector}`).join(', ')).toEqual([1, 1, 1, 1]);
   });
 
   it('refuses a planted fill in every shape a stylesheet can hide one, and passes what is not a fill', () => {
@@ -204,13 +211,14 @@ describe('no accent role is a fill, but the Live dot and the selection (RESTYLE-
         `${path}: "from" sets background-color to --token-accent`,
         `${path}: ".planted-fallback" sets background to --token-accent`,
       ],
-      used: [0, 0, 0],
+      used: [0, 0, 0, 0],
     });
 
     // And the exemptions hold in their own files and nowhere else, one fill each.
     const dot = fillsIn(EXEMPTIONS[0].path, compileString('.suite-directory__dot { background: var(--token-accent); }').css);
     const selection = fillsIn(EXEMPTIONS[1].path, compileString('::selection { background: var(--token-accent); }').css);
     const tracker = fillsIn(EXEMPTIONS[2].path, '::selection { background-color: var(--token-accent); }');
-    expect(verdict([...dot, ...selection, ...tracker])).toEqual({ refused: [], used: [1, 1, 1] });
+    const tournament = fillsIn(EXEMPTIONS[3].path, '::selection { background-color: var(--token-accent); }');
+    expect(verdict([...dot, ...selection, ...tracker, ...tournament])).toEqual({ refused: [], used: [1, 1, 1, 1] });
   });
 });

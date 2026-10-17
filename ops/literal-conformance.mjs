@@ -70,12 +70,6 @@ export const OTHER_APPLICATIONS = [
       'the floor, /login, in app/(auth)/login/login.css; the interior below the floor keeps its own literals in ' +
       'app/global.css and app/tokens.css (DW-357), and the change that restyles it deletes this entry.',
   },
-  {
-    path: 'apps/tournament/',
-    reason:
-      'Merged by Story 3-7 with its own palette in app/globals.css and CSS modules, 65 colour literals. Its token ' +
-      'adoption is deferred whole to its Epic 8 restyle (DW-279), and the change that adopts the contract deletes this entry.',
-  },
 ];
 
 /**

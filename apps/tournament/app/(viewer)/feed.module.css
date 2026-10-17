@@ -1,310 +1,345 @@
 /*
- * Timeline feed — rail, nodes, cards, chips, empty state.
- * Lifted ~1:1 from mock-home.html (.feed 184-194, .item/.node 196-230, .card 233-245,
- * .matchline/.score 247-264, .chip 272-290, .advance 293-300, teaser 302-320, empty 394-420).
- * Mobile-first, single column, never a horizontal scroll (AC10).
+ * Timeline feed, restyled onto the Cuatro vocabulary (Story 8.6, RESTYLE-SPEC.md). Each entry is a row,
+ * never a card: no ground, no radius, a hairline between siblings, the rail and its node kept beside it.
+ * Each entry has one destination, so the whole row is its link (§ 2).
  */
 .feed {
-  padding: var(--sp-4) var(--sp-4) 20px;
-  background: var(--page);
+  padding: var(--s-md) var(--s-md) var(--s-lg);
 }
 
+/* § 7 Label, Section variant: the day's heading on a hairline. */
 .day {
-  color: var(--tm);
-  font-size: 10px;
-  letter-spacing: 0.12em;
+  margin: 0 0 var(--s-xs);
+  padding-bottom: var(--s-2xs);
+  border-bottom: var(--stroke-hair) solid var(--token-border);
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
   text-transform: uppercase;
-  margin: 2px 2px var(--sp-3);
+  font-variant-numeric: tabular-nums;
 }
 
-/* Each item is the full-card tap target (a link) with the timeline rail behind it. */
 .item {
-  display: block;
   position: relative;
-  padding: 0 0 var(--sp-4) 26px;
-  text-decoration: none;
+  display: block;
+  padding-inline-start: var(--s-lg);
   color: inherit;
+  text-decoration: none;
 }
-.item:last-child {
-  padding-bottom: 2px;
-}
+
+/* The rail: a 1px opaque hairline from this node to the next. */
 .item::before {
   content: '';
   position: absolute;
-  left: 6px;
-  top: 18px;
-  bottom: -2px;
-  width: 1px;
-  background: var(--line);
+  top: var(--s-lg);
+  bottom: 0;
+  left: calc(var(--s-2xs) + var(--s-2xs) / 2);
+  width: var(--stroke-hair);
+  background-color: var(--token-border);
 }
+
 .item:last-child::before {
   display: none;
 }
 
+/*
+ * The node: a square that tells the entry's kind by structure, not hue (§ 5). A result carries the square
+ * mark inside a solid boundary, an advance the boundary alone, an award reveal a dashed boundary, and the
+ * muted kind the hairline.
+ */
 .node {
   position: absolute;
+  top: var(--s-md);
   left: 0;
-  top: 11px;
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  background: var(--page);
-  border: 1.5px solid var(--line);
+  width: var(--s-sm);
+  height: var(--s-sm);
+  border: var(--stroke-boundary) solid var(--token-border-interactive);
+  border-radius: var(--r-none);
+  background-color: var(--token-bg);
 }
+
 .node::after {
   content: '';
   position: absolute;
-  inset: 3px;
-  border-radius: 50%;
+  inset: calc(var(--s-2xs) / 2);
+  border: 0 solid var(--token-text);
 }
+
 .blue {
-  border-color: var(--blue);
+  border-style: solid;
 }
-.blue::after {
-  background: var(--blue);
-}
-.green {
-  border-color: var(--win);
-}
+
 .green::after {
-  background: var(--win);
+  border-width: calc(var(--s-2xs) / 2);
 }
+
 .gold {
-  border-color: var(--gold);
+  border-style: dashed;
 }
-.gold::after {
-  background: var(--gold);
-}
+
 .muted {
-  border-color: var(--node-muted);
-}
-.muted::after {
-  background: transparent;
+  border-color: var(--token-border);
 }
 
-/* card */
 .card {
-  background: var(--s1);
-  border: 0.5px solid var(--line);
-  border-radius: var(--r-md);
-  padding: 11px 12px;
+  min-width: 0;
   max-width: 100%;
-}
-.raised {
-  background: var(--s2);
-}
-.time {
-  color: var(--tm);
-  font-size: 10.5px;
-  letter-spacing: 0.04em;
-  margin: 0 0 5px;
+  padding-block: var(--s-sm);
 }
 
-/* match result */
+.item + .item .card {
+  border-top: var(--stroke-hair) solid var(--token-border);
+}
+
+.time {
+  margin: 0 0 var(--s-2xs);
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-meta);
+  text-transform: uppercase;
+}
+
 .matchline {
   display: flex;
-  align-items: baseline;
-  gap: var(--sp-2);
   flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-xs);
 }
+
 .who {
-  font-size: 13.5px;
-  color: var(--tp);
-  font-weight: 600;
   min-width: 0;
   overflow-wrap: anywhere;
+  color: var(--token-text);
+  font-size: var(--t-sm);
+  font-weight: var(--w-medium);
 }
+
 .def {
-  color: var(--tm);
-  font-weight: 400;
+  color: var(--token-text-secondary);
+  font-weight: var(--w-regular);
 }
+
+/* The winner's number leads at full text and full weight; the loser's follows, secondary and regular. */
 .score {
-  margin-left: auto;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--tp);
+  margin-inline-start: auto;
+  color: var(--token-text-secondary);
+  font-family: var(--f-display);
+  font-size: var(--t-base);
+  font-weight: var(--w-regular);
+  font-stretch: 85%;
 }
+
 .w {
-  color: var(--win);
+  color: var(--token-text);
+  font-weight: var(--w-bold);
 }
+
 .l {
-  color: var(--loss);
+  color: var(--token-text-secondary);
 }
 
 .metarow {
   display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  margin-top: var(--sp-2);
   flex-wrap: wrap;
-}
-.chip {
-  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  padding: 3px var(--sp-2);
-  border-radius: var(--r-pill);
-  border: 0.5px solid var(--line);
-  color: var(--ts);
-  max-width: 100%;
-  overflow-wrap: anywhere;
-}
-.chipOk {
-  color: var(--win);
-  border-color: rgba(63, 185, 80, 0.35);
-  background: rgba(63, 185, 80, 0.08);
-}
-.tick {
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  background: var(--win);
-  color: #0b1410;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  font-weight: 700;
-  flex: none;
+  gap: var(--s-xs);
+  margin-top: var(--s-xs);
 }
 
-/* bracket advance */
+/* § 5 status: approved carries the solid boundary, verified none, and the hash is plain metadata. */
+.chip {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: var(--s-2xs);
+  padding: var(--s-2xs) var(--s-xs);
+  border: var(--stroke-boundary) solid transparent;
+  border-radius: var(--r-none);
+  overflow-wrap: anywhere;
+  color: var(--token-text);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
+}
+
+.chip:global(.num) {
+  color: var(--token-text-secondary);
+  letter-spacing: var(--tr-meta);
+  text-transform: none;
+}
+
+.chipOk {
+  border-color: var(--token-border-interactive);
+}
+
+.tick {
+  flex: none;
+  color: var(--token-text);
+}
+
 .advance {
   display: flex;
   align-items: center;
-  gap: 9px;
-  font-size: 13px;
-  color: var(--ts);
-}
-.arr {
-  color: var(--blue);
-  font-weight: 700;
-  font-size: 14px;
-}
-.advance b {
-  color: var(--tp);
-  font-weight: 600;
+  gap: var(--s-xs);
+  color: var(--token-text-secondary);
+  font-size: var(--t-sm);
 }
 
-/* award teaser (greyed) */
-.teaser {
-  background: #141a21;
-  border-style: dashed;
+.arr {
+  color: var(--token-text);
 }
+
+.advance b {
+  color: var(--token-text);
+  font-weight: var(--w-medium);
+}
+
 .trow {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-.ttitle {
-  font-size: 12.5px;
-  color: #7f8b99;
-}
-.tsub {
-  font-size: 11px;
-  color: var(--ink-locked);
-  margin-top: 2px;
-}
-.lockpill {
-  margin-left: auto;
-  font-size: 10px;
-  color: var(--ink-locked);
-  border: 0.5px solid #2a333d;
-  border-radius: var(--r-pill);
-  padding: 3px var(--sp-2);
-  white-space: nowrap;
+  gap: var(--s-sm);
 }
 
-/* empty / cold-load state */
+.ttitle {
+  color: var(--token-text);
+  font-size: var(--t-sm);
+  font-weight: var(--w-medium);
+}
+
+.tsub {
+  margin-top: var(--s-2xs);
+  color: var(--token-text-secondary);
+  font-size: var(--t-xs);
+}
+
+/* The reveal's own word, outlined and dashed: the one status on an award row. */
+.lockpill {
+  flex: none;
+  margin-inline-start: auto;
+  padding: var(--s-2xs) var(--s-xs);
+  border: var(--stroke-boundary) dashed var(--token-border-interactive);
+  border-radius: var(--r-none);
+  white-space: nowrap;
+  color: var(--token-text);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
+}
+
+/* The empty and cold state (§ 8), its copy and its count unchanged. */
 .empty {
-  padding: 54px 26px 60px;
+  padding: var(--s-xl) var(--s-md);
   text-align: center;
 }
+
 .ring {
-  width: 62px;
-  height: 62px;
-  margin: 0 auto 18px;
-  border-radius: 50%;
-  border: 1.5px dashed #313b46;
-  display: flex;
+  display: inline-flex;
+  min-width: var(--s-2xl);
+  min-height: var(--s-2xl);
   align-items: center;
   justify-content: center;
-  color: #4d5763;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  margin: 0 auto var(--s-md);
+  border: var(--stroke-hair) solid var(--token-border);
+  border-radius: var(--r-none);
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
 }
+
 .emptyTitle {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 16px;
-  margin: 0 0 var(--sp-2);
-  color: var(--tp);
+  margin: 0 0 var(--s-xs);
+  color: var(--token-text);
+  font-family: var(--f-display);
+  font-size: var(--t-md);
+  font-weight: var(--w-bold);
+  font-stretch: 85%;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tr-heading);
+  text-transform: uppercase;
 }
+
 .emptyBody {
-  color: var(--tm);
-  font-size: 12.5px;
+  max-width: var(--measure);
   margin: 0 auto;
-  max-width: 250px;
-  line-height: 1.55;
+  color: var(--token-text-secondary);
+  font-size: var(--t-sm);
+  line-height: var(--lh-lede);
 }
+
 .reg {
-  margin-top: 22px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  font-size: 11px;
-  color: var(--ts);
-  border: 0.5px solid var(--line);
-  border-radius: var(--r-pill);
-  padding: 6px var(--sp-3);
+  gap: var(--s-xs);
+  margin-top: var(--s-lg);
+  padding: var(--s-2xs) var(--s-sm);
+  border: var(--stroke-hair) solid var(--token-border);
+  border-radius: var(--r-none);
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
 }
+
 .regN {
-  font-family: var(--font-display);
-  font-weight: 700;
-  color: var(--blue);
+  color: var(--token-text);
+  font-family: var(--f-display);
+  font-size: var(--t-sm);
+  font-weight: var(--w-bold);
 }
 
-/* skeleton / loading shimmer for the cold load (never a blank flash — AC5). */
-.skeleton {
-  height: 74px;
-  border-radius: var(--r-md);
-  background: var(--s1);
-  border: 0.5px solid var(--line);
-  margin-bottom: var(--sp-4);
-  opacity: 0.6;
-}
-
-/* discrete auth entry point relocated from the old landing page. */
+/* The discrete sign-in: a § 1b secondary link on its own --tap box. */
 .footer {
-  padding: 24px var(--sp-4) 40px;
+  padding: var(--s-lg) var(--s-md) var(--s-xl);
   text-align: center;
 }
+
 .signin {
-  color: var(--tm);
-  font-size: 12px;
-  text-decoration: none;
-}
-.alert {
-  margin: 0 var(--sp-4) var(--sp-3);
-  padding: 10px var(--sp-3);
-  border-radius: var(--r-sm);
-  border: 0.5px solid rgba(240, 85, 106, 0.4);
-  background: rgba(240, 85, 106, 0.08);
-  color: var(--loss);
-  font-size: 12.5px;
+  display: inline-flex;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  align-items: center;
+  justify-content: center;
+  padding-inline: var(--s-xs);
+  color: var(--token-text-secondary);
+  font-size: var(--t-xs);
+  text-decoration-line: underline;
+  text-decoration-thickness: var(--stroke-hair);
+  text-decoration-color: var(--token-border-interactive);
+  text-underline-offset: var(--s-2xs);
 }
 
-/* visually-hidden live region for screen readers (AC10). */
+.signin:hover {
+  text-decoration-color: var(--token-accent-hover);
+}
+
+/* A failed sign-in, as text on a boundary (seam S-4): never colour alone. */
+.alert {
+  margin: var(--s-md) var(--s-md) 0;
+  padding: var(--s-xs) var(--s-sm);
+  border: var(--stroke-boundary) solid var(--token-border-interactive);
+  border-radius: var(--r-none);
+  color: var(--token-text);
+  font-size: var(--t-sm);
+}
+
 .srOnly {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  width: var(--stroke-hair);
+  height: var(--stroke-hair);
   padding: 0;
-  margin: -1px;
+  margin: calc(-1 * var(--stroke-hair));
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;

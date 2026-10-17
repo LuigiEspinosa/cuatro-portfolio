@@ -1,129 +1,97 @@
 /*
- * Viewer shell — mobile-first single column (~390px), dark, no horizontal scroll (AC10).
- * Topbar / brand / live-pill lifted from mock-home.html:104-158.
+ * Viewer shell: the mobile-first single column every read-only surface shares, restyled onto the Cuatro
+ * vocabulary (Story 8.6, RESTYLE-SPEC.md). The column keeps the application's own 430px cap (§ 2, I-9).
  */
 .shell {
   width: 100%;
   max-width: 430px;
   margin: 0 auto;
   min-height: 100vh;
-  background: var(--page);
+  background-color: var(--token-bg);
 }
 
 .topbar {
-  padding: 14px var(--sp-4) var(--sp-3);
-  border-bottom: 0.5px solid var(--line);
+  padding: var(--s-sm) var(--s-md) 0;
+  border-bottom: var(--stroke-hair) solid var(--token-border);
 }
 
 .brandrow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--s-sm);
+  min-height: var(--tap);
 }
 
 .wordmark {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 16px;
-  letter-spacing: 0.12em;
-  color: var(--tp);
+  color: var(--token-text);
+  font-family: var(--f-display);
+  font-size: var(--t-base);
+  font-weight: var(--w-black);
+  font-stretch: 100%;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tr-label);
 }
 
 .cup {
-  color: var(--blue);
-  font-weight: 600;
+  color: var(--token-accent);
 }
 
-/* live / status pill (mock .livepill + variants). 5.8 drives the transitions; 5.6 is static. */
+/*
+ * The live pill is a § 5 status affordance: outlined, square, mono. Its three values differ by structure,
+ * never by hue alone: live carries the 4px square dot (the one value that means "now", so the one that
+ * earns accent), final a solid border without it, and the quiet states (sin transmisión, reconectando,
+ * cargando) a dashed border.
+ */
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 9px 3px 7px;
-  border-radius: var(--r-pill);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  gap: var(--s-xs);
+  padding: var(--s-2xs) var(--s-xs);
+  border: var(--stroke-boundary) solid var(--token-border-interactive);
+  border-radius: var(--r-none);
+  color: var(--token-text);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  font-weight: var(--w-regular);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
   text-transform: uppercase;
 }
 
+/*
+ * The dot is drawn by its border, so the accent is a stroke and never a background (F-8). The looping
+ * shadow pulse it carried is retired with the other effects (RESTYLE-SPEC.md, the governing decision):
+ * the dot is the signal, and nothing on the bar moves.
+ */
 .pulse {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+  display: none;
+  width: 0;
+  height: 0;
+  border: calc(var(--s-2xs) / 2) solid var(--token-accent);
+  border-radius: var(--r-none);
 }
 
-.pillLive {
-  border: 0.5px solid rgba(47, 129, 247, 0.45);
-  background: rgba(47, 129, 247, 0.12);
-  color: var(--blue);
-}
 .pillLive .pulse {
-  background: var(--blue);
-  box-shadow: 0 0 0 0 rgba(47, 129, 247, 0.6);
-  animation: pulse 1.8s infinite;
+  display: inline-block;
 }
 
 .pillDone {
-  border: 0.5px solid rgba(255, 178, 62, 0.45);
-  background: rgba(255, 178, 62, 0.1);
-  color: var(--gold);
-}
-.pillDone .pulse {
-  background: var(--gold);
+  border-style: solid;
 }
 
 .pillSoft {
-  border: 0.5px solid var(--line);
-  background: transparent;
-  color: var(--tm);
-}
-.pillSoft .pulse {
-  background: var(--tm);
-}
-
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(47, 129, 247, 0.55);
-  }
-  70% {
-    box-shadow: 0 0 0 6px rgba(47, 129, 247, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(47, 129, 247, 0);
-  }
+  border-style: dashed;
+  color: var(--token-text-secondary);
 }
 
 /*
- * ⭐⭐ STORY 6.10, AC3 — THE PULSE COMES UNDER THE RULE, AND THE CHOICE IS RECORDED RATHER THAN
- * ASSUMED (Task 3 asks for exactly that). `@keyframes pulse` above has been unguarded since 5.6 and
- * is the ONLY animation that predates this story. It runs `infinite`, which is the single strongest
- * case `prefers-reduced-motion` exists for — a vestibular trigger that never stops — and it sits in
- * the app bar of every viewer surface including the ceremony, so leaving it running while the wheel
- * beside it was stilled would have been an incoherent answer to one user setting.
- * ⚠ ONLY THE MOTION IS REMOVED, NEVER THE MEANING: the dot keeps its `background` and the pill keeps
- * its copy, so "En vivo" still reads as live. That is UX-DR32's rule — *"it changes the delivery, not
- * the result"* — applied to a component 6.10 does not otherwise own.
+ * The one place the 430px cap is relaxed, scoped to the page that casts: `:has()` keys on the
+ * `data-ceremony-wide` marker the reveal renders, so every other surface keeps the column at every width.
+ * An attribute rather than a class, because CSS Modules hash class names per file. `760px` is the
+ * restyle's one breakpoint (RESTYLE-SPEC.md § 2, I-8).
  */
-@media (prefers-reduced-motion: reduce) {
-  .pillLive .pulse {
-    animation: none;
-  }
-}
-
-/*
- * ⭐ AC4 / DECISION V — THE ONE PLACE THE 430 px CAP IS RELAXED, AND IT IS SCOPED TO A PAGE THAT
- * ACTUALLY CASTS. The ceremony's shared-screen banner is the SAME component tree at a wide
- * breakpoint (never a second route), so it has to escape the shell cap that makes every other viewer
- * surface a phone column. ⛔ The cap is NOT lifted globally: `:has()` keys on the
- * `data-ceremony-wide` marker the reveal renders, so `/`, `/bracket`, `/leaderboards` and
- * `/jugador/[id]` are byte-identical at every width.
- * ⚠ AN ATTRIBUTE RATHER THAN A CLASS, DELIBERATELY: CSS Modules hash class names per file, so this
- * stylesheet cannot name a class defined in `ceremonia/reveal.module.css`. Attribute selectors are
- * not rewritten, which makes them the one selector that can cross the module boundary honestly.
- */
-@media (min-width: 1024px) {
+@media (min-width: 760px) {
   .shell:has([data-ceremony-wide]) {
     max-width: 1180px;
   }
