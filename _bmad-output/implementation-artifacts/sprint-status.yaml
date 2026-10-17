@@ -42,7 +42,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-13-2026 09:05
+last_updated: 10-17-2026 06:08
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1160,14 +1160,49 @@ development_status:
   # BLOCKED by epic-2 and by the UX Restyle Specification, which does not exist yet.
   # No restyle story exists for StreamVault, MaiCoin, poketracker-go, Mutuo or
   # cuatro-finance. AD-25 creates one when the Suite Directory renders them, not before.
-  epic-8: backlog
-  8-1-cs-tracker-visual-restyle: backlog
-  8-2-digital-library-adopts-the-contract-and-is-restyled: backlog
-  8-3-list-wheel-visual-restyle: backlog
-  8-4-record-the-restyle-floor-and-the-per-application-coherence-ch: backlog
-  8-5-cuatro-tracker-visual-restyle: backlog
-  8-6-cs-tournament-visual-restyle: backlog
-  epic-8-retrospective: optional
+  epic-8: in-progress
+  # 2026-10-13: built; the independent verifier passed it with minor findings in round 2 and opened
+  # cs-tracker PR #11 to dev (head 32c0d73). awaiting-operator on ops/restyle-floor.md R1 (visual
+  # sign-off), R2 (floor ruling), R3 (merge PR #11 to dev, dev to main, roll cs-tracker) and R4.
+  8-1-cs-tracker-visual-restyle: awaiting-operator
+  # 2026-10-13: built; the independent verifier passed it with minor findings in round 1 and opened
+  # digital-library PR #66 (restyle/8-2-adopt-contract, head 960050b) to dev. restyle/8-2-visual-restyle (c25f830)
+  # is pushed with no PR until the adopt merge is verified in production. awaiting-operator on ops/restyle-floor.md
+  # R8 (visual sign-off), R9 (merge PR #66, dev to main, redeploy, production check), R10 (the restyle PR, merge,
+  # redeploy), R11 (the workspace DESIGN.md) and R2 (the floor ruling).
+  8-2-digital-library-adopts-the-contract-and-is-restyled: awaiting-operator
+  # 2026-10-13: built (adoption e7b7887, restyle c665ee9); the independent verifier passed it with minor
+  # findings in round 1 and opened list-wheel PR #4 to main (head c665ee9). awaiting-operator on
+  # ops/restyle-floor.md R5 (visual sign-off), R6 (merge PR #4 to main, which deploys) and R7 (the spec
+  # defects ruling); DW-347 (adoption record, then the Registry token_contract) follows R6.
+  8-3-list-wheel-visual-restyle: awaiting-operator
+  # 2026-10-13: built; the independent verifier passed it with minor findings in round 1. ops/restyle-floor.md
+  # § SM-12 per application records the three wave-1 applications against their branch heads (every restyle PR awaits
+  # the Operator): the floor holds for cs-tracker (on R2 reading (a)) and list-wheel, digital-library fails F-7 (R13),
+  # reduced motion fails in all three (DW-345, DW-349, DW-354). awaiting-operator on ops/restyle-floor.md R2, R13
+  # and R14 (rulings the record's verdicts stand on), R12, R7, the sign-offs R1, R5, R8, and the merges R3 (cs-tracker PR #11),
+  # R6 (list-wheel PR #4), R9 then R10 (digital-library PR #66, then the restyle PR), after which SM-12 holds live.
+  8-4-record-the-restyle-floor-and-the-per-application-coherence-ch: 
+    awaiting-operator
+  # 2026-10-17: the specification amendment from the Operator rulings of 2026-10-17 (R2, R7, R11 to R14) is built, not
+  # a board key of its own (spec-8-spec-restyle-spec-amendment.md): RESTYLE-SPEC.md 1.1.0 settles I-1 to I-11, F-7's
+  # scope, F-12's reading and the floor's denominator; ops/restyle-floor.md dates the six rulings and re-reads SM-12
+  # (cs-tracker and digital-library restyled yes; list-wheel yes on fix 2d1b8b8, no on main until R16); DW-346 and
+  # DW-350 closed. Independent verifier pass 2026-10-17, list-wheel PR #5 opened to main; awaiting the Operator on
+  # R15 (confirm digital-library's strict floor) and R16 (merge list-wheel PR #5). The amendment 8.5 and 8.6 wait on is on dev.
+  # 2026-10-17: built on the Anchor branch wt/8-5-cuatro-tracker-visual-restyle, awaiting the independent verifier
+  # (spec-8-5-cuatro-tracker-visual-restyle.md): the contract vendored in apps/tracker and imported through tailwind.css,
+  # /login (the strict floor) restyled, F-1 to F-12 and SM-12's four checks pass; then ops/restyle-floor.md R18 to R20.
+  # Independent verifier pass 2026-10-17 (round 1, pass with minor findings), pushed to dev; no Satellite PR. awaiting-operator
+  # on ops/restyle-floor.md R17 (icon-only control row), R18 (confirm the strict floor), R19 (visual sign-off) and R20
+  # (promote dev to main, then roll the tracker by hand).
+  8-5-cuatro-tracker-visual-restyle: awaiting-operator
+  # 2026-10-17: built on wt/8-6-cs-tournament-visual-restyle; independent verifier pass (round 1) the same day, pushed
+  # to dev. Family C, strict floor; F-1 to F-12 pass on the branch, SM-12's four checks clean. Awaiting the Operator on
+  # ops/restyle-floor.md R21 (visual sign-off), R22 (I-12 to I-14), R23 (merge to main and roll the tournament) and
+  # R24 (token_contract for an application inside the Anchor).
+  8-6-cs-tournament-visual-restyle: awaiting-operator
+  epic-8-retrospective: done
 action_items:
   # 2026-09-24: done by Operator ruling, Contract 2.0.0 (commit 40591cd): the keys are
   # --spacing-s-*, a MAJOR with no alias window. DW-15 closed in deferred-work.md.
@@ -1603,7 +1638,9 @@ action_items:
     # standing rollout); independent verifier passed it with minor findings the same day. Awaiting the
     # Operator: merge cs-tracker PR 7 (migrate.bat) to dev, bring this change to main, then
     # ops/tracker-cutover.md Pending action 9; spec-epic-5-retro-item-46-tracker-migrate-schema-demo.md.
-    status: awaiting-operator
+    # 2026-10-13: done. Anchor main at d5ecf9b (PR #96, Deploy success), Pending action 9 ran at 15:30:01Z
+    # ("No pending migrations to apply." on schema demo); the row's container name corrected. Action 9 dated.
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-47-the-reset-scheduler-make-a-failed-or-hol"
     epic: 5
@@ -1616,7 +1653,10 @@ action_items:
     # with minor findings the same day. Awaiting the Operator: ops/demo-principal.md DS4 (token header on
     # the box), the Epic 5 retrospective merge to main and its Deploy, then DS5;
     # spec-epic-5-retro-item-47-reset-failure-visible.md.
-    status: awaiting-operator
+    # 2026-10-13: the main merge (Anchor PR #96, d5ecf9b) and its Deploy ran; only DS4, then DS5, remain.
+    # 2026-10-17: DS4 and DS5 done (ops/demo-principal.md); DS5 opened issue #97, the Operator confirmed its mail and
+    # closed it at 09:07:42Z. Action 3 closed.
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-48-digital-library-repair-or-remove-test-de"
     epic: 5
@@ -1631,7 +1671,9 @@ action_items:
     # (head c05434f, CI green on push and pull_request). Awaiting the Operator: ops/demo-principal.md DL1
     # (merge PR #63 into dev, then dev into main), DL2 (delete the four Actions secrets) and DL3 (compare the
     # box's ~/library-redeploy.sh with the README); spec-epic-5-retro-item-48-digital-library-remove-deploy-job.md.
-    status: awaiting-operator
+    # 2026-10-13: done. digital-library main at 8d48846 (Test and CI success, no deploy job), the four secrets
+    # deleted, the box script replaced with the README's block by the Operator's ruling. DL1 to DL3 dated.
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-49-before-any-visitor-gets-the-demo-sign-in"
     epic: 5
@@ -1648,7 +1690,9 @@ action_items:
     # suite and typecheck clean, CI push run 38399200780 and pull_request run 38399244504 success).
     # Awaiting the Operator: ops/demo-principal.md DP10 (merge cs-tracker PR 9 into dev, then dev into main,
     # then roll) and DP11 (merge digital-library PR #64 into dev, then dev into main, then redeploy after DL1).
-    status: awaiting-operator
+    # 2026-10-13: done. cs-tracker main at 4d94dbc rolled at 15:26:41Z ([["demo"]]), digital-library main at
+    # 8d48846 redeployed at 15:29:24Z (api and web healthy, /api/health 200). DP10 and DP11 dated.
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-50-spec-reconciliation-amend-epics-md-epic"
     epic: 5
@@ -1670,12 +1714,85 @@ action_items:
       standing redeploy runbook in the same change, never only into the story's run
       section"
     owner: "Cuatro"
-    status: open
+    # 2026-10-17: followed through Epic 8 (epic-8-retro-2026-10-17.md); the Operator moved it to in-progress.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-52-process-a-dated-row-relying-on-a-reposit"
     epic: 5
     action: "Process: a dated row relying on a repository's CI names every workflow
       it read on that sha, not CI green"
     owner: "Cuatro"
-    status: open
+    # 2026-10-17: followed through Epic 8 (epic-8-retro-2026-10-17.md); the Operator moved it to in-progress.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
+  - id: "epic-8-retro-item-53-promote-dev-to-main-and-roll-the-tracker"
+    epic: 8
+    action: "Promote dev to main and roll the tracker and the tournament by their
+      standing runbooks (R20, R23); record R4; then re-read SM-12 live for both and
+      move 8-1 to 8-6 and epic-8 to done"
+    owner: "Operator"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
+  - id: "epic-8-retro-item-54-carry-out-r24-remove-apps-tracker-app-cu"
+    epic: 8
+    action: "Carry out R24: remove apps/tracker/app/cuatro-contracts/ and import contracts/
+      directly, give apps/tracker/Dockerfile the tournament's COPY of contracts/,
+      remove VENDORED_IN_APPS, replace the widened apps/* filter in anchor-contract.test.ts
+      with a named exemption, and amend AGENTS.md's two-sources rule and AD-14 for
+      Anchor members; close DW-358 and DW-361"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
+  - id: "epic-8-retro-item-55-observe-and-date-list-wheel-s-and-digita"
+    epic: 8
+    action: "Observe and date list-wheel's and digital-library's adoption, then ship
+      the Registry releases giving each token_contract 2.0.0 (DW-347, DW-351)"
+    owner: "Operator, then Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
+  - id: "epic-8-retro-item-56-documentation-refresh-the-epic-8-board-c"
+    epic: 8
+    action: "Documentation: refresh the Epic 8 board comments against the floor record,
+      disposition DW-352, DW-356 and DW-358, clear the stale passages in ops/restyle-floor.md
+      and update AGENTS.md's description of it"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
+  - id: "epic-8-retro-item-57-spec-reconciliation-write-i-12-to-i-14-i"
+    epic: 8
+    action: "Spec reconciliation: write I-12 to I-14 into RESTYLE-SPEC.md, add a reduced-motion
+      row, settle the ring radius for controls and whether a file input is a section
+      9 field; amend epics.md Epic 8 for R2, R13, R14, R23 and R24"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
+  - id: "epic-8-retro-item-58-digital-library-and-list-wheel-implement"
+    epic: 8
+    action: "digital-library and list-wheel: implement I-11 by an explicit rule, cover
+      the file input once ruled, and assert the focused radius on rendered output"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
+  - id: "epic-8-retro-item-59-process-edit-a-markdown-record-with-the"
+    epic: 8
+    action: "Process: edit a Markdown record with the Edit tool, never a node one-liner
+      through Git Bash, read git diff before pushing a doc commit, and add a case
+      that line 1 of every ops/*.md is a short heading"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
+  - id: "epic-8-retro-item-60-process-an-agent-step-gated-on-an-operat"
+    epic: 8
+    action: "Process: an agent step gated on an Operator row waits for the row's dated
+      completion; never open then draft"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
+  - id: "epic-8-retro-item-61-process-an-implementer-s-open-inference"
+    epic: 8
+    action: "Process: an implementer's open inference (an I-n reading) is ruled before
+      the merge that depends on it, and a workflow does not launch a story that builds
+      on an unruled reading"
+    owner: "Cuatro"
+    status: open
+    ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"

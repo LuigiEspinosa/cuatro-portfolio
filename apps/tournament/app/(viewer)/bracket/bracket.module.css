@@ -1,351 +1,363 @@
 /*
- * Bracket surface — stacked sections, nodes, per-state badges, focused match (Story 5.7).
- * Lifted ~1:1 from mock-bracket.html (.branch-label 203-208, .mmatch/.mslot/.seed/.pname/.pscore 216-235,
- * .badge 237-244, .gfmatch/.champnode 246-272, .fmcard/.fmtop/.fmplayer/.fmscore 275-321, .verify 286-294,
- * .seedfoot 427-430). Mobile-first, single column, NEVER a horizontal scroll (AC9): the three brackets
- * STACK vertically (the flagged stacked-layout decision) — no pan/zoom canvas.
- *
- * ⚠ Gold discipline (UX-DR6): the ONLY gold on this screen is the resolved champion node (.champ). Any
- * other gold pixel is a bug — badges, chrome, seeds, links all stay monochrome + hairline.
+ * The bracket map and the focused match, restyled onto the Cuatro vocabulary (Story 8.6,
+ * RESTYLE-SPEC.md). A match is a row, never a card: no ground, no radius, a hairline between siblings.
+ * Each row has one destination (its focused view), so the whole row is its link. Winner and loser differ
+ * by weight and by text against secondary text, never by hue; the badges are § 5 status marks.
  */
 .wrap {
-  padding: var(--sp-4) var(--sp-4) 28px;
+  padding: var(--s-md) var(--s-md) var(--s-lg);
 }
 
-/* section = one bracket (Ganadores / Perdedores / Gran final) */
 .section {
-  margin-bottom: var(--sp-6);
+  margin-bottom: var(--s-lg);
 }
+
+/* § 7 Label, Section variant. */
 .branchLabel {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  margin: 0;
+  padding-bottom: var(--s-2xs);
+  border-bottom: var(--stroke-hair) solid var(--token-border);
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
   text-transform: uppercase;
-  color: var(--ts);
-  margin: 0 0 var(--sp-3);
-}
-.branchLabel::before,
-.branchLabel::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--line);
 }
 
 .nodes {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
 }
 
-/* a node = one match, a full-width tappable card (the focused view is a route away) */
 .node {
   position: relative;
   display: block;
-  background: var(--s1);
-  border: 0.5px solid var(--line);
-  border-radius: var(--r-md);
-  padding: 9px 12px;
-  text-decoration: none;
-  color: inherit;
+  min-height: var(--tap);
   max-width: 100%;
-}
-.pos {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--tm);
-  margin-bottom: 6px;
+  padding-block: var(--s-sm);
+  color: inherit;
+  text-decoration: none;
 }
 
-/* one competitor row inside a node */
+.node + .node {
+  border-top: var(--stroke-hair) solid var(--token-border);
+}
+
+.pos {
+  margin-bottom: var(--s-2xs);
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-meta);
+  text-transform: uppercase;
+}
+
 .slot {
   display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: 3px 0;
   min-width: 0;
+  align-items: center;
+  gap: var(--s-xs);
+  padding-block: var(--s-2xs);
 }
+
 .seed {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 9px;
-  color: var(--tm);
-  min-width: 15px;
-  text-align: center;
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  padding: 1px 0;
   flex: none;
+  min-width: var(--s-md);
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  text-align: center;
 }
+
 .pname {
   flex: 1;
   min-width: 0;
-  color: var(--ts);
-  font-weight: 600;
-  font-size: 13px;
   overflow: hidden;
+  color: var(--token-text-secondary);
+  font-size: var(--t-sm);
+  font-weight: var(--w-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .pscore {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--tm);
   flex: none;
+  color: var(--token-text-secondary);
+  font-family: var(--f-display);
+  font-size: var(--t-base);
+  font-weight: var(--w-regular);
+  font-stretch: 85%;
 }
-.tbd .pname {
-  color: var(--tm);
-  font-style: italic;
-  font-weight: 500;
-}
+
 .win .pname {
-  color: var(--tp);
+  color: var(--token-text);
+  font-weight: var(--w-bold);
 }
+
 .win .pscore {
-  color: var(--win);
+  color: var(--token-text);
+  font-weight: var(--w-bold);
 }
+
 .win .seed {
-  border-color: rgba(63, 185, 80, 0.5);
-  color: var(--win);
+  color: var(--token-text);
 }
-.loss .pname {
-  color: var(--tm);
+
+.loss .pname,
+.tbd .pname {
+  color: var(--token-text-secondary);
 }
-.loss .pscore {
-  color: var(--loss);
-}
+
 .divider {
-  height: 1px;
-  background: var(--line);
-  margin: 2px 0;
+  height: var(--stroke-hair);
+  margin-block: var(--s-2xs);
+  background-color: var(--token-border);
 }
 
-/* status / notes under the slots */
 .note {
-  margin-top: 5px;
-  font-size: 10px;
-  color: var(--tm);
-  letter-spacing: 0.02em;
-}
-.noteForfeit {
-  color: var(--loss);
+  margin-top: var(--s-2xs);
+  color: var(--token-text-secondary);
+  font-size: var(--t-2xs);
 }
 
-/* per-state badges (top-right). Only .badgeLive carries color chrome; bye is neutral, forfeit is loss. */
+.noteForfeit {
+  color: var(--token-text);
+}
+
+/*
+ * § 5 status. Live carries the 4px square dot (the one value that means "now", so the one in accent),
+ * a bye a dashed border, a forfeit a solid border without the dot.
+ */
 .badge {
   position: absolute;
-  top: -7px;
-  right: 10px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 8px;
-  letter-spacing: 0.08em;
+  top: var(--s-sm);
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-xs);
+  padding: 0 var(--s-xs);
+  border: var(--stroke-boundary) solid var(--token-border-interactive);
+  border-radius: var(--r-none);
+  color: var(--token-text);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
   text-transform: uppercase;
-  border-radius: 4px;
-  padding: 2px 6px;
-  line-height: 1.4;
-}
-.badgeLive {
-  color: #04101f;
-  background: var(--blue);
-}
-.badgeBye {
-  color: var(--ts);
-  background: var(--s2);
-  border: 1px solid var(--line);
-}
-.badgeForfeit {
-  color: var(--loss);
-  background: rgba(240, 85, 106, 0.1);
-  border: 1px solid rgba(240, 85, 106, 0.45);
 }
 
-/* the resolved champion node — the ONLY gold chrome on the screen (UX-DR6) */
-.champ {
-  border-color: rgba(255, 178, 62, 0.55);
-  background: rgba(255, 178, 62, 0.07);
+.badgeLive::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border: calc(var(--s-2xs) / 2) solid var(--token-accent);
 }
+
+.badgeBye {
+  border-style: dashed;
+}
+
+.badgeForfeit {
+  border-style: solid;
+}
+
+.champ {
+  border-color: var(--token-border);
+}
+
 .champLabel {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 9px;
-  letter-spacing: 0.12em;
+  gap: var(--s-xs);
+  margin-bottom: var(--s-2xs);
+  color: var(--token-accent);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
   text-transform: uppercase;
-  color: var(--gold);
-  margin-bottom: 6px;
 }
 
-/* ── focused match (route: /bracket?match=<id>) ── */
+/* § 1b secondary link on its own --tap box. */
 .crumb {
   display: inline-flex;
+  min-height: var(--tap);
   align-items: center;
-  gap: 7px;
-  font-size: 11px;
-  color: var(--tm);
-  text-decoration: none;
-  margin-bottom: var(--sp-4);
+  gap: var(--s-xs);
+  margin-bottom: var(--s-xs);
+  color: var(--token-text-secondary);
+  font-size: var(--t-xs);
+  text-decoration-line: underline;
+  text-decoration-thickness: var(--stroke-hair);
+  text-decoration-color: var(--token-border-interactive);
+  text-underline-offset: var(--s-2xs);
 }
+
+.crumb:hover {
+  text-decoration-color: var(--token-accent-hover);
+}
+
 .crumb .arrow {
-  color: var(--blue);
-  font-weight: 700;
+  color: var(--token-text);
 }
+
 .fmcard {
-  background: var(--s1);
-  border: 0.5px solid var(--line);
-  border-radius: var(--r-lg);
-  overflow: hidden;
+  border-block: var(--stroke-hair) solid var(--token-border);
 }
-.fmcard.champ {
-  border-color: rgba(255, 178, 62, 0.55);
-}
+
 .fmtop {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-2);
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--line);
+  gap: var(--s-xs);
+  padding-block: var(--s-sm);
+  border-bottom: var(--stroke-hair) solid var(--token-border);
 }
+
 .fmround {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.12em;
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
   text-transform: uppercase;
-  color: var(--tm);
 }
+
+.fmtop .badge {
+  position: static;
+}
+
 .verify {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--blue);
+  gap: var(--s-2xs);
   white-space: nowrap;
+  color: var(--token-text);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
 }
+
 .verify .chk {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: rgba(47, 129, 247, 0.15);
-  border: 1px solid var(--blue);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  font-weight: 800;
-  line-height: 1;
   flex: none;
+  color: var(--token-text);
 }
+
 .fmplayer {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 15px 16px;
+  gap: var(--s-sm);
+  padding-block: var(--s-md);
 }
+
 .fmplayer + .fmplayer {
-  border-top: 1px solid var(--line);
+  border-top: var(--stroke-hair) solid var(--token-border);
 }
-.fmplayer.fmwin {
-  background: rgba(63, 185, 80, 0.06);
-}
+
 .fmname {
   flex: 1;
   min-width: 0;
 }
+
 .fmnm {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 17px;
-  color: var(--tp);
   display: flex;
-  align-items: center;
-  gap: 8px;
   flex-wrap: wrap;
-}
-.fmnm.tbd {
-  color: var(--tm);
-  font-style: italic;
-  font-weight: 500;
-}
-.seedchip {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 9px;
-  color: var(--tm);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 1px 5px;
-  white-space: nowrap;
-}
-.wtag {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 9px;
-  letter-spacing: 0.1em;
+  align-items: center;
+  gap: var(--s-xs);
+  overflow-wrap: anywhere;
+  color: var(--token-text);
+  font-family: var(--f-display);
+  font-size: var(--t-md);
+  font-weight: var(--w-bold);
+  font-stretch: 85%;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tr-name);
   text-transform: uppercase;
-  color: var(--win);
-  border: 1px solid rgba(63, 185, 80, 0.5);
-  background: rgba(63, 185, 80, 0.1);
-  border-radius: 4px;
-  padding: 1px 6px;
-}
-.fmscore {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 30px;
-  line-height: 1;
-  color: var(--tm);
-  flex: none;
-}
-.fmwin .fmscore {
-  color: var(--win);
-}
-.fmlose .fmscore {
-  color: var(--loss);
-}
-.fmfoot {
-  padding: 12px 14px 14px;
-  font-size: 10.5px;
-  color: var(--tm);
-  line-height: 1.5;
-  border-top: 1px solid var(--line);
-}
-.fmfoot.forfeit {
-  color: var(--loss);
 }
 
-/* empty / error state (no match rows yet) */
+.fmnm.tbd,
+.fmlose .fmnm {
+  color: var(--token-text-secondary);
+}
+
+.seedchip {
+  padding: 0 var(--s-2xs);
+  border: var(--stroke-hair) solid var(--token-border);
+  border-radius: var(--r-none);
+  white-space: nowrap;
+  color: var(--token-text-secondary);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  font-weight: var(--w-regular);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-meta);
+}
+
+.wtag {
+  padding: 0 var(--s-xs);
+  border: var(--stroke-boundary) solid var(--token-border-interactive);
+  border-radius: var(--r-none);
+  color: var(--token-text);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  font-weight: var(--w-regular);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
+}
+
+.fmscore {
+  flex: none;
+  color: var(--token-text-secondary);
+  font-family: var(--f-display);
+  font-size: var(--t-xl);
+  font-weight: var(--w-regular);
+  font-stretch: 85%;
+  line-height: var(--lh-display);
+}
+
+.fmwin .fmscore {
+  color: var(--token-text);
+  font-weight: var(--w-black);
+}
+
+.fmfoot {
+  padding-block: var(--s-sm);
+  border-top: var(--stroke-hair) solid var(--token-border);
+  color: var(--token-text-secondary);
+  font-size: var(--t-2xs);
+  line-height: var(--lh-body);
+}
+
+.fmfoot.forfeit {
+  color: var(--token-text);
+}
+
 .empty {
-  padding: 54px 26px 60px;
+  padding: var(--s-xl) var(--s-md);
   text-align: center;
 }
+
 .emptyBody {
-  color: var(--tm);
-  font-size: 12.5px;
+  max-width: var(--measure);
   margin: 0 auto;
-  max-width: 260px;
-  line-height: 1.55;
+  color: var(--token-text-secondary);
+  font-size: var(--t-sm);
+  line-height: var(--lh-lede);
 }
 
-/* visually-hidden live region (AC9). */
 .srOnly {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  width: var(--stroke-hair);
+  height: var(--stroke-hair);
   padding: 0;
-  margin: -1px;
+  margin: calc(-1 * var(--stroke-hair));
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;

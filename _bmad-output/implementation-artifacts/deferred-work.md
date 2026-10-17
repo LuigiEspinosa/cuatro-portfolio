@@ -8587,7 +8587,14 @@ status: done
     `OTHER_APPLICATIONS` entry in the same change.
 
     **Owner: the Epic 8 wave that restyles the tracker.** **Trigger: that wave.**
-  status: open
+
+    **Closed 2026-10-17 by Story 8.5 (`_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`),
+    in part, the rest carried by DW-357.** The contract is vendored at `apps/tracker/app/cuatro-contracts/` and
+    `app/global.css` imports its `tailwind.css` first, with hand-fix lines 2 to 4; the restyle floor (`/login`) reads
+    roles only. The palette is not replaced app-wide and the `OTHER_APPLICATIONS` entry stays, its reason restated:
+    `app/global.css` still carries the interior's literals (1,052 findings by the gate's own `scan` after the change, 1,081 before; `login.css` 0), and
+    replacing them is the interior's restyle, below the floor.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
   id: DW-274
@@ -8752,7 +8759,12 @@ status: done
     `apps/hub/app/__tests__/anchor-contract.test.ts`.
 
     **Owner: Epic 8 wave 2 (the `cs-tournament` restyle).** **Trigger: that story.**
-  status: open
+
+    **Closed 2026-10-17 by Story 8.6** (`spec-8-6-cs-tournament-visual-restyle.md`): `apps/tournament/app/globals.css`
+    imports `contracts/tokens.css` then `contracts/fonts.css`, the `apps/tournament/` entry left `OTHER_APPLICATIONS`
+    and its pins moved in both suites, and the image's builder copies `contracts/` in (`ops/restyle-floor.md`
+    § `cs-tournament`).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
   id: DW-280
@@ -10244,7 +10256,12 @@ status: done
     **Owner: the Operator, or the story that moves `digital-library`'s deploy off the box (DW-185).**
     **Trigger: the next `digital-library` redeploy.** Probe through Cloudflare by name, or keep the
     `--resolve` and pass `--cacert` the Origin CA root.
-  status: open
+
+    **Closed 2026-10-13 by `ops/demo-principal.md` DL3:** the script's old text is recorded in that record's §
+    Demo principal run, DL3 entry, and kept on the box as `~/library-redeploy.sh.bak-2026-10-13`. By the
+    Operator's ruling of 2026-10-13 the box runs the README's standing redeploy, which has no smoke step; the
+    smoke is checked from outside the box by name (DP11's 302, 200 and 200).
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-epic-5-retro-item-48-digital-library-remove-deploy-job.md`
   id: DW-339
   summary: >-
@@ -10282,10 +10299,370 @@ status: done
     `ReferenceError: requestAnimationFrame is not defined` thrown by gsap's `ScrollTrigger` after the test
     environment was torn down, with nothing under `apps/tracker` changed.
   evidence: |-
-    Seen 2026-10-13 by the independent verifier of Epic 5 retrospective action 5: `ci.yml` run 38399622554,
-    attempt 1, failed there; attempt 2 passed. One occurrence, filed so a second one is recognised.
+    Seen 2026-10-13 by the independent verifier of Epic 5 retrospective action 5: `ci.yml` run 38399622554
+    on `dev` at `63c5a1f` (`63c5a1fb8bff814a0e78a3fcf7f4291eba5712d7`), attempt 1, failed there; attempt 2
+    passed (`gh run view 38399622554`, read 2026-10-13: attempt 2, conclusion `success`). One occurrence, filed so a second one is recognised.
 
     **Owner: the next story touching `apps/tracker`'s test setup.** **Trigger: a second occurrence.** Find the
     suite that leaves a `ScrollTrigger` alive past its teardown and kill it in that suite's cleanup, or stub
     `requestAnimationFrame` in the tracker's Vitest setup.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-1-cs-tracker-visual-restyle.md`
+  id: DW-342
+  summary: >-
+    `ops/cs-tracker-accessibility-probe.mjs` cannot run against today's `cs-tracker`: it mints a Steam
+    session cookie and measures `/auth/steam/callback`, and Story 5.7 deleted both, so the AD-19 re-run its
+    action 2 names after Story 8.1 cannot be made with it.
+  evidence: |-
+    Found 2026-10-13 by Story 8.1, which measured its restyle with its own script instead (`ops/restyle-floor.md`
+    § `cs-tracker`, Story 8.1's restyle; the script and an OIDC session minter are kept under
+    `C:\CuatroEcosystem\epic-8-evidence\8-1-cs-tracker-visual-restyle\method\`). `CsTracker.Auth.OIDC.signed_in?/1`
+    admits a session map holding `oidc_sub` (the configured Owner subject) and an `oidc_iat` minted after the
+    server started.
+
+    **Owner: the next story that re-runs AD-19 on `cs-tracker` (AD-22's refresh, or a Tailwind or daisyUI bump).**
+    **Trigger: before that re-run.** Port the probe's cookie to the OIDC session shape and its route list to the
+    five live routes; keep its unit suite in step.
+
+    **A seed for the port, noted 2026-10-13 by Story 8.2's builder from Story 8.1's verifier round 2.** That
+    verifier's `C:\CuatroEcosystem\epic-8-evidence\8-1-cs-tracker-visual-restyle\verifier-round-2\measure.mjs`
+    already measures the production image without a cookie the probe forges: it mints the session inside the
+    release (`bin/cs_tracker rpc`), and it puts a local TLS front ahead of the image, so the LiveView socket's
+    origin passes `check_origin` and the pages mount connected rather than dead. The port can take both.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-1-cs-tracker-visual-restyle.md`
+  id: DW-343
+  summary: >-
+    `cs-tracker`'s built CSS still carries every daisyUI component rule (daisyUI 5 emits them whether or not a
+    template uses them), so F-7's grep of the built CSS finds 27 `box-shadow` and 6 gradient rules no surface
+    uses.
+  evidence: |-
+    Observed 2026-10-13 by Story 8.1 in the production image of `cs-tracker` `a0bfbb5`: 28 `box-shadow` and 6
+    gradient rules, all but one inside daisyUI component selectors, the one being `.shadow`, minted from a word in
+    an `app.css` comment. This is H-19 of `review-independent-implementation.md`, binding on Story 8.4
+    (`ops/restyle-floor.md` § O-17).
+
+    **Owner: Story 8.4, which fixes F-7's scope.** **Trigger: when 8.4 records F-7.** Either scope the grep to the
+    rules a floor surface can match, or restrict the plugin to its theme (daisyUI's `include` or `exclude` option
+    on the `@plugin` block), which the plugin-stays-installed criterion allows and `token_contract_test.exs` would
+    need to see.
+
+    **Closed 2026-10-13 by Story 8.1's fix round, `cs-tracker` `32c0d73`,** after the independent verifier held
+    F-7 binding on 8.1: the daisyUI `@plugin` block reads `include: rootcolor, scrollbar;` and Tailwind no longer
+    mints `.shadow` or `.transition` from prose. The production image's `app.css` carries one `box-shadow`
+    (`:-moz-ui-invalid{box-shadow:none}`, Tailwind preflight's) and 0 gradients. `restyle_test.exs` pins the include list; `token_contract_test.exs`
+    reads only the theme block and needed no change. Story 8.4 still owns F-7's scope for the other Satellites
+    (H-19).
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-1-cs-tracker-visual-restyle.md`
+  id: DW-344
+  summary: >-
+    Two `cs-tracker` findings a restyle may not fix: the `/browse` filter selects and search field carry no
+    visible label (RESTYLE-SPEC.md § 9), and heading levels skip from `h1` to `h3` on `/browse`'s empty state
+    and the media tiles (§ 6).
+  evidence: |-
+    Found 2026-10-13 by Story 8.1's AD-19 pass and recorded as findings (`ops/restyle-floor.md`, findings 1 and
+    2): a visible label is microcopy and a field appearing, and a heading level is a semantic change, both
+    outside the ceiling.
+
+    **Owner: a `cs-tracker` story outside Epic 8.** **Trigger: the next story that touches `/browse`'s filter bar
+    or its headings.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
+  id: DW-345
+  summary: >-
+    Two `list-wheel` findings a restyle may not fix: the editor's find fields and textarea carry no visible label
+    (RESTYLE-SPEC.md § 9), and Spin ignores `prefers-reduced-motion`.
+  evidence: |-
+    Found 2026-10-13 by Story 8.3's AD-19 pass and recorded as findings (`ops/restyle-floor.md` § `list-wheel`,
+    findings 1 and 2): a visible label is microcopy and a field appearing, and the spin's `requestAnimationFrame`
+    loop reading the setting is a behaviour change, both outside the ceiling. Forced `reduce` with Instant results
+    off, the wheel still turned about 200 degrees in 500 ms.
+
+    **Owner: a `list-wheel` story outside Epic 8.** **Trigger: the next story that touches the editor or the
+    wheel's spin.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
+  id: DW-346
+  summary: >-
+    Story 8.3's independent-implementation test found ten points in `RESTYLE-SPEC.md` an implementer has to infer
+    (I-1 to I-10: the checkbox, its target, the wrap-axis gap, `aria-disabled`, `wdth`, scaled SVG strokes, the
+    external mark, the page breakpoint, the page width, and 8.1's H-11 and H-30); they go back to the specification.
+  evidence: |-
+    Recorded 2026-10-13 in `ops/restyle-floor.md` § `list-wheel`, Where the implementer had to infer, each with
+    what 8.3 chose. `epics.md` Story 8.3 says such findings go back to the specification rather than being solved
+    locally, because a point that needed inferring here will need inferring in four more frameworks.
+
+    **Owner: the specification's owner, on the Operator's ruling (`ops/restyle-floor.md` row R7).** **Trigger:
+    before Story 8.5 or 8.6 opens.**
+
+    **Closed 2026-10-17 by the specification amendment story (`_bmad-output/implementation-artifacts/spec-8-spec-restyle-spec-amendment.md`),** on the
+    Operator's ruling of the same day (R7): `RESTYLE-SPEC.md` `1.1.0` settles all eleven points, I-11 included,
+    where each belongs and indexes them in § Readings settled 2026-10-17. 8.3's reading stands for I-1 to I-9; the
+    status dot is square at `--r-none` (I-10); a field's focus ring takes no radius (I-11). The one rendered defect
+    the ruling exposes, `list-wheel`'s focused textarea at `2px`, is fixed on `list-wheel` branch
+    `fix/8-spec-field-focus-radius` (`2d1b8b8`), row R16.
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
+  id: DW-347
+  summary: >-
+    `list-wheel` adopts Contract 2.0.0 in Story 8.3 (vendored at `src/styles/cuatro-contracts/`), but nothing
+    records the adoption and the Registry declares no `token_contract` for it until the branch is on `main`.
+  evidence: |-
+    Story 8.3, 2026-10-13: the adoption is `list-wheel` `e7b7887` on `restyle/8-3-visual-restyle`, not yet on
+    `main`. `ops/contract-adoption.md`'s row reads `not adopted` and the scheduled Registry verification reads the
+    adopter's `main`, so an earlier record or `token_contract` would describe a commit ahead of the remote and fail
+    the verification ("declared but no recorded target", or the path absent).
+
+    **Owner: the session that observes the merge.** **Trigger: `ops/restyle-floor.md` row R6 done.** In order:
+    re-observe the `list-wheel` row in `ops/contract-adoption.md` (adopted, `2.0.0`, at
+    `src/styles/cuatro-contracts/tokens.css`) and commit that dated observation; then a Registry release giving
+    the `list-wheel` entry `token_contract: "2.0.0"`, whose push runs `registry-verification.yml`.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-1-cs-tracker-visual-restyle.md`
+  id: DW-348
+  summary: >-
+    `cs-tracker`'s hand-fix 3 (`:focus-visible`, Story 1.19) omits `RESTYLE-SPEC.md` § 4's third declaration,
+    `border-radius: var(--r-hair)`, so its focus ring is drawn square where the specification rounds it to the
+    hairline radius.
+  evidence: |-
+    Found 2026-10-13 by Story 8.1's independent verifier, round 2 (`ops/restyle-floor.md` § Independent
+    verification, round 2), and recorded by Story 8.2's builder (`ops/cs-tracker-token-adoption.md`, the
+    correction under the hand-fix table). Story 8.1 did not touch the rule.
+
+    **Owner: the next `cs-tracker` story that touches `assets/css/app.css`.** **Trigger: that story.** Add the
+    line to the unlayered rule, and extend `token_contract_test.exs`'s hand-fix 3 assertion to read it.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
+  id: DW-349
+  summary: >-
+    Four `digital-library` findings a restyle may not fix: the grid's search field has no visible label
+    (RESTYLE-SPEC.md § 9); the GSAP route transition and book-page entrance ignore `prefers-reduced-motion` and
+    use literal durations; the book page's coverless box keeps its `No cover` text (§ 10); and `Breadcrumb`,
+    `StatusTag` and `EditorialTable`, rendered nowhere, keep the WIRED geometry.
+  evidence: |-
+    Found 2026-10-13 by Story 8.2's AD-19 pass and recorded as findings (`ops/restyle-floor.md` § `digital-library`,
+    findings 1 to 4): a visible label and removing read text are microcopy, and reading the motion setting is a
+    behaviour change, all outside the ceiling. Forced `reduce`, the book page's cover still slid in
+    (`matrix(..., -22.87, 0)` at 80 ms; `after/reduced-motion.txt` in the evidence folder).
+
+    **Owner: a `digital-library` story outside Epic 8.** **Trigger: the next story that touches the grid's
+    filter strip, the book page, the layout's transition, or renders one of the three components.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
+  id: DW-350
+  summary: >-
+    `digital-library`'s built CSS carries six Tailwind `box-shadow` utilities (`shadow-xs`, `-sm`, `-xl`, `-2xl`,
+    `focus-visible:ring-1`, `-[3px]`), written only by `/admin`'s shadcn-svelte `ui/` components and the reader,
+    so F-7's grep of the built CSS fails as written while no floor element carries one.
+  evidence: |-
+    Observed 2026-10-13 by Story 8.2 in the production image of `digital-library` `c25f830`
+    (`after/image-css/grep.txt`): 7 `box-shadow` rules, `:-moz-ui-invalid{box-shadow:none}` (Tailwind preflight's) and the six above; 0 gradients. This is
+    H-19 of `review-independent-implementation.md`, binding on Story 8.4 (`ops/restyle-floor.md` § O-17), and the
+    case Story 8.1's DW-343 closed in `cs-tracker` by stopping the rules being emitted, which here means restyling
+    `/admin` below the floor.
+
+    **Owner: Story 8.4, which fixes F-7's scope.** **Trigger: when 8.4 records F-7.** Either scope the grep to the
+    rules a floor surface can match, or restyle `/admin` and the reader off those utilities.
+
+    **2026-10-13, Story 8.4:** F-7 recorded as a **fail** for `digital-library` by the binding method (grep of the
+    built CSS), as a finding, in `ops/restyle-floor.md` § SM-12 per application. Which of the two ways closes it is a
+    specification choice, so it went to the Operator as row R13 rather than being made here. **Owner now: the session
+    that acts on R13's ruling.** **Trigger: R13 done.**
+
+    **Closed 2026-10-17 by the specification amendment story (`_bmad-output/implementation-artifacts/spec-8-spec-restyle-spec-amendment.md`),** on the
+    Operator's ruling of the same day, R13 (a): `RESTYLE-SPEC.md` § The floor's F-7 now greps only the rules a floor
+    surface can match. Re-read on `c25f830`: the one such rule is `:-moz-ui-invalid{box-shadow:none}`, which draws
+    none, so F-7 passes and `digital-library` reads restyled: yes (`ops/restyle-floor.md` § SM-12 per application).
+    The six utilities stay in the built CSS below the floor, recorded beside the check; the reader's two of them are
+    row R15's question.
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
+  id: DW-351
+  summary: >-
+    `digital-library` adopts Contract 2.0.0 in Story 8.2 (vendored at `apps/web/src/lib/cuatro-contracts/`), but
+    nothing records the adoption and the Registry declares no `token_contract` for it until the adopt branch is on
+    `main`, as the story's criterion requires once adoption ships.
+  evidence: |-
+    Story 8.2, 2026-10-13: the adoption is `digital-library` `960050b` on `restyle/8-2-adopt-contract`, not yet on
+    `main`. `ops/contract-adoption.md`'s row reads `not adopted` and the scheduled Registry verification reads the
+    adopter's `main`, so an earlier record or `token_contract` would describe a commit ahead of the remote and fail
+    the verification.
+
+    **Owner: the session that observes the merge.** **Trigger: `ops/restyle-floor.md` row R9 done.** In order:
+    re-observe the `digital-library` row in `ops/contract-adoption.md` (adopted, `2.0.0`, at
+    `apps/web/src/lib/cuatro-contracts/tokens.css`) and commit that dated observation; then a Registry release
+    giving the `digital-library` entry `token_contract: "2.0.0"`, whose push runs `registry-verification.yml`.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
+  id: DW-352
+  summary: >-
+    `digital-library`'s `apps/web/src/lib/__tests__/restyle-floor.test.ts` hand-fix order case fails on a checkout
+    with `core.autocrlf=true`, because its regex does not allow a carriage return before each line end.
+  evidence: |-
+    Found 2026-10-13 by Story 8.2's independent verifier, handed to Story 8.4 as a minor finding and recorded in
+    `ops/restyle-floor.md` § `digital-library`, The check left behind. CI checks out with LF, so the suite is green
+    there; a Windows contributor sees a false failure. The fix is the regex taking `\r?\n`.
+
+    **Owner: the `digital-library` restyle branch.** **Trigger: before R10's PR opens** (`restyle/8-2-visual-restyle`,
+    head `c25f830`), as one more commit on it, or the next story that touches the test after it merges.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
+  id: DW-353
+  summary: >-
+    `list-wheel`'s `Copied!` toast never renders: copying removes the winner, and the toast sits inside
+    `@if (winner)`.
+  evidence: |-
+    Found 2026-10-13 by Story 8.3's independent verifier and recorded in `ops/restyle-floor.md` § `list-wheel`,
+    finding 3. It is behaviour on `main` before Epic 8, so a restyle may not fix it; the restyled
+    `.buttons-row .toast` style never shows and the `copied` screenshots carry no toast.
+
+    **Owner: a `list-wheel` story outside Epic 8.** **Trigger: the next story that touches the copy action.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-4-record-the-restyle-floor-and-the-per-application-coherence-ch.md`
+  id: DW-354
+  summary: >-
+    `cs-tracker`'s disconnect notices ignore `prefers-reduced-motion`: `show/2` and `hide/2` in `core_components.ex`
+    carry literal `transition-all ease-out duration-300` and `duration-200` utilities, so under a forced `reduce` the
+    notice still fades in and slides 16px over about 300 ms.
+  evidence: |-
+    Observed 2026-10-13 by Story 8.4 against the production image of `cs-tracker` `32c0d73` (`ops/restyle-floor.md`
+    § SM-12 per application, finding 7; the evidence folder `epic-8-evidence\8-4-record-the-restyle-floor-and-the-per-application-coherence-ch\`, `rm-cs-tracker-reduce.txt`).
+    Every other motion collapses under `reduce`: the Controls' border colour reads `--dur-micro`, which the contract
+    sets to 1ms, and the reconnect icon is `motion-safe:`. SM-12's fourth manual check fails here, as it does in
+    `digital-library` (DW-349) and `list-wheel` (DW-345).
+
+    **Owner: a `cs-tracker` story.** **Trigger: the next story that touches `core_components.ex`, or Story 8.5 if the
+    Operator wants wave 1 clean before wave 2.** A `motion-reduce:transition-none` beside each literal is the likely
+    shape; `mix precommit` and the image boot are its gate.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
+  id: DW-355
+  summary: >-
+    `cs-tracker`'s built CSS carries `.rounded{border-radius:.25rem}`, minted by Tailwind from the word `rounded` in
+    a comment in `core_components.ex` (line 17), the same class of leak as the `.shadow` Story 8.1 removed.
+  evidence: |-
+    Handed to Story 8.5 on 2026-10-17 as a minor finding of an earlier verifier. No element matches the class, so
+    F-5 passes, but the next restyle that writes a `rounded` comment or class meets it. Story 8.5 does not touch
+    `cs-tracker`, so it is filed here rather than fixed.
+
+    **Owner: a `cs-tracker` story.** **Trigger: the next change to `cs-tracker`'s `assets/css/app.css`.** Add
+    `rounded` to the existing `@source not inline("shadow transition");`; `mix precommit` and the image boot are its gate.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
+  id: DW-356
+  summary: >-
+    `digital-library`'s code comments still cite the workspace `DESIGN.md` (the WIRED system) as their source,
+    which the Operator retired on 2026-10-17 (`ops/restyle-floor.md` R11).
+  evidence: |-
+    Handed to Story 8.5 on 2026-10-17 as a minor finding of an earlier verifier. A read of the Operator's checkout on
+    2026-10-17 found 28 lines naming `DESIGN.md` under `apps/web/src`. Story 8.5 does not touch `digital-library`
+    (Operator ruling: its checkouts are the Operator's and PR #67 is held as a draft until R9), so it is filed here.
+
+    **Owner: a `digital-library` story.** **Trigger: Story 8.2's restyle merge (R10), or the next change to a file
+    that carries such a comment.** Comments only: point them at the vendored `cuatro-contracts/` and `RESTYLE-SPEC.md`.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
+  id: DW-357
+  summary: >-
+    `apps/tracker`'s authenticated interior keeps its CRT design: its own palette in `app/tokens.css`, the Google
+    faces through `next/font`, and 1,052 literal findings in `app/global.css` and `app/tokens.css`, so
+    `ops/literal-conformance.mjs` still lists `apps/tracker/` in `OTHER_APPLICATIONS`.
+  evidence: |-
+    Story 8.5 (2026-10-17) adopted the contract and restyled the floor, `/login`, the one surface an anonymous
+    Visitor reaches (`RESTYLE-SPEC.md` § The floor: the tracker renders its own sign-in page, so R2 (a) does not
+    apply). The interior is below the floor and stays as it was, except what the adapter reaches app-wide (the
+    `font-mono` utility now names Geist Mono) and hand-fix lines 2 to 4. Mapping the palette onto roles without
+    restyling would collapse the five LED watch states, which are told apart by hue (F-9), so it is one piece of
+    work with the restyle, not a step before it. The count is `scan` from `ops/literal-conformance.mjs` over the
+    tracker's two stylesheets after Story 8.5 on 2026-10-17: 93 colour, 461 spacing, 444 type and 6 `44px` literals
+    in `app/global.css`, 48 colour literals in `app/tokens.css` (1,081 before the story; `login.css` reads 0).
+
+    **Owner: a tracker restyle story beyond the floor, if the Operator wants one (`ops/restyle-floor.md` R18).**
+    **Trigger: R18 ruled the other way, or a ruling that the interior is restyled.** That change deletes the
+    `OTHER_APPLICATIONS` entry; the vendored folder and its `anchor-contract.test.ts` admission stay.
+
+    **2026-10-17, R24 (`59f79ab`):** the vendored folder and its admission are gone; the tracker reads `contracts/`
+    directly, so that change has neither to keep.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
+  id: DW-358
+  summary: >-
+    `cuatro-tracker` vendors contract `v2.0.0` since Story 8.5, but its Registry entry declares no `token_contract`,
+    and the scheduled verification could not check one: it reads a vendored file only from a `source` of the shape
+    `https://github.com/<owner>/<repo>`, and the entry's `source` is `.../cuatro-portfolio/tree/main/apps/tracker`.
+  evidence: |-
+    Read 2026-10-17 in `ops/registry-verification.mjs` (`vendoredTarget`, and the row "is not of the shape
+    https://github.com/<owner>/<repo>"). Declaring the field today would fail the scheduled run. Story 8.5 makes no
+    Registry release (its spec's boundaries). The same holds for `cs-tournament` once Story 8.6 adopts.
+
+    **Owner: a Registry story after R20 puts the vendored folder on `main`.** **Trigger: R20 done.** The shape is
+    either teaching the verification an absorbed entry's subtree (`tree/main/<dir>`) or recording that an absorbed
+    entry declares no `token_contract`; then a dated observation, then the release.
+
+    **Closed 2026-10-17 by `59f79ab` (`_bmad-output/implementation-artifacts/spec-8-r24-tracker-reads-contracts-directly.md`),**
+    on the Operator's ruling R24 (a) of the same day: `token_contract` stays absent for an `absorbed_into:
+    cuatro-portfolio` entry, so no Registry release follows, and the tracker no longer vendors: it reads `contracts/`
+    directly, as the tournament does.
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
+  id: DW-359
+  summary: >-
+    Three findings on the tracker's restyled `/login` that the ceiling keeps out of Story 8.5: no `<h1>`; the sign-in
+    error tied to no field by `aria-describedby`; the boot overlay's progress bar drawn in U+2588 glyphs outside the
+    contract faces' subset.
+  evidence: |-
+    Observed 2026-10-17 by Story 8.5's AD-19 pass (`ops/restyle-floor.md` § `cuatro-tracker`, findings 1 to 3). The
+    first two change the accessibility tree, the third is content; none is presentation only.
+
+    **Owner: a tracker accessibility story.** **Trigger: the next change to `LoginCRT.tsx` or `BootSequence`.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-6-cs-tournament-visual-restyle.md`
+  id: DW-360
+  summary: >-
+    The tournament's restyled viewer keeps three things the vocabulary would not have: a heading and a framed `360`
+    label in its empty and cold states, an emoji (U+1F512) as the locked Ceremonia tab's glyph, and an English 404 in
+    a Spanish application.
+  evidence: |-
+    Recorded 2026-10-17 by Story 8.6 (`ops/restyle-floor.md` § `cs-tournament`, findings 1 to 3). Each is rendered
+    content today: removing the heading or the label is a field disappearing, swapping the emoji mints a glyph (I-10),
+    and translating the 404 is microcopy, all outside `RESTYLE-SPEC.md` § The ceiling.
+
+    **Owner: a tournament story outside Epic 8.** **Trigger: the next story that touches the viewer's copy or its
+    empty states.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-6-cs-tournament-visual-restyle.md`
+  id: DW-361
+  summary: >-
+    `cs-tournament`'s Registry entry declares no `token_contract` although the application consumes Contract v2.0.0
+    since Story 8.6, because AD-16's check reads a Satellite's vendored `cuatro-contracts/tokens.css` and an application
+    inside the Anchor has none.
+  evidence: |-
+    Recorded 2026-10-17 by Story 8.6. The Anchor refused a `cuatro-contracts/` folder anywhere in this repository when Story 8.6 opened
+    (`apps/hub/app/__tests__/anchor-contract.test.ts`), so the tournament loads `contracts/` directly. Whether an
+    `absorbed_into: cuatro-portfolio` entry declares the field, and how the scheduled verification would read it, is
+    the Operator's ruling (`ops/restyle-floor.md` R24). Story 8.5 meets the same question for `cuatro-tracker` (DW-358),
+    where it vendored a copy under `apps/tracker/app/cuatro-contracts/` instead of loading `contracts/`.
+
+    **Owner: the Operator, then the Registry release the ruling names.** **Trigger: R24.**
+
+    **Closed 2026-10-17 by `59f79ab` (`_bmad-output/implementation-artifacts/spec-8-r24-tracker-reads-contracts-directly.md`),**
+    on R24 (a): the field stays absent for an absorbed entry, adoption being the Anchor's own, and both applications
+    inside the Anchor read `contracts/` directly. No Registry release is named.
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-r24-tracker-reads-contracts-directly.md`
+  id: DW-362
+  summary: >-
+    Since R24 the tracker's `@import "tailwindcss"` sits in `contracts/tailwind.css`, so it resolves the root
+    `tailwindcss` 4.3.3 (preflight and default theme), while the tracker's own `@tailwindcss/postcss` and
+    `tailwindcss` are 4.2.2, which still generate its utilities.
+  evidence: |-
+    Measured 2026-10-17 on `59f79ab` by building the tracker before and after: the main stylesheet differs in two
+    preflight rules and nothing else, the `html` fallback font stack (dead, since `--default-font-family` is always
+    `var(--f-body)`) and `:-moz-focusring` gaining `:where(:not(iframe))` (the tracker renders no iframe). Every other
+    rule, both other stylesheets and all 33 media files are byte-identical, and the image built from
+    `apps/tracker/Dockerfile` emits the same bytes. A later bump of either side can move them apart in a way that does
+    render. Aligning the tracker's pair with the root's 4.3.3 is a dependency change, so it is its own story.
+
+    **Owner: the next tracker story that touches its dependencies.** **Trigger: a Tailwind bump on either side.**
   status: open

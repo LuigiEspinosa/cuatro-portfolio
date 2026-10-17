@@ -656,6 +656,20 @@ Story 4.11. Redis and qBittorrent stay in the `cuatro-tracker` project (DW-306),
 archived `/home/deploy/pg-move` and `/home/deploy/backups/cuatro-tracker` before removing them
 (`ops/caddy-retirement.md` § Retirement run, steps 11, 13 and 15).
 
+## Demo migration run, 2026-10-13
+
+**Pending action 9, 2026-10-13T15:30:01Z, schema `demo` level with `public`.** The Operator merged Anchor PR
+#96 (`dev` into `main`, merge `d5ecf9b`), and its Deploy reset the box's checkout to `d5ecf9b`. The action ran
+from a script file on the box under `set -euo pipefail`, with the Operator's approval: `HUB_TAG` the checkout's
+sha, `TRACKER_TAG=145ebc64cb13d74a07df831439cc65bfee5e031d` read from the serving container, then
+`tracker-migrate-demo` printed "11 migrations found in prisma/migrations" and "No pending migrations to
+apply." against schema `demo` on `estate-postgres`. Nothing rolled. **A defect in the row, corrected the same
+day:** it named the serving container `cuatro-portfolio-tracker-1`, but every `docker rollout` numbers it one
+higher, and the serving container was `cuatro-portfolio-tracker-4`, so the first attempt stopped at `docker
+inspect` before changing anything. The working form, now in the row, is `docker inspect "$($C ps -q tracker |
+head -n 1)"`. § The sequence's Later rollouts name no container, and the other mentions of
+`cuatro-portfolio-tracker-1` in this file are dated readings or the completed cutover's steps, left as written.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
@@ -668,7 +682,7 @@ archived `/home/deploy/pg-move` and `/home/deploy/backups/cuatro-tracker` before
 | 6 | **Merge the commit carrying Story 4-8 into `main`** and let the Deploy run | It rolls the Hub alone. From then until § Moving the database step 10, no tracker `up` or rollout from the plain file (the bold note in that section). PR #88 merged as `f9ea578`, and Deploy run 36779534561 ran | 2026-09-30T21:27Z |
 | 7 | **Remove the restored copy the 2026-09-29 verification left**: the dangling volume `7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3`, created 2026-09-29T21:05:53Z | Read first: `docker ps -a --filter volume=7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3` prints no container, and `docker run --rm -v 7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3:/v:ro alpine ls /v` lists a Postgres data directory. Then `docker volume rm 7f76c782d62d50edfde41eb55b62230c267075761cfe4445f2e1e7e04d93bdb3`. A copy of a restore, never the only copy: the live database and the dump stay. Done before step 2 of § Estate Postgres move run, 2026-09-30 | 2026-09-30 |
 | 8 | **Run § Moving the database onto the estate Postgres, steps 1 to 14**, after `ops/postgres.md` action 3 and `ops/postgres-backup.md` § Install and first run; steps 12 and 13 also after `ops/traefik-cutover.md` actions 4 and 6 and the origin rules token | Step 14 amends `ops/routing-inventory.md` and `ops/estate.md`. Done: § Estate Postgres move run, 2026-09-30, ending 2026-10-01T00:02Z | 2026-09-30 |
-| 9 | **Run the tracker's demo migration on the box once**, the standing rollout's second migration: from `/home/deploy/cuatro-portfolio`, with `HUB_TAG` exported and `TRACKER_TAG` the serving tracker's sha (`docker inspect cuatro-portfolio-tracker-1 --format '{{.Config.Image}}'`), `$C --profile migrate run --rm tracker-migrate-demo`, where `C='docker compose --env-file .env.production'` as § The sequence sets it | Added 2026-10-12 (Epic 5 retrospective action 2, M2). After the commit carrying `tracker-migrate-demo` reaches `main` and its Deploy runs, which resets the box's checkout to it. Expected "No pending migrations to apply." (schema `demo` held 11 migrations at DP6, as `public` does); a list of applied migrations means `demo` was behind and is now level, and is recorded here with the time. Nothing rolls and no data changes beyond a behind schema's migrations. From then every rollout runs it (§ The sequence, Later rollouts) | _not done_ |
+| 9 | **Run the tracker's demo migration on the box once**, the standing rollout's second migration: from `/home/deploy/cuatro-portfolio`, with `HUB_TAG` exported and `TRACKER_TAG` the serving tracker's sha (`docker inspect "$($C ps -q tracker \| head -n 1)" --format '{{.Config.Image}}'`, never a container name: each `docker rollout` numbers the serving container one higher; corrected 2026-10-13), `$C --profile migrate run --rm tracker-migrate-demo`, where `C='docker compose --env-file .env.production'` as § The sequence sets it | Added 2026-10-12 (Epic 5 retrospective action 2, M2). After the commit carrying `tracker-migrate-demo` reaches `main` and its Deploy runs, which resets the box's checkout to it. Expected "No pending migrations to apply." (schema `demo` held 11 migrations at DP6, as `public` does); a list of applied migrations means `demo` was behind and is now level, and is recorded here with the time. Nothing rolls and no data changes beyond a behind schema's migrations. From then every rollout runs it (§ The sequence, Later rollouts) | 2026-10-13T15:30:01Z. "11 migrations found in prisma/migrations" and "No pending migrations to apply." against schema `demo` on `estate-postgres`, `TRACKER_TAG` `145ebc6`, the checkout at `d5ecf9b`; § Demo migration run |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.

@@ -50,6 +50,14 @@ describe('apps/tournament/Dockerfile', () => {
     }
   });
 
+  // Story 8.6: the stylesheet imports the token contract from the repository root, which the prune does not
+  // carry, so the builder copies it in before the build or the image fails to build its CSS.
+  it('copies the token contract into the builder before the build, since the prune leaves it out', () => {
+    const copy = SERVER.indexOf('COPY --from=prune /app/contracts ./contracts');
+    expect(copy, 'the builder never copies contracts/').toBeGreaterThan(SERVER.indexOf('COPY --from=prune /app/out/full/ ./'));
+    expect(copy).toBeLessThan(SERVER.indexOf('RUN pnpm --filter tournament build'));
+  });
+
   it('boots the traced server alone, as the unprivileged node user: nothing migrates on start (AD-23)', () => {
     expect(SERVER.filter((line) => /^(CMD|ENTRYPOINT)\b/.test(line))).toEqual(['CMD ["node", "apps/tournament/server.js"]']);
     expect(SERVER).toContain('USER node');

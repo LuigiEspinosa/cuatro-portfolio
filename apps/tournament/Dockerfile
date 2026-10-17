@@ -27,6 +27,9 @@ RUN corepack enable
 WORKDIR /app
 COPY --from=deps /app ./
 COPY --from=prune /app/out/full/ ./
+# The Cuatro token contract is not a workspace, so the prune leaves it out, and the stylesheet reads it
+# (`app/globals.css` imports `contracts/tokens.css` and `contracts/fonts.css`, Story 8.6), as the Hub's does.
+COPY --from=prune /app/contracts ./contracts
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY

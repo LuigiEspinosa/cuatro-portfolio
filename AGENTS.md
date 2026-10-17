@@ -36,7 +36,7 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
 - Architecture invariants AD-1 to AD-26:
   `_bmad-output/planning-artifacts/architecture/architecture-cuatro-portfolio-2026-08-15/ARCHITECTURE-SPINE.md`.
   Every story in `epics.md` names its governing AD. Read that AD before starting.
-- **`ops/` holds 39 records that are the operational source of truth, not the planning
+- **`ops/` holds 40 records that are the operational source of truth, not the planning
   artifacts.** Answer an operational question from there before inferring it from code:
   `routing-inventory.md` (the real routing table and the box as it stands), `estate.md` (every
   application and its disposition), `known-violations.md` (what is knowingly in breach, and what closes
@@ -51,7 +51,8 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   end state), `capacity-threshold.md`, `contract-serving.md`,
   `cs-tracker-token-adoption.md`, `rendered-output-harness.md`, `monitoring.md`,
   `backup-digital-library.md`, `bot-mitigation.md`, `asset-budget.md` (what the build actually ships,
-  weighed), `registry-schema.md` (the App Registry's shape and its blocking gate),
+  weighed), `restyle-floor.md` (Epic 8's floor: each wave-1 Satellite's anonymous surfaces, verified
+  stack and family, the review-finding triage, and `cs-tracker`'s restyle record), `registry-schema.md` (the App Registry's shape and its blocking gate),
   `registry-verification.md` (the scheduled check of every entry), `registry-inputs.md` (how the
   Registry's values were first chosen, frozen 2026-09-24: `contracts/registry.json` is the only
   source of Registry values).
@@ -227,7 +228,9 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   They are `ops/__tests__/contract-purity.test.ts` and `ops/__tests__/registry-schema.test.ts`,
   each of which reads the file for its own gate. Update both, and give the new job its own
   wiring cases beside the module it runs rather than adding them to one of those two.
-- Two sources may name `contracts/`, and no third: `apps/hub/app/scss/_index.scss`, which loads the
+- In the Hub, two sources may name `contracts/`, and no third (the tournament's own `apps/tournament/app/globals.css`
+  loads `tokens.css` and `fonts.css` since Story 8.6, the tracker's `apps/tracker/app/global.css` loads `tailwind.css`
+  since R24, vendoring nothing, and each image copies `contracts/` in): `apps/hub/app/scss/_index.scss`, which loads the
   token and font stylesheets, and `apps/hub/lib/registry.ts`, which may name only
   `contracts/registry.json` and `contracts/registry.schema.json`, by relative path since the `@/`
   alias points into `apps/hub/`. `apps/hub/app/__tests__/anchor-contract.test.ts` fails a third

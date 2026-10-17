@@ -64,7 +64,8 @@ describe('LoginCRT rendering', () => {
     )
     const banner = screen.getByRole('alert')
     expect(banner).toHaveAttribute('data-variant', 'error')
-    expect(banner).toHaveClass('sb')
+    // Story 8.5: plain markup in the restyle's own class, no longer the shared StatusBanner atom.
+    expect(banner).toHaveClass('lc-alert')
     expect(screen.getByText('> ACCESS DENIED')).toBeInTheDocument()
     expect(screen.getByText('INVALID EMAIL OR PASSWORD')).toBeInTheDocument()
   })
@@ -87,6 +88,22 @@ describe('LoginCRT rendering', () => {
     const email = screen.getByLabelText('EMAIL') as HTMLInputElement
     fireEvent.submit(email.closest('form')!)
     expect(onSubmit).not.toHaveBeenCalled()
+  })
+})
+
+describe('LoginCRT on the restyle floor (Story 8.5)', () => {
+  it('renders none of the shared CRT atoms and no inline style, in any state', () => {
+    for (const phase of ['idle', 'pending', 'success', 'error-truncating'] as const) {
+      const { container, unmount } = render(
+        <LoginCRT onSubmit={vi.fn()} phase={phase} error='x' reducedMotionOverride={true} />,
+      )
+      // The bezel, the bitmap face, the pixel button and the banner atom carry the shadows,
+      // gradients and fills the floor refuses; the boot overlay's own rules carry none.
+      expect(container.querySelectorAll('.crt, .crt-screen-wrap, .bg-noise, .bt, .cpb, .sb')).toHaveLength(0)
+      expect(container.querySelectorAll('[style]')).toHaveLength(0)
+      expect(container.querySelectorAll('svg')).toHaveLength(0)
+      unmount()
+    }
   })
 })
 

@@ -1,35 +1,48 @@
-/* Four-up nav — lifted from mock-home.html:161-181. */
+/*
+ * Four-up nav (Story 8.6): § 1b Links, unboxed. Each item is a --tap target on its own; the current one
+ * carries the emphasis rule in accent beside `aria-current`, and hover only lifts the label to full text.
+ */
 .nav {
   display: flex;
-  gap: var(--sp-1);
-  margin-top: 13px;
+  gap: var(--s-2xs);
 }
 
 .navitem {
+  display: inline-flex;
   flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0 var(--s-2xs);
+  border-bottom: var(--stroke-emphasis) solid transparent;
+  color: var(--token-text-secondary);
+  font-family: var(--f-body);
+  font-size: var(--t-xs);
+  font-weight: var(--w-medium);
+  line-height: var(--lh-label);
   text-align: center;
-  padding: 7px var(--sp-1) 9px;
-  font-size: 12px;
-  color: var(--tm);
-  border-bottom: 1.5px solid transparent;
   text-decoration: none;
-  /* ≥44px combined tap target with the topbar padding; min-height keeps each tab tappable. */
-  min-height: 34px;
+}
+
+a.navitem:hover {
+  color: var(--token-text);
 }
 
 .active {
-  color: var(--tp);
-  font-weight: 600;
-  border-bottom-color: var(--blue);
+  border-bottom-color: var(--token-accent);
+  color: var(--token-text);
+}
+
+a.active:hover {
+  border-bottom-color: var(--token-accent-hover);
 }
 
 .locked {
-  color: var(--ink-locked);
   cursor: default;
 }
 
 .lock {
-  font-size: 9px;
-  vertical-align: 1px;
-  margin-left: 3px;
+  margin-inline-start: var(--s-2xs);
+  font-size: var(--t-3xs);
 }

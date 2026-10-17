@@ -98,11 +98,11 @@ describe('the configuration', () => {
     for (const entry of PERMITTED) expect(entry.reason.trim(), `${entry.path} carries no reason`).not.toBe('');
   });
 
-  it('leaves exactly apps/finance/, apps/tracker/ and apps/tournament/ unread, as other applications, with their reasons (Stories 3-5 to 3-7)', () => {
+  it('leaves exactly apps/finance/ and apps/tracker/ unread, as other applications, with their reasons (Stories 3-5, 3-6; apps/tournament/ read since Story 8.6)', () => {
     expect(
       OTHER_APPLICATIONS.map((entry) => entry.path),
       'the gate reads every stylesheet but these; a new entry is a reviewed edit'
-    ).toEqual(['apps/finance/', 'apps/tracker/', 'apps/tournament/']);
+    ).toEqual(['apps/finance/', 'apps/tracker/']);
     for (const entry of OTHER_APPLICATIONS) expect(entry.reason.trim(), `${entry.path} carries no reason`).not.toBe('');
   });
 
@@ -580,12 +580,20 @@ describe('the listing', () => {
     expect(message).toContain('The stylesheets could not be listed');
   });
 
-  it('never reads another application, and still refuses the same literal in the Hub (Stories 3-5 to 3-7)', () => {
+  it('never reads another application, and still refuses the same literal in the Hub (Stories 3-5, 3-6)', () => {
     const literal = rule('color: #fff;');
-    withRepo({ [CONTRACT]: REAL_TOKENS, 'apps/finance/app/tokens.css': literal, 'apps/tracker/app/tokens.css': literal, 'apps/tournament/app/globals.css': literal, 'apps/hub/app/Probe.scss': literal }, (root) => {
+    withRepo({ [CONTRACT]: REAL_TOKENS, 'apps/finance/app/tokens.css': literal, 'apps/tracker/app/tokens.css': literal, 'apps/hub/app/Probe.scss': literal }, (root) => {
       const inspection = inspect(root);
       expect(inspection.findings.map((finding) => finding.path)).toEqual(['apps/hub/app/Probe.scss']);
-      expect(inspection.outside, 'a finance, tracker or tournament stylesheet was read').toBe(1);
+      expect(inspection.outside, 'a finance or tracker stylesheet was read').toBe(1);
+    });
+  });
+
+  // Story 8.6 adopted the contract in the tournament and deleted its entry, so the gate reads it from then on.
+  it('reads the tournament since it adopted the contract, and refuses a literal there (Story 8.6)', () => {
+    withRepo({ [CONTRACT]: REAL_TOKENS, 'apps/tournament/app/globals.css': rule('color: #fff;') }, (root) => {
+      const inspection = inspect(root);
+      expect(inspection.findings.map((finding) => finding.path)).toEqual(['apps/tournament/app/globals.css']);
     });
   });
 

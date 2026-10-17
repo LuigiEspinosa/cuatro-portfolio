@@ -1,12 +1,8 @@
 'use client'
 
 import { useEffect, useRef, type FormEvent, type ReactNode } from 'react'
-import { BitmapText } from '@/components/atoms/BitmapText'
-import { CRTPixelButton } from '@/components/atoms/CRTPixelButton'
 import { TerminalInput } from '@/components/atoms/TerminalInput'
-import { CRTBezel } from '@/components/molecules/CRTBezel'
 import { BootSequence } from '@/components/molecules/BootSequence'
-import { StatusBanner } from '@/components/molecules/StatusBanner'
 
 export type LoginCRTPhase = 'idle' | 'pending' | 'success' | 'error-truncating'
 
@@ -66,31 +62,20 @@ export function LoginCRT({
     void onSubmit({ email, password })
   }
 
+  // Story 8.5: the CRT cabinet, the bitmap face and the decorative block glyphs retire (RESTYLE-SPEC.md,
+  // the governing decision). The same elements in the same order, as plain markup that
+  // app/(auth)/login/login.css styles; the shared atoms they replace stay unchanged for the interior.
   return (
-    <CRTBezel>
+    <div className='lc-panel'>
       <div className={screenClass}>
-        <header className='bt-header'>
-          <span className='bt-blocks' aria-hidden='true'>
-            <span className='bt-b1'>▓</span>
-            <span className='bt-b2'>▓</span>
-            <span className='bt-b3'>▓</span>
-          </span>
-          <BitmapText size={30} glow>
-            CUATRO TRACKER
-          </BitmapText>
-          <span className='bt-blocks' aria-hidden='true'>
-            <span className='bt-b3'>▓</span>
-            <span className='bt-b2'>▓</span>
-            <span className='bt-b1'>▓</span>
-          </span>
+        <header className='lc-header'>
+          <span className='lc-wordmark'>CUATRO TRACKER</span>
         </header>
 
-        <BitmapText size={20} tone='cream-dim' as='div'>
-          VERSION 0.2.0
-        </BitmapText>
-        <BitmapText size={16} tone='cream-ghost' as='div'>
+        <div className='lc-label'>VERSION 0.2.0</div>
+        <div className='lc-label'>
           (C) CUATRO DEVELOPMENT STUDIO, 2026. ALL RIGHTS RESERVED.
-        </BitmapText>
+        </div>
 
         <form className={formClass} onSubmit={handleSubmit} noValidate>
           <TerminalInput
@@ -112,15 +97,14 @@ export function LoginCRT({
             reducedMotionOverride={reducedMotionOverride}
           />
           {error && phase === 'idle' ? (
-            <StatusBanner
-              variant='error'
-              primary={ERROR_BANNER_PRIMARY}
-              secondary={ERROR_BANNER_SECONDARY}
-            />
+            <div className='lc-alert' data-variant='error' role='alert'>
+              <p className='lc-alert-primary'>{ERROR_BANNER_PRIMARY}</p>
+              <p className='lc-alert-secondary'>{ERROR_BANNER_SECONDARY}</p>
+            </div>
           ) : null}
-          <CRTPixelButton type='submit' disabled={isBusy}>
+          <button type='submit' disabled={isBusy} className='lc-submit'>
             {'> LOG IN'}
-          </CRTPixelButton>
+          </button>
         </form>
       </div>
       {showBoot ? (
@@ -134,6 +118,6 @@ export function LoginCRT({
         />
       ) : null}
       {channelFlipOverlay}
-    </CRTBezel>
+    </div>
   )
 }

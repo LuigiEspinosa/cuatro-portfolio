@@ -369,15 +369,14 @@ describe('the SHIPPED stylesheet matches the declared contract (this is what mak
     expect(block).toContain('animation: none');
   });
 
-  it('⭐ the pre-existing infinite `pulse` came under the same rule, and the DECISION is recorded', () => {
-    // Task 3 asks for a deliberate choice, not a silent one. `@keyframes pulse` has been unguarded
-    // since 5.6, runs `infinite`, and sits in the app bar of every viewer surface including this one.
-    expect(VIEWER_CSS).toContain('@keyframes pulse');
-    expect(VIEWER_CSS).toContain('animation: pulse');
-    const guarded = mediaBlock(VIEWER_CSS, REDUCED_MOTION_QUERY);
-    expect(guarded.length).toBeGreaterThan(20);
-    expect(guarded).toContain('.pulse');
-    expect(guarded).toContain('animation: none');
+  it('the infinite `pulse` is retired with the other effects, so nothing on the app bar moves (Story 8.6)', () => {
+    // Story 6.10 guarded the pulse under reduced motion. The Cuatro restyle (Story 8.6) retires it whole: it
+    // was a box-shadow halo (RESTYLE-SPEC.md F-7), and the live state is now carried by the square dot alone,
+    // so no viewer surface runs an infinite animation under either preference.
+    expect(VIEWER_CSS).not.toContain('@keyframes');
+    expect(VIEWER_CSS).not.toMatch(/animation\s*:/);
+    expect(VIEWER_CSS).not.toContain('infinite');
+    expect(VIEWER_CSS).toContain('.pulse');
   });
 });
 
@@ -385,9 +384,13 @@ describe('the SHIPPED stylesheet matches the declared contract (this is what mak
 
 describe('AC4 / DECISION V — one tree, one breakpoint, ⛔ never a second route', () => {
   it('uses the only wide-breakpoint numbers that exist anywhere in the project', () => {
-    expect(REVEAL_CSS).toContain('@media (min-width: 1024px)');
-    expect(REVEAL_CSS).toContain('320px 1fr 300px');
+    // Story 8.6: the restyle's one breakpoint is 760px (RESTYLE-SPEC.md § 2, I-8); 1180px is the
+    // application's own cap, kept (I-9).
+    expect(REVEAL_CSS).toContain('@media (min-width: 760px)');
+    expect(REVEAL_CSS).toContain('248px minmax(0, 1fr) minmax(0, 1fr)');
     expect(REVEAL_CSS).toContain('1180px');
+    expect(VIEWER_CSS).toContain('@media (min-width: 760px)');
+    expect(`${REVEAL_CSS}${VIEWER_CSS}`).not.toContain('1024px');
   });
 
   it('relaxes the 430px shell cap ONLY for a page that actually casts', () => {
@@ -415,13 +418,17 @@ describe('AC11 — gold discipline, as a grep the way 6.9b made it one', () => {
   it('⛔⛔ `ceremonia.module.css` still carries ZERO gold — 6.9b’s invariant, now a REGRESSION guard', () => {
     // 6.9b wrote its own header so that a plain grep over that file returns zero, and this story is
     // the first that could have broken it. The reveal's gold lives in the sibling module instead.
-    expect(CEREMONIA_CSS).not.toContain('--gold');
-    expect(REVEAL_CSS).toContain('var(--gold)');
+    // Story 8.6: the reveal's highlight is the contract's accent role, and the discipline is unchanged. The
+    // verify chrome's control may brighten its border to `--token-accent-hover` on hover, which is § 1's
+    // hover and not the highlight, so the guard names the exact role.
+    expect(CEREMONIA_CSS).not.toMatch(/var\(--token-accent\)/);
+    expect(REVEAL_CSS).toContain('var(--token-accent)');
+    expect(REVEAL_CSS).not.toContain('--gold');
   });
 
   it('⛔ no gold on anything LOCKED, muted, or on the lock glyph', () => {
     for (const selector of ['.lockRow', '.lockNum', '.redact', '.lockGlyph', '.slotEmpty']) {
-      expect(ruleBody(REVEAL_CSS, selector), selector).not.toContain('--gold');
+      expect(ruleBody(REVEAL_CSS, selector), selector).not.toContain('--token-accent');
     }
   });
 

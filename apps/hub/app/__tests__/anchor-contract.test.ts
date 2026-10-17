@@ -217,7 +217,7 @@ const HUB_PROPERTY_COUNT = 0;
 const BASE_RULE_ROLES = ['--token-bg', '--f-body', '--w-regular', '--token-text'] as const;
 
 /**
- * The four roles the global focus rule names, `RESTYLE-SPEC.md:326-341` § 4 verbatim.
+ * The four roles the global focus rule names, `RESTYLE-SPEC.md` § 4 Focus treatment verbatim.
  *
  * Story 2-26 moved the ring out of nine per-component blocks into one `:focus-visible` rule in
  * `app/app.scss`, which was the first rule in that file to consume the contract for something other
@@ -923,7 +923,9 @@ describe('the Anchor consumes the contract in its global stylesheet and its toke
     // rather than silently escaping the scan below.
     const roots = new Set(
       gitLsFiles(['.'])
-        .filter((path) => !isOtherApplication(path))
+        // Another application under `apps/` is not a Hub source root, whether or not it has adopted the
+        // contract (the tournament adopted it in Story 8.6 and left `OTHER_APPLICATIONS`).
+        .filter((path) => !(path.startsWith('apps/') && !path.startsWith(`${HUB}/`)))
         // The Hub's paths from `apps/hub`, so its roots read as they did at the repository root.
         .map(fromHub)
         .filter((path) => path.includes('/'))
@@ -1369,7 +1371,7 @@ describe('the migration is closed (Story 2-22, migration step 7)', () => {
     expect(isSearchExcluded('app/app.scss')).toBe(false);
     expect(isSearchExcluded('apps/finance/app/tokens.css')).toBe(true);
     expect(isSearchExcluded('apps/tracker/app/global.css')).toBe(true);
-    expect(isSearchExcluded('apps/tournament/app/globals.css')).toBe(true);
+    expect(isSearchExcluded('apps/tournament/app/globals.css')).toBe(false);
     expect(isSearchExcluded('apps/hub/app/app.scss')).toBe(false);
   });
 
@@ -1445,7 +1447,7 @@ describe('the Anchor holds no second authored copy of the contract', () => {
     expect(
       vendored,
       `${VENDORED_FOLDER}/ is the name a Satellite vendors the contract under. The Anchor is the ` +
-        `publisher and loads contracts/ directly:\n${vendored.join('\n')}`
+        `publisher, and every application inside it loads contracts/ directly (R24):\n${vendored.join('\n')}`
     ).toEqual([]);
 
     expect([`assets/${VENDORED_FOLDER}/tokens.css`, 'assets/design/tokens.css'].filter(isVendoredPath)).toEqual([

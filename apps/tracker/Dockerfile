@@ -27,6 +27,9 @@ RUN corepack enable
 WORKDIR /app
 COPY --from=deps /app ./
 COPY --from=prune /app/out/full/ ./
+# The Cuatro token contract is not a workspace, so the prune leaves it out, and the stylesheet reads it
+# (`app/global.css` imports `contracts/tailwind.css`, R24), as the tournament's does.
+COPY --from=prune /app/contracts ./contracts
 # `lib/env.ts` validates at runtime, where compose supplies the values; the build has none of them.
 ENV NEXT_TELEMETRY_DISABLED=1 SKIP_ENV_VALIDATION=1
 # `build` runs `prisma generate` first, since the generated client is never committed. Next's build cache
