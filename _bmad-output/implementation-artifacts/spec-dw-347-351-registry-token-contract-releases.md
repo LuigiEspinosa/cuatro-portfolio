@@ -2,7 +2,7 @@
 title: 'DW-347 and DW-351: adoption observations, then Registry 1.11.0 token_contract releases'
 type: 'chore'
 created: '2026-10-17'
-status: 'in-review'
+status: 'done'
 route: 'oneshot'
 review_loop_iteration: 0
 context: ['{project-root}/ops/contract-adoption.md', '{project-root}/ops/registry-verification.md']
@@ -88,3 +88,24 @@ tournament-backup 15, tracker-backup 11. `corepack pnpm typecheck` exit 0.
 
 ## Verification
 
+**Independent verifier, round 1 of 3, 2026-10-17: pass.** Every diff read against `9a4817c`; every check re-run in
+this worktree, nothing taken from the build's report.
+
+- Satellite `main` re-read through `gh api` at 13:18Z: `list-wheel` `a1f1fce657b9a3379b80f8f5c830c428565078d6`,
+  `digital-library` `1ca5091d4d614a8608c7a8147ae7583dfd9d4f22`; each `cuatro-contracts/tokens.css` line 2 reads
+  `Contract v2.0.0` at the path the record names, and each folder's blob hashes (`fonts` tree `7178ea2`, `fonts.css`,
+  `tailwind.css`, `tokens.css` `20063d4`) equal the Anchor's `contracts/`, so both copies are verbatim.
+- Live at 13:18:27Z: `https://wheel.cuatro.dev/` 200, `styles-BFYBESY2.css` 200; `https://library.cuatro.dev/login`
+  200, `_app/immutable/assets/0.C216T7T9.css` 200; both declare `--token-bg` on `--c-paper`, `--c-paper`
+  `oklch(12% .011 288)` and `--ease-exit` `cubic-bezier(.33, 1, .68, 1)`.
+- Order holds: the observation commit precedes the release, and at the observation commit alone the four Registry
+  suites pass, 290 of 290.
+- `node ops/registry-schema.mjs` exit 0; `node ops/contract-purity.mjs` exit 0; `corepack pnpm typecheck` exit 0.
+- `node ops/registry-verification.mjs` at 13:19:04Z, token from `gh auth token` and printed nowhere: exit 0,
+  `# 75 of 75 checks passed`, the `digital-library` and `list-wheel` `token_contract` rows passing on `Contract v2.0.0`.
+- `corepack pnpm test --run`: 16 failed, 1965 passed, 1 skipped, every failure in the seven WSL-bash suites (DW-135);
+  each re-run alone passed: demo-reset 30, deploy-remote 28, library-backup 59, postgres-backup 20 and 1 skipped,
+  postgres-init 17, tournament-backup 15, tracker-backup 11.
+- Minor, left as is: the label cell of the `ops/restyle-floor.md` summary row still names `contracts/registry.json`
+  1.10.0, the version its first reading was taken against; the two cells beside it now say 1.11.0.
+- Board: `epic-8-retro-item-55` to `in-progress`, because publication on `cuatro.dev/contracts/` waits on R25.

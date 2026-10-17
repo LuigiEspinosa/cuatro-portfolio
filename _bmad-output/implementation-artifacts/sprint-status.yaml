@@ -1760,7 +1760,9 @@ action_items:
     action: "Observe and date list-wheel's and digital-library's adoption, then ship
       the Registry releases giving each token_contract 2.0.0 (DW-347, DW-351)"
     owner: "Operator, then Cuatro"
-    status: open
+    # 2026-10-17: observed and released as Registry 1.11.0 on dev (DW-347, DW-351 closed, verifier passed).
+    # Remains: R25 in ops/restyle-floor.md, the Operator's promotion of dev to main and its post-deploy check.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
   - id: "epic-8-retro-item-56-documentation-refresh-the-epic-8-board-c"
     epic: 8
