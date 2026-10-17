@@ -148,6 +148,33 @@ const PRESENT_EXTENSIONS = ['.scss', '.ts', '.tsx'] as const;
 const NOT_SHIPPED_ROOTS = ['tests', 'contracts', 'packages', 'ops'] as const;
 
 /**
+ * The applications under `apps/` beside the Hub, each named with the reason it is not a Hub source
+ * root (Epic 8 retrospective, M1). Named rather than matched on `apps/*`, so a new directory under
+ * `apps/` fails the root pin below until it is listed here with its reason, and an entry whose
+ * directory is gone fails as stale.
+ */
+const NON_HUB_APPLICATIONS: ReadonlyArray<{ path: string; reason: string }> = [
+  {
+    path: 'apps/finance/',
+    reason: 'Merged by Story 3-5, its own build and suite; keeps its own palette until DW-267 adopts the contract.',
+  },
+  {
+    path: 'apps/tracker/',
+    reason:
+      'Merged by Story 3-6, its own build and suite; reads contracts/tailwind.css directly since R24, ' +
+      'which AGENTS.md names beside the Hub two sources.',
+  },
+  {
+    path: 'apps/tournament/',
+    reason:
+      'Merged by Story 3-7, its own build and suite; reads contracts/tokens.css and fonts.css directly since ' +
+      'Story 8.6, which AGENTS.md names beside the Hub two sources.',
+  },
+];
+const isNonHubApplication = (path: string): boolean =>
+  NON_HUB_APPLICATIONS.some((application) => path.startsWith(application.path));
+
+/**
  * Four `.scss` under `app/` and fifteen under `components/`, counted at `b984ca7`, plus the
  * thirty-six non-test `.ts` and `.tsx` files beside them and the four under `hooks/` and
  * `content/`. Asserted as a floor rather than as an equality so a later story adding a component
@@ -921,11 +948,26 @@ describe('the Anchor consumes the contract in its global stylesheet and its toke
     // guard in this file checks the scanned roots against themselves and so cannot see a
     // missing one. This is the guard that can. A new top-level source directory fails here
     // rather than silently escaping the scan below.
+    const tracked = gitLsFiles(['.']);
+    // Every directory under `apps/` is the Hub or a named application, and every named one exists.
+    const applications = [...new Set(tracked.filter((path) => path.startsWith('apps/')).map((path) => path.split('/')[1]))];
+    const unnamed = applications.filter((name) => `apps/${name}` !== HUB && !isNonHubApplication(`apps/${name}/`)).sort();
+    expect(unnamed, `a directory under apps/ is neither the Hub nor in NON_HUB_APPLICATIONS:\n${unnamed.join('\n')}`).toEqual([]);
+    const stale = NON_HUB_APPLICATIONS.filter((application) => !tracked.some((path) => path.startsWith(application.path)));
+    expect(stale.map((application) => application.path), 'a NON_HUB_APPLICATIONS entry names no tracked directory').toEqual([]);
+    for (const application of NON_HUB_APPLICATIONS) {
+      expect(application.reason.trim(), `${application.path} carries no reason`).not.toBe('');
+    }
+    // The exemption is the named list and nothing wider, on planted paths.
+    expect(isNonHubApplication('apps/tournament/app/globals.css')).toBe(true);
+    expect(isNonHubApplication('apps/hub/app/app.scss')).toBe(false);
+    expect(isNonHubApplication('apps/newcomer/app/globals.css')).toBe(false);
+
     const roots = new Set(
-      gitLsFiles(['.'])
-        // Another application under `apps/` is not a Hub source root, whether or not it has adopted the
-        // contract (the tournament adopted it in Story 8.6 and left `OTHER_APPLICATIONS`).
-        .filter((path) => !(path.startsWith('apps/') && !path.startsWith(`${HUB}/`)))
+      tracked
+        // A named application under `apps/` is not a Hub source root; anything else under `apps/` reaches
+        // the pin as the root `apps` and fails it.
+        .filter((path) => !isNonHubApplication(path))
         // The Hub's paths from `apps/hub`, so its roots read as they did at the repository root.
         .map(fromHub)
         .filter((path) => path.includes('/'))
