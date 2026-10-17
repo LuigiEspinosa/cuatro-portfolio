@@ -10666,3 +10666,22 @@ status: done
 
     **Owner: the next tracker story that touches its dependencies.** **Trigger: a Tailwind bump on either side.**
   status: open
+- source_spec: `ops/restyle-floor.md` R23 (Epic 8 promotion, 2026-10-17)
+  id: DW-363
+  summary: >-
+    The tournament's standalone Next server binds `process.env.HOSTNAME`, which Docker sets to the container's own
+    name, and the container sits on two networks, so after a recreate it can listen on the `cuatro-portfolio_default`
+    address alone while Traefik reaches it on `cs-tracker_default` and is refused: a 502 with healthy containers.
+  evidence: |-
+    Observed 2026-10-17 at 12:27:21Z rolling `TOURNAMENT_TAG=3f8a12e` by `ops/tournament-placement.md` § Later
+    rollouts: `docker compose ps` read both containers healthy (the healthcheck probes `process.env.HOSTNAME` too, so
+    it passes), Next printed `Network: http://d11f14d2819b:3000`, and `wget http://tournament:3000/` from
+    `traefik-ingress-1` was refused at `172.18.0.9`. A second `up -d --force-recreate tournament` at about 12:29Z
+    listened on the shared address and the site answered 200 at 12:30:21Z, so which address wins is not determined.
+    Any server on two compose networks that binds its hostname carries the same exposure. The fix is
+    `HOSTNAME=0.0.0.0` in the service's environment, with its healthcheck reading a fixed loopback address, proved by
+    recreating the container on the box and probing it from Traefik; until then, a tournament rollout is followed by
+    a probe from Traefik and a second recreate if it is refused.
+
+    **Owner: the next Anchor story.** **Trigger: before the next tournament rollout.**
+  status: open

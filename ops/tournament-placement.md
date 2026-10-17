@@ -163,7 +163,10 @@ deploys, so a stale entry would let a later attempt pass the gate as an incumben
 **Later rollouts** of a new tournament sha are by hand until DW-275 wires a deploy per id: pull both tags,
 then `$C --profile tournament up -d tournament tournament-worker` with the new `TOURNAMENT_TAG`, which
 recreates both. Not rehearsed: `docker rollout --env-file .env.production tournament` would keep the
-server up across it, as Story 3-4 proved for the Hub alone.
+server up across it, as Story 3-4 proved for the Hub alone. Then probe from Traefik, since a healthy container
+can still be unreachable (DW-363): `docker exec traefik-ingress-1 wget -q -O /dev/null -S
+http://tournament:3000/api/health`; if it is refused, `$C --profile tournament up -d --force-recreate tournament`
+and probe again (**amended 2026-10-17**, the Epic 8 rollout, `ops/restyle-floor.md` R23; until DW-363 closes).
 
 ## After the placement
 

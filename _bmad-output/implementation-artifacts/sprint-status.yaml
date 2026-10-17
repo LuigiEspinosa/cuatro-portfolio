@@ -1164,26 +1164,29 @@ development_status:
   # 2026-10-13: built; the independent verifier passed it with minor findings in round 2 and opened
   # cs-tracker PR #11 to dev (head 32c0d73). awaiting-operator on ops/restyle-floor.md R1 (visual
   # sign-off), R2 (floor ruling), R3 (merge PR #11 to dev, dev to main, roll cs-tracker) and R4.
+  # 2026-10-17: R1, R2 and R3 done (live on cs-tracker main 9f70d28); awaiting the Operator on R4 alone.
   8-1-cs-tracker-visual-restyle: awaiting-operator
   # 2026-10-13: built; the independent verifier passed it with minor findings in round 1 and opened
   # digital-library PR #66 (restyle/8-2-adopt-contract, head 960050b) to dev. restyle/8-2-visual-restyle (c25f830)
   # is pushed with no PR until the adopt merge is verified in production. awaiting-operator on ops/restyle-floor.md
   # R8 (visual sign-off), R9 (merge PR #66, dev to main, redeploy, production check), R10 (the restyle PR, merge,
   # redeploy), R11 (the workspace DESIGN.md) and R2 (the floor ruling).
-  8-2-digital-library-adopts-the-contract-and-is-restyled: awaiting-operator
+  # 2026-10-17: R8 to R11 done; live on digital-library main 1ca5091. DW-351 (adoption record, Registry) follows.
+  8-2-digital-library-adopts-the-contract-and-is-restyled: done
   # 2026-10-13: built (adoption e7b7887, restyle c665ee9); the independent verifier passed it with minor
   # findings in round 1 and opened list-wheel PR #4 to main (head c665ee9). awaiting-operator on
   # ops/restyle-floor.md R5 (visual sign-off), R6 (merge PR #4 to main, which deploys) and R7 (the spec
   # defects ruling); DW-347 (adoption record, then the Registry token_contract) follows R6.
-  8-3-list-wheel-visual-restyle: awaiting-operator
+  # 2026-10-17: R5, R6, R7 and R16 done; live on list-wheel main a1f1fce. DW-347 follows.
+  8-3-list-wheel-visual-restyle: done
   # 2026-10-13: built; the independent verifier passed it with minor findings in round 1. ops/restyle-floor.md
   # § SM-12 per application records the three wave-1 applications against their branch heads (every restyle PR awaits
   # the Operator): the floor holds for cs-tracker (on R2 reading (a)) and list-wheel, digital-library fails F-7 (R13),
   # reduced motion fails in all three (DW-345, DW-349, DW-354). awaiting-operator on ops/restyle-floor.md R2, R13
   # and R14 (rulings the record's verdicts stand on), R12, R7, the sign-offs R1, R5, R8, and the merges R3 (cs-tracker PR #11),
   # R6 (list-wheel PR #4), R9 then R10 (digital-library PR #66, then the restyle PR), after which SM-12 holds live.
-  8-4-record-the-restyle-floor-and-the-per-application-coherence-ch: 
-    awaiting-operator
+  # 2026-10-17: every ruling, sign-off and merge it waited on is done; the three wave-1 restyles are live.
+  8-4-record-the-restyle-floor-and-the-per-application-coherence-ch: done
   # 2026-10-17: the specification amendment from the Operator rulings of 2026-10-17 (R2, R7, R11 to R14) is built, not
   # a board key of its own (spec-8-spec-restyle-spec-amendment.md): RESTYLE-SPEC.md 1.1.0 settles I-1 to I-11, F-7's
   # scope, F-12's reading and the floor's denominator; ops/restyle-floor.md dates the six rulings and re-reads SM-12
@@ -1196,12 +1199,14 @@ development_status:
   # Independent verifier pass 2026-10-17 (round 1, pass with minor findings), pushed to dev; no Satellite PR. awaiting-operator
   # on ops/restyle-floor.md R17 (icon-only control row), R18 (confirm the strict floor), R19 (visual sign-off) and R20
   # (promote dev to main, then roll the tracker by hand).
-  8-5-cuatro-tracker-visual-restyle: awaiting-operator
+  # 2026-10-17: R17 to R20 done; on main 3f8a12e (Anchor PR #98), rolled and live at 12:28:13Z.
+  8-5-cuatro-tracker-visual-restyle: done
   # 2026-10-17: built on wt/8-6-cs-tournament-visual-restyle; independent verifier pass (round 1) the same day, pushed
   # to dev. Family C, strict floor; F-1 to F-12 pass on the branch, SM-12's four checks clean. Awaiting the Operator on
   # ops/restyle-floor.md R21 (visual sign-off), R22 (I-12 to I-14), R23 (merge to main and roll the tournament) and
   # R24 (token_contract for an application inside the Anchor).
-  8-6-cs-tournament-visual-restyle: awaiting-operator
+  # 2026-10-17: R21 to R24 done; on main 3f8a12e, rolled and live at 12:30:21Z after a three-minute 502 (DW-363).
+  8-6-cs-tournament-visual-restyle: done
   epic-8-retrospective: done
 action_items:
   # 2026-09-24: done by Operator ruling, Contract 2.0.0 (commit 40591cd): the keys are
