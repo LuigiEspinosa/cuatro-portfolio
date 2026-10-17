@@ -1196,11 +1196,11 @@ development_status:
   # on ops/restyle-floor.md R17 (icon-only control row), R18 (confirm the strict floor), R19 (visual sign-off) and R20
   # (promote dev to main, then roll the tracker by hand).
   8-5-cuatro-tracker-visual-restyle: awaiting-operator
-  # 2026-10-17: built and committed locally on wt/8-6-cs-tournament-visual-restyle (not pushed); the independent
-  # verifier reviews and pushes. Family C, strict floor; F-1 to F-12 pass on the branch, SM-12's four checks clean.
-  # Then awaiting the Operator on ops/restyle-floor.md R21 (visual sign-off), R22 (I-12 to I-14), R23 (main and
-  # the roll) and R24 (token_contract for an application inside the Anchor).
-  8-6-cs-tournament-visual-restyle: review
+  # 2026-10-17: built on wt/8-6-cs-tournament-visual-restyle; independent verifier pass (round 1) the same day, pushed
+  # to dev. Family C, strict floor; F-1 to F-12 pass on the branch, SM-12's four checks clean. Awaiting the Operator on
+  # ops/restyle-floor.md R21 (visual sign-off), R22 (I-12 to I-14), R23 (merge to main and roll the tournament) and
+  # R24 (token_contract for an application inside the Anchor).
+  8-6-cs-tournament-visual-restyle: awaiting-operator
   epic-8-retrospective: optional
 action_items:
   # 2026-09-24: done by Operator ruling, Contract 2.0.0 (commit 40591cd): the keys are

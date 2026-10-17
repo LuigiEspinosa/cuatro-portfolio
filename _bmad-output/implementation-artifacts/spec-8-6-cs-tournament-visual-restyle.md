@@ -2,7 +2,7 @@
 title: 'Story 8.6: cs-tournament visual restyle (apps/tournament in the Anchor)'
 type: 'feature'
 created: '2026-10-17'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: 'fac9e40f2dc713e187e313bdf5e1d0095432ca99'
@@ -91,4 +91,43 @@ same morning failed all seven WSL-bash suites the same way, each passing alone (
 11). Tournament: `typecheck` clean, `test` 58 files, 1988 passed. `node ops/literal-conformance.mjs`: 35 stylesheets
 read, no literal outside the permitted set.
 
-**Independent verifier:** _not yet run_ (the verifier fills this section, with its verdict).
+**Independent verifier (2026-10-17, round 1): pass, with minor findings.** No PR is opened: the work lives in the
+Anchor alone and is pushed to `dev` by the verifier; every promotion to `main` and the tournament's roll are the
+Operator's (R23). Read without the builder's context:
+
+- **Diff read against `origin/dev` `dea2f03`, templates included.** The only template changes are `app/layout.tsx`
+  (the `next/font` class gone from `<html>`), a comment in `LivePill.tsx` and the new `app/not-found.tsx`, which
+  renders Next's built-in title, `404` and `This page could not be found.` in the built-in order. Every `styles.*`
+  name the templates use is still defined in its module, so DOM order, routes, data and microcopy are unchanged. No
+  `packages/` change, no shared component package, nothing imported from the Anchor beyond `contracts/`. No old
+  palette variable is left referenced. No em-dash, en-dash, double-dash or emoji in an added line.
+- **Tests, re-run in this worktree.** Tournament `typecheck` clean; `test` 58 files, 1988 passed. Root suite
+  `corepack pnpm test --run`: 80 files, 74 passed; 1975 passed, 1 skipped, 6 failed, all six the WSL-bash suites of
+  DW-135 (`demo-reset`, `deploy-remote`, `library-backup`, `postgres-backup`, `tournament-backup`, `tracker-backup`);
+  each alone passed (30, 28, 59, 20 and 1 skipped, 15, 11). `node ops/literal-conformance.mjs`: 35 stylesheets, no
+  literal outside the permitted set.
+- **The floor, re-measured by the verifier's own probe** (not the builder's `measure.mjs`), Playwright 1.62.1
+  Chromium at 360x800 against `next start` of the branch's production build on loopback and a scratch Supabase
+  stack (`epic-scratch-8-6v`) seeded by the builder's `method\` scripts plus the admin routes and RPCs: nineteen
+  states (the twelve live, three empty, four ceremony), 161 interactive elements. Under `--tap` 0, overlapping
+  targets 0, a ground at rest 0, a ground on hover 0, keyboard stops without a solid 2px ring in the
+  `--token-focus` colour 0, a ring transitioned 0, horizontal scroll at 359, 390, 759 and 761 0, F-1 pixel `6,5,9`
+  in all nineteen, `color-scheme: dark`, the three contract faces `loaded`. Radius above 0 on 10 elements, the
+  reveal's five wheel parts in two states (I-12, R22); `box-shadow` on 0. Built CSS: 0 `box-shadow`, 0
+  `gradient(`, one accent ground (`::selection`), no `gstatic`. The ceremony's greyscale render with the words masked
+  keeps the four shelf states apart (solid, solid with the dot, a cross, dashed).
+- **Records.** `ops/restyle-floor.md` § `cs-tournament` carries the Story 8.4 fields, findings 1 to 5 and I-12 to I-14;
+  R21 to R24 are dated Pending rows. Scratch stack and server removed after the run.
+- **Rebased onto Story 8.5, which reached `dev` in parallel (`189a922`).** Both sides kept: `accent-fill.test.ts`
+  carries four exemptions (the tracker's and the tournament's `::selection`), and this story's rows and items,
+  numbered R17 to R20 and DW-355 and DW-356 on the branch, are R21 to R24 and DW-360 and DW-361, since 8.5 took the
+  lower numbers. 8.5 vendored a copy of the contract under `apps/tracker/app/cuatro-contracts/` and admitted it in
+  `anchor-contract.test.ts`, while this story loads `contracts/` directly, so the two applications inside the Anchor
+  consume the contract two ways; R24 now names that for the Operator. Re-run on the rebased tree: root suite 80
+  files, 76 passed; 1978 passed, 1 skipped, 4 failed, the WSL-bash `demo-reset`, `deploy-remote`, `library-backup`
+  and `postgres-backup` (DW-135), each passing alone (30, 28, 59, 20 and 1 skipped); `accent-fill`,
+  `anchor-contract` and `literal-conformance` together 125 passed; tournament `test` 1988 passed. The tracker's own
+  suite was not a gate here (no change under `apps/tracker`, and it needs a Redis this host does not run).
+
+Open for the Operator: R21 (visual sign-off), R22 (I-12 to I-14), R23 (`main` and the roll, the live production
+check), R24 (`token_contract` for an application inside the Anchor).

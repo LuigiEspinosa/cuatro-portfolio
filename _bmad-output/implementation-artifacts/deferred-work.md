@@ -10630,7 +10630,7 @@ status: done
     since Story 8.6, because AD-16's check reads a Satellite's vendored `cuatro-contracts/tokens.css` and an application
     inside the Anchor has none.
   evidence: |-
-    Recorded 2026-10-17 by Story 8.6. The Anchor refuses a `cuatro-contracts/` folder anywhere in this repository
+    Recorded 2026-10-17 by Story 8.6. The Anchor refused a `cuatro-contracts/` folder anywhere in this repository when Story 8.6 opened
     (`apps/hub/app/__tests__/anchor-contract.test.ts`), so the tournament loads `contracts/` directly. Whether an
     `absorbed_into: cuatro-portfolio` entry declares the field, and how the scheduled verification would read it, is
     the Operator's ruling (`ops/restyle-floor.md` R24). Story 8.5 meets the same question for `cuatro-tracker` (DW-358),
