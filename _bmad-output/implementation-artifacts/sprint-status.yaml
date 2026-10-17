@@ -1157,7 +1157,8 @@ development_status:
   # EPIC NUMBER IS NOT EXECUTION POSITION. Wave 1 (8-1..8-4) runs after epic-2.
   # Wave 2 (8-5, 8-6) runs after epic-3, because AD-20 forbids a merge step from
   # carrying anything else, so a merge target is restyled after its merge ships.
-  # BLOCKED by epic-2 and by the UX Restyle Specification, which does not exist yet.
+  # 2026-10-17: unblocked long since (epic-2 merged, RESTYLE-SPEC.md 1.1.x); all five restyles are live (main 3f8a12e,
+  # ops/restyle-floor.md R1 to R24 dated). epic-8 stays in-progress for retro item 55 (the Registry releases).
   # No restyle story exists for StreamVault, MaiCoin, poketracker-go, Mutuo or
   # cuatro-finance. AD-25 creates one when the Suite Directory renders them, not before.
   epic-8: in-progress
@@ -1193,6 +1194,7 @@ development_status:
   # (cs-tracker and digital-library restyled yes; list-wheel yes on fix 2d1b8b8, no on main until R16); DW-346 and
   # DW-350 closed. Independent verifier pass 2026-10-17, list-wheel PR #5 opened to main; awaiting the Operator on
   # R15 (confirm digital-library's strict floor) and R16 (merge list-wheel PR #5). The amendment 8.5 and 8.6 wait on is on dev.
+  # 2026-10-17: R15 confirmed and R16 done (list-wheel main a1f1fce); the amendment is complete. The 8-5 rows follow.
   # 2026-10-17: built on the Anchor branch wt/8-5-cuatro-tracker-visual-restyle, awaiting the independent verifier
   # (spec-8-5-cuatro-tracker-visual-restyle.md): the contract vendored in apps/tracker and imported through tailwind.css,
   # /login (the strict floor) restyled, F-1 to F-12 and SM-12's four checks pass; then ops/restyle-floor.md R18 to R20.

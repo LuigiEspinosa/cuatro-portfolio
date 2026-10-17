@@ -6,7 +6,16 @@ The written answers Story 8.1 owes the three wave-1 Satellites before any restyl
 Stories 8.2 and 8.3 consume § O-14 and § O-15 rather than re-deriving them; Story 8.4 records SM-12
 from this file and extends it with its per-application table (`RESTYLE-SPEC.md` § Recording a
 restyle), § SM-12 per application, Story 8.4's record. Story 8.5 adds wave 2's first application
-(§ `cuatro-tracker`, Story 8.5's adoption and restyle).
+(§ `cuatro-tracker`, Story 8.5's adoption and restyle) and Story 8.6 its second (§ `cs-tournament`,
+Story 8.6's adoption and restyle).
+
+**Where it stands, 2026-10-17.** All five restyles are live: `cs-tracker` (R3), `list-wheel` (R6, then
+R16), `digital-library` (R9, then R10), the tracker (R20) and the tournament (R23), the last two from the
+Anchor's `main` `3f8a12e`. Rows R1 to R24 in § Pending Operator actions are dated; R25 promotes Registry 1.11.0, and R26 and R27 are the
+retrospective's I-11 follow-ups in `digital-library` and `list-wheel`. A section below written
+against a branch head says so and keeps its reading of that day; a dated line beside it gives the
+outcome. What remains open is retrospective item 55, the Registry `token_contract` releases for
+`list-wheel` and `digital-library` (DW-347, DW-351), committed on `dev` as Registry 1.11.0 and live at R25.
 
 Written during Story 8.1 on **2026-10-13** (ISO 8601 UTC). Every value is marked **Observed** with
 its method or **Decision** with its reason (NFR-9). This file is a record, not Registry data.
@@ -36,7 +45,8 @@ body with no stylesheet for a restyle to reach, and turning one into an HTML pag
 which the ceiling forbids. This is the case the epic names ("its floor collapses"), one step further:
 it collapses to nothing, because the sign-in screen is the issuer's.
 
-**Decision, by the builder of Story 8.1, pending the Operator's ruling (row R2 below).** The restyle was
+**Decision, by the builder of Story 8.1, pending the Operator's ruling (row R2 below; ruled (a) on
+2026-10-17, so this decision is the floor).** The restyle was
 scoped to the surfaces a Visitor reaches with the demo sign-in once it is published (FR-25,
 `ops/demo-principal.md`; DW-335 records that no sign-in page names it yet): the five live routes and
 their shell, which is also where the Operator's ruling of 2026-09-24 booked the 74 hit-target and 38
@@ -435,7 +445,7 @@ verified in production (row R10). Evidence, kept out of every repository:
 also `greyscale-masked-grid.png`, `pixels.txt`, `reduced-motion.txt`, `image-css/` and `below-floor/`;
 `method/`: the scripts, the scratch stack and its seed; `count.txt`).
 
-### The floor this story measured (ruling R2 pending)
+### The floor this story measured (the strict floor, R2 and R15 ruled 2026-10-17)
 
 **Decision, by the builder of Story 8.2, as Story 8.1 decided for `cs-tracker`.** The strict floor is
 `/login` and the error page (§ O-14). The restyle also covers what a signed-in reader reaches, which is
@@ -570,7 +580,9 @@ images built from `apps/web/Dockerfile` with `--frozen-lockfile`.
 recorded against the branch heads, not the live hostnames**: on 2026-10-13 every restyle is a branch or an open PR
 awaiting the Operator, and `cs-tracker.cuatro.dev`, `library.cuatro.dev` and `wheel.cuatro.dev` still serve the
 presentation from before Epic 8. SM-12 holds on a live hostname once its merge rolls (R3, R6, R9 then R10), and each of
-those rows already names the production check.
+those rows already names the production check. **2026-10-17:** all three rolled the same day (R3 at 08:41:33Z, R6 at
+07:58:34Z, R9 at 08:46:26Z then R10 at 09:12:11Z, and `list-wheel`'s field focus fix R16 at 09:33Z), each row's
+production check passed, and the table below keeps the heads as measured on 2026-10-13.
 
 | Field | `cs-tracker` | `digital-library` | `list-wheel` |
 |---|---|---|---|
@@ -606,7 +618,8 @@ renders.
 **Restyled, as § The floor counts it** (all twelve hold), **re-read 2026-10-17 under `RESTYLE-SPEC.md` `1.1.0`**:
 **`cs-tracker` yes** (on R2 (a) and R14, both ruled 2026-10-17); **`digital-library` yes** (on R13 (a), on its strict
 floor; it read no on 2026-10-13, on F-7 alone); **`list-wheel` yes on fix commit `2d1b8b8`, no on `main` `0ee1fcb`**,
-on the amended F-5 alone (the focused textarea), until R16 merges and deploys. On 2026-10-13 the verdicts were
+on the amended F-5 alone (the focused textarea), until R16 merges and deploys (done 2026-10-17T09:33Z, so `list-wheel`
+reads yes on `main` `a1f1fce`). On 2026-10-13 the verdicts were
 `cs-tracker` yes and `list-wheel` yes, `digital-library` no. No F-check covers motion, so the floor count does not see the one manual check that fails in all three
 (below): **SM-12's four checks are clean in no application**, and each failure is a finding, not a correction. **F-4, F-6 and F-10 were the three that failed most often before**, as the epic expected: 85, 0 and 89
 in `cs-tracker`, 38, 46 and 41 in `digital-library`, 61, 3 and 73 in `list-wheel`. F-6 also failed while appearing to
@@ -665,6 +678,10 @@ from. **This is the gap AD-18 does not cover, by design, not a duplicate of it.*
 Satellite's `token_contract` with **its own vendored file**, so an application that vendored `v2.0.0` and declares
 `2.0.0` passes it whether the contract has since moved to `v3.0.0` or not. Only a row like this one, the vendored version
 beside the current one, shows who is behind; on 2026-10-13 no adopter is.
+
+**2026-10-17:** the two "not adopted" cells above describe the default branches of 2026-10-13. R6 put `list-wheel`'s
+adoption on `main` and R9 put `digital-library`'s there, each vendoring `v2.0.0`. Their dated adoption observation and
+Registry `token_contract` are retrospective item 55 (DW-347, DW-351), not re-observed here.
 
 ### SM-C6
 
@@ -827,7 +844,7 @@ change the host build and the 09:46:35Z run carry.
 | Field | `cuatro-tracker` |
 |---|---|
 | Application id | `cuatro-tracker` |
-| Head measured | the branch `wt/8-5-cuatro-tracker-visual-restyle`, built on the workstation; not yet on `dev` or live (R20) |
+| Head measured | the branch `wt/8-5-cuatro-tracker-visual-restyle`, built on the workstation; not yet on `dev` or live (R20). **2026-10-17:** pushed to `dev` by the independent verifier, then live from `main` `3f8a12e` at 12:28:13Z (R20) |
 | Framework family | **C** (Tailwind v4 utilities, no component library; § O-15 for `cuatro-tracker` above) |
 | Surfaces inside the floor, by route | **`/login`**, whole, in its four states (§ O-14 for `cuatro-tracker`); the strict floor (R18) |
 | Component-class call sites, before and after | Not applicable (family C) |
@@ -967,14 +984,14 @@ Sent back to `RESTYLE-SPEC.md` for the Operator's ruling (R22), as Story 8.3's I
 | Field | `cs-tournament` |
 |---|---|
 | Application id | `cs-tournament` |
-| Head measured | `wt/8-6-cs-tournament-visual-restyle` (the restyle commit on `origin/dev` `dea2f03`), committed locally 2026-10-17, unpushed until the independent verifier pushes it to `dev` |
+| Head measured | `wt/8-6-cs-tournament-visual-restyle` (the restyle commit on `origin/dev` `dea2f03`), committed locally 2026-10-17, unpushed until the independent verifier pushes it to `dev`. **2026-10-17:** pushed to `dev`, then live from `main` `3f8a12e` at 12:30:21Z (R23) |
 | Framework family | **C** (CSS Modules, no component library), verified 2026-10-17 |
 | Surfaces inside the floor, by route | Strict floor: `/`, `/bracket` (and `?match=`), `/leaderboards`, `/jugador/[steamid64]`, `/ceremonia`, and the 404 |
 | Component-class call sites | Not applicable (family C) |
 | AD-19 manual pass | **2026-10-17**, 09:24:45Z to 09:47:48Z; found: 24 targets under `--tap`, 21 grounds and 161 ringless stops before, 0, 0 and 0 after; findings 1 to 5 |
 | Greyscale render, words masked | `after\greyscale-masked-*.png`, six files |
 | Contract version consumed | `Contract v2.0.0`, the Anchor's own `contracts/` (no vendored copy). The Registry entry carries no `token_contract`: AD-16's check reads a Satellite's vendored `cuatro-contracts/tokens.css`, which an application inside the Anchor does not have (DW-361) |
-| F-1 to F-12 | All twelve pass (F-5 on I-12, F-12 on R14). **Restyled, as § The floor counts it: yes**, on the branch; on the live hostname once R23 rolls it |
+| F-1 to F-12 | All twelve pass (F-5 on I-12, F-12 on R14). **Restyled, as § The floor counts it: yes**, on the branch; on the live hostname once R23 rolls it (rolled 2026-10-17) |
 | SM-12's four manual checks | **All four clean** |
 
 ## Pending Operator actions
@@ -1006,6 +1023,8 @@ Sent back to `RESTYLE-SPEC.md` for the Operator's ruling (R22), as Story 8.3's I
 | R23 | **After the independent verifier pushes the branch to `dev`: merge `dev` into `main` with the epic's promotion, then roll the tournament** by its standing runbook, `ops/tournament-placement.md` § The sequence, Later rollouts (pull both tags, then `$C --profile tournament up -d tournament tournament-worker` with the new `TOURNAMENT_TAG`); no step of its own by hand on the box | Operator | Added 2026-10-17 by Story 8.6. The push to `main` builds `ghcr.io/luigiespinosa/tournament:<sha>` in `image-tournament.yml`; a dated completion names that run and the `ci.yml` run on the merge sha, each by name, never "CI green". The production check: `https://tournament.cuatro.dev/` 200 on the dark ground (`6,5,9`), the three woff2 under `/_next/static/media/` 200 `font/woff2`, no `fonts.gstatic.com` request, `/no-such-path` 404 on the dark ground. Until then SM-12 holds on the branch only | Done 2026-10-17T12:30:21Z, after a three-minute outage. Rolled by `ops/tournament-placement.md` § Later rollouts with `TOURNAMENT_TAG=3f8a12e` at 12:27:21Z; both containers healthy, yet `https://tournament.cuatro.dev/` answered 502: Next's standalone server binds `process.env.HOSTNAME`, the recreated container's hostname resolved to its `cuatro-portfolio_default` address, and Traefik, on `cs-tracker_default`, was refused on 3000. The runbook's own `up -d --force-recreate tournament` at about 12:29Z restored it (Traefik's probe of `http://tournament:3000/api/health` 200). Live at 12:30:21Z: `/` 200 and `/no-such-path` 404 on the contract ground (`lab(1.52 0.48 -1.49)`, the same colour as `oklch(12% .011 288)`), the three contract faces loaded, no `box-shadow`, no `googleapis`; `/api/health` 200. The lasting fix, `HOSTNAME=0.0.0.0` for a server on two networks, is DW-363 |
 | R24 | **Rule on `token_contract` for an application inside the Anchor** (DW-361): `cs-tournament` now consumes Contract v2.0.0 from `contracts/` directly, and AD-16's scheduled check verifies the field against a vendored `cuatro-contracts/tokens.css`, which the tournament does not carry | Operator | Added 2026-10-17 by Story 8.6. Options: (a) leave the field absent for an absorbed entry, adoption being the Anchor's own; (b) declare `2.0.0` and teach the verification to read `contracts/tokens.css` for an `absorbed_into: cuatro-portfolio` entry, a Registry release that waits on a dated observation committed first. Story 8.5 meets the same question for `cuatro-tracker` (DW-358). Its independent verifier added on rebase: Story 8.5, landed on `dev` in parallel, vendored a copy under `apps/tracker/app/cuatro-contracts/` and admitted it in `anchor-contract.test.ts` (`VENDORED_IN_APPS`), so the two applications inside the Anchor now consume the contract two ways; the ruling may also say which one both take | Ruled 2026-10-17: **(a)**, `token_contract` stays absent for an `absorbed_into: cuatro-portfolio` entry. Both applications inside the Anchor read `contracts/` directly, as `apps/tournament` does; `apps/tracker`'s vendored `apps/tracker/app/cuatro-contracts/` is removed by a follow-up change. DW-358 and DW-361 close with it. **Done 2026-10-17 in `59f79ab`** (`spec-8-r24-tracker-reads-contracts-directly.md`): the vendored folder is deleted, `apps/tracker/app/global.css` imports `../../../contracts/tailwind.css`, `apps/tracker/Dockerfile` copies `contracts/` into its builder, `anchor-contract.test.ts` again refuses any `cuatro-contracts/` folder, and DW-358 and DW-361 are closed; the built CSS is unchanged but for two inert preflight rules (DW-362) |
 | R25 | **Promote `dev` to `main` carrying Registry 1.11.0** (DW-347, DW-351: `list-wheel` and `digital-library` declare `token_contract` `2.0.0`), by a pull request whose required checks are green; the Deploy publishes `contracts/` to `https://cuatro.dev/contracts/`. No step by hand on the box | Operator | Added 2026-10-17 by the DW-347 and DW-351 story (`spec-dw-347-351-registry-token-contract-releases.md`). The release is committed on `dev` only; a Satellite and the Hub read the published copy, so nothing outside this repository sees it until this promotion. A dated completion names the merge sha, the Deploy run on it with both its jobs, and the `push` run of `registry-verification.yml` on the release commit (`# 75 of 75 checks passed`). The post-deploy check: `curl -s https://cuatro.dev/contracts/registry.json` reads `"contract_version": "1.11.0"`, and the `list-wheel` and `digital-library` entries each read `"token_contract": "2.0.0"` (`node -e` over the fetched body, the workstation having no `jq`); the next scheduled `registry-verification` run on `main` reads 75 of 75 | _not done_ |
+| R26 | **Merge the `digital-library` PR from `fix/retro8-field-focus-radius` (head `83c61f0`, one commit on `dev` `9e4572d`) into `dev`, then `dev` into `main`, then redeploy** by the standing redeploy, its README § Deploying (the box's `~/library-redeploy.sh`); nothing in this change adds a step by hand on the box | Operator | Added 2026-10-17 by the Epic 8 retrospective's cleanup (items 56 and 58, `spec-retro8-cleanup-records-spec-and-field-focus.md`). The independent verifier pushes the branch and opens the PR to `dev`. I-11 as an explicit rule in `apps/web/src/routes/layout.css` (`input:not([type='file']):focus-visible, select:focus-visible, textarea:focus-visible`), a computed-style test in installed Chrome through `playwright-core` `1.62.1` (a new devDependency), and DW-352's line-end fix. A dated completion names the runs read on each merge sha, `ci.yml` (`CI`) and `test.yml` (`Test`, on `main`), never "CI green". The production check: the `/login` stylesheet under `/_app/immutable/assets/` carries that rule. DW-352 closes with the merge | _not done_ |
+| R27 | **Merge the `list-wheel` PR from `fix/retro8-field-focus-radius` (head `a88a058`, one commit on `main` `a1f1fce`) into `main`**, which is the deploy, as R6 and R16: `.github/workflows/deploy.yml` runs `test`, then `deploy`. No step by hand on the box | Operator | Added 2026-10-17 by the Epic 8 retrospective's cleanup (item 58). The independent verifier pushes the branch and opens the PR to `main`. The I-11 rule in `src/styles.css` now covers every field but the file input, and `restyle.spec.ts` finds the fields rather than listing them and focuses bare fields with no rule of their own (before the fix: `1 FAILED, 149 SUCCESS`; after: `150 SUCCESS`). A dated completion names the Deploy run on the merge sha and both its jobs, never "CI green". The production check: the live `styles-*.css` on `https://wheel.cuatro.dev/` carries `input:not([type=file]):focus-visible` | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC date and leave the row in place.

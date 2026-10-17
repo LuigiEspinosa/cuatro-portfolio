@@ -51,8 +51,8 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   end state), `capacity-threshold.md`, `contract-serving.md`,
   `cs-tracker-token-adoption.md`, `rendered-output-harness.md`, `monitoring.md`,
   `backup-digital-library.md`, `bot-mitigation.md`, `asset-budget.md` (what the build actually ships,
-  weighed), `restyle-floor.md` (Epic 8's floor: each wave-1 Satellite's anonymous surfaces, verified
-  stack and family, the review-finding triage, and `cs-tracker`'s restyle record), `registry-schema.md` (the App Registry's shape and its blocking gate),
+  weighed), `restyle-floor.md` (Epic 8's floor: each restyled application's floor, stack and family, its
+  restyle record and measured floor, SM-12 per application, and the Operator's rows R1 onward), `registry-schema.md` (the App Registry's shape and its blocking gate),
   `registry-verification.md` (the scheduled check of every entry), `registry-inputs.md` (how the
   Registry's values were first chosen, frozen 2026-09-24: `contracts/registry.json` is the only
   source of Registry values).

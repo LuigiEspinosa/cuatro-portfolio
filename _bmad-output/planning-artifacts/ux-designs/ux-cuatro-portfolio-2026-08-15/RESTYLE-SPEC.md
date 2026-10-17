@@ -2,7 +2,7 @@
 name: Cuatro Ecosystem, Restyle Specification
 status: final
 updated: 2026-10-17
-version: 1.1.1
+version: 1.1.2
 amended-2026-08-16: >-
   Corrections raised by the epics restyle pass. The floor is twelve checks, not eleven, in all
   three places that undercounted it. --tap replaces the hand-written 44px literal throughout.
@@ -17,6 +17,14 @@ amended-2026-10-17b: >-
   follows § 1 Disabled (I-4). § Icons and the icon-only control row are reconciled (the Operator's
   confirmation of that row is ops/restyle-floor.md R17). § Family A no longer calls O-14 open, and
   § Family C no longer names digital-library, which O-15 found to be family A in its source-owned form.
+amended-2026-10-17c: >-
+  1.1.2, the Epic 8 retrospective's spec reconciliation (action 5); no reading changes. The Operator's
+  ruling R22 (accept Story 8.6's readings) is written in: a graphic drawn in CSS keeps its radius (I-12,
+  § 3), the status dot may be drawn by its border (I-13, § 5), and a tab that already exposes
+  aria-selected takes no added aria-current (I-14, the Tabs row). A Motion row states what SM-12's
+  reduced-motion check already found (DW-345, DW-349, DW-354). § Recording a restyle names the
+  application inside the Anchor (R24). Two questions stay open for the Operator, in § Open for the
+  Operator: a control's ring radius, and whether a file input is a § 9 field.
 design: ./DESIGN.md
 experience: ./EXPERIENCE.md
 binds: FR-36, FR-37, FR-38, AD-24, AD-25, SM-12
@@ -333,6 +341,11 @@ separators align down the page.
 is a rule under F-3 and stays 1px at any size, by `vector-effect: non-scaling-stroke`. A border drawn in
 the graphic's own units around a mark inside it scales with the graphic and is not read as a rule.
 
+**A graphic drawn in CSS** (I-12, Operator ruling 2026-10-17, R22). Where the content a page shows is a
+graphic built from boxes with `border-radius` (the tournament's roulette: a wheel, its rings, a sweep and a
+hub), it keeps its round geometry: it is the content, neither control, container nor field, so F-5 does
+not read it. Its rules and ticks are still 1px and opaque at token values (F-3).
+
 **Check.** Sample the rendered pixel colour of any rule and compare it to the computed value of
 `--token-border`. They match exactly, on every ground the rule appears over.
 
@@ -422,7 +435,7 @@ wheel state, a build state) expresses it under these rules:
 | Type | `var(--f-mono)`, `var(--t-3xs)`, uppercase, `letter-spacing: var(--tr-label)` |
 | Border | `1px`, square, per the value's structural treatment |
 | Padding | `var(--s-2xs)` block, `var(--s-xs)` inline |
-| Dot, where present | 4px square at `var(--r-none)` in `var(--token-accent)`. **Square, never round** (I-10, as `DESIGN.md` § Shapes states; `--r-pill` is reserved and unused) |
+| Dot, where present | 4px square at `var(--r-none)` in `var(--token-accent)`. **Square, never round** (I-10, as `DESIGN.md` § Shapes states; `--r-pill` is reserved and unused). It may be drawn as a zero-size box with a 2px `var(--token-accent)` border, which paints the same square and is no fill, so F-8's grep of accent backgrounds holds (I-13, R22) |
 
 **Status strings are verbatim.** Where an application renders the estate's taxonomy, the four
 strings are `Live`, `Complete`, `In progress`, `Archived`, with no synonyms anywhere. An
@@ -592,7 +605,8 @@ than left as a gap, because an unanswered gap is where five implementations dive
 | Need | Disposition |
 |---|---|
 | **Pagination** | Build from **Controls** (§ 1) and a **Label** (§ 7) for the position readout. No dedicated component. `tabular-nums` on the numbers |
-| **Tabs** | Build from **Controls** in a row, the current one carrying the `var(--stroke-emphasis)` accent underline and `aria-current`, sitting on a shared hairline. It is Nav's treatment applied in place |
+| **Tabs** | Build from **Controls** in a row, the current one carrying the `var(--stroke-emphasis)` accent underline and `aria-current`, sitting on a shared hairline. It is Nav's treatment applied in place. Where the tabs already expose `role="tab"` with `aria-selected`, a restyle adds no `aria-current` (a markup change for a state already exposed), and the underline may be drawn on a pseudo-element so the box's border width never changes (I-14, R22) |
+| **Motion and `prefers-reduced-motion`** | A restyle adds no motion. A transition it writes takes its duration from the contract's `--dur-*`, which collapse to 1ms under `prefers-reduced-motion: reduce`, so it inherits the setting. Motion the application already had that ignores the setting (a literal duration, a GSAP timeline, a `requestAnimationFrame` loop) is **recorded as an AD-19 finding and deferred**, never fixed by the restyle: reading the setting is a behaviour change, above the ceiling. SM-12's fourth manual check reads it with `reduce` forced, and no F-check counts it, so an application can be restyled while that check fails; Epic 8 found exactly that in `cs-tracker`, `digital-library` and `list-wheel` (DW-354, DW-349, DW-345) |
 | **Loading** | **No skeletons and no spinners.** The Hub is statically rendered. An application that genuinely loads shows the **Empty edge** treatment (§ 8) with the word `Loading`, and never a shape pretending to be content |
 | **Toast, dialog, popover, tooltip** | **Seam S-5, accepted permanently.** Each application keeps its own. This spec does not invent a cross-framework overlay convention |
 | **Tables and dense data UI** | **Seam S-6, accepted permanently.** What binds is only the separator (§ 3), the label (§ 7) and `tabular-nums` |
@@ -618,6 +632,22 @@ dot is square and a field's focus ring takes no radius. Each is now stated where
 | I-9 | The page's maximum width | § 2, the application's own |
 | I-10 | The status dot's corner; an icon-only control | § 5, the dot at `var(--r-none)`; the table above, An icon-only control |
 | I-11 | A field's focus ring against F-5 | § 4 and § 9, no radius on a field's ring |
+| I-12 | A graphic drawn in CSS with `border-radius` | § 3, A graphic drawn in CSS, kept round |
+| I-13 | § 5's accent dot against F-8's grep | § 5, the dot drawn by its border |
+| I-14 | Tabs that already expose `aria-selected` | the table above, Tabs, no added `aria-current` |
+
+Story 8.6 recorded I-12 to I-14 (`ops/restyle-floor.md` § `cs-tournament`, Where the implementer had to
+infer), and the Operator ruled on 2026-10-17 (row R22): Story 8.6's reading stands for each.
+
+### Open for the Operator
+
+Two questions the Epic 8 retrospective raised and no ruling has settled. Until each is ruled, a restyle
+keeps what it has, and neither is a floor failure.
+
+| # | Question | What the record shows |
+|---|---|---|
+| Q-1 | **Does § 4's `border-radius: var(--r-hair)` bind a control's and a link's ring?** § 4 writes it in the ring's rule, and F-5 does not read a control's focused radius | `cs-tracker`'s ring sets no radius, so its controls' rings are square (DW-348 reads that as a gap to fill); `list-wheel`, `digital-library` and the Anchor's two applications draw `--r-hair` |
+| Q-2 | **Is a file input a § 9 field?** If it is, I-11 keeps its focused ring square; if it is a control (§ 1, its selector button), its ring takes Q-1's answer | `list-wheel`'s fallback `input type="file"` (state `empty-fallback`) rounds to `--r-hair` while focused; `digital-library`'s upload field sits outside its strict floor. The I-11 rules in both leave the file input out until this is ruled |
 
 ---
 
@@ -901,7 +931,7 @@ Story 8.4 is the Story 1.20 equivalent for restyle. Per application it records:
 | Component-class call sites | Before and after, where family A applies |
 | AD-19 manual pass | Date, and what was found |
 | Greyscale render | Attached |
-| Contract version consumed | From the Satellite's `token_contract` Registry field |
+| Contract version consumed | From the Satellite's `token_contract` Registry field. An application inside the Anchor reads `contracts/` directly and declares none (R24); record the contract header it loads |
 
 **SM-C6 reads zero throughout.** No application is restyled before the Suite Directory renders it
 (AD-25). A restyle work item for an unrendered application is a defect, not enthusiasm.

@@ -10519,6 +10519,12 @@ status: done
 
     **Owner: the `digital-library` restyle branch.** **Trigger: before R10's PR opens** (`restyle/8-2-visual-restyle`,
     head `c25f830`), as one more commit on it, or the next story that touches the test after it merges.
+
+    **2026-10-17, the Epic 8 retrospective's cleanup (`spec-retro8-cleanup-records-spec-and-field-focus.md`):** the
+    first trigger passed unmet (R10 merged without it); the second fires, since item 58 touches the test. Reproduced on
+    a `core.autocrlf=true` worktree of `dev` `9e4572d` (`expected -1 to be greater than 1016`), fixed by normalizing
+    line ends in the test's `read` on `digital-library` branch `fix/retro8-field-focus-radius` (`83c61f0`). **Owner
+    now: the Operator's merge, `ops/restyle-floor.md` R26.** **Trigger: R26 done**, which closes this entry.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
   id: DW-353
@@ -10574,6 +10580,15 @@ status: done
 
     **Owner: a `digital-library` story.** **Trigger: Story 8.2's restyle merge (R10), or the next change to a file
     that carries such a comment.** Comments only: point them at the vendored `cuatro-contracts/` and `RESTYLE-SPEC.md`.
+
+    **2026-10-17, restated by the Epic 8 retrospective's cleanup (`spec-retro8-cleanup-records-spec-and-field-focus.md`).**
+    R10 merged without the change, so the first trigger passed unmet. Read on `dev` `9e4572d` the same day: the restyle
+    left 8 lines naming the workspace `DESIGN.md` in 7 files, `primitives/Breadcrumb.svelte`, `EditorialTable.svelte`
+    and `StatusTag.svelte` (the three DW-349 records as rendered nowhere), `utils/editorial-format.ts`, and three page
+    tests (`library-grid-page`, `login-page`, `library-picker-page`); the vendored `cuatro-contracts/tokens.css` names
+    the Anchor's own `DESIGN.md` and is not one of them. The cleanup's branch touches none of the seven, so it leaves
+    them. **Owner: a `digital-library` story.** **Trigger: the next change to one of the seven files**, or the story
+    that renders or deletes the three components under DW-349.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
   id: DW-357
