@@ -837,6 +837,146 @@ change the host build and the 09:46:35Z run carry.
 | Greyscale render, words masked | `after\greyscale-masked-login-idle.png`, `after\greyscale-masked-login-error.png` |
 | Contract version consumed | Vendored `v2.0.0` (`apps/tracker/app/cuatro-contracts/tokens.css`); the Registry entry declares **no `token_contract`** (DW-358: its `source` is a subtree of this repository, which the scheduled verification cannot read) |
 
+## `cs-tournament`, Story 8.6's adoption and restyle
+
+Written by Story 8.6 on **2026-10-17**. The application is `apps/tournament` in this repository (Story 3.7's merge,
+shipped and verified 2026-09-30, `ops/tournament-placement.md`); Registry `id` `cs-tournament`, `status: Live` in
+every release since `1.7.0`, so it is rendered and SM-C6 still reads zero. One commit on the Anchor branch
+`wt/8-6-cs-tournament-visual-restyle` carries the adoption and the restyle together, and it reaches the Visitor as one
+merge of its own (AD-20); the Go worker is untouched. Evidence, kept out of every repository:
+`C:\CuatroEcosystem\epic-8-evidence\8-6-cs-tournament-visual-restyle\` (`before\`, `after\`, `method\`).
+
+### What it has installed, and the floor by route
+
+**Observed 2026-10-17**, from `apps/tournament/package.json` and the source: Next.js 16.2.10, React 19, the Supabase
+clients, CSS Modules, no Tailwind and no component library. **Decision: family C** (`RESTYLE-SPEC.md` § Displacing a
+component library); there is nothing to displace and no reset clears `outline`. AD-14 lists `cs-tournament` among the
+Tailwind consumers, which the merged source never was (DW-279), so it consumes the plain pair.
+
+**Observed 2026-10-17T09:08:31Z** by `curl` with no cookie against `https://tournament.cuatro.dev`: `/`, `/bracket`,
+`/leaderboards`, `/ceremonia` and `/jugador/<steamid64>` answer 200 with the viewer shell, `/no-such-path` 404 with
+Next's built-in page, `/auth/steam/login` 307 to Steam, `/api/health` 200 JSON. Registry `identity: none`. **The strict
+floor applies** (R2 (a) does not arise): every viewer route, whole, in the states its data reaches, plus the 404. The
+routes under `/api/` and `/auth/` render nothing of their own.
+
+**The states measured.** Production had no match on 2026-10-17, so the populated states were made on a scratch local
+Supabase stack (`supabase start` with project id `epic-scratch-8-6`, the migrations as committed), seeded by
+`method\seed-a.sql`, the application's own admin routes (`/api/admin/bracket`, `/api/admin/awards`, through
+`method\admin.mjs`), the RPCs `declare_match_format` and `manual_resolve_match`, and `method\seed-b.sql`; the empty and
+ceremony scenarios by `method\empty-on.sql` and `method\seed-ceremony.sql`. Nineteen states: the feed and its failed
+sign-in line, the bracket, a live, a resolved and a missing focused match, both leaderboard tabs, a player and a missing
+one, the locked ceremony and the 404; the empty feed, bracket and leaderboards; and, in the ceremony, the feed, the
+reveal, the reveal after Verify, and the leaderboards.
+
+### What changed
+
+- **The adoption.** `app/globals.css` imports `contracts/tokens.css`, then `contracts/fonts.css`, and declares hand-fix
+  lines 1 to 4; `next/font`'s Archivo is gone, so the build fetches no font host and the three contract faces ship
+  under `/_next/static/media/`. **Decision: no `cuatro-contracts/` folder.** The Anchor publishes the contract and loads
+  `contracts/` directly, and `apps/hub/app/__tests__/anchor-contract.test.ts` refuses a vendored folder anywhere in this
+  repository; nothing else crosses from the Anchor (AD-24). The image's builder copies `contracts/` in after the prune,
+  as the Hub's does. `apps/tournament/` left `OTHER_APPLICATIONS`, so the FR-17 gate reads its stylesheets (DW-279
+  closed).
+- **The restyle.** Every stylesheet under `app/` was rewritten to roles and scale steps. Cards became rows on hairlines
+  (the feed, the bracket, the focused match, the player's figures, the reveal's categories); the pills, chips and badges
+  became § 5 status marks; the segmented toggle became tabs built from § 1 Controls; the verify button is a § 1 Control;
+  winner and loser differ by weight and by text against secondary text, where they were green and red; every round
+  avatar, tile and seed chip is square. `760px` is the one breakpoint (the reveal's `1024px` went), and the 430px column
+  and the reveal's 1180px are the application's own (I-9). The locked awards' explanation sits beneath the sealed rows
+  instead of over them on a translucent layer. Next's built-in 404 painted inline `#fff` and `#000`;
+  `app/not-found.tsx` renders the same title, the same two headings and the same words on the contract's ground.
+- **Unchanged:** routes, data, every string and DOM order (the only template changes are `app/layout.tsx` losing the
+  font class on `<html>` and the new 404 file), and the ceremony's choreography: the wheel's 4.6 s turn, the sweep and
+  the flip keep their durations, curves and reduced-motion block.
+- **The check left behind:** `apps/tournament/lib/restyle-floor.test.ts`, 8 cases over every stylesheet: the contract
+  loaded tokens first, the hand-fix lines, no shadow or gradient, no accent ground but `::selection`, square corners but
+  the ring and the wheel graphic, no state in opacity, only `border-color` transitioned, `760px` alone. A planted
+  `border-radius: 4px; background: var(--token-accent)` on the feed row failed 2 of the 8, then was reverted.
+  `lib/ceremony/reduced-motion.test.ts` moved its presentation pins to the restyle (the accent for the gold, `760px` for
+  `1024px`, the retired pulse).
+
+### The floor, measured once by hand (AD-19)
+
+**Observed 2026-10-17**, before at 09:24:45Z (live), 09:27:08Z (empty) and 09:28:30Z (ceremony) against a production
+build of `origin/dev` `fac9e40`, after at 09:44:41Z, 09:47:19Z and 09:47:48Z against the production build of the
+branch's `apps/` tree as committed, both served by `next start` on loopback against the same scratch stack, by
+`method\measure.mjs` in Playwright `1.62.1`'s Chromium `151.0.7922.34`, device scale factor 1.
+
+| Reading, at 360x800, nineteen states | Before | After |
+|---|---|---|
+| Visible interactive elements read | 161 | 161 |
+| Under `--tap` on either axis (F-10) | 24 | **0** |
+| Two adjacent targets overlapping | 0 | **0** |
+| A ground on an interactive element at rest (F-4) | 21 | **0** |
+| A ground, shadow or transform on hover (F-4) | 21 | **0** |
+| Elements with a radius above 0 (F-5) | 470 | **10**: the reveal's round wheel, five elements in each of its two states (I-12) |
+| Elements with a `box-shadow` | 11 | **0** |
+| Keyboard stops without a solid 2px `:focus-visible` ring (F-6) | 161 (the browser's 1px auto outline) | **0** |
+| A mouse click painting a ring | 0 | **0** |
+| Horizontal scroll at 359, 390, 759, 761 | 0 | **0** |
+
+| Check | After | How |
+|---|---|---|
+| F-1 | **Pass**: pixel (2,2) reads `6,5,9`, equal to `--token-bg` drawn to a canvas, in all nineteen states (before `15,20,25`, and `255,255,255` on the 404) | the page's own screenshot, decoded in the page |
+| F-2 | **Pass**: Bricolage Grotesque `700 800`, Geist `300 600` and Geist Mono `400` `loaded` in `document.fonts`; the three woff2 answered 200 from `/_next/static/media/` (before: Archivo alone, from `next/font/google`) | `document.fonts` status and the network. `document.fonts.check()` answers true before as well, for families with no face declared at all, so it is not the evidence here |
+| F-3 | **Pass**: the bar's hairline pixel `40,40,48` equals `--token-border`, computed `1px` | a sampled rule |
+| F-4, F-5, F-6, F-10 | **Pass**, the table above; F-5 on the reading I-12 states | browser readings |
+| F-7 | **Pass**: 0 `box-shadow` and 0 `gradient(` in the seven built stylesheets (before: 4 `box-shadow` and 3 `gradient(`) | grep of the built CSS |
+| F-8 | **Pass**: the one accent ground is `::selection`; the status dots are drawn by their borders (I-13) | the same grep |
+| F-9 | **Pass**: in `after\greyscale-masked-feed.png`, `-bracket.png`, `-bracket-match-live.png`, `-leaderboards.png`, `-ceremony.png` and `-empty-feed.png`, words transparent: a result's node from an advance's and an award's, live from final from the quiet states, a bye from a forfeit, the four shelf states, a DQ row from an eligible one, each still told apart | greyscale render, words masked |
+| F-11 | **Pass**: `:root` `color-scheme: dark` (before `normal`); `::selection` accent on `--token-bg` | computed style |
+| F-12 | **Pass on R14's reading**: no § 2 row (the feed and the bracket are hairline rows with one destination each, the leaderboards a seam S-6 table); controls and links meet § 1 and § 1b geometry; `760px` is the one breakpoint | the four widths, above |
+
+**SM-12's four manual checks.** Keyboard-only traversal, 360 and the four widths with no horizontal scroll, and the
+greyscale render are above. **`prefers-reduced-motion` forced** on the ceremony: 0 running animations and 0 elements
+with an animation or transition over 1ms, before and after (the reveal's own reduced block, Story 6.10). **All four are
+clean**, the first application in Epic 8 where they are. The ring is read on `--token-bg`, the only ground any restyled
+surface paints.
+
+**The image.** `docker build -f apps/tournament/Dockerfile` of the branch's tree as
+`epic-scratch-8-6-tournament:worktree` built, and ran on loopback against the scratch stack at 2026-10-17T10:06:21Z:
+`/`, `/bracket`, `/leaderboards`, `/ceremonia` and `/api/health` 200, `/no-such-path` 404, the three woff2 200
+`font/woff2` at 58,992, 24,124 and 11,284 bytes, no `googleapis` or `gstatic` in the page. Container and image removed.
+
+### Findings, recorded rather than corrected (AD-19)
+
+1. **The empty and cold states carry a heading and a framed `360` label**, where § 8 gives a list that can be empty one
+   line of secondary text and no heading or illustration. Both are rendered content today; removing them is a field
+   disappearing (§ The ceiling). DW-360.
+2. **The locked Ceremonia tab carries an emoji** (U+1F512) as its lock glyph, where the vocabulary has none. A restyle
+   mints no glyph and swaps none (I-10), so it stays. DW-360.
+3. **The 404 speaks English** in a Spanish application, as Next's built-in page did; microcopy is out. DW-360.
+4. **The live pill's pulse is retired**, not guarded: it was an endless `box-shadow` halo (F-7), and the live state is
+   carried by the square dot alone. A presentation effect, retired under the governing decision; named for the
+   Operator's sign-off (R21).
+5. **The signed-in state is still absent** from the viewer shell (DW-290, which named this story's spec). An indicator
+   is a field appearing, outside the ceiling, so DW-290 stays open for a story that may add one.
+
+### Where the implementer had to infer (the independent-implementation test)
+
+Sent back to `RESTYLE-SPEC.md` for the Operator's ruling (R22), as Story 8.3's I-1 to I-11 were.
+
+| # | Point | What 8.6 chose |
+|---|---|---|
+| I-12 | **A graphic drawn in CSS with `border-radius`.** F-5 asks for square corners on every control, container and field, and I-6 covers a scaled SVG; the reveal's roulette is five round `div`s (the wheel, two rings, the sweep, the hub) | Kept round: the wheel is the content the page shows, a graphic, neither control nor container; its rings and ticks are 1px opaque rules at token values |
+| I-13 | **§ 5's dot "in `--token-accent`" against F-8's grep**, which refuses the accent as a `background` | The dot is a zero-size box with a 2px accent border, which paints the same 4px square and is no fill |
+| I-14 | **Tabs' current state names `aria-current`**, and the toggle already exposes `role="tab"` with `aria-selected`; adding the attribute is a markup change | Not added; the current tab carries the emphasis rule, drawn as a 2px accent stroke on a pseudo-element so the box's border width never changes |
+
+### Added to Story 8.4's record
+
+| Field | `cs-tournament` |
+|---|---|
+| Application id | `cs-tournament` |
+| Head measured | `wt/8-6-cs-tournament-visual-restyle` (the restyle commit on `origin/dev` `dea2f03`), committed locally 2026-10-17, unpushed until the independent verifier pushes it to `dev` |
+| Framework family | **C** (CSS Modules, no component library), verified 2026-10-17 |
+| Surfaces inside the floor, by route | Strict floor: `/`, `/bracket` (and `?match=`), `/leaderboards`, `/jugador/[steamid64]`, `/ceremonia`, and the 404 |
+| Component-class call sites | Not applicable (family C) |
+| AD-19 manual pass | **2026-10-17**, 09:24:45Z to 09:47:48Z; found: 24 targets under `--tap`, 21 grounds and 161 ringless stops before, 0, 0 and 0 after; findings 1 to 5 |
+| Greyscale render, words masked | `after\greyscale-masked-*.png`, six files |
+| Contract version consumed | `Contract v2.0.0`, the Anchor's own `contracts/` (no vendored copy). The Registry entry carries no `token_contract`: AD-16's check reads a Satellite's vendored `cuatro-contracts/tokens.css`, which an application inside the Anchor does not have (DW-361) |
+| F-1 to F-12 | All twelve pass (F-5 on I-12, F-12 on R14). **Restyled, as § The floor counts it: yes**, on the branch; on the live hostname once R23 rolls it |
+| SM-12's four manual checks | **All four clean** |
+
 ## Pending Operator actions
 
 | # | Action | Owner | Note | Completed (UTC) |
@@ -861,6 +1001,10 @@ change the host build and the 09:46:35Z run carry.
 | R18 | **Confirm that `cuatro-tracker`'s floor is the strict one, `/login`**, so its authenticated interior stays below the floor and keeps its CRT design | Operator | Added 2026-10-17 by Story 8.5. The tracker renders its own sign-in page, so `RESTYLE-SPEC.md` § The floor's R2 (a) paragraph does not apply, the reading the Operator confirmed for `digital-library` on 2026-10-17 (R15). Options: (a) confirm; the interior's restyle stays DW-357, unscheduled; (b) rule that the demo-reachable interior counts (`ops/demo-principal.md`: the tracker has a demo principal, switched by `DEMO_ENABLED`), which makes DW-357 a story: the palette, the faces, the CRT atoms and some 1,050 literals across the interior's routes | _not done_ |
 | R19 | **Sign off the `cuatro-tracker` restyle visually** (a ruling) | Operator | Added 2026-10-17. `/login` in four states, idle, error, pending (the boot overlay) and success, at 360 and 1280: `C:\CuatroEcosystem\epic-8-evidence\8-5-cuatro-tracker-visual-restyle\before\` and `after\` (`login-<state>-<width>.png`; `w359-`, `w390-`, `w759-`, `w761-login-idle.png` and `-error.png`), the greyscale renders in `after\greyscale-masked-login-*.png`. The password field's dots and the progress bar's blocks show colour fringes in the screenshots: that is the capture's subpixel text rendering, not a colour in the page | _not done_ |
 | R20 | **Promote `dev` to `main` once the independent verifier has pushed Story 8.5 to `dev`, then roll the tracker** by its standing redeploy, `ops/tracker-cutover.md` § The sequence, Later rollouts (`tracker-migrate`, `tracker-migrate-demo`, `docker rollout ... tracker`, `tracker-worker`), with `HUB_TAG` and `TRACKER_TAG` exported; no step of its own, and no migration in this change | Operator | Added 2026-10-17. A push to `main` rolls the Hub alone; the tracker is behind a compose profile no deploy starts (DW-275), so it reaches the box by hand. A dated completion names the runs read on the merge sha, `ci.yml` (`CI`, its `test` job runs the tracker's typecheck and suite) and `image-tracker.yml` (`Image (tracker)`, which builds `ghcr.io/luigiespinosa/tracker:<sha>`), never "CI green". The production check: `https://tracker.cuatro.dev/login` 200 with `lc-wordmark` in the page and no `crt-shell`, and the three contract woff2 under `/_next/static/media/` 200 | _not done_ |
+| R21 | **Sign off the `cs-tournament` restyle visually** (a ruling) | Operator | Added 2026-10-17 by Story 8.6. Look at the nineteen states at 360 and 1280 (§ `cs-tournament`, The states measured): `feed`, `feed-login-error`, `bracket`, `bracket-match-live`, `bracket-match-resolved`, `bracket-match-missing`, `leaderboards`, `leaderboards-volume`, `player`, `player-missing`, `ceremonia-locked`, `not-found`, `empty-feed`, `empty-bracket`, `empty-leaderboards`, `ceremony-feed`, `ceremony`, `ceremony-verified`, `ceremony-leaderboards`. Before and after are `C:\CuatroEcosystem\epic-8-evidence\8-6-cs-tournament-visual-restyle\before\` and `after\` (`<state>-360.png`, `<state>-1280.png`; `w359-`, `w390-`, `w759-`, `w761-` for the feed, the bracket, a live match, the leaderboards, the reveal and the empty feed), greyscale renders in `after\greyscale-masked-*.png`. Judge in particular the retired pulse on the live pill (finding 4), the round wheel (I-12) and the 404 now on the dark ground. The reveal's middle column is empty in a 2.5 s capture because the category flips in at 4.6 s; `ceremony-verified` shows it landed | _not done_ |
+| R22 | **Rule on Story 8.6's specification defects, I-12 to I-14** (§ `cs-tournament`, Where the implementer had to infer): amend `RESTYLE-SPEC.md` per point, or accept what 8.6 chose as the reading | Operator | Added 2026-10-17 by Story 8.6, as R7 was for 8.3. 8.6's reading: the CSS-drawn wheel stays round as a graphic (I-12), the status dot is drawn by its border so F-8's grep holds (I-13), and the current tab carries the emphasis stroke without an added `aria-current` (I-14). Story 8.5 meets I-13 and I-14 in React too | _not done_ |
+| R23 | **After the independent verifier pushes the branch to `dev`: merge `dev` into `main` with the epic's promotion, then roll the tournament** by its standing runbook, `ops/tournament-placement.md` § The sequence, Later rollouts (pull both tags, then `$C --profile tournament up -d tournament tournament-worker` with the new `TOURNAMENT_TAG`); no step of its own by hand on the box | Operator | Added 2026-10-17 by Story 8.6. The push to `main` builds `ghcr.io/luigiespinosa/tournament:<sha>` in `image-tournament.yml`; a dated completion names that run and the `ci.yml` run on the merge sha, each by name, never "CI green". The production check: `https://tournament.cuatro.dev/` 200 on the dark ground (`6,5,9`), the three woff2 under `/_next/static/media/` 200 `font/woff2`, no `fonts.gstatic.com` request, `/no-such-path` 404 on the dark ground. Until then SM-12 holds on the branch only | _not done_ |
+| R24 | **Rule on `token_contract` for an application inside the Anchor** (DW-361): `cs-tournament` now consumes Contract v2.0.0 from `contracts/` directly, and AD-16's scheduled check verifies the field against a vendored `cuatro-contracts/tokens.css`, which this repository forbids | Operator | Added 2026-10-17 by Story 8.6. Options: (a) leave the field absent for an absorbed entry, adoption being the Anchor's own; (b) declare `2.0.0` and teach the verification to read `contracts/tokens.css` for an `absorbed_into: cuatro-portfolio` entry, a Registry release that waits on a dated observation committed first. Story 8.5 meets the same question for `cuatro-tracker` | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC date and leave the row in place.

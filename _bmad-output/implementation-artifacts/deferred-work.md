@@ -8759,7 +8759,12 @@ status: done
     `apps/hub/app/__tests__/anchor-contract.test.ts`.
 
     **Owner: Epic 8 wave 2 (the `cs-tournament` restyle).** **Trigger: that story.**
-  status: open
+
+    **Closed 2026-10-17 by Story 8.6** (`spec-8-6-cs-tournament-visual-restyle.md`): `apps/tournament/app/globals.css`
+    imports `contracts/tokens.css` then `contracts/fonts.css`, the `apps/tournament/` entry left `OTHER_APPLICATIONS`
+    and its pins moved in both suites, and the image's builder copies `contracts/` in (`ops/restyle-floor.md`
+    § `cs-tournament`).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
   id: DW-280
@@ -10603,4 +10608,33 @@ status: done
     first two change the accessibility tree, the third is content; none is presentation only.
 
     **Owner: a tracker accessibility story.** **Trigger: the next change to `LoginCRT.tsx` or `BootSequence`.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-6-cs-tournament-visual-restyle.md`
+  id: DW-360
+  summary: >-
+    The tournament's restyled viewer keeps three things the vocabulary would not have: a heading and a framed `360`
+    label in its empty and cold states, an emoji (U+1F512) as the locked Ceremonia tab's glyph, and an English 404 in
+    a Spanish application.
+  evidence: |-
+    Recorded 2026-10-17 by Story 8.6 (`ops/restyle-floor.md` § `cs-tournament`, findings 1 to 3). Each is rendered
+    content today: removing the heading or the label is a field disappearing, swapping the emoji mints a glyph (I-10),
+    and translating the 404 is microcopy, all outside `RESTYLE-SPEC.md` § The ceiling.
+
+    **Owner: a tournament story outside Epic 8.** **Trigger: the next story that touches the viewer's copy or its
+    empty states.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-6-cs-tournament-visual-restyle.md`
+  id: DW-361
+  summary: >-
+    `cs-tournament`'s Registry entry declares no `token_contract` although the application consumes Contract v2.0.0
+    since Story 8.6, because AD-16's check reads a Satellite's vendored `cuatro-contracts/tokens.css` and an application
+    inside the Anchor has none.
+  evidence: |-
+    Recorded 2026-10-17 by Story 8.6. The Anchor refuses a `cuatro-contracts/` folder anywhere in this repository
+    (`apps/hub/app/__tests__/anchor-contract.test.ts`), so the tournament loads `contracts/` directly. Whether an
+    `absorbed_into: cuatro-portfolio` entry declares the field, and how the scheduled verification would read it, is
+    the Operator's ruling (`ops/restyle-floor.md` R24). Story 8.5 meets the same question for `cuatro-tracker` (DW-358),
+    where it vendored a copy under `apps/tracker/app/cuatro-contracts/` instead of loading `contracts/`.
+
+    **Owner: the Operator, then the Registry release the ruling names.** **Trigger: R24.**
   status: open
