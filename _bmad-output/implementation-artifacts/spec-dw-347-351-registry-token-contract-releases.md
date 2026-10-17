@@ -37,7 +37,7 @@ and the promotion to `main` recorded as a dated Pending row.
 
 ## Implementation Notes
 
-**Observation commit** (`93869b4`, `docs(dw-347-351): observe list-wheel and digital-library adopting contract 2.0.0 on main`):
+**Observation commit** (`2fa6c8b`, built as `93869b4` and renamed by the verifier's rebase onto `b8b4edf`; `docs(dw-347-351): observe list-wheel and digital-library adopting contract 2.0.0 on main`):
 
 - Read 2026-10-17T12:59:03Z: `list-wheel` `main` `a1f1fce657b9a3379b80f8f5c830c428565078d6`, `digital-library` `main`
   `1ca5091d4d614a8608c7a8147ae7583dfd9d4f22`; each `tokens.css` line 2 `Contract v2.0.0`; each folder's nine blob
@@ -109,3 +109,5 @@ this worktree, nothing taken from the build's report.
 - Minor, left as is: the label cell of the `ops/restyle-floor.md` summary row still names `contracts/registry.json`
   1.10.0, the version its first reading was taken against; the two cells beside it now say 1.11.0.
 - Board: `epic-8-retro-item-55` to `in-progress`, because publication on `cuatro.dev/contracts/` waits on R25.
+- Rebased onto `dev` at `b8b4edf` (DW-363, no file in common but `sprint-status.yaml`, rebased clean): the observation is `2fa6c8b`, the release `47e5608`;
+  R25 stays the only row of that number in `ops/restyle-floor.md`.
