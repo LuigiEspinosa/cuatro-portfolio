@@ -92,6 +92,14 @@ const TOKENS_CSS = '/* Cuatro Ecosystem, Design Tokens\n * Contract v1.0.0 · da
 const TOKENS_CSS_AT_REGISTRY = TOKENS_CSS.replace('v1.0.0', 'v2.0.0');
 const CS_TRACKER_TOKENS = 'assets/css/cuatro-contracts/tokens.css';
 const SLUG = 'LuigiEspinosa/cs-tracker';
+/**
+ * The two Satellites Registry 1.11.0 gives `token_contract` 2.0.0 (DW-347, DW-351), each vendored header
+ * read `Contract v2.0.0` on its `main` on 2026-10-17 (`ops/contract-adoption.md`).
+ */
+const SATELLITE_TOKENS: Record<string, string> = {
+  'list-wheel': 'src/styles/cuatro-contracts/tokens.css',
+  'digital-library': 'apps/web/src/lib/cuatro-contracts/tokens.css',
+};
 
 /**
  * The record's four KV-2 rows, pinned in table order. cs-tournament's row is struck (published
@@ -194,6 +202,7 @@ const routesForCommittedRegistry = (): Record<string, Answer | Answer[]> => {
     }
   }
   routes[contents(SLUG, CS_TRACKER_TOKENS)] = { status: 200, body: TOKENS_CSS_AT_REGISTRY };
+  for (const [id, path] of Object.entries(SATELLITE_TOKENS)) routes[contents(`LuigiEspinosa/${id}`, path)] = { status: 200, body: TOKENS_CSS_AT_REGISTRY };
   return routes;
 };
 
@@ -288,7 +297,8 @@ describe('the committed Registry against the estate as observed', () => {
   const fetcher = planted(routesForCommittedRegistry());
   const run = verify({ registry, record, adoption, observed, fetch: fetcher.fetch, token: TOKEN });
 
-  it('passes 73 checks: 16 exists, 13 resolves and 3 tolerated with no KV-2 row left to strike, 8 live of which 3 by 3xx, 1 token, 16 demo, 16 identity', async () => {
+  it('passes 75 checks: 16 exists, 13 resolves and 3 tolerated with no KV-2 row left to strike, 8 live of which 3 by 3xx, 3 token, 16 demo, 16 identity', async () => {
+    // 73 and 1 token until Registry 1.11.0 gave `list-wheel` and `digital-library` their `token_contract`.
     // 35 and 6 live until 2026-09-25, when Vercel left the estate (Operator ruling 2026-09-24) and
     // `cs-tournament` went `Complete` with no `live` to check. 34 until later that day, when
     // Registry 1.5.0 listed `covidmap` and `future-vizion` as `Live` (Operator ruling 2026-09-25):
@@ -298,8 +308,8 @@ describe('the committed Registry against the estate as observed', () => {
     // 41 until Story 5.11 gave every entry a `demo` and an `identity` row (Registry 1.8.0).
     const result = await run;
     expect(fetcher.unplanted, 'the fixture did not plant a URL the Registry carries').toEqual([]);
-    expect(result.rows).toHaveLength(73);
-    expect(result.lines).toHaveLength(73);
+    expect(result.rows).toHaveLength(75);
+    expect(result.lines).toHaveLength(75);
     expect(result.ok, result.lines.filter((line) => line.startsWith('FAIL')).join('\n')).toBe(true);
 
     const exists = rowsOf(result, 'source exists');
@@ -325,9 +335,11 @@ describe('the committed Registry against the estate as observed', () => {
     expect(live.filter((row) => row.detail.endsWith('answered 200'))).toHaveLength(5);
 
     const token = rowsOf(result, 'token_contract');
-    expect(token).toHaveLength(1);
-    expect(token[0].id).toBe('cs-tracker');
-    expect(token[0].detail).toBe(`the Registry declares 2.0.0 and ${SLUG}:${CS_TRACKER_TOKENS}@main reads Contract v2.0.0`);
+    expect(token.map((row) => [row.id, row.pass, row.detail])).toEqual([
+      ['cs-tracker', true, `the Registry declares 2.0.0 and ${SLUG}:${CS_TRACKER_TOKENS}@main reads Contract v2.0.0`],
+      ['digital-library', true, `the Registry declares 2.0.0 and LuigiEspinosa/digital-library:${SATELLITE_TOKENS['digital-library']}@main reads Contract v2.0.0`],
+      ['list-wheel', true, `the Registry declares 2.0.0 and LuigiEspinosa/list-wheel:${SATELLITE_TOKENS['list-wheel']}@main reads Contract v2.0.0`],
+    ]);
 
     // Story 5.11: what each entry declares, held to what its host answers today.
     const demo = rowsOf(result, 'demo');
@@ -365,8 +377,8 @@ describe('the committed Registry against the estate as observed', () => {
     const result = await run;
     for (const line of result.lines) expect(line).toMatch(/^(PASS|FAIL) {2}[a-z0-9-]+ (source exists|source resolves|live|token_contract|demo|identity): \S/);
     const summary = summaryTable(result.rows);
-    expect(summary).toContain('## Registry verification: 73 of 73 checks passed');
-    expect(summary.split('\n').filter((line) => /^\| [a-z0-9-]+ \| /.test(line))).toHaveLength(73);
+    expect(summary).toContain('## Registry verification: 75 of 75 checks passed');
+    expect(summary.split('\n').filter((line) => /^\| [a-z0-9-]+ \| /.test(line))).toHaveLength(75);
     expect(summaryTable([{ id: 'x', check: 'live', pass: false, detail: 'a | b' }])).toContain('| a \\| b |');
     expect(summaryTable([])).toContain('0 of 0 checks passed');
   });
@@ -377,8 +389,9 @@ describe('the committed Registry against the estate as observed', () => {
     // 44, not 41: the three tree sources Registry 1.6.0 carries (DW-285) are each probed once more,
     // inside their `source exists` row. 52 from Story 5.11: each of the eight `live` hosts declaring
     // `identity: none` is asked `/auth/session` once; the `demo` rows reuse the `live` answer. 53 from
-    // Registry 1.9.0: the Hub, now `oidc`, is asked `/auth/sign-in` as well. 54 from 1.10.0, `cs-tracker` too.
-    expect(fetcher.calls, 'the happy path has no retries, so a doubled request is a defect').toHaveLength(54);
+    // Registry 1.9.0: the Hub, now `oidc`, is asked `/auth/sign-in` as well. 54 from 1.10.0, `cs-tracker` too. 56 from 1.11.0: the vendored
+    // headers of `list-wheel` and `digital-library`, one contents call each (DW-347, DW-351).
+    expect(fetcher.calls, 'the happy path has no retries, so a doubled request is a defect').toHaveLength(56);
     for (const { url, init } of fetcher.calls) {
       const headers = (init?.headers ?? {}) as Record<string, string>;
       expect(headers['User-Agent'], url).toBe(USER_AGENT);
@@ -392,9 +405,14 @@ describe('the committed Registry against the estate as observed', () => {
       }
     }
     const contentsCalls = fetcher.calls.filter(({ url }) => url.includes('/contents/'));
-    expect(contentsCalls).toHaveLength(4);
+    expect(contentsCalls).toHaveLength(6);
     const accept = (call: Call): string => (call.init?.headers as Record<string, string>).Accept;
-    expect(contentsCalls.filter((call) => accept(call) === 'application/vnd.github.raw').map((call) => call.url)).toEqual([contents(SLUG, CS_TRACKER_TOKENS)]);
+    expect(contentsCalls.filter((call) => accept(call) === 'application/vnd.github.raw').map((call) => call.url).sort()).toEqual(
+      [
+        contents(SLUG, CS_TRACKER_TOKENS),
+        ...Object.entries(SATELLITE_TOKENS).map(([id, path]) => contents(`LuigiEspinosa/${id}`, path)),
+      ].sort()
+    );
     expect(contentsCalls.filter((call) => accept(call) === 'application/vnd.github+json').map((call) => call.url).sort()).toEqual(
       ['finance', 'tournament', 'tracker'].map((dir) => contents('LuigiEspinosa/cuatro-portfolio', `apps/${dir}`))
     );
@@ -417,8 +435,8 @@ describe('main', () => {
       const file = join(dir, 'summary.md');
       const result = await main(planted(routesForCommittedRegistry()).fetch, { [SECRET]: TOKEN, GITHUB_STEP_SUMMARY: file });
       expect(result.code, result.message).toBe(0);
-      expect(result.message.split('\n')).toHaveLength(74);
-      expect(result.message.split('\n').at(-1)).toBe('# 73 of 73 checks passed');
+      expect(result.message.split('\n')).toHaveLength(76);
+      expect(result.message.split('\n').at(-1)).toBe('# 75 of 75 checks passed');
       const { rows } = await verify({ registry, record, adoption, observed, fetch: planted(routesForCommittedRegistry()).fetch, token: TOKEN });
       expect(readFileSync(file, 'utf8')).toBe(`${summaryTable(rows)}\n`);
     });
@@ -428,7 +446,7 @@ describe('main', () => {
     const routes = { ...routesForCommittedRegistry(), 'https://github.com/LuigiEspinosa/list-wheel': 404 };
     const result = await main(planted(routes).fetch, { [SECRET]: TOKEN });
     expect(result.code).toBe(1);
-    expect(result.message.endsWith('# 72 of 73 checks passed')).toBe(true);
+    expect(result.message.endsWith('# 74 of 75 checks passed')).toBe(true);
     expect(result.message).toContain('FAIL  list-wheel source resolves: absent:');
   });
 
@@ -437,7 +455,7 @@ describe('main', () => {
       const file = join(dir, 'missing', 'summary.md');
       const result = await main(planted(routesForCommittedRegistry()).fetch, { [SECRET]: TOKEN, GITHUB_STEP_SUMMARY: file });
       expect(result.code).toBe(2);
-      expect(result.message).toContain('# 73 of 73 checks passed');
+      expect(result.message).toContain('# 75 of 75 checks passed');
       expect(result.message).toContain(`the job summary at ${file.replace(/\\/g, '\\\\')} could not be written`);
       expect(existsSync(file)).toBe(false);
     });

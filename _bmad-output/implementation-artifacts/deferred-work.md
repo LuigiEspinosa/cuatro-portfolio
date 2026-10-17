@@ -10418,7 +10418,13 @@ status: done
     re-observe the `list-wheel` row in `ops/contract-adoption.md` (adopted, `2.0.0`, at
     `src/styles/cuatro-contracts/tokens.css`) and commit that dated observation; then a Registry release giving
     the `list-wheel` entry `token_contract: "2.0.0"`, whose push runs `registry-verification.yml`.
-  status: open
+
+    **Closed 2026-10-17 by the DW-347 and DW-351 story (`_bmad-output/implementation-artifacts/spec-dw-347-351-registry-token-contract-releases.md`).**
+    The `list-wheel` row of `ops/contract-adoption.md` re-observed off `main` at `a1f1fce` (adopted, `2.0.0`, at
+    `src/styles/cuatro-contracts/tokens.css`, the nine files verbatim) and committed first (`93869b4`); then Registry
+    1.11.0 gives the entry `token_contract: "2.0.0"`, the scheduled verification's check run locally reading 75 of 75.
+    It reaches `cuatro.dev/contracts/` with the Operator's promotion of `dev` to `main`, `ops/restyle-floor.md` row R25.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-1-cs-tracker-visual-restyle.md`
   id: DW-348
   summary: >-
@@ -10493,7 +10499,14 @@ status: done
     re-observe the `digital-library` row in `ops/contract-adoption.md` (adopted, `2.0.0`, at
     `apps/web/src/lib/cuatro-contracts/tokens.css`) and commit that dated observation; then a Registry release
     giving the `digital-library` entry `token_contract: "2.0.0"`, whose push runs `registry-verification.yml`.
-  status: open
+
+    **Closed 2026-10-17 by the DW-347 and DW-351 story (`_bmad-output/implementation-artifacts/spec-dw-347-351-registry-token-contract-releases.md`).**
+    The `digital-library` row of `ops/contract-adoption.md` re-observed off `main` at `1ca5091` (adopted, `2.0.0`, at
+    `apps/web/src/lib/cuatro-contracts/tokens.css`, the nine files verbatim) and committed first (`93869b4`); then
+    Registry 1.11.0 gives the entry `token_contract: "2.0.0"`, the scheduled verification's check run locally reading
+    75 of 75. It reaches `cuatro.dev/contracts/` with the Operator's promotion of `dev` to `main`, `ops/restyle-floor.md`
+    row R25.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
   id: DW-352
   summary: >-
