@@ -2,7 +2,7 @@
 name: Cuatro Ecosystem, Restyle Specification
 status: final
 updated: 2026-10-17
-version: 1.1.2
+version: 1.1.3
 amended-2026-08-16: >-
   Corrections raised by the epics restyle pass. The floor is twelve checks, not eleven, in all
   three places that undercounted it. --tap replaces the hand-written 44px literal throughout.
@@ -25,6 +25,11 @@ amended-2026-10-17c: >-
   reduced-motion check already found (DW-345, DW-349, DW-354). § Recording a restyle names the
   application inside the Anchor (R24). Two questions stay open for the Operator, in § Open for the
   Operator: a control's ring radius, and whether a file input is a § 9 field.
+amended-2026-10-17d: >-
+  1.1.3, the Operator's ruling R28 (ops/restyle-floor.md). Q-1: § 4's var(--r-hair) does not bind a
+  control's or a link's focus ring; the ring follows the element's own square corner (§ 1, § 4).
+  Q-2: a file input is not a § 9 field; it is a control, since it renders as a button (§ 9). § Open for
+  the Operator is removed and both rulings are indexed in § Readings settled 2026-10-17.
 design: ./DESIGN.md
 experience: ./EXPERIENCE.md
 binds: FR-36, FR-37, FR-38, AD-24, AD-25, SM-12
@@ -174,7 +179,7 @@ default and its most-documented example.
 |---|---|
 | Rest | As above |
 | Hover | Border becomes `var(--token-accent-hover)`. **Nothing else changes.** No fill, no lift, no scale, no shadow, no width change |
-| Focus-visible | `outline: var(--stroke-focus) solid var(--token-focus)`, `outline-offset: var(--focus-offset)`, ring radius `var(--r-hair)`. **Applied instantly** |
+| Focus-visible | `outline: var(--stroke-focus) solid var(--token-focus)`, `outline-offset: var(--focus-offset)`. The ring follows the control's own square corner; § 4's `var(--r-hair)` does not bind it (Q-1, R28). **Applied instantly** |
 | Active | No separate treatment. The action is the feedback |
 | Current | Where a control expresses "you are here", a `var(--stroke-emphasis)` `var(--token-accent)` underline, plus `aria-current`. Never a fill |
 | Disabled | **Does not exist at MVP.** If a framework forces one: border `var(--token-border)`, label `var(--token-text-secondary)`. A native `disabled` already exposes the state, so `aria-disabled` is added only where the element cannot take `disabled`, and a restyle never adds it as a markup change (I-4). **Never expressed with `opacity`** |
@@ -373,10 +378,12 @@ the one every Satellite copies by hand, and it is the highest-value hand-fix in 
   first in any application that ships a reset.
 - **Never replaced by a ground change.** A focused element that darkens instead of ringing fails
   for anyone who cannot perceive the ground shift.
-- **A field's ring takes no radius** (I-11, Operator ruling 2026-10-17). `--r-hair` belongs to a
-  control's or a link's ring; a field (§ 9, the checkbox included) stays at `var(--r-none)` while it holds
-  focus, so its ring is square. The trap is specificity: hand-fix 4 written on bare element selectors
-  (`textarea`) loses to the rule above, so state the corner again at the focused state, as in
+- **`var(--r-hair)` does not bind a control's or a link's ring** (Q-1, Operator ruling R28,
+  2026-10-17). The ring follows the element's own square corner, consistent with I-11 and the square
+  dot (§ 5), so a control or link ring drawn with no radius, as `cs-tracker`'s is, conforms.
+- **A field's ring takes no radius** (I-11, Operator ruling 2026-10-17). A field (§ 9, the checkbox
+  included) stays at `var(--r-none)` while it holds focus, so its ring is square. The trap is
+  specificity: hand-fix 4 written on bare element selectors (`textarea`) loses to the rule above, so state the corner again at the focused state, as in
   `input[type='text']:focus-visible, textarea:focus-visible { border-radius: var(--r-none); }`, naming
   the application's own fields.
 - Verified visible against all three grounds: **11.70 / 11.19 / 10.45:1**. Over the scrim, worst
@@ -563,6 +570,10 @@ the mark is the state, not a ground, so F-4 does not read it. Disabled takes the
 `var(--token-text-secondary)` mark. A native checkbox's hit area is its wrapping `<label>`, so `--tap` goes
 on that label and F-10 measures the label: the one case where "on the element itself" means the label.
 
+**A file input is not a field** (Q-2, Operator ruling R28, 2026-10-17). It renders as a button, so it
+is a § 1 control, and its focus ring follows § 4's reading for a control (Q-1). The I-11 rules that leave
+`input[type='file']` out of a field's focused corner are correct as written.
+
 **Forbidden.** A rounded field. A filled field. A field with no visible label. A placeholder used as
 the label. `outline: none` on focus. An error expressed only in red, there is no red in this
 palette and inventing one is a contract break.
@@ -635,19 +646,13 @@ dot is square and a field's focus ring takes no radius. Each is now stated where
 | I-12 | A graphic drawn in CSS with `border-radius` | § 3, A graphic drawn in CSS, kept round |
 | I-13 | § 5's accent dot against F-8's grep | § 5, the dot drawn by its border |
 | I-14 | Tabs that already expose `aria-selected` | the table above, Tabs, no added `aria-current` |
+| Q-1 | Whether § 4's `var(--r-hair)` binds a control's and a link's ring | § 1, Focus-visible, and § 4: it does not; the ring follows the element's own square corner |
+| Q-2 | Whether a file input is a § 9 field | § 9: it is not; it is a § 1 control |
 
 Story 8.6 recorded I-12 to I-14 (`ops/restyle-floor.md` § `cs-tournament`, Where the implementer had to
-infer), and the Operator ruled on 2026-10-17 (row R22): Story 8.6's reading stands for each.
-
-### Open for the Operator
-
-Two questions the Epic 8 retrospective raised and no ruling has settled. Until each is ruled, a restyle
-keeps what it has, and neither is a floor failure.
-
-| # | Question | What the record shows |
-|---|---|---|
-| Q-1 | **Does § 4's `border-radius: var(--r-hair)` bind a control's and a link's ring?** § 4 writes it in the ring's rule, and F-5 does not read a control's focused radius | `cs-tracker`'s ring sets no radius, so its controls' rings are square (DW-348 reads that as a gap to fill); `list-wheel`, `digital-library` and the Anchor's two applications draw `--r-hair` |
-| Q-2 | **Is a file input a § 9 field?** If it is, I-11 keeps its focused ring square; if it is a control (§ 1, its selector button), its ring takes Q-1's answer | `list-wheel`'s fallback `input type="file"` (state `empty-fallback`) rounds to `--r-hair` while focused; `digital-library`'s upload field sits outside its strict floor. The I-11 rules in both leave the file input out until this is ruled |
+infer), and the Operator ruled on 2026-10-17 (row R22): Story 8.6's reading stands for each. The Epic 8
+retrospective raised Q-1 and Q-2, and the Operator ruled both on 2026-10-17 (row R28). Q-1 needs no
+`cs-tracker` work (DW-348 closes), and Q-2 needs no follow-up in `digital-library` or `list-wheel`.
 
 ---
 

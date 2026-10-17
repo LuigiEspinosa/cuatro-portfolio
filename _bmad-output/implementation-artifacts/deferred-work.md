@@ -10438,7 +10438,12 @@ status: done
 
     **Owner: the next `cs-tracker` story that touches `assets/css/app.css`.** **Trigger: that story.** Add the
     line to the unlayered rule, and extend `token_contract_test.exs`'s hand-fix 3 assertion to read it.
-  status: open
+
+    **Closed 2026-10-17 by the Operator's ruling R28 (`ops/restyle-floor.md`), Q-1:** § 4's `var(--r-hair)` does not
+    bind a control's or a link's focus ring; the ring follows the element's own square corner, consistent with I-11
+    and the square dot. `cs-tracker`'s square ring conforms as it stands, so no `cs-tracker` work follows.
+    Written into `RESTYLE-SPEC.md` 1.1.3.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
   id: DW-349
   summary: >-
@@ -10712,4 +10717,12 @@ status: done
     a probe from Traefik and a second recreate if it is refused.
 
     **Owner: the next Anchor story.** **Trigger: before the next tournament rollout.**
-  status: open
+
+    **Closed 2026-10-17 by `ops/tournament-placement.md` Pending Operator action 8,** done at 14:00:18Z on the box as
+    `deploy`, run by the orchestrator with the Operator's approval: checkout `7dcb8b0`, `docker-compose.yml` carries
+    `HOSTNAME=0.0.0.0` (grep count 2), `TOURNAMENT_TAG=3f8a12e9864fe6e406cdc6575cfb4618b0f5b5f9`, and
+    `"$C --profile tournament up -d tournament"` recreated it. Compose ps read `cuatro-portfolio-tournament-1 Up 40
+    seconds (healthy)`, `printenv HOSTNAME` read `0.0.0.0`, Next printed `Network: http://0.0.0.0:3000`, the Traefik
+    probe of `http://tournament:3000/api/health` answered `HTTP/1.1 200 OK`, and `https://tournament.cuatro.dev/`
+    answered 200 at 14:00:53Z.
+  status: done
