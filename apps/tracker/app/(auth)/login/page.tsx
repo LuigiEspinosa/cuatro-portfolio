@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 import { LoginCRT, type LoginCRTPhase } from '@/components/organisms/LoginCRT'
 import { useChannelFlipNavigate } from '@/components/molecules/ChannelFlipTransition/useChannelFlipNavigate'
+import './login.css'
 
 export default function LoginPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [phase, setPhase] = useState<LoginCRTPhase>('idle')
-  const { navigate, overlay } = useChannelFlipNavigate()
+  // The navigation keeps its timing; its channel-flip overlay (a band with a glow over a black field)
+  // is not rendered here, since the effects retire on the restyle floor (Story 8.5).
+  const { navigate } = useChannelFlipNavigate()
 
   async function handleSubmit({
     email,
@@ -54,7 +57,6 @@ export default function LoginPage() {
         phase={phase}
         onBootComplete={onBootComplete}
         onBootTruncate={onBootTruncate}
-        channelFlipOverlay={overlay}
       />
     </main>
   )

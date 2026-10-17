@@ -1,0 +1,239 @@
+/* The restyled /login (Story 8.5), the tracker's restyle floor: the one surface an anonymous Visitor
+   reaches (RESTYLE-SPEC.md § The floor; the tracker renders its own sign-in page, so the strict floor
+   stands). Built natively from RESTYLE-SPEC.md's vocabulary, every value a role or a scale step from the
+   vendored cuatro-contracts/. Scoped to main.lc, so the interior, below the floor, keeps its own design.
+   No box-shadow, gradient, radius, opacity state or eased ring here; the global hand-fix in global.css
+   draws the focus ring. */
+
+body:has(main.lc) {
+  background: var(--token-bg);
+}
+
+.lc {
+  box-sizing: border-box;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-xl) var(--page-pad);
+  background: var(--token-bg);
+  color: var(--token-text);
+  font-family: var(--f-body);
+  font-size: var(--t-base);
+  line-height: var(--lh-body);
+}
+
+/* The page's maximum width is the application's own (I-9): the cabinet's 720px, the form's 460px. */
+.lc-panel {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+}
+
+.lc-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* The wordmark: § 6 Display, the page's one display line, on a § 3 Hairline. */
+.lc-header {
+  align-self: stretch;
+  padding-block-end: var(--s-sm);
+  border-bottom: var(--stroke-hair) solid var(--token-border);
+}
+
+.lc-wordmark {
+  font-family: var(--f-display);
+  font-stretch: 100%;
+  font-size: var(--t-display);
+  font-weight: var(--w-black);
+  letter-spacing: var(--tr-display);
+  line-height: var(--lh-display);
+  text-transform: uppercase;
+}
+
+/* The version and copyright lines: § 7 Label, no rule (they hang under the header's). */
+.lc-label,
+.lc .ti-label {
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: var(--token-text-secondary);
+}
+
+.lc-label {
+  margin-block-start: var(--s-sm);
+}
+
+.lc-label + .lc-label {
+  margin-block-start: var(--s-2xs);
+}
+
+.lc-form {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 460px;
+  margin-block-start: var(--s-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-lg);
+}
+
+/* Busy: the boot overlay covers the form; the form takes no pointer. Never an opacity state. */
+.lc-form-faded {
+  pointer-events: none;
+}
+
+/* § 9 Field under a § 7 Label. The border is the field's; focus adds the ring and nothing else, at
+   --r-none (I-11). The drawn block cursor is retired with the CRT, so the native caret shows. */
+.lc .ti {
+  align-self: stretch;
+}
+
+.lc .ti-label {
+  display: block;
+  margin-block-end: var(--s-xs);
+}
+
+.lc .ti-field {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-height: var(--tap);
+  margin: 0;
+  padding: var(--s-xs) var(--s-sm);
+  background: var(--token-bg);
+  border: var(--stroke-boundary) solid var(--token-border-interactive);
+  border-radius: var(--r-none);
+  color: var(--token-text);
+  font-family: var(--f-body);
+  font-size: var(--t-sm);
+  line-height: var(--lh-label);
+  caret-color: auto;
+}
+
+.lc .ti-field::placeholder {
+  color: var(--token-text-secondary);
+}
+
+.lc .ti-field:focus-visible {
+  border-radius: var(--r-none);
+}
+
+.lc .ti-cursor {
+  display: none;
+}
+
+/* The sign-in error (seam S-4): text in --token-text on a § 3 Boundary, never colour alone. */
+.lc-alert {
+  box-sizing: border-box;
+  align-self: stretch;
+  padding: var(--s-xs) var(--s-sm);
+  border: var(--stroke-boundary) solid var(--token-border-interactive);
+}
+
+.lc-alert p {
+  margin: 0;
+  font-family: var(--f-mono);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
+  color: var(--token-text);
+}
+
+.lc-alert-primary {
+  font-size: var(--t-2xs);
+}
+
+.lc-alert-secondary {
+  margin-block-start: var(--s-2xs);
+  font-size: var(--t-3xs);
+}
+
+/* § 1 Control: unfilled, square, the border is the only thing hover changes. */
+.lc-submit {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap);
+  min-width: var(--tap);
+  margin: 0;
+  padding: var(--s-xs) var(--s-md);
+  background: transparent;
+  border: var(--stroke-boundary) solid var(--token-border-interactive);
+  border-radius: var(--r-none);
+  color: var(--token-text);
+  font-family: var(--f-mono);
+  font-size: var(--t-2xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color var(--dur-micro) var(--ease-toggle);
+}
+
+/* Hover only where a pointer hovers, so a tap leaves no sticky border (NFR-5). */
+@media (hover: hover) {
+  .lc-submit:hover:not(:disabled) {
+    border-color: var(--token-accent-hover);
+  }
+}
+
+/* § 1 Disabled, which the busy form forces: Hairline border, secondary label, never opacity. */
+.lc-submit:disabled {
+  border-color: var(--token-border);
+  color: var(--token-text-secondary);
+  cursor: not-allowed;
+}
+
+/* The boot overlay (BootSequence, shared with the dashboard's boot gate, so restyled here only): the
+   same lines, in mono on the page ground. The block glyphs and the welcome glow retire with the CRT. */
+.lc .bs {
+  padding: 0;
+  align-items: flex-start;
+  background: var(--token-bg);
+  color: var(--token-text);
+}
+
+.lc .bs-header,
+.lc .bs-version,
+.lc .bs-copyright,
+.lc .bs-progress,
+.lc .bs-ready,
+.lc .bs-welcome {
+  margin-block-start: var(--s-xs);
+  font-family: var(--f-mono);
+  font-size: var(--t-2xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
+  color: var(--token-text);
+  text-shadow: none;
+  animation: none;
+}
+
+.lc .bs-header {
+  margin-block-start: 0;
+}
+
+.lc .bs-label {
+  padding: 0;
+}
+
+.lc .bs-blocks {
+  display: none;
+}
+
+.lc .bs-copyright {
+  color: var(--token-text-secondary);
+}
+
+.lc .bs-progress {
+  font-variant-numeric: tabular-nums;
+}

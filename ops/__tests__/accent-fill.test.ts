@@ -41,7 +41,7 @@ const FILL_PROPERTIES = ['background', 'background-color', 'fill'] as const;
 const ACCENT_REFERENCE = new RegExp(`var\\(\\s*(${ACCENT_ROLES.join('|')})\\s*[,)]`, 'g');
 
 /**
- * The two fills the system means, each a file and an exact compiled selector. Nothing else is
+ * The fills the system means, each a file and an exact compiled selector. Nothing else is
  * exempt, and each has to be found exactly once, so an exemption outliving its fill fails too.
  */
 const EXEMPTIONS = [
@@ -56,6 +56,13 @@ const EXEMPTIONS = [
     path: 'apps/hub/app/app.scss',
     selector: '::selection',
     reason: 'RESTYLE-SPEC F-11: an accent selection ground is the one permitted accent fill, and F-8 excludes it by name.',
+  },
+  {
+    path: 'apps/tracker/app/global.css',
+    selector: '::selection',
+    reason:
+      'The same F-11 selection ground in the tracker, hand-fix line 2 of its token adoption (Story 8.5). The ' +
+      'literal gate does not read apps/tracker/ (OTHER_APPLICATIONS), but this check reads every tracked stylesheet.',
   },
 ] as const;
 
@@ -139,7 +146,7 @@ describe('no accent role is a fill, but the Live dot and the selection (RESTYLE-
   const paths = tracked();
   const fills = paths.flatMap((path) => fillsIn(path, shipped(path)));
 
-  it('reads every tracked stylesheet, the two that carry an exemption and the contract among them', () => {
+  it('reads every tracked stylesheet, those that carry an exemption and the contract among them', () => {
     expect(paths.length, 'git listed too few stylesheets, so the check below is over a fragment').toBeGreaterThan(20);
     for (const path of [...EXEMPTIONS.map((exemption) => exemption.path), 'contracts/tokens.css']) {
       expect(paths, `${path} was not listed`).toContain(path);
@@ -147,13 +154,13 @@ describe('no accent role is a fill, but the Live dot and the selection (RESTYLE-
     for (const path of paths) expect(shipped(path).length, `${path} compiled to nothing`).toBeGreaterThan(0);
   });
 
-  it('finds no accent fill outside the two exempt selectors', () => {
+  it('finds no accent fill outside the exempt selectors', () => {
     const { refused } = verdict(fills);
     expect(refused, `an accent role is a fill, which RESTYLE-SPEC F-8 refuses:\n${refused.join('\n')}`).toEqual([]);
   });
 
   it('finds each exempt fill exactly once, so no exemption outlives its fill', () => {
-    expect(verdict(fills).used, EXEMPTIONS.map((exemption) => `${exemption.path} ${exemption.selector}`).join(', ')).toEqual([1, 1]);
+    expect(verdict(fills).used, EXEMPTIONS.map((exemption) => `${exemption.path} ${exemption.selector}`).join(', ')).toEqual([1, 1, 1]);
   });
 
   it('refuses a planted fill in every shape a stylesheet can hide one, and passes what is not a fill', () => {
@@ -197,12 +204,13 @@ describe('no accent role is a fill, but the Live dot and the selection (RESTYLE-
         `${path}: "from" sets background-color to --token-accent`,
         `${path}: ".planted-fallback" sets background to --token-accent`,
       ],
-      used: [0, 0],
+      used: [0, 0, 0],
     });
 
-    // And the two exemptions hold in their own files and nowhere else, one fill each.
+    // And the exemptions hold in their own files and nowhere else, one fill each.
     const dot = fillsIn(EXEMPTIONS[0].path, compileString('.suite-directory__dot { background: var(--token-accent); }').css);
     const selection = fillsIn(EXEMPTIONS[1].path, compileString('::selection { background: var(--token-accent); }').css);
-    expect(verdict([...dot, ...selection])).toEqual({ refused: [], used: [1, 1] });
+    const tracker = fillsIn(EXEMPTIONS[2].path, '::selection { background-color: var(--token-accent); }');
+    expect(verdict([...dot, ...selection, ...tracker])).toEqual({ refused: [], used: [1, 1, 1] });
   });
 });

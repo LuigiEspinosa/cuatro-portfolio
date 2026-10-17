@@ -486,6 +486,16 @@ const CONTRACT_BASENAMES = ['tokens.css', 'fonts.css', 'tailwind.css'];
 /** The one fixed folder name a Satellite vendors the contract under (AD-14, AD-16). */
 const VENDORED_FOLDER = 'cuatro-contracts';
 
+/**
+ * The vendored folders an `apps/*` member other than the Hub carries, each a byte-for-byte copy of
+ * `contracts/` (Story 8.5, 2026-10-17). AD-14 names `cuatro-tracker` a Tailwind consumer that imports
+ * `tailwind.css` from a folder named `cuatro-contracts/`, and AD-24 lets a restyled application import
+ * nothing from the Anchor beyond it; the tracker's image is built from `turbo prune tracker --docker`,
+ * which carries no `contracts/`. The Hub still vendors nothing. Each entry is held equal to
+ * `contracts/` below, so it is a copy, never a second authored contract.
+ */
+const VENDORED_IN_APPS = ['apps/tracker/app/cuatro-contracts/'] as const;
+
 const atCollection = <T>(why: string, build: () => T): T => {
   try {
     return build();
@@ -1441,7 +1451,9 @@ describe('the Anchor holds no second authored copy of the contract', () => {
     expect(everything.length, 'git ls-files over the repository returned nothing').toBeGreaterThan(tracked.length);
     expect(everything, 'package.json is not in the listing').toContain('package.json');
 
-    const vendored = everything.filter(isVendoredPath);
+    const vendored = everything.filter(
+      (path) => isVendoredPath(path) && !VENDORED_IN_APPS.some((folder) => path.startsWith(folder))
+    );
     expect(
       vendored,
       `${VENDORED_FOLDER}/ is the name a Satellite vendors the contract under. The Anchor is the ` +
@@ -1451,5 +1463,23 @@ describe('the Anchor holds no second authored copy of the contract', () => {
     expect([`assets/${VENDORED_FOLDER}/tokens.css`, 'assets/design/tokens.css'].filter(isVendoredPath)).toEqual([
       `assets/${VENDORED_FOLDER}/tokens.css`,
     ]);
+  });
+
+  it('holds each vendored folder under apps/ equal to contracts/, file for file', () => {
+    const contract = gitLsFiles(['contracts/fonts.css', 'contracts/tailwind.css', 'contracts/tokens.css', 'contracts/fonts']);
+    expect(contract.length, 'the token contract is the nine files').toBe(9);
+    for (const folder of VENDORED_IN_APPS) {
+      const copy = gitLsFiles([folder]);
+      expect(copy.map((path) => path.slice(folder.length)).sort(), `${folder} is not the nine contract files`).toEqual(
+        contract.map((path) => path.slice('contracts/'.length)).sort()
+      );
+      for (const path of contract) {
+        const theirs = readFileSync(resolve(REPO_ROOT, path));
+        const ours = readFileSync(resolve(REPO_ROOT, folder + path.slice('contracts/'.length)));
+        const text = !path.endsWith('.woff2');
+        const normal = (bytes: Buffer) => (text ? bytes.toString('utf8').replace(/\r\n/g, '\n') : bytes);
+        expect(normal(ours), `${folder}${path.slice('contracts/'.length)} differs from ${path}`).toEqual(normal(theirs));
+      }
+    }
   });
 });

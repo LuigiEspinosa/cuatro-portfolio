@@ -1,5 +1,30 @@
-@import 'tailwindcss';
+/* The Cuatro token contract, vendored whole (AD-14): the adapter imports tailwindcss, the
+   contract's tokens.css and fonts.css, then its @theme inline block. The tracker's own palette
+   follows; its interior, below the restyle floor, keeps it (Story 8.5, DW-357). */
+@import './cuatro-contracts/tailwind.css';
 @import './tokens.css';
+
+/* The contract's hand-fix lines 2 to 4 (EXPERIENCE.md, the hand-fix list); line 1, color-scheme,
+   is already on :root in tokens.css. In the base layer, so a rule the interior writes still wins. */
+@layer base {
+  ::selection {
+    background-color: var(--token-accent);
+    color: var(--token-bg);
+  }
+
+  :focus-visible {
+    outline: var(--stroke-focus) solid var(--token-focus);
+    outline-offset: var(--focus-offset);
+    border-radius: var(--r-hair);
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    border-radius: var(--r-none);
+  }
+}
 
 body {
   background: var(--ground-base);
@@ -509,26 +534,8 @@ body {
   color: inherit;
 }
 
-/* LoginCRT (Story 3.1). Login screen visual chrome: CRT bezel + bitmap header
-   + terminal inputs + CRT-pixel submit. Mirrors the bundle's
-   login-styles.css (lines 78-279) re-namespaced to the .lc / .crt / .bt / .ti /
-   .cpb prefixes. The bezel exterior is the only .bg-noise consumer here
-   (design-system §0.5 allows hero CRT bezel exteriors); the inner .crt-screen-wrap
-   stays grain-free as a running-content surface. */
-.lc {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(
-    ellipse at center,
-    var(--ground-base) 0%,
-    var(--ground-base) 45%,
-    #15101f 100%
-  );
-  padding: 24px;
-}
-
+/* CRTBezel (Story 3.1), whose hero size the dashboard carousel still renders. The login
+   screen stopped using it in Story 8.5 (app/(auth)/login/login.css). */
 .crt {
   position: relative;
   width: 720px;
@@ -584,45 +591,6 @@ body {
   z-index: 5;
 }
 
-.lc-screen {
-  position: absolute;
-  inset: 0;
-  padding: 38px 46px 42px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: var(--phosphor-cream);
-  z-index: 2;
-}
-
-.lc-form {
-  margin-top: 28px;
-  width: 100%;
-  max-width: 460px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.lc-form-faded {
-  opacity: 0.5;
-  pointer-events: none;
-  transition: opacity 150ms linear;
-}
-
-.lc-screen-shake {
-  animation: lc-glitch-shake 150ms steps(5);
-}
-
-@keyframes lc-glitch-shake {
-  0% { transform: translate(0, 0); }
-  20% { transform: translate(-2px, 0); }
-  40% { transform: translate(2px, 0); }
-  60% { transform: translate(-2px, 0); }
-  80% { transform: translate(1px, 0); }
-  100% { transform: translate(0, 0); }
-}
-
 /* StatusBanner (Story 3.3). Two-line system message: bitmap primary +
    small-caps secondary. Magenta error variant used on login; cream / cream-dim
    variants reserved for Story 9 Steam-private banner + Story 13 404 / empty states. */
@@ -658,7 +626,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lc-screen-shake { animation: none; }
   .bs-truncating { animation: none; opacity: 0; }
 }
 
@@ -667,128 +634,6 @@ body {
   letter-spacing: 0.04em;
   line-height: 1;
   color: var(--bt-color, var(--phosphor-cream));
-}
-
-.bt-header {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-  margin-top: 0;
-}
-
-.bt-blocks {
-  display: inline-flex;
-  gap: 1px;
-  font-family: var(--font-bitmap);
-  font-size: 30px;
-  line-height: 1;
-}
-
-.bt-blocks span {
-  display: inline-block;
-}
-
-.bt-b1 {
-  color: var(--rb-green);
-}
-
-.bt-b2 {
-  color: var(--rb-yellow);
-}
-
-.bt-b3 {
-  color: var(--rb-orange);
-}
-
-.ti {
-  display: block;
-}
-
-.ti-label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.15em;
-  color: var(--phosphor-cream-dim);
-  text-transform: uppercase;
-  margin-bottom: 6px;
-  display: block;
-}
-
-.ti-wrap {
-  position: relative;
-  border-bottom: 1px solid var(--phosphor-cream-ghost);
-  display: flex;
-  align-items: center;
-  padding: 6px 2px;
-  transition: border-color 120ms linear, box-shadow 120ms linear;
-}
-
-.ti-wrap[data-focused='true'] {
-  border-bottom: 2px solid var(--neon-blue);
-  box-shadow:
-    0 1px 0 0 var(--neon-blue),
-    0 6px 12px -6px rgba(63, 169, 255, 0.4),
-    0 0 6px rgba(63, 169, 255, 0.4);
-}
-
-.ti-field {
-  background: transparent;
-  border: 0;
-  outline: none;
-  flex: 1;
-  font-family: var(--font-mono);
-  font-size: 16px;
-  color: var(--phosphor-cream);
-  padding: 0 2px;
-  letter-spacing: 0.02em;
-  /* Native caret hidden because .ti-cursor draws the indicator. */
-  caret-color: transparent;
-}
-
-.ti-field::placeholder {
-  color: var(--phosphor-cream-ghost);
-}
-
-.ti-field::selection {
-  background: rgba(63, 169, 255, 0.35);
-}
-
-.ti-cursor {
-  display: none;
-  width: 9px;
-  height: 18px;
-  background: var(--phosphor-cream);
-  margin-left: 2px;
-  vertical-align: middle;
-}
-
-.ti-wrap[data-focused='true'] .ti-cursor {
-  display: inline-block;
-  animation: ti-blink 1s steps(1) infinite;
-}
-
-@keyframes ti-blink {
-  0%, 50% { opacity: 1; }
-  50.01%, 100% { opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ti-wrap[data-focused='true'] .ti-cursor {
-    animation: none;
-    opacity: 1;
-  }
-}
-
-.ti-wrap[data-rm='false'][data-focused='true'] .ti-cursor {
-  animation: ti-blink 1s steps(1) infinite;
-  opacity: 1;
-}
-
-.ti-wrap[data-rm='true'][data-focused='true'] .ti-cursor {
-  animation: none;
-  opacity: 1;
 }
 
 .cpb {
@@ -836,14 +681,6 @@ body {
 @media (max-width: 480px) {
   .crt {
     width: 340px;
-  }
-  .lc-screen {
-    padding: 22px 22px 26px;
-  }
-  .lc-form {
-    max-width: 100%;
-    margin-top: 22px;
-    gap: 16px;
   }
 }
 

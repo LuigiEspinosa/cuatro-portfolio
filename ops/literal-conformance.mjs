@@ -66,8 +66,9 @@ export const OTHER_APPLICATIONS = [
   {
     path: 'apps/tracker/',
     reason:
-      'Merged by Story 3-6 with its own palette in app/tokens.css, 48 colour literals. Its token adoption is ' +
-      'deferred whole to its Epic 8 restyle (DW-273), and the change that adopts the contract deletes this entry.',
+      'Merged by Story 3-6 with its own palette in app/tokens.css. Story 8.5 adopted the contract and restyled ' +
+      'the floor, /login, in app/(auth)/login/login.css; the interior below the floor keeps its own literals in ' +
+      'app/global.css and app/tokens.css (DW-357), and the change that restyles it deletes this entry.',
   },
   {
     path: 'apps/tournament/',
