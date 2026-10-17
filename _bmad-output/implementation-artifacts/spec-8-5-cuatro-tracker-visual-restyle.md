@@ -2,7 +2,7 @@
 title: 'Story 8.5: cuatro-tracker visual restyle'
 type: 'feature'
 created: '2026-10-17'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: 'dea2f03913b510c6e15def4e8117d5027c7138f8'
@@ -126,4 +126,39 @@ follows.
 
 ## Verification
 
-*For the independent verifier.*
+**Commands:**
+- `corepack pnpm --filter tracker typecheck` and `corepack pnpm --filter tracker test` (Redis and Postgres on `127.0.0.1`).
+- `corepack pnpm test --run`, expected: every file passes (DW-135 files re-run alone if they fail).
+
+**Independent verifier**, 2026-10-17, round 1: **pass with minor findings**. No Satellite repository is touched, so no
+PR is open for this story; the Anchor commits go to `dev`, and R17 to R20 remain the Operator's.
+
+- **Diffs read** against `origin/dev` `dea2f03` (`1e83852`, `b238394`, `5e116b6`), templates included. `LoginCRT.tsx` renders
+  the header, the version, the copyright, the form (two fields, the alert, the submit) and the boot overlay in the old order,
+  and every string is unchanged. What left the tree was `aria-hidden` only: the cabinet SVG with its `CUATRO` and `PWR` marks,
+  the block glyphs, and the channel-flip overlay, which carries no text. `TerminalInput`, whose `.ti` rules left `global.css`,
+  has no caller but `LoginCRT`. No route, data or behaviour change, no shared package, nothing from the Anchor but the
+  vendored folder. No em-dash, en-dash, dash-standing double-dash or emoji in any added line; the three subjects are
+  subject-only Conventional Commits.
+- **Gates, re-run:** tracker typecheck exit 0; tracker suite `Test Files 108 passed (108)`, `Tests 1245 passed (1245)` (a
+  first run with `localhost` failed `demo-reset.test.ts` on "Can't reach database server", this host's `::1` resolution, as
+  the builder recorded); tracker build exit 0. Root suite: `Test Files 4 failed | 76 passed (80)`, the four failures the
+  DW-135 WSL files `demo-reset`, `deploy-remote`, `library-backup` and `postgres-backup`, each then passing alone (30, 28, 59,
+  and 20 with 1 skipped).
+- **Image:** `docker build -f apps/tracker/Dockerfile` of the final tree (the builder's image predated the hover gate),
+  booted with stand-in values: `/login` 200 with `lc-wordmark` and no `crt-shell`, `/x` 307 to `/login`, the three contract
+  faces under `/_next/static/media/` 200 `font/woff2` at 58,992, 24,124 and 11,284 bytes. Scratch containers and image removed.
+- **Floor re-measured** by the verifier's own probe, Chromium `151.0.7922.34`, `next start` of the final build, `/login` at
+  360 and 1280 with motion on and reduced. Three targets, 320 or 460 by 44 and 95 by 44, none under `--tap`, and 44 tall at
+  359, 390, 759 and 761 with no horizontal scroll at any. F-1: pixels (2,2) and (2,600) read `6,5,9`, equal to `--token-bg`.
+  F-2: Bricolage Grotesque, Geist and Geist Mono `loaded`. F-4: the submit has no ground at rest or on hover
+  (`rgba(0, 0, 0, 0)`), the fields sit on `--token-bg`. F-5: no element with a radius, 0px at focus. F-6: three stops, each
+  `solid 2px oklch(0.84 0.13 288)` at offset 3px, no transition on the outline. F-7: no element with a computed shadow or
+  gradient in idle or error; the only rules the walk matched were interior `@keyframes` text-shadow frames that no element
+  animates. F-8: the built CSS's one accent fill is `::selection`. F-11: `color-scheme: dark`, the selection accent on
+  `--token-bg`. The error path shows the bordered alert with focus on the password field; greyscale with words masked shows
+  the fields, the hairline and the Control. Reduced motion: no animation runs.
+- **Minor, not blocking:** the record's "the boot overlay never mounts" under reduced motion is loose (`BootSequence` mounts
+  at its final frame, with no motion). Two slips are corrected in this commit: R19's evidence path lacked a separator before
+  `before`, and DW-357 said the `anchor-contract.test.ts` admission goes with the interior's restyle, when the vendored
+  folder stays either way.

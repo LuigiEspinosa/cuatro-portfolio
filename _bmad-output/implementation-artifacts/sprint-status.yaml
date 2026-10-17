@@ -1192,7 +1192,10 @@ development_status:
   # 2026-10-17: built on the Anchor branch wt/8-5-cuatro-tracker-visual-restyle, awaiting the independent verifier
   # (spec-8-5-cuatro-tracker-visual-restyle.md): the contract vendored in apps/tracker and imported through tailwind.css,
   # /login (the strict floor) restyled, F-1 to F-12 and SM-12's four checks pass; then ops/restyle-floor.md R18 to R20.
-  8-5-cuatro-tracker-visual-restyle: review
+  # Independent verifier pass 2026-10-17 (round 1, pass with minor findings), pushed to dev; no Satellite PR. awaiting-operator
+  # on ops/restyle-floor.md R17 (icon-only control row), R18 (confirm the strict floor), R19 (visual sign-off) and R20
+  # (promote dev to main, then roll the tracker by hand).
+  8-5-cuatro-tracker-visual-restyle: awaiting-operator
   8-6-cs-tournament-visual-restyle: backlog
   epic-8-retrospective: optional
 action_items:

@@ -10575,7 +10575,7 @@ status: done
 
     **Owner: a tracker restyle story beyond the floor, if the Operator wants one (`ops/restyle-floor.md` R18).**
     **Trigger: R18 ruled the other way, or a ruling that the interior is restyled.** That change deletes the
-    `OTHER_APPLICATIONS` entry and the `anchor-contract.test.ts` exclusion with it.
+    `OTHER_APPLICATIONS` entry; the vendored folder and its `anchor-contract.test.ts` admission stay.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
   id: DW-358
