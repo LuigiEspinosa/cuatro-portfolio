@@ -10530,7 +10530,12 @@ status: done
     a `core.autocrlf=true` worktree of `dev` `9e4572d` (`expected -1 to be greater than 1016`), fixed by normalizing
     line ends in the test's `read` on `digital-library` branch `fix/retro8-field-focus-radius` (`83c61f0`). **Owner
     now: the Operator's merge, `ops/restyle-floor.md` R26.** **Trigger: R26 done**, which closes this entry.
-  status: open
+
+    **Closed 2026-10-17 by `ops/restyle-floor.md` R26, done at 15:59:39Z:** the Operator merged `digital-library` PR #71
+    (`dev` to `main`) as `main` `1e7df0c` (`1e7df0c3ed928c7f93a13bc3209f32971a9ae475`), carrying the line-end fix from
+    `83c61f0`; on that sha `ci.yml` (`CI`) run 39047041990 and `test.yml` (`Test`) run 39047042007 read success. The box's
+    `~/library-redeploy.sh` redeployed it, and the live `/login` stylesheet carries the I-11 rule.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
   id: DW-353
   summary: >-

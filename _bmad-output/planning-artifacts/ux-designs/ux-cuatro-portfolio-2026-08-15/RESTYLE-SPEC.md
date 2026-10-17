@@ -2,7 +2,7 @@
 name: Cuatro Ecosystem, Restyle Specification
 status: final
 updated: 2026-10-17
-version: 1.1.3
+version: 1.1.4
 amended-2026-08-16: >-
   Corrections raised by the epics restyle pass. The floor is twelve checks, not eleven, in all
   three places that undercounted it. --tap replaces the hand-written 44px literal throughout.
@@ -30,6 +30,10 @@ amended-2026-10-17d: >-
   control's or a link's focus ring; the ring follows the element's own square corner (§ 1, § 4).
   Q-2: a file input is not a § 9 field; it is a control, since it renders as a button (§ 9). § Open for
   the Operator is removed and both rulings are indexed in § Readings settled 2026-10-17.
+amended-2026-10-17e: >-
+  1.1.4, the Operator's ruling on Q-1's gap, option (a); no reading changes. The 2px var(--r-hair) radius on
+  a control's or a link's focus ring is permitted but not required, and a square ring is equally conforming
+  (§ 4's code example). No follow-up restyle in any application.
 design: ./DESIGN.md
 experience: ./EXPERIENCE.md
 binds: FR-36, FR-37, FR-38, AD-24, AD-25, SM-12
@@ -366,7 +370,7 @@ the one every Satellite copies by hand, and it is the highest-value hand-fix in 
 :focus-visible {
   outline: var(--stroke-focus) solid var(--token-focus);
   outline-offset: var(--focus-offset);
-  border-radius: var(--r-hair);
+  border-radius: var(--r-hair); /* permitted, not required: square is equally conforming (Operator ruling 2026-10-17, Q-1 option a) */
 }
 ```
 

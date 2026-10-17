@@ -1810,7 +1810,9 @@ action_items:
     # 2026-10-17: R27 done (list-wheel main a0f7d5b, Deploy 39038359568 success, live). R26 part done (PR #70 merged
     # into digital-library dev as f3e0add). R28 ruled the file input a control, so "cover the file input once ruled"
     # needs no follow-up. In progress until digital-library PR #71 merges and is redeployed (R26).
-    status: in-progress
+    # 2026-10-17: done. R26 done (PR #71 merged as digital-library main 1e7df0c, CI 39047041990 and Test 39047042007
+    # success, redeployed, the live /login stylesheet carries the I-11 rule at 15:59:39Z); DW-352 closed.
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
   - id: "epic-8-retro-item-59-process-edit-a-markdown-record-with-the"
     epic: 8
