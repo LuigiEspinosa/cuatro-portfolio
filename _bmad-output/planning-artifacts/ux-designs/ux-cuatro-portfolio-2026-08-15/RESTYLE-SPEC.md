@@ -1,11 +1,17 @@
 ---
 name: Cuatro Ecosystem, Restyle Specification
 status: final
-updated: 2026-08-16
-version: 1.0.1
+updated: 2026-10-17
+version: 1.1.0
 amended-2026-08-16: >-
   Corrections raised by the epics restyle pass. The floor is twelve checks, not eleven, in all
   three places that undercounted it. --tap replaces the hand-written 44px literal throughout.
+amended-2026-10-17: >-
+  Operator rulings of 2026-10-17 (ops/restyle-floor.md R2, R7, R13, R14). The eleven points Story 8.3
+  had to infer (I-1 to I-11) are settled where they belong, indexed in § Readings settled 2026-10-17:
+  8.3's readings, except that the status dot is square (DESIGN.md) and a field's focus ring takes no
+  radius. The floor's denominator for an application with no anonymous surface of its own (R2 (a)),
+  F-7's scope (R13 (a)) and F-12's reading without a § 2 row (R14) are stated in § The floor.
 design: ./DESIGN.md
 experience: ./EXPERIENCE.md
 binds: FR-36, FR-37, FR-38, AD-24, AD-25, SM-12
@@ -147,7 +153,7 @@ default and its most-documented example.
 | Label | `var(--f-mono)`, `var(--t-2xs)`, uppercase, `letter-spacing: var(--tr-label)` |
 | Label colour | `var(--token-text)` |
 | Geometry | `min-height: var(--tap); display: inline-flex; align-items: center`, `padding-inline: var(--s-md)` |
-| Sibling gap | `var(--s-lg)` minimum, so two `--tap` boxes cannot overlap |
+| Sibling gap | `var(--s-lg)` minimum, so two `--tap` boxes cannot overlap. **On both axes**: controls that wrap onto a second line are still siblings (I-3) |
 
 **States, exhaustively.**
 
@@ -158,7 +164,7 @@ default and its most-documented example.
 | Focus-visible | `outline: var(--stroke-focus) solid var(--token-focus)`, `outline-offset: var(--focus-offset)`, ring radius `var(--r-hair)`. **Applied instantly** |
 | Active | No separate treatment. The action is the feedback |
 | Current | Where a control expresses "you are here", a `var(--stroke-emphasis)` `var(--token-accent)` underline, plus `aria-current`. Never a fill |
-| Disabled | **Does not exist at MVP.** If a framework forces one: border `var(--token-border)`, label `var(--token-text-secondary)`, `aria-disabled`. **Never expressed with `opacity`** |
+| Disabled | **Does not exist at MVP.** If a framework forces one: border `var(--token-border)`, label `var(--token-text-secondary)`. A native `disabled` already exposes the state, so `aria-disabled` is added only where the element cannot take `disabled`, and a restyle never adds it as a markup change (I-4). **Never expressed with `opacity`** |
 
 **Forbidden.** Any `background-color` other than `transparent`. Any `border-radius` other than `0`.
 Any `box-shadow`. Any `transform` on hover or focus. `transition: all`. A border-width change on
@@ -204,6 +210,9 @@ distinction between the first two is what lets one row serve two readers.
 - **Link text is self-describing out of context.** A bare domain and the word `Source` both are;
   "click here" is not.
 - **Two links on one line take `var(--s-lg)` of gap** so the `--tap` boxes cannot overlap.
+- **The external-navigation mark is not added by a restyle** (I-7). A `target="_blank"` link or control
+  that renders no marker today gains none, because the mark is new content (§ The ceiling); where an
+  application already renders a marker, it becomes the mark.
 
 **Check.** Measure both axes. Then read every link's text with the surrounding sentence removed and
 confirm it still names its destination.
@@ -265,7 +274,10 @@ implementations diverging here would undo most of what this file is for.
 }
 ```
 
-- **`760px` is the one breakpoint.** No second one is minted for a row.
+- **`760px` is the one breakpoint.** No second one is minted for a row, **nor for the page around it**: a
+  restyled page keeps no other width breakpoint (I-8).
+- **The page's maximum width is the application's own.** No token gives one, and a restyle keeps the
+  value the application had (I-9).
 - **The description is capped at `var(--measure)`** inside its own column, not by the column.
 - **Status is `align-self: start`** in both layouts, so it hangs from the top rather than centring
   against a variable-height description.
@@ -312,6 +324,10 @@ grounds differ. Never a 4–6px coloured side-stripe on one edge. Never a gradie
 A separator runs the **content width** of its container, not the padded width, so successive
 separators align down the page.
 
+**A scaled SVG graphic** (I-6). Every colour in it reads a role. A stroke that divides (a spoke, a rim)
+is a rule under F-3 and stays 1px at any size, by `vector-effect: non-scaling-stroke`. A border drawn in
+the graphic's own units around a mark inside it scales with the graphic and is not read as a rule.
+
 **Check.** Sample the rendered pixel colour of any rule and compare it to the computed value of
 `--token-border`. They match exactly, on every ground the rule appears over.
 
@@ -339,6 +355,12 @@ the one every Satellite copies by hand, and it is the highest-value hand-fix in 
   first in any application that ships a reset.
 - **Never replaced by a ground change.** A focused element that darkens instead of ringing fails
   for anyone who cannot perceive the ground shift.
+- **A field's ring takes no radius** (I-11, Operator ruling 2026-10-17). `--r-hair` belongs to a
+  control's or a link's ring; a field (§ 9, the checkbox included) stays at `var(--r-none)` while it holds
+  focus, so its ring is square. The trap is specificity: hand-fix 4 written on bare element selectors
+  (`textarea`) loses to the rule above, so state the corner again at the focused state, as in
+  `input[type='text']:focus-visible, textarea:focus-visible { border-radius: var(--r-none); }`, naming
+  the application's own fields.
 - Verified visible against all three grounds: **11.70 / 11.19 / 10.45:1**. Over the scrim, worst
   case, it computes to **9.02:1**, comfortably above 1.4.11's 3:1 non-text floor rather than
   marginally above it.
@@ -395,7 +417,7 @@ wheel state, a build state) expresses it under these rules:
 | Type | `var(--f-mono)`, `var(--t-3xs)`, uppercase, `letter-spacing: var(--tr-label)` |
 | Border | `1px`, square, per the value's structural treatment |
 | Padding | `var(--s-2xs)` block, `var(--s-xs)` inline |
-| Dot, where present | 4px square at `var(--r-pill)` in `var(--token-accent)` |
+| Dot, where present | 4px square at `var(--r-none)` in `var(--token-accent)`. **Square, never round** (I-10, as `DESIGN.md` § Shapes states; `--r-pill` is reserved and unused) |
 
 **Status strings are verbatim.** Where an application renders the estate's taxonomy, the four
 strings are `Live`, `Complete`, `In progress`, `Archived`, with no synonyms anywhere. An
@@ -422,6 +444,8 @@ and Story 8.4 records it.
 - Line-height `var(--lh-display)` for display, `var(--lh-heading)` for the rest. All-caps never
   goes below `0.95`.
 - **Uppercase is structural, not emphatic.** Prose is never uppercase.
+- **`wdth 85` and `wdth 100` are set with `font-stretch: 85%` and `100%`** (I-5), which the contract's
+  `@font-face` range (`75% 100%`) serves. Not `font-variation-settings`.
 - **Forbidden:** gradient text, `background-clip: text`, synthesised bold, synthesised italic,
   italic headings, a heading below `var(--t-md)`.
 
@@ -511,9 +535,15 @@ floor check F-5 explicitly tests one and all three wave-1 applications are input
 | State | Treatment |
 |---|---|
 | Rest / hover | Identical. A field is not a control; hovering it signals nothing |
-| Focus-visible | The standard ring (§ 4). The border does **not** also change: one signal |
+| Focus-visible | The standard ring (§ 4) **at `var(--r-none)`**: the field stays square while focused (I-11). The border does **not** also change: one signal |
 | Invalid | **Seam S-4, accepted permanently.** Each application keeps its framework's validation behaviour. What this spec binds is only that the message is **text**, in `var(--token-text)`, adjacent to the field and associated by `aria-describedby`, never colour alone, never an icon alone |
 | Disabled | Border `var(--token-border)`, text `var(--token-text-secondary)`, `aria-disabled`. **Never `opacity`** |
+
+**A checkbox is a field** (I-1, I-2). A square unfilled box, `var(--s-md)` on both axes, with the Boundary
+border (§ 3) at `var(--r-none)`. Checked draws a `var(--token-text)` square inside the box, never accent;
+the mark is the state, not a ground, so F-4 does not read it. Disabled takes the Hairline border and a
+`var(--token-text-secondary)` mark. A native checkbox's hit area is its wrapping `<label>`, so `--tap` goes
+on that label and F-10 measures the label: the one case where "on the element itself" means the label.
 
 **Forbidden.** A rounded field. A filled field. A field with no visible label. A placeholder used as
 the label. `outline: none` on focus. An error expressed only in red, there is no red in this
@@ -562,6 +592,27 @@ than left as a gap, because an unanswered gap is where five implementations dive
 | **Toast, dialog, popover, tooltip** | **Seam S-5, accepted permanently.** Each application keeps its own. This spec does not invent a cross-framework overlay convention |
 | **Tables and dense data UI** | **Seam S-6, accepted permanently.** What binds is only the separator (§ 3), the label (§ 7) and `tabular-nums` |
 | **Icons** | There is no icon set. The three glyphs in the system are an arrow, an external-navigation mark and the 4px status square. **Never an emoji** |
+| **An icon-only control** | Keeps the glyph it already renders, inside a § 1 Control box at `--tap` on both axes, with its accessible name unchanged. A restyle mints no glyph and swaps none for another (I-10; the reading `cs-tracker` took in Story 8.1, H-30) |
+
+### Readings settled 2026-10-17
+
+Story 8.3 recorded eleven points an implementer had to infer (`ops/restyle-floor.md` § `list-wheel`, I-1 to
+I-11). The Operator ruled on 2026-10-17 (row R7): Story 8.3's reading stands for each, except that the status
+dot is square and a field's focus ring takes no radius. Each is now stated where it belongs:
+
+| # | Point | Settled in |
+|---|---|---|
+| I-1 | A checkbox | § 9, a checkbox is a field |
+| I-2 | A checkbox's target | § 9, `--tap` on the wrapping label |
+| I-3 | The sibling gap when controls wrap | § 1, Sibling gap, both axes |
+| I-4 | `aria-disabled` beside a native `disabled` | § 1, Disabled |
+| I-5 | `wdth` as a property | § 6, `font-stretch` |
+| I-6 | A scaled SVG graphic | § 3, A scaled SVG graphic |
+| I-7 | The external-navigation mark | § 1b, not added by a restyle |
+| I-8 | A page-level breakpoint | § 2, `760px` for the page too |
+| I-9 | The page's maximum width | § 2, the application's own |
+| I-10 | The status dot's corner; an icon-only control | § 5, the dot at `var(--r-none)`; the table above, An icon-only control |
+| I-11 | A field's focus ring against F-5 | § 4 and § 9, no radius on a field's ring |
 
 ---
 
@@ -650,6 +701,16 @@ data views are **below the floor** and stay on their framework's defaults, which
 accepted permanently. The boundary is deliberately checkable **from outside the application, with
 no login**, because a floor that needs credentials to verify will not be verified.
 
+**When nothing anonymous is the application's own** (Operator ruling 2026-10-17, R2 (a)). Where every
+surface an anonymous Visitor reaches is a redirect, plain text, JSON or the issuer's sign-in page, so that
+the strict floor holds no surface the application renders with its own stylesheet, **the surfaces the demo
+principal reaches count as the floor** (FR-25, `ops/demo-principal.md`): its landing surface, its list and
+detail views, their navigation, footer, error and empty states. Admin surfaces and dense data views stay
+below the floor as above. The boundary is then checkable with the demo sign-in, which is the one
+credential the estate publishes. An application with an anonymous surface of its own (a sign-in page it
+renders, an error page with its stylesheet) keeps the strict floor; restyling its interior as well is
+permitted and is beyond the floor.
+
 **Twelve checks, and every one has a stated method.** A check whose method is "look at it" is not a
 check, and three of these were rewritten after an audit found exactly that.
 
@@ -659,14 +720,14 @@ check, and three of these were rewritten after an audit found exactly that.
 | **F-2** | The three families **actually render**: display, body, mono. No silent fallback | **`document.fonts.check()` per family, or the Network panel.** `getComputedStyle().fontFamily` returns the declared *stack* and passes identically when every woff2 has 404'd, which is the exact failure the three-file contract split exists to prevent, so it must not be the check |
 | **F-3** | Every divider is a 1px opaque hairline at a token value. No alpha rules, no side-stripes | Sample any rule |
 | **F-4** | **No filled control on any reachable surface** | Screenshot every surface; no control has a ground |
-| **F-5** | Square corners on every control, container and form field | Computed `border-radius` is `0` |
+| **F-5** | Square corners on every control, container and form field | Computed `border-radius` is `0`, read at rest; a field's is also `0` while it holds focus (§ 4, § 9). A control's or a link's ring radius belongs to its focused state and is not read here |
 | **F-6** | The focus treatment (§ 4) on every interactive element, instant and never removed | Keyboard-only traversal |
-| **F-7** | No `box-shadow` and no `gradient` anywhere | Grep the built CSS |
+| **F-7** | No `box-shadow` and no `gradient` on any floor surface | **Grep the built CSS, then keep only the rules a floor surface can match** (Operator ruling 2026-10-17, R13 (a)): a selector some element of a floor surface matches in a state the surface reaches, or a utility class the source of a floor surface writes. Zero of those draw a shadow or a gradient. A declaration of `box-shadow: none` draws none, so Tailwind preflight's `:-moz-ui-invalid{box-shadow:none}` passes. A rule only a surface below the floor can match is not a floor failure; record it beside the check, so a later floor that reaches that surface sees it |
 | **F-8** | **No accent background fill anywhere**, and accent is not the dominant colour of any viewport | **The fill half is the real check and it is binary: grep the built CSS for `--token-accent` used as a `background`, `background-color` or `fill`, at any state including `:hover`. Zero occurrences.** The 3% figure is a design intent, not a gate: it has no defined denominator and eyeballing it is not a check |
 | **F-9** | The state vocabulary is carried structurally and survives greyscale with no legend | Greyscale render, **with the legend and the status words masked**. If the values are still tellable apart, it passes. Masking the words is what makes this a test rather than a reading exercise |
 | **F-10** | Interactive targets `≥44×44px` on **both axes**, **measured in a browser, not read off the CSS** | DevTools box model. Also confirm two adjacent targets' boxes do not overlap |
 | **F-11** | `color-scheme: dark` on `:root`, and `::selection` sets **both** `background` and `color`, accent ground with `--token-bg` text | Computed style; select some text. Accent as a selection ground is the one permitted accent fill and F-8's grep excludes `::selection` explicitly |
-| **F-12** | **The vocabulary's geometry is present, not just its colours.** Rows use the § 2 grid at both widths; controls and links meet § 1 and § 1b geometry; the one breakpoint is 760px | Compare the rendered row against § 2's template at 359px, 390px, 759px and 761px. **Without this check, two applications can pass F-1 to F-11 and share none of the layout this specification exists to federate** |
+| **F-12** | **The vocabulary's geometry is present, not just its colours.** Rows use the § 2 grid at both widths; controls and links meet § 1 and § 1b geometry; the one breakpoint is 760px | Compare the rendered row against § 2's template at 359px, 390px, 759px and 761px. **Without this check, two applications can pass F-1 to F-11 and share none of the layout this specification exists to federate.** **An application that renders no § 2 row** (its lists are § 10 Media grids, hairline rows or a seam S-6 table) **is read on § 1 and § 1b geometry and the one 760px breakpoint**, at the same four widths (Operator ruling 2026-10-17, R14) |
 
 **F-4, F-6 and F-10 are the three that fail most often**, and each fails while appearing to pass:
 a component library's button looks unfilled until you check its `:hover`; a reset clears the

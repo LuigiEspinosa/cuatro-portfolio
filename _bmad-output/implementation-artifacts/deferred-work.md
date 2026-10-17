@@ -10383,7 +10383,14 @@ status: done
 
     **Owner: the specification's owner, on the Operator's ruling (`ops/restyle-floor.md` row R7).** **Trigger:
     before Story 8.5 or 8.6 opens.**
-  status: open
+
+    **Closed 2026-10-17 by the specification amendment story (`_bmad-output/implementation-artifacts/spec-8-spec-restyle-spec-amendment.md`),** on the
+    Operator's ruling of the same day (R7): `RESTYLE-SPEC.md` `1.1.0` settles all eleven points, I-11 included,
+    where each belongs and indexes them in § Readings settled 2026-10-17. 8.3's reading stands for I-1 to I-9; the
+    status dot is square at `--r-none` (I-10); a field's focus ring takes no radius (I-11). The one rendered defect
+    the ruling exposes, `list-wheel`'s focused textarea at `2px`, is fixed on `list-wheel` branch
+    `fix/8-spec-field-focus-radius` (`2d1b8b8`), row R16.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
   id: DW-347
   summary: >-
@@ -10450,7 +10457,14 @@ status: done
     built CSS), as a finding, in `ops/restyle-floor.md` § SM-12 per application. Which of the two ways closes it is a
     specification choice, so it went to the Operator as row R13 rather than being made here. **Owner now: the session
     that acts on R13's ruling.** **Trigger: R13 done.**
-  status: open
+
+    **Closed 2026-10-17 by the specification amendment story (`_bmad-output/implementation-artifacts/spec-8-spec-restyle-spec-amendment.md`),** on the
+    Operator's ruling of the same day, R13 (a): `RESTYLE-SPEC.md` § The floor's F-7 now greps only the rules a floor
+    surface can match. Re-read on `c25f830`: the one such rule is `:-moz-ui-invalid{box-shadow:none}`, which draws
+    none, so F-7 passes and `digital-library` reads restyled: yes (`ops/restyle-floor.md` § SM-12 per application).
+    The six utilities stay in the built CSS below the floor, recorded beside the check; the reader's two of them are
+    row R15's question.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
   id: DW-351
   summary: >-

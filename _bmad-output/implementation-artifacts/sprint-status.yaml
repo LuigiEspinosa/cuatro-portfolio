@@ -1183,6 +1183,11 @@ development_status:
   # and R14 (rulings the record's verdicts stand on), R12, R7, the sign-offs R1, R5, R8, and the merges R3 (cs-tracker PR #11),
   # R6 (list-wheel PR #4), R9 then R10 (digital-library PR #66, then the restyle PR), after which SM-12 holds live.
   8-4-record-the-restyle-floor-and-the-per-application-coherence-ch: awaiting-operator
+  # 2026-10-17: the specification amendment from the Operator rulings of 2026-10-17 (R2, R7, R11 to R14) is built, not
+  # a board key of its own (spec-8-spec-restyle-spec-amendment.md): RESTYLE-SPEC.md 1.1.0 settles I-1 to I-11, F-7's
+  # scope, F-12's reading and the floor's denominator; ops/restyle-floor.md dates the six rulings and re-reads SM-12
+  # (cs-tracker and digital-library restyled yes; list-wheel yes on fix 2d1b8b8, no on main until R16); DW-346 and
+  # DW-350 closed. Awaiting the independent verifier, then the Operator on R15 and R16. 8.5 and 8.6 open after it.
   8-5-cuatro-tracker-visual-restyle: backlog
   8-6-cs-tournament-visual-restyle: backlog
   epic-8-retrospective: optional
