@@ -1643,7 +1643,9 @@ action_items:
     # the box), the Epic 5 retrospective merge to main and its Deploy, then DS5;
     # spec-epic-5-retro-item-47-reset-failure-visible.md.
     # 2026-10-13: the main merge (Anchor PR #96, d5ecf9b) and its Deploy ran; only DS4, then DS5, remain.
-    status: awaiting-operator
+    # 2026-10-17: DS4 and DS5 done (ops/demo-principal.md); DS5 opened issue #97, the Operator confirmed its mail and
+    # closed it at 09:07:42Z. Action 3 closed.
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-48-digital-library-repair-or-remove-test-de"
     epic: 5
