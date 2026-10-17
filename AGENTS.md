@@ -229,7 +229,8 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   each of which reads the file for its own gate. Update both, and give the new job its own
   wiring cases beside the module it runs rather than adding them to one of those two.
 - In the Hub, two sources may name `contracts/`, and no third (the tournament's own `apps/tournament/app/globals.css`
-  loads `tokens.css` and `fonts.css` since Story 8.6, and its image copies `contracts/` in): `apps/hub/app/scss/_index.scss`, which loads the
+  loads `tokens.css` and `fonts.css` since Story 8.6, the tracker's `apps/tracker/app/global.css` loads `tailwind.css`
+  since R24, vendoring nothing, and each image copies `contracts/` in): `apps/hub/app/scss/_index.scss`, which loads the
   token and font stylesheets, and `apps/hub/lib/registry.ts`, which may name only
   `contracts/registry.json` and `contracts/registry.schema.json`, by relative path since the `@/`
   alias points into `apps/hub/`. `apps/hub/app/__tests__/anchor-contract.test.ts` fails a third

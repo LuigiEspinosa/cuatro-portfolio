@@ -10581,6 +10581,9 @@ status: done
     **Owner: a tracker restyle story beyond the floor, if the Operator wants one (`ops/restyle-floor.md` R18).**
     **Trigger: R18 ruled the other way, or a ruling that the interior is restyled.** That change deletes the
     `OTHER_APPLICATIONS` entry; the vendored folder and its `anchor-contract.test.ts` admission stay.
+
+    **2026-10-17, R24 (`ad5fa2a`):** the vendored folder and its admission are gone; the tracker reads `contracts/`
+    directly, so that change has neither to keep.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
   id: DW-358
@@ -10596,7 +10599,12 @@ status: done
     **Owner: a Registry story after R20 puts the vendored folder on `main`.** **Trigger: R20 done.** The shape is
     either teaching the verification an absorbed entry's subtree (`tree/main/<dir>`) or recording that an absorbed
     entry declares no `token_contract`; then a dated observation, then the release.
-  status: open
+
+    **Closed 2026-10-17 by `ad5fa2a` (`_bmad-output/implementation-artifacts/spec-8-r24-tracker-reads-contracts-directly.md`),**
+    on the Operator's ruling R24 (a) of the same day: `token_contract` stays absent for an `absorbed_into:
+    cuatro-portfolio` entry, so no Registry release follows, and the tracker no longer vendors: it reads `contracts/`
+    directly, as the tournament does.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
   id: DW-359
   summary: >-
@@ -10637,4 +10645,24 @@ status: done
     where it vendored a copy under `apps/tracker/app/cuatro-contracts/` instead of loading `contracts/`.
 
     **Owner: the Operator, then the Registry release the ruling names.** **Trigger: R24.**
+
+    **Closed 2026-10-17 by `ad5fa2a` (`_bmad-output/implementation-artifacts/spec-8-r24-tracker-reads-contracts-directly.md`),**
+    on R24 (a): the field stays absent for an absorbed entry, adoption being the Anchor's own, and both applications
+    inside the Anchor read `contracts/` directly. No Registry release is named.
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-r24-tracker-reads-contracts-directly.md`
+  id: DW-362
+  summary: >-
+    Since R24 the tracker's `@import "tailwindcss"` sits in `contracts/tailwind.css`, so it resolves the root
+    `tailwindcss` 4.3.3 (preflight and default theme), while the tracker's own `@tailwindcss/postcss` and
+    `tailwindcss` are 4.2.2, which still generate its utilities.
+  evidence: |-
+    Measured 2026-10-17 on `ad5fa2a` by building the tracker before and after: the main stylesheet differs in two
+    preflight rules and nothing else, the `html` fallback font stack (dead, since `--default-font-family` is always
+    `var(--f-body)`) and `:-moz-focusring` gaining `:where(:not(iframe))` (the tracker renders no iframe). Every other
+    rule, both other stylesheets and all 33 media files are byte-identical, and the image built from
+    `apps/tracker/Dockerfile` emits the same bytes. A later bump of either side can move them apart in a way that does
+    render. Aligning the tracker's pair with the root's 4.3.3 is a dependency change, so it is its own story.
+
+    **Owner: the next tracker story that touches its dependencies.** **Trigger: a Tailwind bump on either side.**
   status: open
