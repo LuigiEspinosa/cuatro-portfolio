@@ -1164,8 +1164,8 @@ development_status:
   # 2026-10-13: built; the independent verifier passed it with minor findings in round 2 and opened
   # cs-tracker PR #11 to dev (head 32c0d73). awaiting-operator on ops/restyle-floor.md R1 (visual
   # sign-off), R2 (floor ruling), R3 (merge PR #11 to dev, dev to main, roll cs-tracker) and R4.
-  # 2026-10-17: R1, R2 and R3 done (live on cs-tracker main 9f70d28); awaiting the Operator on R4 alone.
-  8-1-cs-tracker-visual-restyle: awaiting-operator
+  # 2026-10-17: R1, R2 and R3 done (live on cs-tracker main 9f70d28); R4 noted by the Operator.
+  8-1-cs-tracker-visual-restyle: done
   # 2026-10-13: built; the independent verifier passed it with minor findings in round 1 and opened
   # digital-library PR #66 (restyle/8-2-adopt-contract, head 960050b) to dev. restyle/8-2-visual-restyle (c25f830)
   # is pushed with no PR until the adopt merge is verified in production. awaiting-operator on ops/restyle-floor.md
@@ -1736,7 +1736,9 @@ action_items:
       standing runbooks (R20, R23); record R4; then re-read SM-12 live for both and
       move 8-1 to 8-6 and epic-8 to done"
     owner: "Operator"
-    status: open
+    # 2026-10-17: main 3f8a12e (PR #98), tracker and tournament rolled and read live (R20, R23, DW-363), R4 noted,
+    # 8-1 to 8-6 done. epic-8 stays in-progress until item 55 (the Registry releases) lands.
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
   - id: "epic-8-retro-item-54-carry-out-r24-remove-apps-tracker-app-cu"
     epic: 8
