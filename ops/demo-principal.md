@@ -1,4 +1,4 @@
-# The demo principalundefined2026-10-13. PR #63 into `dev` as `5b6f50f`, PR #65 `dev` into `main` as `8d48846`; the push to `main` ran `Test` (no `deploy` job) and `CI`, both success; § Demo principal run |undefined2026-10-13. The four secrets deleted by the Operator; § Demo principal run |undefined2026-10-13. Differed (a `--resolve` smoke step and an image prune); by the Operator's ruling the README is the standard, the box script replaced with its block and the old one kept as `~/library-redeploy.sh.bak-2026-10-13`; § Demo principal run |undefined2026-10-13T15:26:41Z. PR 9 `7c01f5c`, `main` `4d94dbc`, rolled: `[["demo"]]`, `/auth/session` 401; § Demo principal run |undefined2026-10-13T15:29:24Z. PR #64 `777814f`, `main` `8d48846`, redeployed: `api` and `web` healthy, `/` 302, `/login` 200, `/api/health` 200; § Demo principal run |
+# The demo principal
 
 The one definition of Demo Access's principal (AD-13, FR-25, FR-26): who it is, how each participating
 application derives it, the ownership scope its rows live in, and what no application lets anyone do to
