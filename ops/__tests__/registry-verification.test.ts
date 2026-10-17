@@ -982,12 +982,18 @@ describe('vendoredTarget', () => {
     expect(missing).toEqual({ application: 'Mutuo', path: null, reason: `${ADOPTION_REL} carries no adopted-versions row for Mutuo` });
   });
 
-  it('on the real records, resolves cs-tracker and the Anchor to their recorded paths and every other entry to no target', () => {
+  it('on the real records, resolves the four adopters to their recorded paths and every other entry to no target', () => {
     const real = adopterRows(adoption);
+    // `list-wheel` and `digital-library` from the dated observation of 2026-10-17 (DW-347, DW-351).
+    const recorded: Record<string, string> = {
+      'cs-tracker': CS_TRACKER_TOKENS,
+      'cuatro-portfolio': ANCHOR_TOKENS,
+      'list-wheel': 'src/styles/cuatro-contracts/tokens.css',
+      'digital-library': 'apps/web/src/lib/cuatro-contracts/tokens.css',
+    };
     for (const application of registry.applications) {
       const target = vendoredTarget(application, real);
-      if (application.id === 'cs-tracker') expect(target.path).toBe(CS_TRACKER_TOKENS);
-      else if (application.id === 'cuatro-portfolio') expect(target.path).toBe(ANCHOR_TOKENS);
+      if (application.id in recorded) expect(target.path, application.id).toBe(recorded[application.id]);
       else expect(target.path, application.id).toBeNull();
     }
   });
