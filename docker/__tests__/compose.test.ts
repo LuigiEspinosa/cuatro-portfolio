@@ -444,8 +444,14 @@ describe('the tournament services', () => {
     );
   });
 
-  it("probes /api/health with the Hub's probe, and the worker its own /healthz", () => {
-    expect(probeOf(tournament)).toBe(probeOf(compose));
+  // DW-363: on two networks the container's own name resolves to one address of the two, so the server
+  // listens on every address and the probe reads a fixed loopback, the Hub's probe with that host.
+  it('listens on every address and probes /api/health on loopback with the Hub\'s probe, and the worker its own /healthz', () => {
+    expect(tournament.split('\n')).toContain('      - HOSTNAME=0.0.0.0');
+    expect(probeOf(tournament)).toBe(
+      probeOf(compose).replace("'http://'+process.env.HOSTNAME+':3000/api/health'", "'http://127.0.0.1:3000/api/health'")
+    );
+    expect(probeOf(tournament)).not.toContain('process.env.HOSTNAME');
     expect(worker).toContain("    test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:8080/healthz']");
   });
 

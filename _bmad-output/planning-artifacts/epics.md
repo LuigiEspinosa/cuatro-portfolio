@@ -4657,6 +4657,12 @@ built on an assumed surface count, and a story ahead of 8.1 would move the actio
 | **O-15** | **What each wave-1 Satellite actually has installed**, so § Displacing a component library picks the right family. `cs-tracker` is **confirmed** family A (Tailwind v4 + daisyUI, O-7). `digital-library` and `list-wheel` are **assumed** family C and family B and are **not verified**. A strategy chosen against an assumed stack is worse than none |
 | **O-17** | **Triage the residual review findings before 8.1 opens.** The independent-implementation audit returned 26 High findings and the token lens 6; the criticals are resolved in the spines and the remainder are recorded in the two reports. **Most bite a Satellite implementer rather than the Anchor**, which is exactly this epic. Triage is a reading pass, not a fix pass: each residual finding is dispositioned as *binding on a story here*, *already resolved*, or *accepted* |
 
+**Amended 2026-10-17 by Operator ruling R2 (a)** (`ops/restyle-floor.md`): O-14 found a floor that collapses
+further than one screen. `cs-tracker`'s anonymous surfaces are a redirect, plain text and the issuer's sign-in
+page, so its strict floor is empty, and for such an application the surfaces the demo principal reaches count
+as the floor (`RESTYLE-SPEC.md` § The floor). An application that renders its own sign-in page keeps the strict
+floor (`digital-library`, R15; the tracker, R18).
+
 ---
 
 **Four criteria bind every story in this epic** and are not repeated in each:
@@ -4665,7 +4671,8 @@ built on an assumed surface count, and a story ahead of 8.1 would move the actio
   imports no component, no class-name library, no `packages/*` artifact and no stylesheet from the
   Anchor beyond its vendored `cuatro-contracts/` folder. Recurrence of a component across three or
   more applications is evidence the *specification* should be better, never that a package should
-  exist.
+  exist. *(Amended 2026-10-17 by Operator ruling R24 (a): an application inside the Anchor, Stories
+  8.5 and 8.6, imports `contracts/` directly and vendors no folder, AD-14 as amended the same day.)*
 - **AD-25 / FR-38.** The application is rendered in the Suite Directory. A restyle story for an
   unrendered application is a defect, and SM-C6 targets zero always.
 - **AD-19.** After restyle the application is measured **once by hand** against the accessibility
@@ -4964,6 +4971,11 @@ states**, and each as an explicit pass or fail:
 | **F-11** | `color-scheme: dark` on `:root`; `::selection` sets **both** `background` and `color` | **Computed style, then select some text.** Accent as a selection ground is the one permitted accent fill, and F-8's grep excludes `::selection` explicitly |
 | **F-12** | **The vocabulary's geometry is present, not just its colours** | **Compare the rendered row against § 2's grid template at 359px, 390px, 759px and 761px.** Without this check two applications can pass F-1 to F-11 and share none of the layout the specification exists to federate |
 
+*(Amended 2026-10-17 by Operator rulings R13 (a) and R14, written into `RESTYLE-SPEC.md` § The floor
+1.1.0: F-7 greps the built CSS and then keeps only the rules a floor surface can match, a rule only a
+surface below the floor can match being recorded beside the check rather than failing it; and an
+application that renders no § 2 row reads F-12 on § 1 and § 1b geometry and the one 760px breakpoint,
+at the same four widths. The table above is the criterion as first written.)*
 **And** F-2, F-8 and F-9 are used **as stated above**, their original methods having amounted to
 "look at it" and been rewritten after audit
 **And** **F-4, F-6 and F-10 are expected to be the three that fail most often**, each failing while
@@ -5022,6 +5034,11 @@ AD-20 requires each merge step to change nothing else.
 **Then** the restyle opens **only after Story 3.6's merge has shipped and been verified**, and lands
 as **its own merge** with intermediate commits on a branch.
 
+*(Amended 2026-10-17, `ops/restyle-floor.md` R20 and R23: the restyle reached `main` with Epic 8's
+promotion, Anchor PR #98 at `3f8a12e`, beside Story 8.6's, rather than as a merge of its own. Story 3.6's
+merge had shipped and been verified on 2026-09-29, so the separation AD-20 asks for held; the tracker
+and the tournament roll by hand from separate runbooks, each read live after its roll.)*
+
 **Given** the application is a Tailwind consumer inside the Turborepo after the Epic 3 merge
 **When** it consumes the contract
 **Then** it imports **`tailwind.css`**, the generated adapter, rather than the plain pair
@@ -5072,6 +5089,11 @@ is a Registry change, `cs-tournament` going `Complete` in 1.4.0, which ships wit
 and the Operator deletes the Vercel project once that merge deploys (Story 3.7's amendment). One
 preceding step is left, Story 3.7's merge, and the restyle opens after it and still lands as its
 own merge. `Complete` renders, so FR-38 still applies.
+
+*(Amended 2026-10-17, `ops/restyle-floor.md` R23: the restyle reached `main` with Epic 8's promotion,
+Anchor PR #98 at `3f8a12e`, beside Story 8.5's, rather than as its own merge. It was still never combined
+with Story 3.7's merge, which shipped on 2026-09-30, and the tournament rolled by its own runbook and was
+read live after the roll.)*
 
 **Given** its family is not yet verified
 **When** this story opens

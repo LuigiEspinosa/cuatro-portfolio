@@ -10418,7 +10418,13 @@ status: done
     re-observe the `list-wheel` row in `ops/contract-adoption.md` (adopted, `2.0.0`, at
     `src/styles/cuatro-contracts/tokens.css`) and commit that dated observation; then a Registry release giving
     the `list-wheel` entry `token_contract: "2.0.0"`, whose push runs `registry-verification.yml`.
-  status: open
+
+    **Closed 2026-10-17 by the DW-347 and DW-351 story (`_bmad-output/implementation-artifacts/spec-dw-347-351-registry-token-contract-releases.md`).**
+    The `list-wheel` row of `ops/contract-adoption.md` re-observed off `main` at `a1f1fce` (adopted, `2.0.0`, at
+    `src/styles/cuatro-contracts/tokens.css`, the nine files verbatim) and committed first (`2fa6c8b`); then Registry
+    1.11.0 gives the entry `token_contract: "2.0.0"`, the scheduled verification's check run locally reading 75 of 75.
+    It reaches `cuatro.dev/contracts/` with the Operator's promotion of `dev` to `main`, `ops/restyle-floor.md` row R25.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-1-cs-tracker-visual-restyle.md`
   id: DW-348
   summary: >-
@@ -10493,7 +10499,14 @@ status: done
     re-observe the `digital-library` row in `ops/contract-adoption.md` (adopted, `2.0.0`, at
     `apps/web/src/lib/cuatro-contracts/tokens.css`) and commit that dated observation; then a Registry release
     giving the `digital-library` entry `token_contract: "2.0.0"`, whose push runs `registry-verification.yml`.
-  status: open
+
+    **Closed 2026-10-17 by the DW-347 and DW-351 story (`_bmad-output/implementation-artifacts/spec-dw-347-351-registry-token-contract-releases.md`).**
+    The `digital-library` row of `ops/contract-adoption.md` re-observed off `main` at `1ca5091` (adopted, `2.0.0`, at
+    `apps/web/src/lib/cuatro-contracts/tokens.css`, the nine files verbatim) and committed first (`2fa6c8b`); then
+    Registry 1.11.0 gives the entry `token_contract: "2.0.0"`, the scheduled verification's check run locally reading
+    75 of 75. It reaches `cuatro.dev/contracts/` with the Operator's promotion of `dev` to `main`, `ops/restyle-floor.md`
+    row R25.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
   id: DW-352
   summary: >-
@@ -10506,6 +10519,12 @@ status: done
 
     **Owner: the `digital-library` restyle branch.** **Trigger: before R10's PR opens** (`restyle/8-2-visual-restyle`,
     head `c25f830`), as one more commit on it, or the next story that touches the test after it merges.
+
+    **2026-10-17, the Epic 8 retrospective's cleanup (`spec-retro8-cleanup-records-spec-and-field-focus.md`):** the
+    first trigger passed unmet (R10 merged without it); the second fires, since item 58 touches the test. Reproduced on
+    a `core.autocrlf=true` worktree of `dev` `9e4572d` (`expected -1 to be greater than 1016`), fixed by normalizing
+    line ends in the test's `read` on `digital-library` branch `fix/retro8-field-focus-radius` (`83c61f0`). **Owner
+    now: the Operator's merge, `ops/restyle-floor.md` R26.** **Trigger: R26 done**, which closes this entry.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
   id: DW-353
@@ -10561,6 +10580,15 @@ status: done
 
     **Owner: a `digital-library` story.** **Trigger: Story 8.2's restyle merge (R10), or the next change to a file
     that carries such a comment.** Comments only: point them at the vendored `cuatro-contracts/` and `RESTYLE-SPEC.md`.
+
+    **2026-10-17, restated by the Epic 8 retrospective's cleanup (`spec-retro8-cleanup-records-spec-and-field-focus.md`).**
+    R10 merged without the change, so the first trigger passed unmet. Read on `dev` `9e4572d` the same day: the restyle
+    left 8 lines naming the workspace `DESIGN.md` in 7 files, `primitives/Breadcrumb.svelte`, `EditorialTable.svelte`
+    and `StatusTag.svelte` (the three DW-349 records as rendered nowhere), `utils/editorial-format.ts`, and three page
+    tests (`library-grid-page`, `login-page`, `library-picker-page`); the vendored `cuatro-contracts/tokens.css` names
+    the Anchor's own `DESIGN.md` and is not one of them. The cleanup's branch touches none of the seven, so it leaves
+    them. **Owner: a `digital-library` story.** **Trigger: the next change to one of the seven files**, or the story
+    that renders or deletes the three components under DW-349.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
   id: DW-357
@@ -10665,4 +10693,23 @@ status: done
     render. Aligning the tracker's pair with the root's 4.3.3 is a dependency change, so it is its own story.
 
     **Owner: the next tracker story that touches its dependencies.** **Trigger: a Tailwind bump on either side.**
+  status: open
+- source_spec: `ops/restyle-floor.md` R23 (Epic 8 promotion, 2026-10-17)
+  id: DW-363
+  summary: >-
+    The tournament's standalone Next server binds `process.env.HOSTNAME`, which Docker sets to the container's own
+    name, and the container sits on two networks, so after a recreate it can listen on the `cuatro-portfolio_default`
+    address alone while Traefik reaches it on `cs-tracker_default` and is refused: a 502 with healthy containers.
+  evidence: |-
+    Observed 2026-10-17 at 12:27:21Z rolling `TOURNAMENT_TAG=3f8a12e` by `ops/tournament-placement.md` § Later
+    rollouts: `docker compose ps` read both containers healthy (the healthcheck probes `process.env.HOSTNAME` too, so
+    it passes), Next printed `Network: http://d11f14d2819b:3000`, and `wget http://tournament:3000/` from
+    `traefik-ingress-1` was refused at `172.18.0.9`. A second `up -d --force-recreate tournament` at about 12:29Z
+    listened on the shared address and the site answered 200 at 12:30:21Z, so which address wins is not determined.
+    Any server on two compose networks that binds its hostname carries the same exposure. The fix is
+    `HOSTNAME=0.0.0.0` in the service's environment, with its healthcheck reading a fixed loopback address, proved by
+    recreating the container on the box and probing it from Traefik; until then, a tournament rollout is followed by
+    a probe from Traefik and a second recreate if it is refused.
+
+    **Owner: the next Anchor story.** **Trigger: before the next tournament rollout.**
   status: open

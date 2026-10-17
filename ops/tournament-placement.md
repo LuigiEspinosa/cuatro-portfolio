@@ -163,7 +163,16 @@ deploys, so a stale entry would let a later attempt pass the gate as an incumben
 **Later rollouts** of a new tournament sha are by hand until DW-275 wires a deploy per id: pull both tags,
 then `$C --profile tournament up -d tournament tournament-worker` with the new `TOURNAMENT_TAG`, which
 recreates both. Not rehearsed: `docker rollout --env-file .env.production tournament` would keep the
-server up across it, as Story 3-4 proved for the Hub alone.
+server up across it, as Story 3-4 proved for the Hub alone. Then probe from Traefik, since a healthy container
+can still be unreachable (DW-363): `docker exec traefik-ingress-1 wget -q -O /dev/null -S
+http://tournament:3000/api/health`; if it is refused, `$C --profile tournament up -d --force-recreate tournament`
+and probe again (**amended 2026-10-17**, the Epic 8 rollout, `ops/restyle-floor.md` R23; until DW-363 closes).
+**Amended again 2026-10-17 by DW-363** (`spec-dw-363-tournament-listens-on-every-address.md`): the service
+now sets `HOSTNAME=0.0.0.0`, so its server listens on both networks' addresses whichever one its name
+resolves to, and its healthcheck probes `127.0.0.1`. The probe from Traefik stays as the rollout's check,
+since it is the one reading that sees what the public sees. The second recreate is unnecessary once the
+change is on `main` and the box's checkout carries it (the Deploy resets it to `main`); a refusal after that
+is a new fault to diagnose, not a race to retry. Pending action 8 makes the first recreate on it.
 
 ## After the placement
 
@@ -386,6 +395,7 @@ restore proof was not re-run; the nightly job does not run it (§ Backup, The pr
 | 5 | **Release Registry 1.7.0** (step 10: the revert of `6d72963`) and merge it into `main` after step 6 answered | FR-28. Released as `4d467ba` on `dev`; its push's Registry verification run passed 41 of 41 with `PASS cs-tournament live: https://tournament.cuatro.dev answered 200`; the home surface's hit-target pin moved to 22 for the new live link (`ops/hit-target-floor.md`); PR #87 merged as `373e33d`, Deploy run 36655346368 green, and `https://cuatro.dev/contracts/registry.json` served `contract_version` 1.7.0 with the entry `Live` right after | 2026-09-30T01:30:33Z |
 | 6 | **Install the nightly dump and run it once** (§ Backup, steps 1 to 5) | The store's copy off Supabase's side (AD-10, retrospective action 4). Record what § Backup lists under a "First backup run" heading. Done: § First backup run, 2026-09-30 | 2026-09-30T08:04:11Z |
 | 7 | **Read the first unattended line** of the 03:45Z cron run on 2026-10-01 from `backup.log` | Added 2026-10-01 by Epic 4 retrospective action 3. Read `exit=0`: § First backup run, 2026-09-30, First scheduled run, 2026-10-01. Nothing reads the later nights yet (DW-315) | 2026-10-01T07:21Z |
+| 8 | **After the epic promotion that carries DW-363's change reaches `main` and the Deploy has reset the box's checkout to it: recreate the tournament and probe it from Traefik.** With `HUB_TAG` exported and the running `TOURNAMENT_TAG`, `$C --profile tournament up -d tournament` (compose recreates it for the changed environment and healthcheck), then `docker exec traefik-ingress-1 wget -q -O /dev/null -S http://tournament:3000/api/health` | Added 2026-10-17 by DW-363 (`spec-dw-363-tournament-listens-on-every-address.md`). A dated completion records: `docker compose ps` reading the tournament `healthy` on the new loopback probe, `docker exec <tournament container> printenv HOSTNAME` reading `0.0.0.0`, Next's start line reading `Network: http://0.0.0.0:3000`, the Traefik probe `200`, and `https://tournament.cuatro.dev/` 200. That closes DW-363 in `deferred-work.md`; a refusal keeps it open with the reading | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.

@@ -1,6 +1,6 @@
 {
   "$schema": "./registry.schema.json",
-  "contract_version": "1.10.0",
+  "contract_version": "1.11.0",
   "applications": [
     {
       "id": "cuatro-portfolio",
@@ -48,7 +48,8 @@
       "source": "https://github.com/LuigiEspinosa/digital-library",
       "demo": "none",
       "identity": "none",
-      "live": "https://library.cuatro.dev"
+      "live": "https://library.cuatro.dev",
+      "token_contract": "2.0.0"
     },
     {
       "id": "cs-tournament",
@@ -71,7 +72,8 @@
       "source": "https://github.com/LuigiEspinosa/list-wheel",
       "demo": "open",
       "identity": "none",
-      "live": "https://wheel.cuatro.dev"
+      "live": "https://wheel.cuatro.dev",
+      "token_contract": "2.0.0"
     },
     {
       "id": "covidmap",
