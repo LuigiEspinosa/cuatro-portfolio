@@ -10338,7 +10338,7 @@ status: done
     **Closed 2026-10-13 by Story 8.1's fix round, `cs-tracker` `32c0d73`,** after the independent verifier held
     F-7 binding on 8.1: the daisyUI `@plugin` block reads `include: rootcolor, scrollbar;` and Tailwind no longer
     mints `.shadow` or `.transition` from prose. The production image's `app.css` carries one `box-shadow`
-    (preflight's `none`) and 0 gradients. `restyle_test.exs` pins the include list; `token_contract_test.exs`
+    (`:-moz-ui-invalid{box-shadow:none}`, Tailwind preflight's) and 0 gradients. `restyle_test.exs` pins the include list; `token_contract_test.exs`
     reads only the theme block and needed no change. Story 8.4 still owns F-7's scope for the other Satellites
     (H-19).
   status: done
@@ -10438,7 +10438,7 @@ status: done
     so F-7's grep of the built CSS fails as written while no floor element carries one.
   evidence: |-
     Observed 2026-10-13 by Story 8.2 in the production image of `digital-library` `c25f830`
-    (`after/image-css/grep.txt`): 7 `box-shadow` rules, preflight's `none` and the six above; 0 gradients. This is
+    (`after/image-css/grep.txt`): 7 `box-shadow` rules, `:-moz-ui-invalid{box-shadow:none}` (Tailwind preflight's) and the six above; 0 gradients. This is
     H-19 of `review-independent-implementation.md`, binding on Story 8.4 (`ops/restyle-floor.md` § O-17), and the
     case Story 8.1's DW-343 closed in `cs-tracker` by stopping the rules being emitted, which here means restyling
     `/admin` below the floor.
