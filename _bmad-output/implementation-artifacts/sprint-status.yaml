@@ -1714,14 +1714,16 @@ action_items:
       standing redeploy runbook in the same change, never only into the story's run
       section"
     owner: "Cuatro"
-    status: open
+    # 2026-10-17: followed through Epic 8 (epic-8-retro-2026-10-17.md); the Operator moved it to in-progress.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-52-process-a-dated-row-relying-on-a-reposit"
     epic: 5
     action: "Process: a dated row relying on a repository's CI names every workflow
       it read on that sha, not CI green"
     owner: "Cuatro"
-    status: open
+    # 2026-10-17: followed through Epic 8 (epic-8-retro-2026-10-17.md); the Operator moved it to in-progress.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-8-retro-item-53-promote-dev-to-main-and-roll-the-tracker"
     epic: 8
