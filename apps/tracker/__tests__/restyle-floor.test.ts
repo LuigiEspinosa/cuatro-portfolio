@@ -1,5 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 // Story 8.5: what holds the tracker's restyle floor (/login, RESTYLE-SPEC.md § The floor) in source.
@@ -7,50 +7,20 @@ import { describe, expect, it } from 'vitest'
 
 const APP = resolve(__dirname, '..')
 const CONTRACTS = resolve(APP, '../../contracts')
-const VENDORED = join(APP, 'app/cuatro-contracts')
-const NINE = [
-  'fonts.css',
-  'fonts/OFL-bricolage-grotesque.txt',
-  'fonts/OFL-geist-mono.txt',
-  'fonts/OFL-geist.txt',
-  'fonts/bricolage-grotesque-latin.woff2',
-  'fonts/geist-latin.woff2',
-  'fonts/geist-mono-latin.woff2',
-  'tailwind.css',
-  'tokens.css',
-]
 
 const read = (path: string) => readFileSync(path, 'utf8').replace(/\r\n/g, '\n')
-const listed = (dir: string, prefix = ''): string[] =>
-  readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
-    entry.isDirectory()
-      ? listed(join(dir, entry.name), `${prefix}${entry.name}/`)
-      : [`${prefix}${entry.name}`],
-  )
 // Comments out, so a rule's prose cannot satisfy or trip a check.
 const declarations = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '')
 
-describe('the vendored contract (AD-14)', () => {
-  it('is the folder cuatro-contracts/, the nine token-contract files and nothing else', () => {
-    expect(listed(VENDORED).sort()).toEqual(NINE)
-  })
-
-  it('equals the Anchor contracts/ file for file, so it cannot drift behind the published contract', () => {
-    for (const file of NINE) {
-      const ours = readFileSync(join(VENDORED, file))
-      const theirs = readFileSync(join(CONTRACTS, file))
-      const text = !file.endsWith('.woff2')
-      expect(
-        text ? ours.toString('utf8').replace(/\r\n/g, '\n') : ours,
-        `${file} differs from contracts/${file}`,
-      ).toEqual(text ? theirs.toString('utf8').replace(/\r\n/g, '\n') : theirs)
-    }
-    expect(read(join(VENDORED, 'tokens.css'))).toMatch(/Contract v2\.0\.0/)
-  })
-
-  it('is consumed through the Tailwind adapter, first, and tailwindcss is not imported a second time', () => {
+// R24 (2026-10-17): the tracker reads the Anchor's contracts/ directly, as apps/tournament does, and
+// vendors no copy; apps/hub/app/__tests__/anchor-contract.test.ts refuses a cuatro-contracts/ folder.
+describe('the token contract (AD-14, R24)', () => {
+  it('is consumed through the Anchor contracts/tailwind.css adapter, first, and tailwindcss is not imported a second time', () => {
     const imports = declarations(read(join(APP, 'app/global.css'))).match(/@import\s+[^;]+;/g) ?? []
-    expect(imports[0]).toBe("@import './cuatro-contracts/tailwind.css';")
+    expect(imports[0]).toBe("@import '../../../contracts/tailwind.css';")
+    const target = resolve(dirname(join(APP, 'app/global.css')), '../../../contracts/tailwind.css')
+    expect(target).toBe(join(CONTRACTS, 'tailwind.css'))
+    expect(read(target)).toMatch(/Contract v2\.0\.0/)
     expect(imports.filter((line) => /tailwindcss/.test(line))).toEqual([])
   })
 

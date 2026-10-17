@@ -1,7 +1,7 @@
 /* The restyled /login (Story 8.5), the tracker's restyle floor: the one surface an anonymous Visitor
    reaches (RESTYLE-SPEC.md § The floor; the tracker renders its own sign-in page, so the strict floor
    stands). Built natively from RESTYLE-SPEC.md's vocabulary, every value a role or a scale step from the
-   vendored cuatro-contracts/. Scoped to main.lc, so the interior, below the floor, keeps its own design.
+   Anchor's contracts/. Scoped to main.lc, so the interior, below the floor, keeps its own design.
    No box-shadow, gradient, radius, opacity state or eased ring here; the global hand-fix in global.css
    draws the focus ring. */
 

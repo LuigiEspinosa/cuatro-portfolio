@@ -1,7 +1,8 @@
-/* The Cuatro token contract, vendored whole (AD-14): the adapter imports tailwindcss, the
-   contract's tokens.css and fonts.css, then its @theme inline block. The tracker's own palette
-   follows; its interior, below the restyle floor, keeps it (Story 8.5, DW-357). */
-@import './cuatro-contracts/tailwind.css';
+/* The Cuatro token contract, read from the Anchor's contracts/ directly as apps/tournament does
+   (R24, ops/restyle-floor.md): the adapter imports tailwindcss, the contract's tokens.css and
+   fonts.css, then its @theme inline block. The tracker's own palette follows; its interior, below
+   the restyle floor, keeps it (Story 8.5, DW-357). */
+@import '../../../contracts/tailwind.css';
 @import './tokens.css';
 
 /* The contract's hand-fix lines 2 to 4 (EXPERIENCE.md, the hand-fix list); line 1, color-scheme,
