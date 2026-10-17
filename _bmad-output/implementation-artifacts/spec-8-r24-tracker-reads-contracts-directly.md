@@ -2,7 +2,7 @@
 title: 'R24: the tracker reads contracts/ directly'
 type: 'refactor'
 created: '2026-10-17'
-status: 'in-review'
+status: 'done'
 route: 'oneshot'
 review_loop_iteration: 0
 context: ['{project-root}/ops/restyle-floor.md']
@@ -99,3 +99,27 @@ run writes `graphify-out/` into the worktree). The Blind Hunter layer was not ru
 The workflow's independent verifier is the review of record and fills the section below.
 
 ## Verification
+
+**Independent verifier, round 1, 2026-10-17: pass with one minor finding.** Re-run from scratch in
+`C:/CuatroEcosystem/cuatro-portfolio-wt-8-r24` on `e2fcda6`, trusting none of the builder's figures:
+
+- Diff read against `origin/dev`: the nine vendored files deleted, `global.css` imports
+  `../../../contracts/tailwind.css` first, the Dockerfile copies `contracts/` into its builder exactly as
+  `apps/tournament/Dockerfile` does, `image-tracker.yml` already builds from the repository root,
+  `VENDORED_IN_APPS` and its case are gone, and no tracked path keeps a `cuatro-contracts` segment.
+- `corepack pnpm --filter tracker typecheck`: exit 0. `corepack pnpm --filter tracker test` against Redis in
+  `epic-scratch-redis-r24v`: `Test Files 108 passed (108)`, `Tests 1238 passed | 5 skipped (1243)`.
+- Before (`apps/tracker` checked out from `origin/dev`) and after builds, both `SKIP_ENV_VALIDATION=1`: exit 0.
+  All 33 media files and two of the three stylesheets are identical by sha256. The main stylesheet
+  (`464ac2e4414d116b.css` to `335d85cb35f13713.css`) has 1069 rules on both sides in the same order, and the
+  266 custom property declarations (12 `--token-*` roles) are identical in sequence and value, as are the 3
+  `@font-face` rules. Only the two preflight rules the builder names differ. Both are inert: `:root` in the same
+  stylesheet declares `--default-font-family: var(--f-body)` and `--f-body`, so the `var()` fallback never applies,
+  and no `.ts` or `.tsx` under `apps/tracker` renders an `iframe`.
+- `corepack pnpm test --run` (root): `Test Files 80 passed (80)`, `Tests 1981 passed | 1 skipped (1982)`, no
+  DW-135 retry needed.
+- `docker build --file apps/tracker/Dockerfile --tag epic-scratch-tracker-r24v .`: exit 0; every file under the
+  image's `.next/static/css` and `.next/static/media` matches the local after-build by sha256. Image removed.
+
+Minor finding: the frozen criterion "identical apart from the hashed font file names" is not met to the byte, for
+the two inert rules above. The rendered result is unchanged, and the drift is filed as DW-362, so it does not block.
