@@ -347,16 +347,22 @@ services:
       - STEAM_RETURN_URL=${TOURNAMENT_STEAM_RETURN_URL-}
       - AUTH_NONCE_SECRET=${TOURNAMENT_AUTH_NONCE_SECRET-}
       - ADMIN_STEAMIDS=${TOURNAMENT_ADMIN_STEAMIDS-}
+      # DW-363: the standalone server binds `process.env.HOSTNAME`, which Docker sets to the container's
+      # name. On two networks that name resolves to one address of the two, and after a recreate it was
+      # the `default` one, so Traefik on `cs-tracker_default` was refused while the container read healthy
+      # (2026-10-17, `ops/restyle-floor.md` R23). 0.0.0.0 listens on every address, whichever one wins.
+      - HOSTNAME=0.0.0.0
     networks:
       default:
       cs-tracker_default:
         aliases:
           - tournament
     healthcheck:
-      # The Hub's probe, for the same reason: the standalone server binds the container's own address.
-      # `/api/health` is liveness only (`apps/tournament/app/api/health/route.ts`, DW-280).
+      # The server listens on every address (above), so a fixed loopback answers, unlike the Hub's probe,
+      # which follows its server onto the container's own address. `/api/health` is liveness only
+      # (`apps/tournament/app/api/health/route.ts`, DW-280).
       test:
-        ['CMD-SHELL', 'node -e "fetch(''http://''+process.env.HOSTNAME+'':3000/api/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+        ['CMD-SHELL', 'node -e "fetch(''http://127.0.0.1:3000/api/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
       interval: 15s
       timeout: 5s
       retries: 5

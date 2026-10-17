@@ -1207,6 +1207,11 @@ development_status:
   # R24 (token_contract for an application inside the Anchor).
   # 2026-10-17: R21 to R24 done; on main 3f8a12e, rolled and live at 12:30:21Z after a three-minute 502 (DW-363).
   8-6-cs-tournament-visual-restyle: done
+  # 2026-10-17: DW-363 (the tournament's 502 after R23's recreate) is built on wt/dw-363, not a board key of its own and
+  # not a retro item (spec-dw-363-tournament-listens-on-every-address.md): docker-compose.yml gives the tournament
+  # HOSTNAME=0.0.0.0 and a loopback healthcheck, proved locally on two scratch networks; the tracker runs `next start`,
+  # which binds every address already. Awaiting the independent verifier, then ops/tournament-placement.md Pending
+  # action 8 (after the epic promotion, recreate the tournament and probe it from Traefik), which closes DW-363.
   epic-8-retrospective: done
 action_items:
   # 2026-09-24: done by Operator ruling, Contract 2.0.0 (commit 40591cd): the keys are
