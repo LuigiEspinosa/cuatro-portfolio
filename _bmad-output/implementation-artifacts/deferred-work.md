@@ -8587,7 +8587,14 @@ status: done
     `OTHER_APPLICATIONS` entry in the same change.
 
     **Owner: the Epic 8 wave that restyles the tracker.** **Trigger: that wave.**
-  status: open
+
+    **Closed 2026-10-17 by Story 8.5 (`_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`),
+    in part, the rest carried by DW-357.** The contract is vendored at `apps/tracker/app/cuatro-contracts/` and
+    `app/global.css` imports its `tailwind.css` first, with hand-fix lines 2 to 4; the restyle floor (`/login`) reads
+    roles only. The palette is not replaced app-wide and the `OTHER_APPLICATIONS` entry stays, its reason restated:
+    `app/global.css` still carries the interior's literals (1,052 findings by the gate's own `scan` after the change, 1,081 before; `login.css` 0), and
+    replacing them is the interior's restyle, below the floor.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
   id: DW-274
@@ -10549,4 +10556,51 @@ status: done
 
     **Owner: a `digital-library` story.** **Trigger: Story 8.2's restyle merge (R10), or the next change to a file
     that carries such a comment.** Comments only: point them at the vendored `cuatro-contracts/` and `RESTYLE-SPEC.md`.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
+  id: DW-357
+  summary: >-
+    `apps/tracker`'s authenticated interior keeps its CRT design: its own palette in `app/tokens.css`, the Google
+    faces through `next/font`, and 1,052 literal findings in `app/global.css` and `app/tokens.css`, so
+    `ops/literal-conformance.mjs` still lists `apps/tracker/` in `OTHER_APPLICATIONS`.
+  evidence: |-
+    Story 8.5 (2026-10-17) adopted the contract and restyled the floor, `/login`, the one surface an anonymous
+    Visitor reaches (`RESTYLE-SPEC.md` § The floor: the tracker renders its own sign-in page, so R2 (a) does not
+    apply). The interior is below the floor and stays as it was, except what the adapter reaches app-wide (the
+    `font-mono` utility now names Geist Mono) and hand-fix lines 2 to 4. Mapping the palette onto roles without
+    restyling would collapse the five LED watch states, which are told apart by hue (F-9), so it is one piece of
+    work with the restyle, not a step before it. The count is `scan` from `ops/literal-conformance.mjs` over the
+    tracker's two stylesheets after Story 8.5 on 2026-10-17: 93 colour, 461 spacing, 444 type and 6 `44px` literals
+    in `app/global.css`, 48 colour literals in `app/tokens.css` (1,081 before the story; `login.css` reads 0).
+
+    **Owner: a tracker restyle story beyond the floor, if the Operator wants one (`ops/restyle-floor.md` R18).**
+    **Trigger: R18 ruled the other way, or a ruling that the interior is restyled.** That change deletes the
+    `OTHER_APPLICATIONS` entry and the `anchor-contract.test.ts` exclusion with it.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
+  id: DW-358
+  summary: >-
+    `cuatro-tracker` vendors contract `v2.0.0` since Story 8.5, but its Registry entry declares no `token_contract`,
+    and the scheduled verification could not check one: it reads a vendored file only from a `source` of the shape
+    `https://github.com/<owner>/<repo>`, and the entry's `source` is `.../cuatro-portfolio/tree/main/apps/tracker`.
+  evidence: |-
+    Read 2026-10-17 in `ops/registry-verification.mjs` (`vendoredTarget`, and the row "is not of the shape
+    https://github.com/<owner>/<repo>"). Declaring the field today would fail the scheduled run. Story 8.5 makes no
+    Registry release (its spec's boundaries). The same holds for `cs-tournament` once Story 8.6 adopts.
+
+    **Owner: a Registry story after R20 puts the vendored folder on `main`.** **Trigger: R20 done.** The shape is
+    either teaching the verification an absorbed entry's subtree (`tree/main/<dir>`) or recording that an absorbed
+    entry declares no `token_contract`; then a dated observation, then the release.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
+  id: DW-359
+  summary: >-
+    Three findings on the tracker's restyled `/login` that the ceiling keeps out of Story 8.5: no `<h1>`; the sign-in
+    error tied to no field by `aria-describedby`; the boot overlay's progress bar drawn in U+2588 glyphs outside the
+    contract faces' subset.
+  evidence: |-
+    Observed 2026-10-17 by Story 8.5's AD-19 pass (`ops/restyle-floor.md` § `cuatro-tracker`, findings 1 to 3). The
+    first two change the accessibility tree, the third is content; none is presentation only.
+
+    **Owner: a tracker accessibility story.** **Trigger: the next change to `LoginCRT.tsx` or `BootSequence`.**
   status: open

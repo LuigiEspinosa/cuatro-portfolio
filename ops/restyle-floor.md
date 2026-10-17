@@ -5,7 +5,8 @@ The written answers Story 8.1 owes the three wave-1 Satellites before any restyl
 `list-wheel`'s (Story 8.3, the same day).
 Stories 8.2 and 8.3 consume § O-14 and § O-15 rather than re-deriving them; Story 8.4 records SM-12
 from this file and extends it with its per-application table (`RESTYLE-SPEC.md` § Recording a
-restyle), § SM-12 per application, Story 8.4's record.
+restyle), § SM-12 per application, Story 8.4's record. Story 8.5 adds wave 2's first application
+(§ `cuatro-tracker`, Story 8.5's adoption and restyle).
 
 Written during Story 8.1 on **2026-10-13** (ISO 8601 UTC). Every value is marked **Observed** with
 its method or **Decision** with its reason (NFR-9). This file is a record, not Registry data.
@@ -678,6 +679,164 @@ application.
 "eleven" is resolved: both read twelve in the file as it stands (§ The floor, "all **twelve** hold"; § Recording a
 restyle, `F-1 … F-12`).
 
+## `cuatro-tracker`, Story 8.5's adoption and restyle (wave 2)
+
+Story 8.5 adopts the contract in `apps/tracker` and restyles its floor, on the Anchor branch
+`wt/8-5-cuatro-tracker-visual-restyle` for `dev` (the independent verifier pushes it; row R20 carries it to `main` and
+the box). Story 3.6's merge shipped and was verified before it opened (board row `3-6` `done`; the tracker has served
+`tracker.cuatro.dev` from `apps/tracker` since 2026-09-29), so the restyle is its own merge (AD-20). Evidence, kept out of
+every repository: `C:\CuatroEcosystem\epic-8-evidence\8-5-cuatro-tracker-visual-restyle\` (`before/` and `after/`: `/login`
+in four states at 360 and 1280, the four widths, the greyscale masked renders, `transcript.txt`, `report.json`; `method/`:
+`measure.mjs`).
+
+### O-14 for `cuatro-tracker`: what a Visitor reaches without authenticating
+
+**Observed 2026-10-17T09:13:03Z**, `curl` from the workstation against `https://tracker.cuatro.dev`, no cookie: routes
+`apps/tracker/app/` declares, plus one no route declares. `middleware.ts` puts every path behind `next-auth` except
+`/login`, `/api/auth/*`, `/api/health`, `/api/ready` and the static files.
+
+| Route | Anonymous answer | A surface the tracker renders with its own stylesheet? |
+|---|---|---|
+| `/`, `/timeline`, `/search`, `/anime/1`, `/admin`, `/no-such-path` | 307 to `/login?callbackUrl=...` | no |
+| `/login`, and `/login?error=CredentialsSignin` | **200, the sign-in page** (14,839 and 14,936 bytes) | **yes** |
+| `/api/auth/signin` | 302 to `/login` | no |
+| `/api/auth/error` | 200 `text/html`, 5,269 bytes, next-auth's own built-in page and inline style | no: the library's page, as the issuer's is for `cs-tracker` |
+| `/api/health`, `/api/ready`, `/api/auth/providers`, `/api/auth/session` | 200 JSON | no |
+| `/robots.txt` | 200 `text/plain` | no |
+
+**Observed. The floor is one surface, `/login`**, read in the four states its own form reaches: idle, error (the sign-in
+refused), pending (the boot overlay holding at frame 9 while the sign-in is in flight) and success (the boot run out before
+the navigation). The tracker renders its own sign-in page, so `RESTYLE-SPEC.md` § The floor's R2 (a) paragraph does not apply
+and the strict floor stands; the authenticated interior is below it and is not restyled (row R18 asks the Operator to
+confirm, as R15, confirmed 2026-10-17, does for `digital-library`).
+
+### O-15 for `cuatro-tracker`: what it has installed
+
+**Observed 2026-10-17** from `apps/tracker/package.json`: Tailwind `^4.0.0` through `@tailwindcss/postcss`, Next.js 15 and
+React 19, `sonner` for toasts, `gsap` and `lenis` for motion; **no component library and no component plugin**. Its
+components (`CRTBezel`, `BitmapText`, `TerminalInput`, `CRTPixelButton`, `StatusBanner`, `BootSequence` and the rest) are
+the application's own. **Family C**, a plain Tailwind consumer: nothing to displace, so no component-class count applies.
+Family C's two checks (the browser's defaults, a rule that clears `outline`) do apply, and the second found two: the old
+`.ti-field` and `.cpb:focus-visible` rules cleared the outline on every stop of the floor.
+
+### What changed
+
+- **The adoption.** The nine token-contract files are vendored at `apps/tracker/app/cuatro-contracts/`, each equal to
+  this repository's `contracts/` file (held by `apps/tracker/__tests__/restyle-floor.test.ts`, which compares them file for
+  file). `app/global.css` imports `./cuatro-contracts/tailwind.css` first, the generated adapter (AD-14: a Tailwind
+  consumer imports it, never the plain pair), then the tracker's own `tokens.css`, then hand-fix lines 2 to 4 in
+  `@layer base` (line 1, `color-scheme: dark`, was already on `:root`). Next's build rebases `fonts.css`'s `url()`s: the
+  three woff2 ship hashed under `/_next/static/media/`. No `--token-*` or `--color-*` name is declared from itself. Line 5,
+  mapping the application's own palette onto the roles, is **not applied**: the interior's five LED watch states are told
+  apart by hue, so mapping them is the interior's restyle (DW-357), not a step before it. What the adapter reaches
+  app-wide: the `font-mono` utility (41 call sites in the interior) now names Geist Mono; the interior's own `var(--font-*)`
+  names still resolve to its `next/font` faces, whose class on `<html>` outranks the adapter's theme layer (read in the
+  built CSS: the theme's `--font-display: var(--f-display)` sits in `@layer theme`, `next/font`'s class unlayered). The
+  adapter also sets Tailwind's `--default-font-family` and `--default-mono-font-family` to the contract's body and mono
+  faces; the tracker's own `body` rule still sets its body face, and no interior template renders `code`, `pre`, `kbd` or
+  `samp`.
+- **The restyle of `/login`.** Written once in `app/(auth)/login/login.css`, scoped to `main.lc`, every value a role or a
+  scale step. The cabinet SVG, the scanlines, the vignette, the drop shadows, the bitmap face, the decorative block glyphs
+  and the glitch shake retire (the governing decision). The wordmark is § 6 Display on a § 3 Hairline; the version and
+  copyright lines are § 7 Labels; the two fields are § 9 Fields under § 7 Labels, square while focused (I-11), with the
+  native caret back in place of the drawn block cursor; the sign-in error is text in `--token-text` on a Boundary (S-4);
+  the submit is a § 1 Control, § 1 Disabled while the form is busy (never an opacity); the boot overlay keeps every line,
+  in mono on the page ground. `LoginCRT.tsx` renders the same elements in the same order as plain markup instead of the
+  shared atoms (`CRTBezel`, `BitmapText`, `StatusBanner`, `CRTPixelButton`), which the interior keeps unchanged. The login
+  page no longer renders the channel-flip overlay (a band with a glow over a black field, `aria-hidden`); the navigation
+  keeps its timing. **DOM order of the content, routes, data, behaviour and every string are unchanged.** The old `.lc`,
+  `.ti`, `.bt-header` and `.bt-blocks` rules are deleted from `global.css`; the `.crt` rules stay, since the dashboard
+  carousel's hero still renders `CRTBezel`.
+- **No shared component package** was created (AD-2, AD-24), and nothing is imported from the Anchor beyond the vendored
+  folder.
+- **The check left behind**: `apps/tracker/__tests__/restyle-floor.test.ts`, 9 cases (the vendored folder is the nine files
+  and equals `contracts/`; the adapter is imported first and `tailwindcss` not again; no self-referencing custom property;
+  `login.css` draws no shadow or gradient, states no opacity, names no literal colour, keeps every radius `--r-none`, never
+  sets `outline`, transitions the Control's border colour alone, and uses `--tap`, never `44px`), and one case in
+  `LoginCRT.test.tsx` (in every phase, no shared CRT atom, no inline style, no SVG). A planted `box-shadow` and `4px`
+  radius in `login.css` failed two cases; a planted `bt` class with an inline `textShadow` failed the `LoginCRT` case; both
+  reverted. `ops/literal-conformance.mjs`'s own `scan` reads `login.css` at **0 findings**.
+
+### The floor, measured once by hand (AD-19)
+
+**Observed 2026-10-17**, before at 09:22:36Z and after at 09:46:35Z (on the final tree, after a first after run at
+09:31:18Z read the same), by `method/measure.mjs` in Playwright `1.62.1`'s
+Chromium `151.0.7922.34`, device scale factor 1, against `next start` of each production build made on the workstation
+(`corepack pnpm --filter tracker build`; the before build from `origin/dev` `0b27791`'s tree, the after build from the
+branch), with stand-in environment values and a scratch Redis (`epic-scratch-8-5-redis`). The pending and success states are
+reached by holding or answering the credentials callback in the browser, so no database is needed.
+
+| Reading, at 360x800 (1280 the same) | Before | After |
+|---|---|---|
+| Visible interactive elements read, in each of the four states | 3 | 3 |
+| Under `--tap` on either axis (F-10) | 2 (both fields, 24px tall) | **0** |
+| Two adjacent targets overlapping | 0 | **0** |
+| A ground on a control at rest or on hover (F-4) | 1 (the submit fills on hover) | **0** |
+| A radius above 0 (F-5) | 1 (the screen, 10px) | **0** |
+| `transition-property` naming `all`, `outline` or `box-shadow` over a duration | 2 (the fields' wrappers) | **0** |
+| Rules drawing a shadow or a gradient that a floor element matches (F-7 as amended) | 5 (idle, pending), 6 (error, success) | **0** |
+| Keyboard stops without a solid 2px ring (F-6), 18 presses over idle and error at both widths | **18** (`outline: none`) | **0** |
+| Horizontal scroll at 359, 390, 759, 761 | 0 | **0** |
+
+| Check | After | How |
+|---|---|---|
+| F-1 | **Pass**: pixels (2,2) and (2,600) read `6,5,9`, equal to `--token-bg` drawn to a canvas, `6,5,9` (before `21,16,31` and `23,17,33`, the radial gradient) | the page's own screenshot, decoded in the page |
+| F-2 | **Pass**: Bricolage Grotesque, Geist and Geist Mono `loaded` in `document.fonts` (before: none of the three loaded). `document.fonts.check()` answers `true` when no face of a family exists at all, so `loaded` is the reading | `FontFace` status |
+| F-3 | **Pass**: the header's hairline reads `40,40,48`, equal to `--token-border`; a field's edge `101,100,113`, equal to `--token-border-interactive` | a sampled rule |
+| F-4, F-5, F-6, F-10 | **Pass**, the table above; the ring is `solid 2px oklch(0.84 0.13 288)` at offset 3px on every stop, `0px` radius on the focused fields | browser readings |
+| F-7 | **Pass**: in every state, 0 rules in the built CSS that draw a shadow, a drop shadow or a gradient have a selector some element of the page matches (dynamic pseudo-classes stripped). Below the floor, recorded beside the check: the built CSS still carries the interior's shadows and gradients (`.crt`, `.crt-screen-wrap`, `.cft-band`, `.led`, `.fc` among them), none matched on `/login` | the stylesheets in the page, walked rule by rule |
+| F-8 | **Pass**: 0 `background`, `background-color` or `fill` declarations reading an accent role outside `::selection` | the same walk |
+| F-9 | **Pass, on a stated reading**: `/login` carries no status taxonomy; its one state, the refused sign-in, is the notice's bordered box present or absent, which `after/greyscale-masked-login-idle.png` and `-error.png` show with every word transparent | greyscale render, words masked |
+| F-11 | **Pass**: `color-scheme: dark`; `::selection` `oklch(0.66 0.165 288)` on `oklch(0.12 0.011 288)` (before: no selection rule) | computed style |
+| F-12 | **Pass** (R14): no § 2 row on the surface; the Control and the Fields meet § 1 and § 9 geometry at the four widths; the floor's stylesheet has no width breakpoint at all, and the `480px` one left in `global.css` now holds only `.crt` | the four widths, above |
+
+**SM-12's four manual checks.** Keyboard-only traversal, 360 with no horizontal scroll and the greyscale render are
+above. **`prefers-reduced-motion` forced: Pass**, the first application in Epic 8 where it does: the boot overlay never
+mounts (`BootSequence` reads the setting), no animation runs at load, and on the error path the only transition is the
+Control's border colour, which `--dur-micro` collapses to 1ms. **AD-19**: 0 targets under 44px on either axis, measured;
+the ring is visible on `--token-bg`, the only ground the floor paints (11.70:1, § SM-12 per application); 0 rings eased.
+
+**Gates.** `corepack pnpm --filter tracker test` with Redis and Postgres scratch containers: **108 files, 1245 tests
+passed**; `corepack pnpm --filter tracker typecheck`: exit 0; `corepack pnpm --filter tracker build`: exit 0, its one warning
+(OpenTelemetry's "Critical dependency") the same as the before build's. The root suite, `corepack pnpm test --run`:
+**80 files passed, 1980 tests passed, 1 skipped** (on the final tree); `ops/__tests__/accent-fill.test.ts`, which reads every tracked
+stylesheet, gained its third exemption, the tracker's `::selection` (F-11's permitted fill, by file and selector), and
+`apps/hub/app/__tests__/anchor-contract.test.ts`, which refused a `cuatro-contracts/` folder anywhere in the repository, admits
+the tracker's alone (`VENDORED_IN_APPS`) and holds it equal to `contracts/` file for file; the Hub still vendors nothing.
+
+**The image.** `docker build -f apps/tracker/Dockerfile` of the branch as `epic-scratch-8-5-tracker:restyle` (context the
+repository root, `turbo prune tracker --docker`, as `image-tracker.yml` builds it), run with stand-in values at
+2026-10-17T09:40:31Z: `GET /login` 200 with `lc-wordmark` and no `crt-shell`, the three contract woff2 under
+`/_next/static/media/` 200 `font/woff2` (58,992, 24,124 and 11,284 bytes), `GET /` 307 to `/login`; container and image
+removed. That image predates the last change, which gates the Control's hover on `@media (hover: hover)`, a stylesheet
+change the host build and the 09:46:35Z run carry.
+
+### Findings, recorded rather than corrected (AD-19)
+
+1. **`/login` has no `<h1>`** (§ 6, one per document): the wordmark is a `span`. Making it a heading changes what a screen
+   reader meets, a semantic change outside the ceiling. DW-359.
+2. **The sign-in error is not tied to a field by `aria-describedby`** (§ 9 Invalid, S-4); it is a `role="alert"` region.
+   Adding the association is a markup change to the accessibility tree. DW-359.
+3. **The boot overlay's progress bar is a string of U+2588 block glyphs**, outside the contract faces' latin subset, so the
+   browser draws them from a system face. The string is content, so it stays. DW-359.
+4. **The interior's four `next/font` faces are still preloaded on `/login`**, which no longer uses them: weight, not a floor
+   check. DW-357.
+
+### `cuatro-tracker`, the record `RESTYLE-SPEC.md` § Recording a restyle asks for (added to Story 8.4's)
+
+| Field | `cuatro-tracker` |
+|---|---|
+| Application id | `cuatro-tracker` |
+| Head measured | the branch `wt/8-5-cuatro-tracker-visual-restyle`, built on the workstation; not yet on `dev` or live (R20) |
+| Framework family | **C** (Tailwind v4 utilities, no component library; § O-15 for `cuatro-tracker` above) |
+| Surfaces inside the floor, by route | **`/login`**, whole, in its four states (§ O-14 for `cuatro-tracker`); the strict floor (R18) |
+| Component-class call sites, before and after | Not applicable (family C) |
+| AD-19 manual pass | **2026-10-17**, 09:22:36Z and 09:46:35Z; found: 2 targets under `--tap`, every stop ringless, 5 or 6 shadow and gradient rules before; 0, 0 and 0 after; findings 1 to 4 |
+| F-1 to F-12 | **All twelve pass** (F-9 and F-12 on their stated readings): restyled, as § The floor counts it |
+| SM-12's four checks | **All four pass**, reduced motion included |
+| Greyscale render, words masked | `after\greyscale-masked-login-idle.png`, `after\greyscale-masked-login-error.png` |
+| Contract version consumed | Vendored `v2.0.0` (`apps/tracker/app/cuatro-contracts/tokens.css`); the Registry entry declares **no `token_contract`** (DW-358: its `source` is a subtree of this repository, which the scheduled verification cannot read) |
+
 ## Pending Operator actions
 
 | # | Action | Owner | Note | Completed (UTC) |
@@ -699,6 +858,9 @@ restyle, `F-1 … F-12`).
 | R15 | **Confirm that R2 (a) leaves `digital-library` on its strict floor** (`/login` and the error page), so the reader and `/admin` stay below it | Operator | Added 2026-10-17 by the specification amendment story. The ruling reads "for an application whose anonymous surfaces are a redirect, plain text and the issuer's page", and `digital-library` renders its own `/login`, so `RESTYLE-SPEC.md` § The floor keeps its strict floor and its restyled interior is beyond it. Read the other way, the demo principal's interior would count, and that includes the reader: the demo fixture is three PDFs (`ops/demo-principal.md`), and the reader writes `shadow-xl` (`PdfReader.svelte`) and `shadow-2xl` (`read/+page.svelte`), so F-7 would fail again and the reader's light and sepia themes would meet F-1. `digital-library` has no demo account yet (DW-337), so nothing reaches that interior today. If the Operator rules the other way, F-7 and F-1 are re-read and the reader becomes restyle work | Confirmed by the Operator 2026-10-17: `digital-library` keeps its strict floor (`/login` and the error page); the reader and `/admin` stay below it |
 | R16 | **Merge the `list-wheel` PR from `fix/8-spec-field-focus-radius` (PR [#5](https://github.com/LuigiEspinosa/list-wheel/pull/5), head `2d1b8b8`, one commit on `main` `0ee1fcb`, pushed and opened to `main` by the independent verifier on 2026-10-17) into `main`**, which is the deploy, as R6: `.github/workflows/deploy.yml` runs `test`, then `deploy`. No step by hand on the box | Operator | Added 2026-10-17 by the specification amendment story. Under I-11 as ruled, `list-wheel`'s editor textarea is `2px` round while it holds focus (live, 2026-10-17T08:21:24Z); the commit keeps the textarea and the find fields square at `:focus-visible` and adds a `restyle.spec.ts` case (planted before the fix: `1 FAILED, 148 SUCCESS`; after: `149 SUCCESS`). PR #5 reports no checks (`deploy.yml` runs on a push to `main` only; check-runs and statuses on `2d1b8b8` count 0, read 2026-10-17). A dated completion names the Deploy run on the merge sha and both its jobs, never "CI green". The production check: after clicking Edit on `https://wheel.cuatro.dev/`, the focused textarea's computed `border-radius` is `0px` (`epic-8-evidence\8-spec-restyle-spec-amendment\method\probe-list-wheel.mjs`) | Done 2026-10-17T09:33Z. PR #5 merged into `main` as `a1f1fce`. Deploy run 39021410273 on `a1f1fce`: `test` success, `deploy` success (`report` skipped). Live `styles-BFYBESY2.css` carries `input[type=text]:focus-visible,textarea:focus-visible{border-radius:var(--r-none)}` with `--r-none: 0` |
 | R17 | **Confirm `RESTYLE-SPEC.md`'s icon-only control row** (§ What is deliberately not in the vocabulary): an icon-only control keeps the glyph it already renders, inside a § 1 Control box at `--tap` on both axes, its accessible name unchanged, and a restyle mints no glyph and swaps none | Operator | Added 2026-10-17 by Story 8.5's first commit, from an earlier verifier's minor finding. The row states `cs-tracker`'s Story 8.1 practice (H-30, its heroicons kept inside Controls); R7 did not name it, because Story 8.3 recorded I-10's second half as not reached. `RESTYLE-SPEC.md` `1.1.1` reconciles it with § Icons in wording only (the three glyphs are the ones the system specifies; an application's existing glyph is its content, not a fourth). Options: (a) confirm the row as written; (b) rule otherwise, for example that the glyph becomes the arrow or the external-navigation mark, which would make `cs-tracker`'s menu toggle and dismiss Controls restyle work. Story 8.5 meets the case only where the tracker's floor renders an icon-only control, and records which | _not done_ |
+| R18 | **Confirm that `cuatro-tracker`'s floor is the strict one, `/login`**, so its authenticated interior stays below the floor and keeps its CRT design | Operator | Added 2026-10-17 by Story 8.5. The tracker renders its own sign-in page, so `RESTYLE-SPEC.md` § The floor's R2 (a) paragraph does not apply, the reading the Operator confirmed for `digital-library` on 2026-10-17 (R15). Options: (a) confirm; the interior's restyle stays DW-357, unscheduled; (b) rule that the demo-reachable interior counts (`ops/demo-principal.md`: the tracker has a demo principal, switched by `DEMO_ENABLED`), which makes DW-357 a story: the palette, the faces, the CRT atoms and some 1,050 literals across the interior's routes | _not done_ |
+| R19 | **Sign off the `cuatro-tracker` restyle visually** (a ruling) | Operator | Added 2026-10-17. `/login` in four states, idle, error, pending (the boot overlay) and success, at 360 and 1280: `C:\CuatroEcosystem\epic-8-evidence\8-5-cuatro-tracker-visual-restylebefore\` and `after\` (`login-<state>-<width>.png`; `w359-`, `w390-`, `w759-`, `w761-login-idle.png` and `-error.png`), the greyscale renders in `after\greyscale-masked-login-*.png`. The password field's dots and the progress bar's blocks show colour fringes in the screenshots: that is the capture's subpixel text rendering, not a colour in the page | _not done_ |
+| R20 | **Promote `dev` to `main` once the independent verifier has pushed Story 8.5 to `dev`, then roll the tracker** by its standing redeploy, `ops/tracker-cutover.md` § The sequence, Later rollouts (`tracker-migrate`, `tracker-migrate-demo`, `docker rollout ... tracker`, `tracker-worker`), with `HUB_TAG` and `TRACKER_TAG` exported; no step of its own, and no migration in this change | Operator | Added 2026-10-17. A push to `main` rolls the Hub alone; the tracker is behind a compose profile no deploy starts (DW-275), so it reaches the box by hand. A dated completion names the runs read on the merge sha, `ci.yml` (`CI`, its `test` job runs the tracker's typecheck and suite) and `image-tracker.yml` (`Image (tracker)`, which builds `ghcr.io/luigiespinosa/tracker:<sha>`), never "CI green". The production check: `https://tracker.cuatro.dev/login` 200 with `lc-wordmark` in the page and no `crt-shell`, and the three contract woff2 under `/_next/static/media/` 200 | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC date and leave the row in place.

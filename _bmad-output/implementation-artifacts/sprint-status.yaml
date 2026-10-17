@@ -1189,7 +1189,10 @@ development_status:
   # (cs-tracker and digital-library restyled yes; list-wheel yes on fix 2d1b8b8, no on main until R16); DW-346 and
   # DW-350 closed. Independent verifier pass 2026-10-17, list-wheel PR #5 opened to main; awaiting the Operator on
   # R15 (confirm digital-library's strict floor) and R16 (merge list-wheel PR #5). The amendment 8.5 and 8.6 wait on is on dev.
-  8-5-cuatro-tracker-visual-restyle: backlog
+  # 2026-10-17: built on the Anchor branch wt/8-5-cuatro-tracker-visual-restyle, awaiting the independent verifier
+  # (spec-8-5-cuatro-tracker-visual-restyle.md): the contract vendored in apps/tracker and imported through tailwind.css,
+  # /login (the strict floor) restyled, F-1 to F-12 and SM-12's four checks pass; then ops/restyle-floor.md R18 to R20.
+  8-5-cuatro-tracker-visual-restyle: review
   8-6-cs-tournament-visual-restyle: backlog
   epic-8-retrospective: optional
 action_items:
