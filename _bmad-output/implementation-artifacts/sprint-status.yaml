@@ -1755,7 +1755,10 @@ action_items:
       with a named exemption, and amend AGENTS.md's two-sources rule and AD-14 for
       Anchor members; close DW-358 and DW-361"
     owner: "Cuatro"
-    status: open
+    # 2026-10-17: done. R24's change (59f79ab) did the tracker half, AGENTS.md and DW-358/361; the remainder
+    # (NON_HUB_APPLICATIONS in anchor-contract.test.ts, AD-14 amended) by spec-retro8-cleanup-records-spec-and-field-focus.md,
+    # independent verifier pass round 1.
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
   - id: "epic-8-retro-item-55-observe-and-date-list-wheel-s-and-digita"
     epic: 8
@@ -1772,7 +1775,10 @@ action_items:
       disposition DW-352, DW-356 and DW-358, clear the stale passages in ops/restyle-floor.md
       and update AGENTS.md's description of it"
     owner: "Cuatro"
-    status: open
+    # 2026-10-17: done (spec-retro8-cleanup-records-spec-and-field-focus.md, verifier pass round 1): board comments,
+    # ops/restyle-floor.md's stale passages dated, AGENTS.md's description; DW-352 and DW-356 restated, DW-358 closed by R24.
+    # The retro's optional restructuring of the record (folding tables, a log of finished rows) was not done.
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
   - id: "epic-8-retro-item-57-spec-reconciliation-write-i-12-to-i-14-i"
     epic: 8
@@ -1780,14 +1786,19 @@ action_items:
       row, settle the ring radius for controls and whether a file input is a section
       9 field; amend epics.md Epic 8 for R2, R13, R14, R23 and R24"
     owner: "Cuatro"
-    status: open
+    # 2026-10-17: RESTYLE-SPEC.md 1.1.2 (I-12 to I-14, the Motion row) and the epics.md amendments are on dev
+    # (verifier pass round 1). Remains: the Operator's ruling on Q-1 (control ring radius) and Q-2 (file input),
+    # ops/restyle-floor.md R28, written into the spec once ruled.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
   - id: "epic-8-retro-item-58-digital-library-and-list-wheel-implement"
     epic: 8
     action: "digital-library and list-wheel: implement I-11 by an explicit rule, cover
       the file input once ruled, and assert the focused radius on rendered output"
     owner: "Cuatro"
-    status: open
+    # 2026-10-17: built and verified (round 1); digital-library PR #70 to dev and list-wheel PR #6 to main opened.
+    # Remains: the Operator's merges and rolls, ops/restyle-floor.md R26 and R27, and the file input once R28 rules Q-2.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
   - id: "epic-8-retro-item-59-process-edit-a-markdown-record-with-the"
     epic: 8
@@ -1795,7 +1806,9 @@ action_items:
       through Git Bash, read git diff before pushing a doc commit, and add a case
       that line 1 of every ops/*.md is a short heading"
     owner: "Cuatro"
-    status: open
+    # 2026-10-17: done. ops/__tests__/ops-record-titles.test.ts runs in the root suite (ci.yml's test job, no new job);
+    # verifier pass round 1. The Edit-tool and read-the-diff practice is a standing process rule.
+    status: done
     ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
   - id: "epic-8-retro-item-60-process-an-agent-step-gated-on-an-operat"
     epic: 8

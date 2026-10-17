@@ -2,7 +2,7 @@
 title: 'Epic 8 retrospective cleanup: items 54 (remainder), 56, 57, 58 and 59'
 type: 'chore'
 created: '2026-10-17'
-status: 'in-review'
+status: 'done'
 route: 'oneshot'
 review_loop_iteration: 0
 context: ['{project-root}/_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md', '{project-root}/ops/restyle-floor.md']
@@ -116,4 +116,36 @@ rows to a log) was not asked by this task; the stale passages were dated instead
 pass, 54, 56, 57 and 59 to `done`; 58 to `in-progress` until R26 and R27 are dated.
 
 ## Verification
+
+**Independent verifier, round 1 of 3, 2026-10-17: pass with minor findings.** Every diff read against its base
+(Anchor `origin/dev` `9a4817c`, `digital-library` `origin/dev` `9e4572d`, `list-wheel` `origin/main` `a1f1fce`); each
+commit is one Conventional subject with no body or trailer; no em-dash, en-dash, dash-standing double-dash or emoji in
+any added line (byte grep over the three diffs).
+
+- Root suite, `corepack pnpm test --run`: `Test Files 5 failed | 76 passed (81)`, `Tests 8 failed | 1975 passed | 1
+  skipped (1984)`, all eight in the WSL-bash suites (DW-135). Re-run alone, one file each: `demo-reset` 30 passed,
+  `library-backup` 59 passed, `postgres-backup` 20 passed and 1 skipped, `tournament-backup` 15 passed,
+  `tracker-backup` 11 passed. `corepack pnpm typecheck` exit 0. `anchor-contract`, `ops-record-titles`,
+  `contract-purity` and `registry-schema` together: 183 passed.
+- Planted: an intent-to-add `apps/newcomer/x.ts` fails `anchor-contract.test.ts` with `a directory under apps/ is
+  neither the Hub nor in NON_HUB_APPLICATIONS` (1 failed, 17 passed); removed, it passes. Line 1 of all 40 `ops/*.md`
+  is a `# ` heading.
+- `digital-library` `apps/web`: `vitest run` 21 files, 383 passed; `svelte-check` 0 errors; `vite build` done, its CSS
+  carries `input:not([type=file]):focus-visible,select:focus-visible,textarea:focus-visible{border-radius:var(--r-none)}`.
+  With `layout.css` reset to `dev`, `field-focus-radius.test.ts` fails (`text: expected { visible: true, radius:
+  '2px' } to deeply equal { visible: true, radius: '0px' }`); restored. `apps/api` not run (native modules, untouched).
+- `list-wheel`: `npm test` `TOTAL: 150 SUCCESS`; `node --test ops/deploy-remote.test.mjs` 27 passed; `ng build` done.
+- Pushed both branches and opened `digital-library` PR #70 (to `dev`) and `list-wheel` PR #6 (to `main`), merged by
+  neither; `ops/restyle-floor.md` R26 and R27 name them, and R28 records the Operator's ruling on Q-1 and Q-2.
+
+Rebase onto `dev` `64b0e47` (the DW-347 and DW-351 story, which took row R25 first): the builder's commits are now
+`b3338fb` (`0908471`), `303d4ab` (`866d610`) and `e947283` (`13e12ac`), whose subject still says "r25 and r26" for
+the rows now numbered R26 and R27. A first push went out mid-rebase and carried `b3338fb` and `303d4ab` alone; the
+records followed in the next push, never forced.
+
+Minor findings, none blocking: (1) `input:not([type='file'])` in both Satellites also squares an input that is a
+control (`submit`, `button`, `range`, `color`); neither floor renders one, and S-3 already squares a control's box,
+so it is noted for Q-1's ruling rather than fixed. (2) The bundle of five items is kept as built (the builder's Keep
+reading); the Satellite halves are separate PRs. (3) Board item 57 is `in-progress`, not `done` as the builder
+proposed, because its "settle" half is the Operator's R28.
 
