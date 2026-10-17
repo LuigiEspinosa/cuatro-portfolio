@@ -2,7 +2,7 @@
 title: 'Epic 8 specification amendment: RESTYLE-SPEC.md from the Operator rulings of 2026-10-17'
 type: 'chore'
 created: '2026-10-17'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 context:
@@ -114,4 +114,30 @@ the six failures all in DW-135 WSL-bash files (`deploy-remote`, `library-backup`
 - `corepack pnpm test --run`, expected: every file passes (DW-135 files re-run alone if they fail).
 - `list-wheel` `fix/8-spec-field-focus-radius`: `npm test`, expected `149 SUCCESS`.
 
-**Independent verifier** (fills this in):
+**Independent verifier**, 2026-10-17, round 1: **pass with minor findings**.
+
+- **Diffs read** against `origin/dev` `79b8886` (`c0a63aa`, `8c8b0a0`) and `list-wheel` `origin/main` `0ee1fcb`
+  (`2d1b8b8`, `src/styles.css` and `src/app/restyle.spec.ts` only: no template, DOM order, behaviour or microcopy
+  change). Each ruling is written where the story asks; no em-dash, en-dash, dash-standing double-dash or emoji in
+  any added line.
+- **`list-wheel`, measured** with Chromium `151.0.7922.34` at scale factor 1: live `https://wheel.cuatro.dev` at
+  2026-10-17T08:49:49Z, the editor textarea `radius=2px` while focused (the defect); a build of `2d1b8b8` at
+  08:49:53Z, every field (textarea, both find inputs, checkbox) `0px` focused, ring `solid 2px`. `npm test`
+  `149 SUCCESS`; with `main`'s `src/styles.css` planted, `1 FAILED, 148 SUCCESS`; `node --test
+  ops/deploy-remote.test.mjs` 27 pass, 0 fail; `ng build` clean, 0 `box-shadow` and 0 `gradient(`.
+  **PR [#5](https://github.com/LuigiEspinosa/list-wheel/pull/5) opened to `main`**, not merged; it reports no
+  checks (check-runs and statuses on `2d1b8b8` count 0, `deploy.yml` runs on a push to `main`). Row R16.
+- **`cs-tracker`** `origin/dev` `1e7cd07`, read through git: hand-fix 3's `:focus-visible` sets no radius, hand-fix
+  4 and `.ct-field` hold every field at `--r-none`, `.ct-dot` at `--r-none`. No defect, so no branch.
+- **Workspace files**: both `DESIGN.md` files are pointers naming the vendored contract (paths checked) and
+  `RESTYLE-SPEC.md`; `digital-library-workspace/AGENTS.md` line 7 names those as the law; `list-wheel-workspace` has
+  no instruction file.
+- **Anchor root suite**, `corepack pnpm test --run` in this worktree: `Test Files 7 failed | 73 passed (80)`, `Tests
+  7 failed | 1972 passed | 1 skipped`, all seven in the DW-135 WSL-bash files, one case each; alone: `demo-reset`
+  30/30, `deploy-remote` 28/28, `library-backup` 59/59, `postgres-backup` 20 passed 1 skipped, `postgres-init` 17/17,
+  `tournament-backup` 15/15, `tracker-backup` 11/11.
+- **Open for the Operator**: R15 (the reading of R2 (a) for `digital-library`), R16 (merge `list-wheel` PR #5).
+- **Minor, not blocking**: the icon-only control row (I-10's second half) states `cs-tracker`'s 8.1 practice, which
+  the ruling did not name (8.3 recorded "not reached"); § 9 Disabled still names `aria-disabled` for a field, which
+  I-4's reading in § 1 no longer does; `cs-tracker`'s image CSS carries `.rounded{border-radius:.25rem}`, minted
+  from the word in a `core_components.ex` comment, matched by no element (F-5 is computed, so it passes).

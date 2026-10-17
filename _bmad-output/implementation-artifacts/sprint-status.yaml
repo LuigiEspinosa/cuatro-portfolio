@@ -1187,7 +1187,8 @@ development_status:
   # a board key of its own (spec-8-spec-restyle-spec-amendment.md): RESTYLE-SPEC.md 1.1.0 settles I-1 to I-11, F-7's
   # scope, F-12's reading and the floor's denominator; ops/restyle-floor.md dates the six rulings and re-reads SM-12
   # (cs-tracker and digital-library restyled yes; list-wheel yes on fix 2d1b8b8, no on main until R16); DW-346 and
-  # DW-350 closed. Awaiting the independent verifier, then the Operator on R15 and R16. 8.5 and 8.6 open after it.
+  # DW-350 closed. Independent verifier pass 2026-10-17, list-wheel PR #5 opened to main; awaiting the Operator on
+  # R15 (confirm digital-library's strict floor) and R16 (merge list-wheel PR #5). The amendment 8.5 and 8.6 wait on is on dev.
   8-5-cuatro-tracker-visual-restyle: backlog
   8-6-cs-tournament-visual-restyle: backlog
   epic-8-retrospective: optional
