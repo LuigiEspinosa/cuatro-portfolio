@@ -10582,7 +10582,7 @@ status: done
     **Trigger: R18 ruled the other way, or a ruling that the interior is restyled.** That change deletes the
     `OTHER_APPLICATIONS` entry; the vendored folder and its `anchor-contract.test.ts` admission stay.
 
-    **2026-10-17, R24 (`ad5fa2a`):** the vendored folder and its admission are gone; the tracker reads `contracts/`
+    **2026-10-17, R24 (`59f79ab`):** the vendored folder and its admission are gone; the tracker reads `contracts/`
     directly, so that change has neither to keep.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
@@ -10600,7 +10600,7 @@ status: done
     either teaching the verification an absorbed entry's subtree (`tree/main/<dir>`) or recording that an absorbed
     entry declares no `token_contract`; then a dated observation, then the release.
 
-    **Closed 2026-10-17 by `ad5fa2a` (`_bmad-output/implementation-artifacts/spec-8-r24-tracker-reads-contracts-directly.md`),**
+    **Closed 2026-10-17 by `59f79ab` (`_bmad-output/implementation-artifacts/spec-8-r24-tracker-reads-contracts-directly.md`),**
     on the Operator's ruling R24 (a) of the same day: `token_contract` stays absent for an `absorbed_into:
     cuatro-portfolio` entry, so no Registry release follows, and the tracker no longer vendors: it reads `contracts/`
     directly, as the tournament does.
@@ -10646,7 +10646,7 @@ status: done
 
     **Owner: the Operator, then the Registry release the ruling names.** **Trigger: R24.**
 
-    **Closed 2026-10-17 by `ad5fa2a` (`_bmad-output/implementation-artifacts/spec-8-r24-tracker-reads-contracts-directly.md`),**
+    **Closed 2026-10-17 by `59f79ab` (`_bmad-output/implementation-artifacts/spec-8-r24-tracker-reads-contracts-directly.md`),**
     on R24 (a): the field stays absent for an absorbed entry, adoption being the Anchor's own, and both applications
     inside the Anchor read `contracts/` directly. No Registry release is named.
   status: done
@@ -10657,7 +10657,7 @@ status: done
     `tailwindcss` 4.3.3 (preflight and default theme), while the tracker's own `@tailwindcss/postcss` and
     `tailwindcss` are 4.2.2, which still generate its utilities.
   evidence: |-
-    Measured 2026-10-17 on `ad5fa2a` by building the tracker before and after: the main stylesheet differs in two
+    Measured 2026-10-17 on `59f79ab` by building the tracker before and after: the main stylesheet differs in two
     preflight rules and nothing else, the `html` fallback font stack (dead, since `--default-font-family` is always
     `var(--f-body)`) and `:-moz-focusring` gaining `:where(:not(iframe))` (the tracker renders no iframe). Every other
     rule, both other stylesheets and all 33 media files are byte-identical, and the image built from

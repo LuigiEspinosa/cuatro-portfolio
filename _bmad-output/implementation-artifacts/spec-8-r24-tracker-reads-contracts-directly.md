@@ -42,7 +42,7 @@ and DW-361, and date the change under R24.
 
 ## Implementation Notes
 
-**What was done** (code in `ad5fa2a`, records in the docs commit that follows it):
+**What was done** (code in `59f79ab`, records in the docs commit that follows it):
 
 - `apps/tracker/app/cuatro-contracts/` deleted (the nine files).
 - `apps/tracker/app/global.css`: first import is now `@import '../../../contracts/tailwind.css';`, comment updated.
@@ -56,7 +56,7 @@ and DW-361, and date the change under R24.
   removed; the adapter case now asserts the import is `../../../contracts/tailwind.css`, that it resolves to the
   root `contracts/tailwind.css`, that the contract is v2.0.0, and that `tailwindcss` is not imported twice.
 - `deferred-work.md`: DW-358 and DW-361 closed (`done`), a dated note on DW-357, new DW-362 (below).
-  `ops/restyle-floor.md`: R24 carries a dated "Done" line naming `ad5fa2a`, and the § cuatro-tracker
+  `ops/restyle-floor.md`: R24 carries a dated "Done" line naming `59f79ab`, and the § cuatro-tracker
   "Contract version consumed" cell says it reads `contracts/` since R24. `AGENTS.md`: the "In the Hub, two sources
   may name `contracts/`" pitfall now names the tracker beside the tournament.
 
@@ -101,7 +101,7 @@ The workflow's independent verifier is the review of record and fills the sectio
 ## Verification
 
 **Independent verifier, round 1, 2026-10-17: pass with one minor finding.** Re-run from scratch in
-`C:/CuatroEcosystem/cuatro-portfolio-wt-8-r24` on `e2fcda6`, trusting none of the builder's figures:
+`C:/CuatroEcosystem/cuatro-portfolio-wt-8-r24` on `0964049`, trusting none of the builder's figures:
 
 - Diff read against `origin/dev`: the nine vendored files deleted, `global.css` imports
   `../../../contracts/tailwind.css` first, the Dockerfile copies `contracts/` into its builder exactly as
