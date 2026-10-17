@@ -2,7 +2,7 @@
 name: Cuatro Ecosystem, Restyle Specification
 status: final
 updated: 2026-10-17
-version: 1.1.0
+version: 1.1.1
 amended-2026-08-16: >-
   Corrections raised by the epics restyle pass. The floor is twelve checks, not eleven, in all
   three places that undercounted it. --tap replaces the hand-written 44px literal throughout.
@@ -12,6 +12,11 @@ amended-2026-10-17: >-
   8.3's readings, except that the status dot is square (DESIGN.md) and a field's focus ring takes no
   radius. The floor's denominator for an application with no anonymous surface of its own (R2 (a)),
   F-7's scope (R13 (a)) and F-12's reading without a § 2 row (R14) are stated in § The floor.
+amended-2026-10-17b: >-
+  Story 8.5's first commit, from an earlier verifier's minor findings; no reading changes. § 9 Disabled
+  follows § 1 Disabled (I-4). § Icons and the icon-only control row are reconciled (the Operator's
+  confirmation of that row is ops/restyle-floor.md R17). § Family A no longer calls O-14 open, and
+  § Family C no longer names digital-library, which O-15 found to be family A in its source-owned form.
 design: ./DESIGN.md
 experience: ./EXPERIENCE.md
 binds: FR-36, FR-37, FR-38, AD-24, AD-25, SM-12
@@ -537,7 +542,7 @@ floor check F-5 explicitly tests one and all three wave-1 applications are input
 | Rest / hover | Identical. A field is not a control; hovering it signals nothing |
 | Focus-visible | The standard ring (§ 4) **at `var(--r-none)`**: the field stays square while focused (I-11). The border does **not** also change: one signal |
 | Invalid | **Seam S-4, accepted permanently.** Each application keeps its framework's validation behaviour. What this spec binds is only that the message is **text**, in `var(--token-text)`, adjacent to the field and associated by `aria-describedby`, never colour alone, never an icon alone |
-| Disabled | Border `var(--token-border)`, text `var(--token-text-secondary)`, `aria-disabled`. **Never `opacity`** |
+| Disabled | Border `var(--token-border)`, text `var(--token-text-secondary)`. As § 1 Disabled (I-4): a native `disabled` already exposes the state, so `aria-disabled` is added only where the element cannot take `disabled`, and a restyle never adds it as a markup change. **Never `opacity`** |
 
 **A checkbox is a field** (I-1, I-2). A square unfilled box, `var(--s-md)` on both axes, with the Boundary
 border (§ 3) at `var(--r-none)`. Checked draws a `var(--token-text)` square inside the box, never accent;
@@ -591,7 +596,7 @@ than left as a gap, because an unanswered gap is where five implementations dive
 | **Loading** | **No skeletons and no spinners.** The Hub is statically rendered. An application that genuinely loads shows the **Empty edge** treatment (§ 8) with the word `Loading`, and never a shape pretending to be content |
 | **Toast, dialog, popover, tooltip** | **Seam S-5, accepted permanently.** Each application keeps its own. This spec does not invent a cross-framework overlay convention |
 | **Tables and dense data UI** | **Seam S-6, accepted permanently.** What binds is only the separator (§ 3), the label (§ 7) and `tabular-nums` |
-| **Icons** | There is no icon set. The three glyphs in the system are an arrow, an external-navigation mark and the 4px status square. **Never an emoji** |
+| **Icons** | There is no icon set. The three glyphs the system specifies are an arrow, an external-navigation mark and the 4px status square, and a restyle introduces no other. A glyph an application already renders inside an icon-only control is kept by the row below; it is that application's content, not a fourth system glyph. **Never an emoji** |
 | **An icon-only control** | Keeps the glyph it already renders, inside a § 1 Control box at `--tap` on both axes, with its accessible name unchanged. A restyle mints no glyph and swaps none for another (I-10; the reading `cs-tracker` took in Story 8.1, H-30) |
 
 ### Readings settled 2026-10-17
@@ -828,8 +833,9 @@ small.** The grep is the *starting* count, not the whole scope:
   literal grep. Search for the prefix, not the full name.
 - **A `navbar` and a `btn` are not one unit each.** The count is call sites; the *work* is
   proportional to distinct components, and a navbar is a day where a button is an hour.
-- **The surface list depends on O-14**, which is open: which surfaces are Visitor-reachable without
-  a login is not yet determined for any wave-1 application, and it sets the denominator.
+- **The surface list depends on O-14**, which sets the denominator: which surfaces are
+  Visitor-reachable without a login. Story 8.1 answered it for wave 1 (`ops/restyle-floor.md` § O-14),
+  and each later restyle answers it for its own application before it is estimated.
 
 **Phoenix has a second component layer, and it is easy to miss.** The v1.8 generator commits a
 `core_components.ex` module into the application. That module *is* the component library for
@@ -859,7 +865,9 @@ encapsulation.
 
 ### Family C, no component library
 
-*`digital-library` (SvelteKit), the Anchor (Next.js + SCSS), and any plain-Tailwind consumer.*
+*`list-wheel` (Angular, plain component CSS), the Anchor (Next.js + SCSS), and any plain-Tailwind consumer.
+`digital-library` was assumed here and O-15 found it family A in its source-owned form
+(`ops/restyle-floor.md` § O-15).*
 
 Nothing to displace. The risk moves to two quieter places, both of which are still F-checks:
 

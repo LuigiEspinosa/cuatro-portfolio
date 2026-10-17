@@ -217,7 +217,7 @@ const HUB_PROPERTY_COUNT = 0;
 const BASE_RULE_ROLES = ['--token-bg', '--f-body', '--w-regular', '--token-text'] as const;
 
 /**
- * The four roles the global focus rule names, `RESTYLE-SPEC.md:326-341` § 4 verbatim.
+ * The four roles the global focus rule names, `RESTYLE-SPEC.md` § 4 Focus treatment verbatim.
  *
  * Story 2-26 moved the ring out of nine per-component blocks into one `:focus-visible` rule in
  * `app/app.scss`, which was the first rule in that file to consume the contract for something other

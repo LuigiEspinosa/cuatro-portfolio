@@ -10524,3 +10524,29 @@ status: done
     Operator wants wave 1 clean before wave 2.** A `motion-reduce:transition-none` beside each literal is the likely
     shape; `mix precommit` and the image boot are its gate.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
+  id: DW-355
+  summary: >-
+    `cs-tracker`'s built CSS carries `.rounded{border-radius:.25rem}`, minted by Tailwind from the word `rounded` in
+    a comment in `core_components.ex` (line 17), the same class of leak as the `.shadow` Story 8.1 removed.
+  evidence: |-
+    Handed to Story 8.5 on 2026-10-17 as a minor finding of an earlier verifier. No element matches the class, so
+    F-5 passes, but the next restyle that writes a `rounded` comment or class meets it. Story 8.5 does not touch
+    `cs-tracker`, so it is filed here rather than fixed.
+
+    **Owner: a `cs-tracker` story.** **Trigger: the next change to `cs-tracker`'s `assets/css/app.css`.** Add
+    `rounded` to the existing `@source not inline("shadow transition");`; `mix precommit` and the image boot are its gate.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
+  id: DW-356
+  summary: >-
+    `digital-library`'s code comments still cite the workspace `DESIGN.md` (the WIRED system) as their source,
+    which the Operator retired on 2026-10-17 (`ops/restyle-floor.md` R11).
+  evidence: |-
+    Handed to Story 8.5 on 2026-10-17 as a minor finding of an earlier verifier. A read of the Operator's checkout on
+    2026-10-17 found 28 lines naming `DESIGN.md` under `apps/web/src`. Story 8.5 does not touch `digital-library`
+    (Operator ruling: its checkouts are the Operator's and PR #67 is held as a draft until R9), so it is filed here.
+
+    **Owner: a `digital-library` story.** **Trigger: Story 8.2's restyle merge (R10), or the next change to a file
+    that carries such a comment.** Comments only: point them at the vendored `cuatro-contracts/` and `RESTYLE-SPEC.md`.
+  status: open
