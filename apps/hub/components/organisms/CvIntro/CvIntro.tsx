@@ -13,10 +13,11 @@ import './CvIntro.scss';
  * it is, and the two places a reader goes next. Everything below it is `WorkTimeline`, mounted
  * exactly as `app/work/page.tsx:21` mounts it.
  *
- * **A server component, on `Premise`'s shape.** `components/organisms/Premise/Premise.tsx:91-110`
- * is the pattern this follows: a plate mark, then a lede, with every number read rather than typed.
- * `lib/__tests__/registry.test.ts:621-668` fails any `'use client'` file that value-imports
- * `@/lib/registry`, so rendering on the server is what keeps the Registry off the wire rather than
+ * **A server component, on `Premise`'s shape.** `Premise`'s render in
+ * `components/organisms/Premise/Premise.tsx` is the pattern this follows: a plate mark, then a
+ * lede, with every number read rather than typed. The `describe` named `the Registry stays out of
+ * the browser bundle` in `lib/__tests__/registry.test.ts` fails any `'use client'` file that
+ * value-imports `@/lib/registry`, so rendering on the server is what keeps the Registry off the wire rather than
  * a mock saying it is. There is no state here to justify a boundary.
  *
  * **No number is typed, and neither is any claim behind one.** The two counts are the length of

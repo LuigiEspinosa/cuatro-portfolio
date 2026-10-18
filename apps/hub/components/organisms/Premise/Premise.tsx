@@ -11,7 +11,8 @@ import './Premise.scss';
  * placed above the Directory in the document so it is encountered before or with it.
  *
  * **A server component, and that is load-bearing rather than incidental.**
- * `lib/__tests__/registry.test.ts:621-668` fails any `'use client'` file that value-imports
+ * The `describe` named `the Registry stays out of the browser bundle` in
+ * `lib/__tests__/registry.test.ts` fails any `'use client'` file that value-imports
  * `@/lib/registry`, because doing so would ship every entry to the browser to render one number.
  * Rendering on the server satisfies that by construction rather than by a mock, and there is no
  * state here to justify a boundary: the band is styled entirely in CSS and carries nothing.

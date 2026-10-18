@@ -6,9 +6,9 @@
 // rebuild since has done the same, which is why Story 2-22 could delete the aliases.
 // `app/__tests__/anchor-contract.test.ts` carries the list of files that name contract roles.
 //
-// **It declares no custom property of its own.** The Hub's own live in `app/app.scss`, one since
-// Story 2-22, which is what makes the collision argument against the contract's eighty-nine
-// checkable in one place. A `--name:` here would break that, and it is asserted rather than
+// **It declares no custom property of its own.** Neither does `app/app.scss` since the Operator
+// ruling of 2026-09-24 deleted `--hero-height` (DW-122), so the Hub declares none and the collision
+// argument against the contract's eighty-nine has nothing on the Hub's side to check. A `--name:` here would break that, and it is asserted rather than
 // remembered.
 //
 // The row geometry below is transcribed from `RESTYLE-SPEC.md:238-274`, not designed here. Three
