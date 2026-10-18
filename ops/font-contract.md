@@ -474,6 +474,21 @@ still 13 commits past `a0a06a3`, at `10dc765`, with v1.7.2 still its latest rele
 Mono finding stays DW-240's; `ateliertriay/bricolage` `main` is still 4 past `8070cdb`, with no
 release. No regeneration was run, and none is due.
 
+**Committed 2026-10-18 by Story 9-10-commit-ad22-sweep-scripts (DW-243):** the re-check is
+`node ops/ad22-refresh.mjs font-pins`, run from the repository root with `gh` logged in. For each of
+the five pinned files in `packages/fonts/sources.json` it first downloads the pinned url and holds it
+to the recorded byte count and sha256 (the control: a mismatch exits 2 and nothing after it is
+trusted), then reads by `gh api` the default branch's head, the last commit touching the pinned path,
+`compare/<pin>...<head>` and the latest release, and downloads the file at the head. It prints one
+dated JSON row per file and exits 1 when any file at the head differs from its pin. It runs no
+fontTools: putting a newer binary through `packages/fonts/subset.py` is a regeneration, decided per
+finding as DW-240's was. `ops/__tests__/ad22-refresh.test.ts` drives it through a planted `gh` and
+downloader. Its first run, 2026-10-18 between 22:22:32Z and 22:22:58Z, exited 0: the control held for
+all five files, the last commit touching each pinned path is still its pin, and each file at the head
+is the pinned file. `vercel/geist-font` `main` is now 17 commits past `a0a06a3` at `e1f671c`, its latest
+release v1.8.1; `ateliertriay/bricolage` `main` is still 4 past `8070cdb`, at `84745e5`, with no
+release.
+
 ## Stated limits
 
 Naming these is the point of the section: a contract that ships is easily mistaken for a contract
