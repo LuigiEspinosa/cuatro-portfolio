@@ -1,11 +1,11 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { createHash, createHmac } from 'node:crypto';
-import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, chmodSync, utimesSync, statSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnBash } from './wsl-bash';
 
 // `ops/s3-object.sh`, `ops/library-backup.sh` and `ops/library-restore-verify.sh`
 // are shell scripts, which `tsconfig.json:34-41` cannot typecheck, so this file
@@ -53,15 +53,6 @@ interface RunResult {
   stdout: string;
   stderr: string;
 }
-
-// Node resolves the executable against the PATH it is handed, and the PATH
-// these runs are handed is a POSIX one for the child's benefit, so the
-// interpreter itself is named absolutely on Windows rather than looked up.
-const BASH = (() => {
-  if (process.platform !== 'win32') return 'bash';
-  const candidate = join(process.env.SystemRoot ?? 'C:\\Windows', 'system32', 'bash.exe');
-  return existsSync(candidate) ? candidate : 'bash';
-})();
 
 const POSIX_PATH = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
 
@@ -134,8 +125,7 @@ const runBash = (
   );
   chmodSync(launcher, 0o755);
 
-  const result = spawnSync(BASH, [bashPath(launcher), bashPath(script), ...args], { encoding: 'utf8' });
-  if (result.error) throw result.error;
+  const result = spawnBash([bashPath(launcher), bashPath(script), ...args]);
   return { status: result.status ?? -1, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
 };
 

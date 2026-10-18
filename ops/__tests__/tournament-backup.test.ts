@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { describe, it, expect, afterAll, vi } from 'vitest';
-import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnBash } from './wsl-bash';
 
 // Epic 3 retrospective action 4: `ops/tournament-backup.sh` and `ops/tournament-restore-verify.sh`, the
 // tournament store's nightly dump and its proof by restore. Both run for real under bash against a
@@ -26,12 +26,6 @@ const bashPath = (path: string): string =>
   process.platform === 'win32'
     ? path.replace(/^([A-Za-z]):/, (_match, drive: string) => `/mnt/${drive.toLowerCase()}`).replace(/\\/g, '/')
     : path;
-
-const BASH = (() => {
-  if (process.platform !== 'win32') return 'bash';
-  const candidate = join(process.env.SystemRoot ?? 'C:\\Windows', 'system32', 'bash.exe');
-  return existsSync(candidate) ? candidate : 'bash';
-})();
 
 const POSIX_PATH = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
 const shellQuote = (value: string): string => `'${value.replace(/'/g, `'\\''`)}'`;
@@ -132,8 +126,7 @@ const run = (box: Box, script: string, args: string[] = [], env: Record<string, 
     launcher,
     ['#!/usr/bin/env bash', ...Object.entries(merged).map(([k, v]) => `export ${k}=${shellQuote(v)}`), 'exec bash "$@"', ''].join('\n')
   );
-  const result = spawnSync(BASH, [bashPath(launcher), bashPath(script), ...args], { encoding: 'utf8' });
-  if (result.error) throw result.error;
+  const result = spawnBash([bashPath(launcher), bashPath(script), ...args]);
   const summary = (result.stdout ?? '').trim().split('\n').pop() ?? '';
   return { status: result.status ?? -1, stdout: result.stdout ?? '', stderr: result.stderr ?? '', summary };
 };

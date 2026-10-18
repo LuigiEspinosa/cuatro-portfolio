@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
-import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { spawnBash } from './wsl-bash';
 
 // `ops/deploy-remote.sh` is the Anchor's deploy on the box and the forced command of the deploy key
 // (`ops/contract-serving.md` Pending Operator action 7, DW-94). Since Story 3-4 it pulls the commit's image
@@ -24,13 +24,8 @@ const SCRIPT = resolve(REPO_ROOT, 'ops/deploy-remote.sh');
 const WORKFLOW = resolve(REPO_ROOT, '.github/workflows/deploy.yml');
 const RECORD = resolve(REPO_ROOT, 'ops/contract-serving.md');
 
-// The mapping `library-backup.test.ts` uses: on this host `bash` is WSL's and reads `/mnt/c/...` paths,
-// and it is named absolutely because the PATH handed to the child is a POSIX one. CI is `ubuntu-latest`.
-const BASH = (() => {
-  if (process.platform !== 'win32') return 'bash';
-  const candidate = join(process.env.SystemRoot ?? 'C:\\Windows', 'system32', 'bash.exe');
-  return existsSync(candidate) ? candidate : 'bash';
-})();
+// The mapping `library-backup.test.ts` uses: on this host `bash` is WSL's (`./wsl-bash.ts`) and reads
+// `/mnt/c/...` paths. CI is `ubuntu-latest`.
 const posix = (path: string): string =>
   process.platform === 'win32'
     ? path.replace(/^([A-Za-z]):/, (_match, drive: string) => `/mnt/${drive.toLowerCase()}`).replace(/\\/g, '/')
@@ -49,9 +44,7 @@ const runLauncher = (path: string, lines: string[]) => {
   ];
   writeFileSync(path, [...preamble, ...lines, ''].join('\n'));
   chmodSync(path, 0o755);
-  const run = spawnSync(BASH, [posix(path)], { encoding: 'utf8' });
-  if (run.error) throw run.error;
-  return run;
+  return spawnBash([posix(path)]);
 };
 
 // ---------------------------------------------------------------------------
