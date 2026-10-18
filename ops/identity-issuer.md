@@ -340,6 +340,18 @@ orchestrator (counts only): `3 /home/deploy/cuatro-portfolio/.env.production`, `
 a second append was refused (`already present`, exit 1); the helper was then removed. No container was
 restarted, so neither application reads the lines yet.
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-328**, 2026-10-18. Trigger: "a second replica, or a logout observed lost at a rollout." The problem: sign-out
+  revocations live in each process's memory (§ Sign-out (Story 5.5)). The Hub keeps them on `globalThis` and
+  `cs-tracker` in ETS. The work: move them to a store both processes share (the estate Postgres for `cs-tracker`;
+  the Hub has none), or record why the rollout overlap's window is accepted.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |

@@ -490,6 +490,20 @@ that covers everything.
 | The `@font-face` rules declare `font-style: normal` only | No italic face is published, for any family. `DESIGN.md:502` forbids synthesised italic and italic headings, so a consumer that sets `font-style: italic` gets a synthesised slant rather than a designed one. Publishing three more binaries to close that would cost roughly the whole remaining budget | **Decision** |
 | `size-adjust` is fitted at the default width, so the swap holds no advance width still at `font-stretch: 75%` | **Added 2026-09-12.** The display face publishes `font-stretch: 75% 100%` with one `size-adjust`, measured by `packages/fonts/measure.mjs` at the default width, and a fallback face has no width axis to narrow to. § What the swap check does not cover already says the advance width is not held for arbitrary text; at 75% it is not held for the fitted string either. **Observed 2026-09-12** by `tests/e2e/type-swap.pw.ts` on `/`: the three contact links, set at 75% since Story 2-20, moved 18.57, 19.59 and 19.17 percent in width across the swap with their line boxes at 0.00 percent, while `.error-page__title` at the default width moved 2.46 percent. Filed as DW-82 in `deferred-work.md`, with a second narrow-instance `@font-face` block and its own `size-adjust` as one of the two shapes of fix. **Trigger: the first edit to `packages/fonts/faces.json`**. **Amended 2026-09-25:** accepted as a stated limit by Operator ruling 2026-09-24, on the reading that a separate face per condensed width, each with its own `size-adjust`, would scale height as well as width; DW-82 is closed, the trigger above retires with it, and `tests/e2e/type-swap.pw.ts` holds the condensed Work item row names to their line box | **Observed 2026-09-12**, appended; **Decision** from 2026-09-25, Operator ruling 2026-09-24 |
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-240**, 2026-10-18. Trigger: "the next contract release that opens for any other reason, or the first string
+  found ligated on a surface." The problem: the published Geist Mono carries the 69 programming ligatures that
+  1.7.0 put under `liga` (§ The upstream pins, re-checked 2026-09-25). The Operator chooses one of two shapes. One:
+  pin Geist Mono to the release zip's file by its own URL and sha256. Two: publish it without `liga`, through a
+  per-face feature list in `packages/fonts/sources.json`. Either shape moves `faces.json`, the three listing pins
+  and this record's figures, and `cs-tracker` re-vendors.
+
 ## Pending Operator actions
 
 This file hands the Operator work it cannot do from a development host. They are tracked here rather

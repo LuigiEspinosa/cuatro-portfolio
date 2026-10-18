@@ -2418,6 +2418,28 @@ and the narrative bundle reads 619,351 gzipped in the 2026-09-24 reading under �
 correcting that wording is a planning-artifact edit this story is not permitted to make. It is
 Pending Operator action 1.
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-24**, 2026-10-18. The ledger entry has no trigger line. The Epic 9 plan's § 3 gives it as: "A face is deleted
+  on the reachability word, a family is defined under a selector, or the `font` shorthand names a family". The work:
+  widen `resolveFontReachability` in `ops/asset-budget.mjs` so that it reads the family in a `font` shorthand and
+  keeps every definition of a custom property, not just the last one. Do this before any face is deleted on the
+  reachability column's word.
+- **DW-25**, 2026-10-18. The ledger entry has no trigger line. The plan's § 3 gives it as: "asset-budget goes into
+  CI, or its runtime becomes noticeable". The work: read the source tree into a map once, instead of once per
+  `findReferences` call, and reuse the gzipped size the `chunks` map already holds, instead of gzipping each chunk
+  again for every document. Story 9-4 pins this record's figures with tests. If 9-4 also makes CI run the tool, it
+  meets this trigger.
+- **DW-99**, 2026-10-18. Trigger: "any story that touches the `app/layout.tsx` preloads or the type contract."
+  (The path is `apps/hub/app/layout.tsx` since Story 3-2.) The work: before any preload is argued for, read
+  `document.fonts.ready` against the first GlitchText span's `animationstart` on a throttled connection, in the
+  pinned Playwright image. Any answer must also pass the `contracts/` scan in `anchor-contract.test.ts`.
+
 ## Pending Operator actions
 
 This file hands the Operator work Story 2-2 could not do inside its boundaries. Tracked here rather

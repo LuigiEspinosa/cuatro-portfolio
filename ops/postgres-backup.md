@@ -545,6 +545,20 @@ A lost or corrupted consumer database, from the newest good night:
 5. **The repository password exists in two places**, the env file and the password manager, and losing
    both loses every snapshot.
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-318**, 2026-10-18. Trigger: "that clean start, or the next change to any backup script." ("That clean start"
+  is the Operator's planned clean start of every application, with DW-315.) The problem: cron runs the installed
+  copies, the estate's and the tournament's in `/home/deploy/` and the library's in `/usr/local/sbin/`, and
+  nothing compares them with the checkout. The work: either run the cron lines from the checkout the deploy
+  maintains, or compare each installed copy's sha256 with the checkout's and go red on a difference. The
+  conditional Story 9-36 (DW-193, DW-315) re-installs the scripts, so it meets this trigger if it opens.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |

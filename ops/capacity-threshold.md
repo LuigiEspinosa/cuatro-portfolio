@@ -368,6 +368,19 @@ otherwise stand indefinitely on the strength of nobody having looked. The archit
 requires settled inputs to be re-checked on a bounded schedule, and the estate has a scheduled look
 at February 2027 in any case, since Let's Encrypt certificate lifetimes fall that month (AD-17a).
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-170**, 2026-10-18. The ledger has no bold trigger line. It says the gate "is weaker than AD-9 reads until
+  Epic 2 or Epic 4 gives it a call site at a real placement". After Story 2-25 (§ What this record does not claim
+  quotes `list-wheel`'s run), it says: "every id Epic 4 places is still outside its reach, and that is the half this
+  entry now waits on". The work: the next placement of a new id, or the per-id deploy DW-275 would bring, runs
+  `node ops/capacity-gate.mjs <id>` as a blocking step before it places anything, as `list-wheel`'s deploy does.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |

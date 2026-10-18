@@ -1026,6 +1026,19 @@ Written down because a coverage claim with an unstated hole reads as coverage.
 10. **No rendered-output or browser check is claimed anywhere in this story.** Playwright arrives in
     Story 1-10.
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-132**, 2026-10-18. Trigger: "the next time the passphrase is verified or rotated." The owner is the Operator.
+  The work, in `ops/verify-backup-passphrase.ps1`, before that run: wrap everything after the download in `try` and
+  `finally`, check the exit status of `aws s3api get-object`, and make the WSL command remove the plaintext archive
+  on every path and print gpg's own error. Without this, the script can leave a decrypted archive in WSL's `/tmp`
+  and reports one `DECRYPT: FAILED` for several different causes (named limit 5).
+
 ## Pending Operator actions
 
 Everything an agent could do is done and committed. These are console and shell acts.

@@ -701,6 +701,33 @@ Observations below were made by the Operator and the orchestrator and relayed; t
   merging to `main` only after the URL has served (FR-28): `dev` holds it back at 1.6.0 (`6d72963`) and
   the runbook's step 10 releases it by reverting that commit. Step 7 was done on 2026-09-25.
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator. All four belong to `cuatro-finance` (§ `cuatro-finance`,
+merged on `dev` and not placed). Its placement is an AD-9 decision (`ops/capacity-gate.yml`), and that decision's
+story takes all four together.
+
+- **DW-267**, 2026-10-18. Trigger: "finance moving towards `Live`, or its first placement." The work: adopt the
+  token contract whole. Import `contracts/tailwind.css`, replace the palette in `apps/finance/app/tokens.css` and
+  the fonts with contract roles, and in the same change delete finance's `OTHER_APPLICATIONS` entry in
+  `ops/literal-conformance.mjs`.
+- **DW-268**, 2026-10-18. Trigger: "that story, or a Prisma upgrade." ("That story" is finance's placement story.)
+  The work: the image's `migrate` stage installs the Prisma CLI and `dotenv` with `npm`, outside the lockfile. The
+  lockfile-faithful alternative is `pnpm --filter finance deploy --prod` into that stage.
+- **DW-269**, 2026-10-18. Trigger: "an AD-9 decision to place finance." The work: the ledger entry lists what
+  placement needs in one change. That is a `placements` entry and its `deploy.yml` wiring, a hostname and a `Host`
+  router, the `NEXT_PUBLIC_BETTER_AUTH_URL` build argument, the runtime secrets, the provision run and the first
+  admin seed. The entry was written on 2026-09-29, before Epic 4, so it names the shared Caddy and `anchor-db`.
+  Read it against `ops/routing-inventory.md` (Traefik) and `ops/postgres.md` (the estate Postgres). Story 9-20
+  renames the database and role to `cuatro_finance` (DW-300).
+- **DW-271**, 2026-10-18. Trigger: "either", meaning finance's placement story (for the seed path) or the story
+  that lands a lint gate. The work: point `prisma.config.ts`'s seed at `prisma/seed/admin.ts`. Retire the unused
+  `eslint.config.mjs` (or adopt it under the lint gate), and retire the local-development `docker-compose.yml` and
+  `docker/Caddyfile` under `apps/finance`.
+
 ## Pending Operator actions
 
 Archiving a repository is a GitHub console action outside this repository. Of the four

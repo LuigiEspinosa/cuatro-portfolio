@@ -803,6 +803,18 @@ Operator merged PR #64 into `dev` (`777814f`, `CI` success on that sha), then PR
 `/`, 200 at `/login` and 200 at `/api/health`. No demo account exists (DW-337), so the change is inert on the
 box until one does.
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-337**, 2026-10-18. Trigger: "that story's rollout." ("That story" is the one the Operator schedules to move
+  `digital-library` onto OIDC; the deferral was ruled 2026-10-06 at DP7.) The work: create `demo@cuatro.dev` by
+  that sign-in, run DR3, release the Registry's `demo` for `digital-library`, and in the same change set
+  `ops/demo-reset.schedule`'s `digital-library off` back to `60`.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |

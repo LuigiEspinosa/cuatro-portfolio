@@ -584,6 +584,19 @@ line is kept beside the new one rather than replaced, so the intent stays readab
 | The contract assumes OKLCH support and publishes no fallback | All twelve palette values are `oklch()`, with no `@supports` guard and no hex beside them. `DESIGN.md:239-242` makes the authored OKLCH the source of truth and a hex merely a fallback, and substituting one is forbidden by this story. A consumer whose audience needs a fallback has to add it in its own stylesheet; the contract states no minimum browser | **Decision.** `DESIGN.md`, recorded here because the folder is vendored into seven repositories with different audiences |
 | The line-ending rule is only ever exercised on a Windows checkout | `contracts/**/*.css text eol=lf` exists because `core.autocrlf` is true on the authoring machine. The case that asserts the published file holds no `CR` passes on an `ubuntu-latest` runner whether or not the rule exists, since git checks out LF there anyway. The rule is real and the assertion is real; CI is not where either is tested | **Observed 2026-08-24**, by reading the rule against the runner's checkout behaviour |
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-304**, 2026-10-18. Trigger: "a Style Dictionary release whose range excludes 13.0.6, or a glob release
+  above 13.0.6." The problem: Style Dictionary's `@bundled-es-modules/glob` range `^13.0.6-hotfix.0` still resolves
+  13.0.6, so the transitive `qs` fix is not in `pnpm-lock.yaml`. The exposure is build-time only, at `tokens:build`.
+  The work: re-read the lockfile when the trigger fires. Forcing the prerelease with a `pnpm.overrides` entry is a
+  dependency change that needs its own ruling.
+
 ## Pending Operator actions
 
 This file hands the Operator work this story could not do. They are tracked here rather than left in

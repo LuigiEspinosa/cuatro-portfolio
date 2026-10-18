@@ -751,6 +751,23 @@ committed.
 | **Lighthouse cannot audit the 404** | It refuses a page answering 404 ("Lighthouse was unable to reliably load the page"), so F-12 is by reading and no gate can see that surface. **Narrowed 2026-09-23 by Story 2-30**: Lighthouse still refuses the page, and `tests/e2e/error-surface.pw.ts` now reads the surface's accessible output in the pinned image on every push (the structure, the one heading, no name by attribute, the numeral out of the tree), so the parts F-12 and F-18 named are gated even though the audit is not | **Observed 2026-09-13**. **Decision 2026-09-23**, Story 2-30 |
 | **The two Operator confirmations are outstanding** | A machine can prove the values differ and the stops are in order; it cannot prove a reader perceives the difference or that the ring reads as a ring. The two tables above are where those land, and the board cannot reach `done` until they do | **Decision.** Pending action 1 |
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-111**, 2026-10-18. Trigger: "the next change to the disclosure's mechanism, or an accessibility pass that
+  reads `/cv` with a screen reader." The work: a collapsed WorkItem panel is a named region that stays in the
+  accessibility tree. Set `hidden` or `inert` when the close tween completes, clear it before the open tween
+  starts, and keep the no-script and print readings intact. The Operator's screen-reader read of `/` (action 4)
+  does not read `/cv`, so it does not meet this trigger.
+- **DW-112**, 2026-10-18. Trigger: "DW-111's, the next change to the disclosure's mechanism, since both entries are
+  the same component's semantics." The work: the company `h2` and its `div` sit inside the trigger `<button>`. The
+  repair is `<h2><button aria-expanded>`, with the meta line set in phrasing elements. It moves the trigger's box,
+  the F-19 focus reach and the `/work` baseline.
+
 ## Pending Operator actions
 
 | # | Action | Owner | Note | Completed (UTC) |

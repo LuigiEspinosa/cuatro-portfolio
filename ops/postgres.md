@@ -736,6 +736,19 @@ kept until Story 4.11. `anchor-db` and Caddy's `analytics.cuatro.dev` block rema
 Before any consumer moved: `$P down -v; rm -f ops/postgres/.env`. The box is as it was. After one has
 moved, roll every moved consumer back first, one by one, then the same.
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-316**, 2026-10-18. Trigger: "that change, or a lost day of events." ("That change" is the next change to
+  `anchor-umami`, likely the next Umami pin bump.) The work: point the healthcheck at a route that reads the
+  database, or add a second check that does. Prove it red with the database paused, as § Moving Umami's
+  "heartbeat with the database paused" block did. Make `UMAMI_DB_PASSWORD` required (`${UMAMI_DB_PASSWORD:?}`)
+  rather than defaulted.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |

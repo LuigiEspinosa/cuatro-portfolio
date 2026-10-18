@@ -444,6 +444,19 @@ docker exec cuatro-portfolio-anchor-db-1 psql -U umami -d umami -t \
   -c 'select date(created_at) d, count(*) from website_event group by d order by d;'
 ```
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-78**, 2026-10-18. Trigger: "the first story that adds a `robots.txt`, a sitemap or a `robots` directive
+  anywhere but `/celeste`". The work: Next's not-found boundary injects `<meta name="robots" content="noindex">` on
+  every 404, and `app/not-found.tsx` cannot remove it. The story writes that tag into the policy it sets down.
+  `tests/e2e/secondary-surfaces.pw.ts` pins the tag as the only directive on the 404. The triage of 2026-10-18
+  read the live `/robots.txt` as Cloudflare's, not the Hub's.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |

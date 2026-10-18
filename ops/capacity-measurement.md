@@ -473,6 +473,28 @@ variation in load15 is therefore not attributable to the containers the gate gov
 should read this as evidence that a threshold anchored to container CPU has very little observed
 dynamic range to sit in, and should not read the loaded band as showing what load costs.
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator. All three wait on the next measurement week. That week is
+due if the review in `ops/capacity-threshold.md` action 4 (2027-02-25) finds that the estate or the box has
+changed. Each fix changes the sampler or its schema, so it lands before that week's install, never in the middle
+of a week.
+
+- **DW-175**, 2026-10-18. The ledger has no trigger line. The plan's § 3 gives it as: "The next measurement week
+  (2027-02-25 review)". The work: the CSV records no core count and no `MemTotal`, and `ops/capacity-summary.mjs`
+  divides by `DEFAULT_CORES = 2`. The ledger's schema-compatible form is a `note` row carrying `cores=$(nproc)`
+  once per run, plus a close-out assertion that the run saw exactly one distinct value.
+- **DW-176**, 2026-10-18. The ledger has no trigger line. The plan's § 3 gives it as: "Next sampler edit". The
+  ledger gives the reason it was left: "changing the sampler mid-week means reinstalling the thing being measured".
+  The work: in `ops/capacity-sampler.sh`, put one `flock` around both the header creation and the append.
+- **DW-177**, 2026-10-18. The ledger has no trigger line. The plan's § 3 gives it as: "The next measurement week".
+  The work: the sampler assumes every container's cgroup is under `system.slice`. Before the week starts, add an
+  install-time assertion that every running container resolves to a cgroup, or a fallback search across plausible
+  parents. Without it, a container elsewhere is silently counted as vanished.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |

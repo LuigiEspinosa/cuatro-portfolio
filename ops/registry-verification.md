@@ -300,6 +300,22 @@ October row falls due in early November.
 | **`identity: none` sees the estate's session route only** (Story 5.11) | It reads `/auth/session`, the path Stories 5.3 and 5.4 built; an application that federated at another path would not be seen. A new participant follows the estate's routes or adds its own row here | **Decision** |
 | **One immediate retry, then the last answer decides** | A flapping host that answers 503 twice in immediate succession is red; the 15 s figure is the per-request timeout, not a pause between the two. The next scheduled run is the second opinion | **Decision** |
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-86**, 2026-10-18. Trigger: "the expiry date written into action 1, less the lead the Operator chooses; or the
+  first run whose every `source exists` line is red." Action 1 dates the expiry 2026-12-11, and the Epic 9 plan
+  sets the lead: rotate by about 2026-12-04. The work is action 6: rotate the PAT, replace the secret, and re-run
+  by `workflow_dispatch`.
+- **DW-336**, 2026-10-18. Trigger: "the first demo release (action 9)." The Operator ruled on 2026-10-06 (action 11):
+  (a) now, (b) later. That release adds the demo password as a second secret on the script step, and a sign-in
+  probe for `cuatro-tracker` and `digital-library`. `cs-tracker` stays on its dated observation. Until then, the
+  stated limit "The demo account is not signed in by the job" stands.
+
 ## Pending Operator actions
 
 This file hands the Operator work Story 2.23 may not do, in the shape `ops/monitoring.md` and

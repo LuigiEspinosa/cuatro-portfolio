@@ -385,6 +385,18 @@ tournament-backup ts=2026-10-01T03:45:06Z file=/home/deploy/backups/cs-tournamen
 Same shape as the first run's line: 19 tables, 31 rows, 477,822 bytes, nothing aged out yet. The
 restore proof was not re-run; the nightly job does not run it (§ Backup, The proof).
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-288**, 2026-10-18. Trigger: "the first `docker rollout` of `tournament`." The work: the tournament's
+  `/api/health` (`apps/tournament/app/api/health/route.ts`) is liveness only and asks nothing of Supabase. Before
+  a rollout drains on its word, it must answer 200 only when the data is reachable. Today's § Later rollouts recreate
+  both containers with `up -d`, so no rollout drains on it yet.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |

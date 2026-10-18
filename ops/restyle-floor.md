@@ -994,6 +994,50 @@ Sent back to `RESTYLE-SPEC.md` for the Operator's ruling (R22), as Story 8.3's I
 | F-1 to F-12 | All twelve pass (F-5 on I-12, F-12 on R14). **Restyled, as § The floor counts it: yes**, on the branch; on the live hostname once R23 rolls it (rolled 2026-10-17) |
 | SM-12's four manual checks | **All four clean** |
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator. Each one is a finding that a restyle's ceiling kept out of
+Epic 8 (the per-application § Findings, recorded rather than corrected). The next story on that surface takes it.
+For a Satellite, that is the Satellite's own PR.
+
+- **DW-344**, 2026-10-18 (`cs-tracker`, findings 1 and 2). Trigger: "the next story that touches `/browse`'s filter
+  bar or its headings." The work: give the filter selects and the search field visible labels, and stop the
+  heading levels on the empty state and the media tiles from skipping `h1` to `h3`.
+- **DW-345**, 2026-10-18 (`list-wheel`, findings 1 and 2). Trigger: "the next story that touches the editor or the
+  wheel's spin." The work: give the find fields and the textarea visible labels, and make Spin read
+  `prefers-reduced-motion`.
+- **DW-349**, 2026-10-18 (`digital-library`, findings 1 to 4). Trigger: "the next story that touches the grid's
+  filter strip, the book page, the layout's transition, or renders one of the three components." The work: give
+  the search field a visible label. Make the GSAP route transition and the book-page entrance read
+  `prefers-reduced-motion` and use contract durations. Settle the `No cover` text. Render or delete `Breadcrumb`,
+  `StatusTag` and `EditorialTable`.
+- **DW-353**, 2026-10-18 (`list-wheel`, finding 3). Trigger: "the next story that touches the copy action." The
+  work: the `Copied!` toast sits inside `@if (winner)`, and copying removes the winner, so the toast never renders.
+- **DW-354**, 2026-10-18 (`cs-tracker`, § SM-12 per application, finding 7). Trigger: "the next story that touches
+  `core_components.ex`". The work: put `motion-reduce:transition-none` beside each literal transition in `show/2`
+  and `hide/2`. Its gate is `mix precommit` and the image boot.
+- **DW-355**, 2026-10-18 (`cs-tracker`). Trigger: "the next change to `cs-tracker`'s `assets/css/app.css`." The
+  work: add `rounded` to the existing `@source not inline("shadow transition");`, so that a comment no longer
+  mints `.rounded`.
+- **DW-356**, 2026-10-18 (`digital-library`). Trigger, as restated on 2026-10-17: "the next change to one of the
+  seven files", or the story that renders or deletes the three components under DW-349. The work, in comments
+  only: point the 8 lines that cite the retired workspace `DESIGN.md` at the vendored `cuatro-contracts/` and
+  `RESTYLE-SPEC.md`.
+- **DW-357**, 2026-10-18 (`cuatro-tracker`). Trigger: "R18 ruled the other way, or a ruling that the interior is
+  restyled." The work: restyle the authenticated interior and map its palette onto roles. That change deletes
+  `apps/tracker/` from `OTHER_APPLICATIONS` in `ops/literal-conformance.mjs`.
+- **DW-359**, 2026-10-18 (`cuatro-tracker`, findings 1 to 3). Trigger: "the next change to `LoginCRT.tsx` or
+  `BootSequence`." The work: give `/login` an `<h1>`, tie the sign-in error to its field by `aria-describedby`, and
+  draw the boot progress bar in glyphs inside the contract faces' subset. Story 9-22 changes how the tracker loads
+  its faces. If it edits either file, it meets this trigger.
+- **DW-362**, 2026-10-18 (`cuatro-tracker`). Trigger: "a Tailwind bump on either side." The work: align the
+  tracker's `@tailwindcss/postcss` and `tailwindcss` (4.2.2) with the root's `tailwindcss` (4.3.3), which
+  `contracts/tailwind.css`'s `@import` resolves. Then rebuild and compare the stylesheet, as the 2026-10-17
+  measurement did.
+
 ## Pending Operator actions
 
 | # | Action | Owner | Note | Completed (UTC) |

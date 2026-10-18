@@ -547,6 +547,19 @@ point of failure. The specs are named `*.pw.ts`, which Vitest's default include 
 `node_modules`. **Observed 2026-08-24**, by `pnpm exec vitest list` with and without the exclude:
 215 tests collected either way, and no `tests/e2e` file in either listing.
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-102**, 2026-10-18. Trigger: "the next baseline change the comparator measures as none." The question it
+  carries: should the comparator keep Playwright's default per-pixel `threshold` of 0.2, or take a second, tighter
+  comparison for the compared region? A forced regeneration under § Regenerating the baseline is exactly this
+  trigger. Let `node ops/baseline-diff.mjs` state the number, then rule on the question. The Epic 9 plan says
+  Story 9-16 may need a forced `/work` regeneration.
+
 ## Pending Operator actions
 
 This file hands the Operator work it cannot do from a development host. They are tracked here
