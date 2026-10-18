@@ -296,6 +296,6 @@ itself are persistent facts in `_bmad/custom/bmad-build.toml`; these bind every 
   in the same commit, never only into the story's run section.
 - **A dated row relying on CI names every workflow it read, on the full sha** (Epic 5 action 52).
   "CI green" is not evidence. Name each workflow and its conclusion on the sha the row is about: the
-  `image-*.yml` workflows are no required check on `main`, so a row naming `ci.yml` alone never read them.
+  `image-*.yml` workflows run outside `ci.yml`, so a row naming `ci.yml` alone never read them.
 - **An agent step gated on an Operator row waits for that row's dated completion** (Epic 8 action
   60). Never push, or in a Satellite open the PR, first and draft the gated work after.

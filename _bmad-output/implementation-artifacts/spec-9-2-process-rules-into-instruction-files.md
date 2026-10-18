@@ -58,6 +58,7 @@ Each was planted on a copy, the suite run, the file restored byte for byte (`git
 | AGENTS.md rule list | `(Epic 5 action 51)` to `(Epic 5 item 51)` | `AssertionError: expected [ Array(1) ] to deeply equal []` |
 | section after the marker | heading demoted to `###` | `AssertionError: no "## Process rules from retrospectives" after <!-- /bmad:context -->: expected '' not to be ''` |
 | toml fact list | `"""Planted assertions` to `"""Planted asserts` | `AssertionError: expected [ Array(1) ] to deeply equal []` |
+| `on_complete` present | key renamed to `on_completion` | `AssertionError: no on_complete in bmad-build.toml: expected -1 to be greater than -1` |
 | `on_complete` verifier line | sentence removed and the phrase moved to a comment after `on_complete` | `AssertionError: expected '\non_complete = """\nInvoke the agen...' to contain 'whether an independent verifier has r...'` |
 | synthetic: block order | `processSection` order check removed | `AssertionError: expected '## Process rules from retrospectives...' to be ''` |
 | synthetic: array end | `persistentFacts` slices to end of file | `AssertionError: expected '\npersistent_facts = [\n  """f""",\n]...' not to contain '"""g"""'` |
