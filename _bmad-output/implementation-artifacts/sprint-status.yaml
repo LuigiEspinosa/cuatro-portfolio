@@ -42,7 +42,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-18-2026 23:30
+last_updated: 10-18-2026 23:45
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1239,7 +1239,8 @@ development_status:
   9-5-wsl-suite-failure-naming: done
   9-6-registry-gate-hardening: backlog
   9-7-library-backup-suite-coverage: backlog
-  9-8-tournament-export-sql-test: backlog
+  # 2026-10-18: done (spec-9-8-tournament-export-sql-test.md, verifier pass round 1): DW-284 closed; EXPORT_SQL runs against ci.yml's test-job Postgres service, no new job.
+  9-8-tournament-export-sql-test: done
   9-9-shared-probe-scaffold: backlog
   9-10-commit-ad22-sweep-scripts: backlog
   9-11-contract-purity-followup-review: backlog

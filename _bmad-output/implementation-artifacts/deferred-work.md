@@ -9146,7 +9146,19 @@ status: done
 
     **Owner: unassigned.** **Trigger: the next change to `EXPORT_SQL`, or the Operator's placement of
     `cs-tournament`, whichever comes first.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-8-tournament-export-sql-test** (`67f873b`, on `dev` as `8c7d6d7`,
+    `ops/__tests__/tournament-identity.test.ts`: `EXPORT_SQL against a real Postgres`): `EXPORT_SQL` now
+    runs in the blocking `test` job against the `postgres` service it already had, with no new job:
+    `Unit tests` sets `TOURNAMENT_IDENTITY_DATABASE_URL` to the service's default database, and the root
+    suite drives `main(['export'])` through `psql` over migration `0001_core_schema.sql`, a GoTrue-shaped
+    `auth.users` and each case's rows, inside a transaction it rolls back. Three cases hold the role
+    join, the playerless default, the creation order, both SQL-side refusals (a password hash, a
+    contradicted claim) and the empty export, each planted; a guard case fails the job if the variable
+    goes missing in CI. Locally the block runs against any reachable scratch Postgres (17 in the build,
+    18 in the independent verification) and is skipped, its title naming why, only when the variable is
+    unset.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-8-record-the-estate-end-state.md`
   id: DW-285
