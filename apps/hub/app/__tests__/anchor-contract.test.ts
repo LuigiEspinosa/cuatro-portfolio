@@ -126,11 +126,14 @@ const REGISTRY_PATHS = ['contracts/registry.json', 'contracts/registry.schema.js
  *
  * `.css` is here because Next compiles a plain global stylesheet imported from a component exactly
  * as it compiles a `.scss` one, and the `.js` family because nothing stops a shipped source being
- * written without types. None of the five exist under a scanned root today, which is the reason
- * they were missing and the reason they cost nothing to add: the scan below and the root pin above
- * it both filter on this list, so an extension absent from it is invisible to both.
+ * written without types. `.json` since DW-217: Story 2.7 made a JSON import a normal thing for the
+ * Hub to do, and a JSON module under a scanned root carrying a token name or a `contracts/` path
+ * would otherwise pass both the consumer scan and the `contracts/` mention check unread. None of
+ * the six exist under a scanned root today, which is the reason they were missing and the reason
+ * they cost nothing to add: the scan below and the root pin above it both filter on this list, so
+ * an extension absent from it is invisible to both.
  */
-const SCANNED_EXTENSIONS = ['.scss', '.css', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'] as const;
+const SCANNED_EXTENSIONS = ['.scss', '.css', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json'] as const;
 
 /** The three of those that a scanned root actually carries today, so "at least one was read" means something. */
 const PRESENT_EXTENSIONS = ['.scss', '.ts', '.tsx'] as const;
@@ -1005,7 +1008,7 @@ describe('the Anchor consumes the contract in its global stylesheet and its toke
     //
     // `PRESENT_EXTENSIONS` exist under a scanned root today, so "at least one was read" is a real
     // measurement and losing one is loud. The rest are anticipatory: a `.css`, `.js`, `.jsx`,
-    // `.mjs` or `.cjs` consumer is a shape nothing in the Anchor takes yet, and demanding a file
+    // `.mjs`, `.cjs` or `.json` consumer is a shape nothing in the Anchor takes yet, and demanding a file
     // that does not exist would fail the run for the wrong reason. What is asserted for those is
     // that the scan's own filter would pick them up, which is the property that was actually
     // missing while the list read `.scss`, `.ts`, `.tsx` and the scan claimed to cover consumers.
