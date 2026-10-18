@@ -101,7 +101,13 @@ one commit.
 | `/celeste` | 200 | 4 | 4 | 0 |
 | `/a-route-that-does-not-exist` | 404 | 6 | 0 | 6 |
 
-**41 elements measured across five surfaces**, 39 until 2026-09-24 and 42 until 2026-09-25 (see the re-measurements of those dates below).
+**46 elements measured across five surfaces**, 39 until 2026-09-24, 42 until 2026-09-25, 41 until 2026-09-26 and 45 until 2026-09-30 (see the re-measurements of those dates below).
+
+**Restated 2026-10-18 by Story 9-4, not re-measured.** This line read 41 from 2026-09-25 to this
+date while the table above summed to 45 and then 46: the re-measurements of 2026-09-26 and
+2026-09-30 moved the table and stated their new totals in their own paragraphs, and this line was
+not carried with them (DW-53). It is the sum of the `Measured` column, and since this date
+`ops/__tests__/hit-target-floor.test.ts` derives it from the table and fails when the two disagree.
 
 **Re-measured 2026-09-07** after Story 2-13 built the non-3D front door. `/` went from 16 to 17 and
 the other four did not move. The one new element is the A-6 skip-link, which renders on every path
@@ -487,7 +493,16 @@ nothing shipped is.
 
 ## The tolerated breach
 
-**None of the 39 measured elements is under the floor, and no authored control is.** **Observed
+**None of the 46 measured elements is under the floor, and no authored control is.** **Observed
+2026-10-18** by Story 9-4, in the pinned image at 360 x 800: the ledger is empty and the sweep is
+green against it on three runs of one tree, so every element it measures clears the floor. The
+2026-09-23 reading below said the same of 39, and the total has moved since only by the
+re-measurements under § The surfaces swept, each of which added elements that clear the floor.
+**This sentence and the "All N since" one below are derived figures, held since 2026-10-18** to the
+surfaces table's `Measured` sum by `ops/__tests__/hit-target-floor.test.ts`, which also fails this
+lead if the ledger covers any element (DW-54).
+
+**None of the 39 measured elements was under the floor, and no authored control was.** **Observed
 2026-09-23** in the pinned image at 360 x 800, after Story 2-32 replaced the logo raster with a text
 wordmark held to `--tap` on both axes and deleted `chrome-logo`, the last row: the ledger is empty,
 the sweep is green against it, and KV-4 is retired. The readings below are kept rather than
@@ -536,7 +551,9 @@ The 36 elements that clear the floor are the eight `.work-item__header` buttons,
 six chrome nav links Story 2-15 rebuilt, two on each of `/work`, `/cv` and the 404, the two intro
 links Story 2-16 authored on `/cv`, the three Story 2-17 authored, the footer link on `/` and the
 two 404 exits, and the five Story 2-29 took past the floor on 2026-09-21, the two home nav links
-and the three contact links. **Observed 2026-09-21.** **All 39 since 2026-09-23**, the three
+and the three contact links. **Observed 2026-09-21.** **All 46 since 2026-09-30**, the date `/`
+reached 22 (§ The surfaces swept); 42 from 2026-09-24 (the skip link), 41 from 2026-09-25 and 45
+from 2026-09-26, and every element added on those dates clears the floor. **All 39 from 2026-09-23**, the three
 wordmarks Story 2-32 built to the floor on `/work`, `/cv` and the 404 being the last three. The
 2026-09-21 reading of the same figure was 36, the 2026-09-11 one was
 31, the 2026-09-10 one was 28, the 2026-09-08 one was 20, over four buttons and four nav links, and
@@ -930,6 +947,8 @@ separately at 28 s on a cold runner.
 |---|---|---|
 | Cases in this file | 15 | **Observed 2026-09-06**, before Story 2-9 |
 | Cases in this file | 16 | **Observed 2026-09-06**, after Story 2-9 added the A-4 independently-addressable case. The sweep now measures 53 elements rather than 43, on the same five surfaces |
+| Cases in this file | 18 | **Observed 2026-10-18** by Story 9-4, off the list reporter's per-case lines for this file in each of the three whole-suite runs below, and equal to the file's `test(` count, which `ops/__tests__/hit-target-floor.test.ts` holds this row to. The sweep measures 46 elements on five surfaces. The file's cases summed to **10.3 s**, **10.7 s** and **22.4 s** across the three runs, the sweep case to **2.3 s**, **2.1 s** and **5.2 s**; the third run's doubling is host load, the per-case figures of the other two agreeing within half a second |
+| Whole `pnpm test:e2e`, twenty-four spec files, 344 tests | **10.7 min**, **10.3 min** and **10.8 min**, Playwright's own headlines, with `docker run` walls of **650.9 s**, **626.8 s** and **659.0 s** | **Observed 2026-10-18** by Story 9-4, same host, three runs of one tree (`5bf8c3d`, with this story's record and unit-test edits uncommitted and nothing the browser suite reads changed), each after a separate warm-up `pnpm install --frozen-lockfile` into fresh named volumes so no wall carries a cold install. `playwright test --list` on the same tree reports 344 tests in 24 files. **The second run failed one case**, `tests/e2e/display-entrance.pw.ts:269`, at the 60 s test timeout with a truncated trace archive, and passed in the first and third, so it is recorded as a timing reading and not as a green one; its 343 other cases passed. **This row restates the status-mark row below** (DW-59): that row's ten files and 89 tests were the suite on 2026-09-06, and the suite is twenty-four files and 344 tests here. Against the seventeen-file row of 2026-09-11 the cost has more than tripled for seven more files and 127 more tests, which is a change in the suite, not in the weather, since the three walls here sit within 33 s of each other |
 | This file inside a whole `pnpm test:e2e` run | **24.6 s** across its fifteen cases, of which the sweep case was **13.7 s** | **Observed 2026-09-06** in the pinned container on the Windows development host, by summing the per-case durations Playwright's list reporter printed. The sweep is five navigations, five hydration waits and 43 elements measured at two round trips each |
 | This file run alone | Playwright total **49.7 s**, of which its fifteen cases were **26.6 s** and the sweep **14.6 s** | **Observed 2026-09-06**, by `pnpm exec playwright test hit-target-floor` in the same container. The gap between the total and the cases is the `pnpm build` the `webServer` performs before the first test, which a whole-suite run pays once for eight spec files rather than for one |
 | Whole `pnpm test:e2e`, seventeen spec files, 217 tests | **3.0 min**, Playwright's own headline. The `docker run` wall was not timed on this run and is left blank rather than carried over | **Observed 2026-09-11**, same host, after Story 2-17 added `tests/e2e/secondary-surfaces.pw.ts`, gave `/` and the 404 one candidate each, and retired `/recommendation`. **The arithmetic against the row below does not close on that row's own figure, and the reason is measured rather than guessed**: `playwright test --list` on the tree at `0ad2e4e`, the commit before this story, reports **206** tests in sixteen files, so the 203 below was read before Story 2-16's review pass added three cases to `tests/e2e/cv.pw.ts`. This story's net is plus eleven: twelve cases in the new file, seven at first and five more from its own review pass, less the one-member loop `tests/e2e/narrative.pw.ts` lost with `/recommendation`. Four runs were made on this story's tree. The first, against the old pins, failed this file's sweep naming both surfaces and printed the counts the table above now carries, and failed the new file's unfloored control, which had stretched to the row height inside a flex nav and was replanted into the footer; the second passed at 212 in **4.7 min**; the third, after the review pass, failed the new file's surface-list read on the CRLF checkout the container reads as the host wrote it, which that case now normalises as `ops/__tests__/hit-target-floor.test.ts:57` does; the fourth is this row. The suite has grown from sixteen files to seventeen since the row below, so that figure is not a comparison either |
@@ -960,3 +979,10 @@ bring the derived index row in line, which is what that file's own rules require
 **When a figure is re-measured**, add the new row with its own date and method and keep the old
 one, so a later reader can see whether a number moved or was simply re-stated. Deletion is not
 used here.
+
+**Five derived figures are held by a test since 2026-10-18** (Story 9-4): the total and surface
+count under the surfaces table, the two counts that open and close § The tolerated breach, and the
+case count in the newest-dated `Cases in this file` row. `ops/__tests__/hit-target-floor.test.ts`
+derives each and fails naming the figure and both values. A story that moves a surface restates the
+first three with a date; one that adds or removes a case in the spec file adds a dated
+`Cases in this file` row. The timing rows stay readings and nothing asserts on them.

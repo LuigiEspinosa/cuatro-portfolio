@@ -334,6 +334,65 @@ const surfaceDisagreements = (fromRecord: readonly Surface[], fromSpec: readonly
   return found;
 };
 
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+
+/** The one capture of `pattern` in a section of the record, refused when it is absent. */
+const stated = (markdown: string, heading: string, pattern: RegExp, label: string): string => {
+  const found = pattern.exec(section(markdown, heading))?.[1];
+  if (found === undefined) {
+    throw new Error(`${RECORD_REL}: § ${heading} carries no ${label} (${pattern}) to hold against its table`);
+  }
+  return found;
+};
+
+/**
+ * Every derived figure the record states, held to what it is derived from (DW-53, DW-54, DW-59).
+ *
+ * The surfaces table is held equal to `SURFACES` above, so its `Measured` column is the one source:
+ * the headline total and its surface count, § The tolerated breach's "none of N under the floor"
+ * (true only while the ledger covers nothing) and its "all N" clearing count. The newest
+ * `Cases in this file` row in § Running it is held to the spec file's own `test(` count, so a case
+ * added or removed there takes a new dated row; the row's timings stay readings and are not held.
+ */
+const derivedDisagreements = (markdown: string, source: string): string[] => {
+  const surfaces = recordSurfaces(markdown);
+  const measured = surfaces.reduce((total, row) => total + row.measured, 0);
+  const covered = recordRows(markdown).reduce((total, row) => total + row.covers, 0);
+  const found: string[] = [];
+  const hold = (label: string, statedValue: number, derived: number, from: string): void => {
+    if (statedValue !== derived) found.push(`${label}: ${RECORD_REL} states ${statedValue}, ${from} derives ${derived}`);
+  };
+
+  const headline = /\*\*(\d+) elements measured across (\w+) surfaces\*\*/;
+  hold('the headline total', Number(stated(markdown, 'The surfaces swept', headline, 'headline total')), measured, 'the surfaces table');
+  const word = /\*\*\d+ elements measured across (\w+) surfaces\*\*/;
+  hold(
+    'the headline surface count',
+    NUMBER_WORDS.indexOf(stated(markdown, 'The surfaces swept', word, 'surface count')),
+    surfaces.length,
+    'the surfaces table'
+  );
+
+  const none = /\*\*None of the (\d+) measured elements is under the floor/;
+  hold('the tolerated breach lead', Number(stated(markdown, 'The tolerated breach', none, 'lead total')), measured, 'the surfaces table');
+  hold('the elements the lead says are under the floor', 0, covered, 'the exemption ledger');
+  const all = /\*\*All (\d+) since \d{4}-\d{2}-\d{2}\*\*/;
+  hold('the count clearing the floor', Number(stated(markdown, 'The tolerated breach', all, 'clearing count')), measured, 'the surfaces table');
+
+  const cases = table(section(markdown, 'Running it'), 'Figure').rows.filter((row: string[]) => row[0] === 'Cases in this file');
+  const dated = cases.map((row: string[]) => ({ row, date: /Observed (\d{4}-\d{2}-\d{2})/.exec(row[2])?.[1] ?? '' }));
+  const newest = dated.reduce((latest, entry) => (entry.date > latest ? entry.date : latest), '');
+  const latest = dated.filter((entry) => entry.date === newest);
+  if (latest.length !== 1) {
+    found.push(`${RECORD_REL}: § Running it has ${latest.length} "Cases in this file" rows dated ${newest || 'nothing'}, so which is current is not stated`);
+    return found;
+  }
+  const [{ row }] = latest;
+  hold('the newest "Cases in this file" row', Number(row[1]), [...source.matchAll(/^\s*test\(/gm)].length, `${SPEC_REL}'s test( count`);
+
+  return found;
+};
+
 /** One planted table row per id, all seven cells filled the way the record fills them. */
 const plantedRows = (ids: readonly string[]): string[][] =>
   ids.map((id) => [
@@ -545,6 +604,44 @@ describe('the record and the swept surfaces agree in both directions', () => {
     const shuffled = "  { route: '/work', status: 200, found: 11, entrance: false, skipped: 0, measured: 11 },";
     expect(() => specSurfaces(`const SURFACES = [\n${ordered}\n${ordered}\n${shuffled}\n] as const;`)).toThrow(
       /parsed to 2 rows and declares 3/
+    );
+  });
+});
+
+describe('the record states every derived figure as its tables derive it', () => {
+  it('holds the headline, both tolerated-breach figures and the newest case count to their sources', () => {
+    expect(
+      derivedDisagreements(record, spec),
+      `${RECORD_REL} states a derived figure its own tables no longer give. Restate it with a date, ` +
+        `keeping the older reading beside it`
+    ).toEqual([]);
+  });
+
+  it('fails on each figure edited in one place, naming the figure and both values', () => {
+    const plant = (from: RegExp, to: string): string[] => derivedDisagreements(record.replace(from, to), spec);
+    expect(plant(/\*\*\d+ elements measured across/, '**41 elements measured across')).toEqual([
+      expect.stringMatching(/^the headline total: ops\/hit-target-floor\.md states 41, the surfaces table derives \d+$/),
+    ]);
+    expect(plant(/measured across five surfaces/, 'measured across four surfaces')).toEqual([
+      'the headline surface count: ops/hit-target-floor.md states 4, the surfaces table derives 5',
+    ]);
+    expect(plant(/\*\*None of the \d+ measured/, '**None of the 39 measured')).toEqual([
+      expect.stringMatching(/^the tolerated breach lead: .* states 39, the surfaces table derives \d+$/),
+    ]);
+    expect(plant(/\*\*All \d+ since (\d{4}-\d{2}-\d{2})\*\*/, '**All 39 since $1**')).toEqual([
+      expect.stringMatching(/^the count clearing the floor: .* states 39, the surfaces table derives \d+$/),
+    ]);
+    expect(derivedDisagreements(record, `${spec}\n  test('a planted case', () => {});`)).toEqual([
+      expect.stringMatching(/^the newest "Cases in this file" row: .* states \d+, tests\/e2e\/hit-target-floor\.pw\.ts's test\( count derives \d+$/),
+    ]);
+  });
+
+  it('refuses a record that states a figure it cannot find, rather than passing over it', () => {
+    expect(() => derivedDisagreements(record.replace(/elements measured across/, 'elements across'), spec)).toThrow(
+      /§ The surfaces swept carries no headline total/
+    );
+    expect(() => derivedDisagreements(record.replace(/\*\*None of the/, '**Not one of the'), spec)).toThrow(
+      /§ The tolerated breach carries no lead total/
     );
   });
 });
