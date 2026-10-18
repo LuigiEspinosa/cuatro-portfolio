@@ -65,7 +65,6 @@
 //   2  a defect in this file
 //   3  a Block If condition: nothing could be observed at all
 
-import { spawnSync } from 'node:child_process';
 import {
   cpSync,
   existsSync,
@@ -78,41 +77,28 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
-import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
-import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
+import { join, normalize } from 'node:path';
 import { tmpdir } from 'node:os';
-import { fileURLToPath } from 'node:url';
-import { stripVTControlCharacters } from 'node:util';
+import {
+  BlockedError,
+  CONTRACTS,
+  CS_TRACKER,
+  describeRun,
+  invokedDirectly,
+  readOrNull,
+  run as runCommand,
+  say,
+  serve,
+  tailwindBanner,
+} from './probe-scaffold.mjs';
+
+// Re-exported, so this probe's public surface is what it was before the
+// scaffold moved into `ops/probe-scaffold.mjs` (epic-1 retro item 10).
+export { BlockedError, CONTRACTS, CS_TRACKER, tailwindBanner };
+export { REPO_ROOT } from './probe-scaffold.mjs';
 
 const require_ = createRequire(import.meta.url);
-
-/**
- * This module's own directory.
- *
- * Guarded, because under Vitest `import.meta.url` is a vite URL rather than a
- * `file:` one and `fileURLToPath` throws on it. An unguarded call here would
- * fail at import time and take the whole unit suite with it, which is the trap
- * `ops/__tests__/contract-purity.test.ts:27-30` records.
- */
-function moduleDir() {
-  try {
-    return dirname(fileURLToPath(import.meta.url));
-  } catch {
-    return resolve(process.cwd(), 'ops');
-  }
-}
-
-/** This repository. `contracts/` is copied out of it into the scratch tree. */
-export const REPO_ROOT = resolve(moduleDir(), '..');
-export const CONTRACTS = join(REPO_ROOT, 'contracts');
-
-/**
- * `cs-tracker`, resolved beside this repository rather than hardcoded to one
- * absolute path, so the estate layout is the only assumption. Read-only: this
- * story writes nothing under it.
- */
-export const CS_TRACKER = resolve(REPO_ROOT, '..', 'cs-tracker-workspace', 'cs-tracker');
 
 /** Every scratch directory this probe makes starts with this, so a sweep has a target. */
 export const SCRATCH_PREFIX = 'cuatro-daisyui-probe-';
@@ -202,13 +188,6 @@ const SOURCE_MARKER_SELECTOR = String.raw`.m-\[13px\]`;
 /** Emitted exactly once per Tailwind Preflight, so counting it counts Preflights. */
 const PREFLIGHT_MARKER = '-webkit-tap-highlight-color';
 
-const MIME = {
-  '.css': 'text/css; charset=utf-8',
-  '.html': 'text/html; charset=utf-8',
-  '.woff2': 'font/woff2',
-  '.js': 'text/javascript; charset=utf-8',
-};
-
 const MIX = process.platform === 'win32' ? 'mix.bat' : 'mix';
 
 /**
@@ -218,90 +197,19 @@ const MIX = process.platform === 'win32' ? 'mix.bat' : 'mix';
  */
 const TIMEOUT_MS = 600_000;
 
-/** Thrown for a condition the story's Block If names, never for a defect in this file. */
-export class BlockedError extends Error {}
-
-function say(message) {
-  process.stdout.write(`${message}\n`);
-}
-
 /**
- * Run a command, returning its exit status, both streams, the signal that killed
- * it and any spawn error. Never throws on a non-zero exit: a compile failure is
- * a finding this probe records, not a crash to report.
- *
- * `signal` is surfaced because `timeout` kills with SIGTERM and leaves `status`
- * null, which is indistinguishable from a spawn failure at the call site. A
- * `mix phx.new --install` that ran out of time on a cold hex cache is a
- * different thing from a generator that refused, and the caller has to be able
- * to say which.
+ * The shared `run`, with this probe's timeout and, on Windows, a shell: `mix`
+ * and `elixir` are batch files there (the reason is beside `run` in
+ * `ops/probe-scaffold.mjs`).
  */
 function run(command, args, options = {}) {
-  // Node 18.20 and later refuse to spawn a `.bat` or `.cmd` without a shell, and
-  // `mix` and `elixir` are both batch files on Windows. The command is joined
-  // into one string rather than passed as an argument vector, because Node warns
-  // (DEP0190) that a vector plus `shell: true` is concatenated unescaped, and a
-  // deprecation notice in the middle of the probe output is noise in a record
-  // that gets quoted verbatim. Every argument this file passes is a bare flag or
-  // an identifier, so there is nothing here for a shell to reinterpret.
-  const shell = process.platform === 'win32';
-  // Quoted only when it has to be. `cmd.exe` resolves a quoted `mix.bat` against
-  // the working directory rather than through PATH, and the batch file then
-  // computes its own `%~dp0` from that wrong directory and cannot find
-  // `elixir.bat`. Observed doing exactly that on 2026-08-25.
-  const quoted = shell && command.includes(' ') ? `"${command}"` : command;
-  const result = spawnSync(shell ? [quoted, ...args].join(' ') : command, shell ? [] : args, {
-    encoding: 'utf8',
-    timeout: TIMEOUT_MS,
-    maxBuffer: 32 * 1024 * 1024,
-    shell,
-    ...options,
-  });
-  return {
-    status: result.status,
-    signal: result.signal ?? null,
-    stdout: result.stdout ?? '',
-    stderr: result.stderr ?? '',
-    error: result.error ? String(result.error.message) : null,
-  };
-}
-
-/** How a finished command should be described in a failure message. */
-function describeRun(result) {
-  const how =
-    result.signal !== null
-      ? `was killed by ${result.signal}, which is what the ${TIMEOUT_MS / 1000} second timeout does`
-      : result.error !== null
-        ? `could not be started: ${result.error}`
-        : `exited ${result.status}`;
-  return `${how}\n${result.stdout}\n${result.stderr}`;
+  return runCommand(command, args, { timeout: TIMEOUT_MS, shell: process.platform === 'win32', ...options });
 }
 
 /** The first capture of `pattern` in `text`, trimmed, or null. */
 function firstMatch(text, pattern) {
   const match = pattern.exec(text);
   return match === null ? null : match[1].trim();
-}
-
-/**
- * The `tailwindcss vX.Y.Z` banner out of the binary's `--help` output, or null.
- *
- * The 4.1.12 CLI colours its banner through a pipe as well as on a terminal,
- * unless `NO_COLOR` is set, and one escape sits between the name and the
- * version. So every escape sequence is stripped before the match, and the pin
- * reads the same from any shell (DW-109).
- */
-export function tailwindBanner(helpText) {
-  return firstMatch(stripVTControlCharacters(helpText ?? ''), /(tailwindcss v[\d.]+)/);
-}
-
-/** Read a file, or return null rather than throwing an ENOENT with no context. */
-function readOrNull(path) {
-  try {
-    return readFileSync(path, 'utf8');
-  } catch {
-    return null;
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -904,38 +812,8 @@ function compileVariant(appDir, variant) {
 }
 
 // ---------------------------------------------------------------------------
-// Serving and reading
+// Reading a compiled stylesheet
 // ---------------------------------------------------------------------------
-
-function serve(root) {
-  return new Promise((done, fail) => {
-    const server = createServer((request, response) => {
-      // A throw inside a request handler takes the whole process down with an
-      // uncaught exception, which would land on top of whatever the probe was
-      // actually reporting.
-      try {
-        const requested = decodeURIComponent(new URL(request.url ?? '/', 'http://127.0.0.1').pathname);
-        const target = normalize(join(root, requested));
-        if (!target.startsWith(root + sep) || !existsSync(target) || statSync(target).isDirectory()) {
-          response.writeHead(404, { 'content-type': 'text/plain' }).end('not found');
-          return;
-        }
-        response.writeHead(200, { 'content-type': MIME[extname(target)] ?? 'application/octet-stream' });
-        response.end(readFileSync(target));
-      } catch (error) {
-        try {
-          response.writeHead(500, { 'content-type': 'text/plain' }).end(String(error));
-        } catch {
-          response.destroy();
-        }
-      }
-    });
-    // Without this the promise never settles when `listen` fails and the probe
-    // hangs with nothing in the log explaining why.
-    server.once('error', fail);
-    server.listen(0, '127.0.0.1', () => done(server));
-  });
-}
 
 /** Every `--color-*` custom property name declared anywhere in a compiled stylesheet. */
 export function declaredColourNames(css) {
@@ -1415,26 +1293,7 @@ async function probe() {
   return cases.every((entry) => entry.pass) && !leaked;
 }
 
-function sameFile(a, b) {
-  try {
-    return realpathSync(a) === realpathSync(b);
-  } catch {
-    return false;
-  }
-}
-
-function thisFile() {
-  try {
-    return fileURLToPath(import.meta.url);
-  } catch {
-    return null;
-  }
-}
-
-const entry = thisFile();
-const invokedDirectly = entry !== null && typeof process.argv[1] === 'string' && sameFile(process.argv[1], entry);
-
-if (invokedDirectly) {
+if (invokedDirectly(import.meta.url)) {
   // `process.exitCode` rather than `process.exit`. On a pipe, which is what a
   // shell redirection and a CI log both give this process, `process.exit` can
   // cut the transcript off mid flush, and this probe's entire value is a
