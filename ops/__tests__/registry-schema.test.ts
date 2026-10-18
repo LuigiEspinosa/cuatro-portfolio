@@ -746,6 +746,58 @@ describe('the gate refuses', () => {
     expect(inside.message).toContain('is not JSON');
   });
 
+  // DW-28: `JSON.parse` keeps the last of two equal keys and says nothing, so
+  // without the scanner each fixture below validates (the second one as `Live`
+  // with no `live` URL hidden behind the surviving `Complete`).
+  it('an entry carrying the same key twice, naming the file, the entry, the key and the line', () => {
+    const text = envelope(entry(), entry({ id: 'other-app' })).replace(
+      '"id": "other-app",',
+      '"id": "other-app",\n      "status": "Live",'
+    );
+    // The line of the second `status` in that entry, the one the parser kept.
+    const lines = text.split('\n');
+    const live = lines.findIndex((line) => line.includes('"Live"'));
+    const second = lines.findIndex((line, n) => n > live && line.includes('"status"')) + 1;
+    const result = against(text);
+
+    expect(result.ok, 'a duplicated key validated: JSON.parse kept the last and the gate never saw the first').toBe(false);
+    expect(result.message).toContain(
+      `${REGISTRY} carries a duplicate key: /applications/1 carries the key "status" twice (line ${second}).`
+    );
+  });
+
+  it('the same key twice in the schema, which is the same refusal on the other file', () => {
+    const result = report(
+      inspect(asSchema('{ "type": "object", "required": ["a"], "required": [] }'), asRegistry(registryText))
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain(`${SCHEMA} carries a duplicate key: (the schema root) carries the key "required" twice (line 1).`);
+  });
+
+  it('a duplicated key holding a control character, escaped once and never forging a line', () => {
+    const result = against(envelope(entry()).replace('"id": "demo-app",', '"id": "demo-app",\n      "a\\nb": 1, "a\\nb": 2,'));
+
+    expect(result.message).toContain(String.raw`carries the key "a\nb" twice`);
+  });
+
+  it('two spellings of one key, compared decoded as the parser compares them', () => {
+    const text = envelope(entry()).replace(
+      '"$schema": "./registry.schema.json",',
+      '"$schema": "./registry.schema.json",\n  "\\u0024schema": "./registry.schema.json",'
+    );
+    const result = against(text);
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('carries the key "$schema" twice');
+  });
+
+  it('and accepts one key name used once in each of two objects, or as a value beside itself', () => {
+    const result = against(envelope(entry({ name: 'status' }), entry({ id: 'other-app' })));
+
+    expect(result.ok, result.message).toBe(true);
+  });
+
   it('a Live entry with no live URL, naming which half of FR-6 failed', () => {
     const result = against(envelope(entry({ status: 'Live' })));
 

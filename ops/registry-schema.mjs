@@ -288,7 +288,7 @@ const isPlainObject = (/** @type {unknown} */ value) =>
  * @typedef {{ instance: string, rule: string, schema: string | null, detail: string, note: string | null }} Violation
  * @typedef {{ stage: 'unread' | 'unparsed' | 'unsupported' | 'validated',
  *             unread: { label: string, error: string }[],
- *             unparsed: { label: string, error: string }[],
+ *             unparsed: { label: string, error: string, duplicate: boolean }[],
  *             unsupported: Unsupported[],
  *             violations: Violation[],
  *             applied: string[],
@@ -1172,6 +1172,52 @@ export const RULES_BEYOND_THE_SCHEMA = [
   },
 ];
 
+/**
+ * The first object in `text` that carries one key twice, or `null` (DW-28).
+ *
+ * `JSON.parse` keeps the last of two equal keys and says nothing, so an entry
+ * written with two `status` keys validates whichever value survived while the
+ * editor flags the duplicate: the two halves of AD-4 disagree about the same
+ * file. A reviver cannot see the discarded value, hence a scanner. It runs only
+ * on text `JSON.parse` has already accepted, so it tracks structure and never
+ * validates it. Keys are compared decoded, so `"a"` and `"a"` are one key,
+ * as they are to the parser.
+ *
+ * @param {string} text
+ * @returns {{ pointer: string, key: string, line: number } | null}
+ */
+function duplicateKey(text) {
+  /** @type {{ keys: Set<string> | null, key: string, index: number, pointer: string }[]} */
+  const frames = [];
+  let expectingKey = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    const top = frames.at(-1);
+    if (char === '"') {
+      let end = i + 1;
+      while (text[end] !== '"') end += text[end] === '\\' ? 2 : 1;
+      if (top?.keys && expectingKey) {
+        const key = JSON.parse(text.slice(i, end + 1));
+        if (top.keys.has(key)) return { pointer: top.pointer, key, line: text.slice(0, i).split('\n').length };
+        top.keys.add(key);
+        top.key = key;
+        expectingKey = false;
+      }
+      i = end;
+    } else if (char === '{' || char === '[') {
+      const pointer = top === undefined ? '' : `${top.pointer}/${escapeToken(top.keys ? top.key : top.index)}`;
+      frames.push({ keys: char === '{' ? new Set() : null, key: '', index: 0, pointer });
+      expectingKey = char === '{';
+    } else if (char === '}' || char === ']') {
+      frames.pop();
+    } else if (char === ',' && top !== undefined) {
+      if (top.keys) expectingKey = true;
+      else top.index += 1;
+    }
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // The run
 // ---------------------------------------------------------------------------
@@ -1225,15 +1271,28 @@ export function inspect(schemaSource, registrySource) {
       // handle, one level up.
       const text = String(source.text);
       const body = text.startsWith(BOM) ? text.slice(BOM.length) : text;
-      return { value: JSON.parse(body), error: null };
+      const value = JSON.parse(body);
+      const twice = duplicateKey(body);
+      if (twice === null) return { value, error: null, duplicate: false };
+      return {
+        value: null,
+        error:
+          `${(source.label === SCHEMA ? inSchema : where)(twice.pointer)} carries the key ${q(twice.key)}` +
+          ` twice (line ${twice.line})`,
+        duplicate: true,
+      };
     } catch (error) {
-      return { value: null, error: error instanceof Error ? error.message : String(error) };
+      return { value: null, error: error instanceof Error ? error.message : String(error), duplicate: false };
     }
   };
 
   const schemaParse = parse(schemaSource);
   if (schemaParse.error !== null) {
-    return { ...empty, stage: 'unparsed', unparsed: [{ label: schemaSource.label, error: schemaParse.error }] };
+    return {
+      ...empty,
+      stage: 'unparsed',
+      unparsed: [{ label: schemaSource.label, error: schemaParse.error, duplicate: schemaParse.duplicate }],
+    };
   }
 
   const unsupported = auditSchema(schemaParse.value);
@@ -1244,7 +1303,7 @@ export function inspect(schemaSource, registrySource) {
     return {
       ...empty,
       stage: 'unparsed',
-      unparsed: [{ label: registrySource.label, error: registryParse.error }],
+      unparsed: [{ label: registrySource.label, error: registryParse.error, duplicate: registryParse.duplicate }],
     };
   }
 
@@ -1315,7 +1374,18 @@ export function report(inspection) {
     return {
       ok: false,
       message: refusal([
-        ...inspection.unparsed.map((file) => `  ${file.label} is not JSON: ${printable(file.error)}`),
+        ...inspection.unparsed.flatMap((file) =>
+          file.duplicate
+            ? [
+                // Already escaped piece by piece where it was built, so not again here:
+                // a second pass would double every backslash in the key it names.
+                `  ${file.label} carries a duplicate key: ${file.error}.`,
+                '  JSON.parse keeps the last of the two and says nothing, while the editor flags the',
+                '  duplicate, so this gate would validate a value its author may not be looking at (DW-28).',
+                '  Delete one of the two.',
+              ]
+            : [`  ${file.label} is not JSON: ${printable(file.error)}`]
+        ),
         '  Nothing downstream can read a file this one could not parse, so an unparseable Registry or',
         '  schema is a refusal rather than a run with nothing to check.',
       ]),
