@@ -909,7 +909,11 @@ the next free id, one above the highest in the file, and a status line.
     anyway, and have the `bmad:context` refresh replace "tracked in story 1-9" with the
     register path. That refresh is already queued by the earlier entry about the stale
     "one Hetzner box" line.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-1-records-and-planning-sweep** (`ops/capacity-measurement.md`, the
+    `deploy.yml` stated limit): the AD-8 violation resolves to KV-1 in `ops/known-violations.md`, with a dated note that
+    KV-1's Anchor half retired 2026-09-29T20:41:37Z. The `AGENTS.md` half closed at `967abfd`.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
   id: DW-181
@@ -2613,7 +2617,12 @@ status: done
 
     The cheap fix, when someone is in those files anyway, is a trailing "retired by Story 2.7"
     rather than a rewritten citation.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-1-records-and-planning-sweep** (`ops/backup-digital-library.md` § The
+    store, `CHANGELOG.md` 2.2.0, `portfolio-architecture-guide.docx.md`): each mention of `content/projects.ts` carries a
+    trailing dated note that Story 2-7 retired it (`ba9526d`) and where the data lives now (`contracts/registry.json`);
+    the observations themselves are not rewritten.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
   id: DW-212
@@ -7776,7 +7785,15 @@ status: done
     counting three private repositories, and the policy table records `cs-tournament` public. The
     `AGENTS.md` dependency automation policy (`:181-183` after the refresh) and the two passages in
     `ops/registry-verification.md` stay as this entry describes, owner and trigger unchanged.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-1-records-and-planning-sweep** (`ops/registry-verification.md` § Sources
+    tolerated to answer 404 anonymously): the section's opening counts three tolerated links (`cs-tracker`,
+    `StreamVault`, `Mutuo`) with the `cs-tournament` row struck since 2026-09-24, and § How a row is struck names the
+    suite's pins as they are (`KV2_TABLE` every row, `STRUCK` the struck ones, the fixture's 404 for `PRIVATE`), each
+    with a dated amendment. The `AGENTS.md` and `ops/contract-adoption.md` halves closed earlier (`2974ceb`,
+    `ad52501`); the remaining four-count lines in `contract-adoption.md` are dated 2026-08-27 readings, already
+    amended, and stay as evidence.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
   id: DW-140
@@ -9061,7 +9078,13 @@ status: done
 
     **Owner: the next story that edits `ops/estate.md`.** **Trigger: that edit, or AD-22's next
     refresh check, whichever comes first.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-1-records-and-planning-sweep** (`ops/estate.md` § Pending Operator
+    actions and § Observed GitHub state, 2026-10-18): the intro reads no archive outstanding, the `connect-four-react`
+    row is dated Done 2026-09-29T21:43:05Z, the waypoint and disposition sentences carry dated amendments, and the
+    observed state was re-gathered by `gh repo list` at 2026-10-18T20:20:21Z: ten governed repositories not archived,
+    the end state of 10.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-placement-tournament-on-the-box.md`
   id: DW-287

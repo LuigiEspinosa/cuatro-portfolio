@@ -106,4 +106,13 @@ written (DW-211's own principle: a record of what was observed on a date is evid
   11/11.
 - `corepack pnpm typecheck`: exit 0.
 
-**Independent verifier:** pending.
+**Independent verifier:** PASS on round 1, 2026-10-18, separate agent; tests: at 1dd4d1c, `corepack pnpm typecheck`
+exit 0; `corepack pnpm test -- --run` 81 files (78 passed, 3 failed), 1984 tests (1980 passed, 3 failed, 1 skipped), the
+three failures DW-135 WSL-bash files (`demo-reset`, `library-backup`, `postgres-backup`), which re-run alone passed 3 of
+3 files, 109 tests passed and 1 skipped. Plant check: changing the `cs-tournament` KV-2 Ruling in
+`ops/registry-verification.md` from struck to published failed one `registry-verification.test.ts` case; restored, the
+registry-verification, contract-adoption and ops-record-titles suites passed 113 of 113. Every stale-string grep
+returned 0 hits outside the historical artifacts; `gh repo list` re-observation matched the new `ops/estate.md` table
+(sixteen governed: 10 not archived, 6 archived, all archived public, 3 private); facts checked against their sources;
+diff hygiene clean (no edit to `deferred-work.md`, `sprint-status.yaml`, `contracts/` or `ci.yml`, line 1 of every ops
+record unchanged, no forbidden punctuation in added prose). No container e2e: no rendered output changed.

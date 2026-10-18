@@ -42,7 +42,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-18-2026 15:14
+last_updated: 10-18-2026 16:30
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1226,7 +1226,8 @@ development_status:
   epic-8-retrospective: done
   # Epic 9 (added 2026-10-18): deferred-work and retrospective follow-through, epic-9-plan-2026-10-18.md.
   epic-9: in-progress
-  9-1-records-and-planning-sweep: backlog
+  # 2026-10-18: done (spec-9-1-records-and-planning-sweep.md, verifier pass round 1): DW-139, 180, 211, 286 and epic-2 item 6 closed.
+  9-1-records-and-planning-sweep: done
   9-2-process-rules-into-instruction-files: backlog
   9-3-cs-tracker-secret-key-base-record: backlog
   9-4-ops-record-pins: backlog
@@ -1468,7 +1469,9 @@ action_items:
     action: "Correct epics.md:2005-2010 to thirty-one stories, twenty FRs and the
       migration steps as they shipped."
     owner: "Cuatro"
-    status: open
+    # 2026-10-18: done by Story 9-1 (spec-9-1-records-and-planning-sweep.md, verifier pass round 1): epics.md Epic 2
+    # header reads thirty-one stories, twenty FRs and the migration steps as shipped, citing the proposal's § 7.3.
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
   - id: "epic-2-retro-item-7-correct-the-stale-registry-test-ts-621-6"
