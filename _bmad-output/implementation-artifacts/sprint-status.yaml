@@ -42,7 +42,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-18-2026 16:30
+last_updated: 10-18-2026 16:35
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1228,7 +1228,8 @@ development_status:
   epic-9: in-progress
   # 2026-10-18: done (spec-9-1-records-and-planning-sweep.md, verifier pass round 1): DW-139, 180, 211, 286 and epic-2 item 6 closed.
   9-1-records-and-planning-sweep: done
-  9-2-process-rules-into-instruction-files: backlog
+  # 2026-10-18: done (spec-9-2-process-rules-into-instruction-files.md, verifier pass round 1): epic-2 items 10 to 14, epic-5 items 51, 52 and epic-8 items 60, 61 landed and in-progress until proven.
+  9-2-process-rules-into-instruction-files: done
   9-3-cs-tracker-secret-key-base-record: backlog
   9-4-ops-record-pins: backlog
   9-5-wsl-suite-failure-naming: backlog
@@ -1506,6 +1507,7 @@ action_items:
       Operator checks, or record a dated override; reconcile 2-27, moved to done before
       its screen-reader read."
     owner: "Cuatro"
+    # 2026-10-18: rule landed in AGENTS.md § Process rules from retrospectives (Story 9-2); the 2-27 reconcile waits on Q-item-10; proved by the next retro's grep for a done row that waits on the Operator.
     status: in-progress
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
@@ -1514,6 +1516,7 @@ action_items:
     action: "Process: keep an independent verifier on every unattended story and package;
       it refused six deliveries the inline review layers had passed, in three days."
     owner: "Cuatro"
+    # 2026-10-18: rule landed in _bmad/custom/bmad-build.toml persistent_facts (Independent verifier) and on_complete (Story 9-2); proved by each Epic 9 spec naming a separate verifier run.
     status: in-progress
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
@@ -1522,6 +1525,7 @@ action_items:
     action: "Process: plant every new assertion, including guards added in review
       and fix rounds, and record the planted failure beside it."
     owner: "Cuatro"
+    # 2026-10-18: rule landed in _bmad/custom/bmad-build.toml persistent_facts (Planted assertions) (Story 9-2); proved by each later Epic 9 spec recording one planted failure per new assertion.
     status: in-progress
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
@@ -1530,7 +1534,8 @@ action_items:
     action: "Process: cite code by symbol or test name, never by line number, and
       state in a comment only a count a test holds."
     owner: "Cuatro"
-    status: open
+    # 2026-10-18: rule landed in AGENTS.md § Process rules from retrospectives (Story 9-2); proved by later Epic 9 diffs adding no file:N citation; backfill stays with DW-247.
+    status: in-progress
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
   - id: "epic-2-retro-item-14-process-each-package-names-which-of-its"
@@ -1538,6 +1543,7 @@ action_items:
     action: "Process: each package names which of its new ledger entries bind the
       next merge."
     owner: "Cuatro"
+    # 2026-10-18: reworded rule (Operator ruling 2026-10-18) landed in _bmad/custom/bmad-build.toml persistent_facts (No new deferred work) (Story 9-2); proved by deferred-work.md gaining no entry during Epic 9.
     status: in-progress
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
@@ -1777,6 +1783,7 @@ action_items:
       section"
     owner: "Cuatro"
     # 2026-10-17: followed through Epic 8 (epic-8-retro-2026-10-17.md); the Operator moved it to in-progress.
+    # 2026-10-18: rule landed in AGENTS.md § Process rules from retrospectives (Story 9-2); proved by 9-22, 9-23, 9-24, 9-25, 9-30 and 9-32 editing the runbook's § Later rollouts in the same commit.
     status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-52-process-a-dated-row-relying-on-a-reposit"
@@ -1785,6 +1792,7 @@ action_items:
       it read on that sha, not CI green"
     owner: "Cuatro"
     # 2026-10-17: followed through Epic 8 (epic-8-retro-2026-10-17.md); the Operator moved it to in-progress.
+    # 2026-10-18: rule landed in AGENTS.md § Process rules from retrospectives (Story 9-2); proved by the dated rows of 9-22 and 9-25 naming each workflow and the sha.
     status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-8-retro-item-53-promote-dev-to-main-and-roll-the-tracker"
@@ -1874,7 +1882,8 @@ action_items:
     action: "Process: an agent step gated on an Operator row waits for the row's dated
       completion; never open then draft"
     owner: "Cuatro"
-    status: open
+    # 2026-10-18: rule landed in AGENTS.md § Process rules from retrospectives (Story 9-2); proved by the push times of 9-16, 9-22 and 9-23 falling after their rulings.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
   - id: "epic-8-retro-item-61-process-an-implementer-s-open-inference"
     epic: 8
@@ -1882,5 +1891,6 @@ action_items:
       the merge that depends on it, and a workflow does not launch a story that builds
       on an unruled reading"
     owner: "Cuatro"
-    status: open
+    # 2026-10-18: rule landed in _bmad/custom/bmad-build.toml persistent_facts (Open inferences) (Story 9-2); proved by each later spec listing its I-n readings with ruling dates before the dependent commit.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"

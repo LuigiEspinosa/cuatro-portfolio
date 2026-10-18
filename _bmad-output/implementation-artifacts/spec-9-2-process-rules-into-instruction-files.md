@@ -95,4 +95,17 @@ Action item comments (status `in-progress`; a later story proves each, then it c
 
 ## Independent verifier
 
-pending
+Independent verifier: PASS on round 1, 2026-10-18, separate agent; tests: worktree at 277d177 (72aa321 and 277d177
+on `origin/dev`). `corepack pnpm typecheck` exit 0. `corepack pnpm test -- --run`: 82 files, 1983 passed, 1 skipped,
+3 failed, all three in WSL-bash suites (demo-reset, deploy-remote, library-backup, DW-135); each file alone passed
+(30/30, 28/28, 59/59), and the diff touches none of them. `vitest --run` on process-rules, contract-adoption and
+ops-record-titles: 35/35. Two planted failures (`(Epic 5 action 52)` to `(Epic 5 action 5)` in AGENTS.md; the "Open
+inferences" fact deleted from bmad-build.toml) each failed with `AssertionError: expected [ Array(1) ] to deeply equal
+[]`, and passed again after restore. `bmad-build.toml` parses under tomllib with 9 persistent facts and the verifier
+sentence ending `on_complete`. No dash or emoji in added lines, no new line-number citation, managed block untouched,
+no job-name pin or `contracts/` change, commit subjects subject-only. Minor, not blocking: the item 52 example named
+only the `image-*.yml` workflows; the push step widened it to `image.yml`, `image-*.yml` and `lighthouse.yml`. Findings for the Operator: confirm the
+scope of the item 14 fact (binds while Epic 9 is open, lifted only by a dated ruling); items 51 and 52 sit in the new
+section, so the managed-block pitfall bullets do not point to them; the optional estate-wide copy of item 60 in
+`~/.ai-dev/standard/` was not done; Epic 9 worktrees lack `.claude/skills/`, so bmad-build from a worktree does not
+resolve (builder report, not reproduced).
