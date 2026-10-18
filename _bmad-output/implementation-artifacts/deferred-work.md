@@ -3694,7 +3694,14 @@ status: done
     `three` with it. **Not re-measured on `/`**: the request recording this entry was made with was
     not repeated, and the `§ Stated limits` line it asks for is still unwritten, so the entry stays
     open on both.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-4-ops-record-pins** (`ops/asset-budget.md` § Stated limits, the
+    prefetch row): re-measured in the pinned image on build `J6-yUrEUgcvXw3AX_9acr` by the entry's
+    own method. Under reduced motion a prefetch from `/` (of `/`, `/celeste` and `/work`) pulls
+    `gsap` (26,971 gzipped) and one 4,469 chunk beyond the document, and no WebGL chunk; with motion
+    allowed, the three/R3F/drei and post-processing chunks that arrive are `/`'s own hero boundary.
+    The § Stated limits line exists and carries the dated re-measurement.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-39
@@ -4250,7 +4257,15 @@ status: done
     column and compare it against the number in that sentence, with the same both-directions message
     the other comparisons carry. It was not done here because that suite is Story 2-8's instrument
     and this story's boundaries name the two numbers rather than the agreement between them.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-4-ops-record-pins**
+    (`ops/__tests__/hit-target-floor.test.ts:derivedDisagreements`): the headline total under § The
+    surfaces swept, and its surface count, are derived from the record's own surfaces table, which
+    is already held equal to `SURFACES`, and the suite fails naming the figure and both values. The
+    headline read 41 against a table summing to 46 and is restated with a date in
+    `ops/hit-target-floor.md`; the planted run at `5bf8c3d` printed "the headline total:
+    ops/hit-target-floor.md states 41, the surfaces table derives 46".
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
   id: DW-54
@@ -4275,7 +4290,14 @@ status: done
     DW-53 as written, by summing the `Measured` column and comparing it against the sentence, would
     not catch these. The cheapest honest fix is to derive all three in the same case, which is the
     Story 2-8 instrument's to change and not this story's.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-4-ops-record-pins**
+    (`ops/__tests__/hit-target-floor.test.ts:derivedDisagreements`): both derived counts in § The
+    tolerated breach, "None of the N measured elements is under the floor" (also failed if the
+    ledger covers any element) and "All N since", are derived in the same case as DW-53's total,
+    which is the fix this entry asked for. Both read 39 against 46 and are restated with dated
+    paragraphs, the 2026-09-23 readings kept.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
   id: DW-55
@@ -4521,7 +4543,14 @@ status: done
     section is read for a cost comparison**, or the next story that adds a spec file, since the file
     count in the last row is the one figure a reader uses to tell a nine-file run from an eleven-file
     one. Adding the new row costs three readings of the same tree, per the method the section states.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-4-ops-record-pins** (`ops/hit-target-floor.md` § Running it): two
+    dated rows restate the stale ones from three readings of one tree in
+    `mcr.microsoft.com/playwright:v1.62.1-noble`: `Cases in this file` at 18, and the whole suite at
+    twenty-four spec files and 344 tests, 10.7, 10.3 and 10.8 min (walls 650.9, 626.8 and 659.0 s),
+    one run failing one unrelated case, recorded. The newest `Cases in this file` row is held to the
+    spec file's `test(` count by `derivedDisagreements`; the timing rows stay readings.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
   id: DW-60
@@ -6644,7 +6673,16 @@ status: done
 
     **Owner: unassigned.** **Trigger: the next story that records a reading in that file, or the
     first time a figure in it is found wrong.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-4-ops-record-pins**
+    (`ops/__tests__/asset-budget-record.test.ts`): the record is read back under the blocking `test`
+    job. Every § Every route reading's before and after pairs close on their deltas and equal the
+    route table, and its non-3D line, decomposition, narrative total and build bytes close; every §
+    Findings run's halves make its narrative total, its distance to the estimate's top and both
+    budget lines close, and its figures equal the reading of the same `BUILD_ID`. Every row it reads
+    must parse. All 20 readings and 20 runs are consistent today. Holding the figures to a build
+    still needs a build and stays a hand re-run, as `ops/asset-budget.md` § Stated limits now says.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-19-cs-tracker-adopts-the-token-contract.md`
   id: DW-109

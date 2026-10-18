@@ -118,7 +118,31 @@ required to parse.
 
 ## Independent verifier
 
-Pending.
+**Independent verifier:** PASS on round 1, 2026-10-18, separate agent; tests: worktree
+`C:\CuatroEcosystem\epic9-wt\9-4-ops-record-pins` at `18ab92b`. `corepack pnpm test -- --run`: 82 files
+passed, 1990 tests passed, 1 skipped, exit 0, the WSL-bash flake (DW-135) did not appear. `corepack pnpm
+typecheck`: exit 0. `corepack pnpm exec playwright test --list` on the host (listing only): 344 tests in
+24 files, and 18 tests in `hit-target-floor.pw.ts`; `ls tests/e2e/*.pw.ts` gives 24 files. Plant 1: in
+`ops/hit-target-floor.md`, "**All 46 since 2026-09-30**" changed to 45 made the hit-target suite fail 2
+of 24, naming "the count clearing the floor: ops/hit-target-floor.md states 45, the surfaces table
+derives 46"; file restored. Plant 2: in `ops/asset-budget.md`, the 2026-09-24 DW-113 reading's "69
+heavier gzipped" changed to "lighter" and the 2026-09-23 Story 2-30 run's 118,881 deferred changed to
+118,882 made `asset-budget-record` fail naming both parts with both values; file restored, worktree
+clean. DW-38 re-check: the verifier's own scratch prefetch recorder, in
+`mcr.microsoft.com/playwright:v1.62.1-noble` (container `epic-scratch-9-4-ops-record-pins-verify`, run
+with `--rm`, reusing the builder's `-nm` and `-next` volumes), Hub build `ZBEXGxK-TQnHRkzkF9nfo` at
+360x800: under reduced motion the router prefetches `/work`, `/` and `/celeste` and pulls, beyond the 10
+document scripts, exactly `gsap` at 26,971 and an unfingerprinted 4,469, and no WebGL chunk; with motion
+allowed, those two plus three/R3F/drei at 234,534 and post-processing at 105,244, matching the record's
+amendment byte for byte. Per-app suites and the container e2e were not run: the diff touches nothing
+under `apps/`, `tests/e2e` or the Hub's rendered output. The three timed whole-e2e runs (10.7, 10.3 and
+10.8 min) and the one `display-entrance.pw.ts:269` timeout were not re-verified.
+
+Two minor findings, not blocking: `asset-budget-record.test.ts` does not read the non-3D line's own Delta
+column, `Chunks written`, or older readings' whole-build `Figure` rows, and 14 of the 20 readings (those
+of 2026-09-23 and older) carry no before/after table, so the delta and route-table checks run on the
+newest 6; and `hit-target-floor.test.ts` counts cases with `/^\s*test\(/`, which a future `test.skip(`
+or a loop-generated case would make disagree with Playwright's count (both give 18 today).
 
 ## Ledger closures
 
