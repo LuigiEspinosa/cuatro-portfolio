@@ -211,7 +211,20 @@ the next free id, one above the highest in the file, and a status line.
     with Traefik and per-application routers, which dissolves the problem; until
     then the cheap mitigation is to move the shared Caddyfile out of any project
     checkout, or to add its blocks to a directory Caddy imports.
-  status: open
+
+    **Closed 2026-10-18 by the deferred-work triage** (`dw-triage-2026-10-18.md`): superseded by Epic 4. Caddy and
+    the shared Caddyfile are gone: `cs-tracker` commit `9a5a4be` ("chore: retire caddy and the Caddyfile") removed the
+    file, `gh api repos/LuigiEspinosa/cs-tracker/contents/Caddyfile` answers 404 on its default branch, and
+    `ops/caddy-retirement.md` § Retirement run, step 11.2, records the box pull of `9a5a4be`, the six `Caddyfile.bak-*`
+    removed and a clean `git status`, with steps 11.3 and 11.4 removing `cs-tracker-caddy-1` and its volumes
+    (recorded in `c4b8068`, Story 4-11; AGENTS.md since `503af55` says "Caddy and its Caddyfile are gone"). Routing is
+    committed in this repository as `ops/traefik/traefik.yml` and `ops/traefik/dynamic/routes.yml`, one `Host()`
+    router per hostname, and `ops/traefik/compose.yml` binds both read-only from the checkout the deploy resets to
+    `main`, so a `git reset --hard` now restores the routing rather than erasing it. Same on `dev` 610f0aa and
+    `origin/main` 1cf5f35 (`git diff origin/main dev -- ops/traefik` empty). A read-only fetch on 2026-10-18 found
+    all seven public hostnames answering normally. The box itself was not re-read; its state is the 2026-10-01 run
+    record. The successor risk, a merged routing change going live unproven, is DW-299.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
   id: DW-150
@@ -369,7 +382,18 @@ the next free id, one above the highest in the file, and a status line.
     records that a `git reset --hard` in the `cs-tracker` checkout would erase every
     appended block, and Story 1-21 made `deploy.yml` do exactly that in the Anchor's
     own directory.
-  status: open
+
+    **Closed 2026-10-18 by the deferred-work triage** (`dw-triage-2026-10-18.md`): superseded. `f76e526` deleted
+    `docker/Caddyfile` (DW-312), and `git ls-tree` on `dev` 610f0aa and `origin/main` 1cf5f35 shows no such file (the
+    Caddy files left under `apps/finance` and `apps/tracker` are per-application, not the Anchor fragment). The
+    installed Caddyfile it mirrored is gone too: `ops/caddy-retirement.md` § Retirement run end state and
+    `ops/routing-inventory.md` § Ingress record Caddy, its Caddyfile, volumes and compose service retired at step 11
+    (2026-10-01). Routing now has no mirror: `ops/traefik/compose.yml` mounts `./traefik.yml` and `./dynamic` read-only
+    from `/home/deploy/cuatro-portfolio` (`ops/traefik-cutover.md`), the checkout `ops/deploy-remote.sh` resets to a
+    commit on `origin/main`, so the committed copy is the serving copy. That no CI job starts Traefik before a routing
+    change goes live is DW-299. That the running `traefik-ingress-1` still mounts from that checkout is box state, last
+    recorded 2026-10-01, not re-read here.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
   id: DW-157
@@ -1345,7 +1369,19 @@ the next free id, one above the highest in the file, and a status line.
     `digital-library` and only `digital-library`, and because the same argument applies to
     `cs-tracker`'s and the Anchor's Postgres, neither of which has any backup at all. That
     is one story, not three, and it is not this one.
-  status: open
+
+    **Closed 2026-10-18 by the deferred-work triage** (`dw-triage-2026-10-18.md`): superseded by Stories 4-5 and 4-11.
+    `ops/caddy-retirement.md:191` and its run record (about lines 1045 to 1050) record the last dump
+    `tracker-cuatro-tracker-postgres-20261001T061043Z.dump`, offsite snapshot `0b5d5e60`, the 03:30 cron line removed,
+    the script moved to `cuatro-backup.sh.retired-2026-10-01` and the `cuatro-tracker_pg_data` volume removed
+    (`ops/routing-inventory.md`, about lines 1672 to 1678, agrees). Its replacement is committed and tested: `3851f01`
+    (Story 4-5) adds `ops/postgres-backup.sh`, `ops/postgres-restore-verify.sh`, `ops/postgres-backup.md` and
+    `ops/__tests__/postgres-backup.test.ts`; the script lists every consumer database in the estate container, runs
+    `pg_dump -Fc --snapshot` for each, sends them offsite with `restic backup` (encrypted) and prunes with `restic
+    forget --prune`, with a restore check. `ops/postgres.md` records Umami, the tracker and `cs-tracker` all in
+    `postgres-estate-postgres-1`, so the `cs-tracker` and Anchor gap this entry names is covered by the same job. That
+    the box crontab holds the 03:15 job and no 03:30 line is the 2026-10-01 record, not a fresh reading.
+  status: done
 
 ### DW-1: Nothing under `contracts/` identifies the folder to a repository that vendors it: no README, no source repository or commit, and no licence line.
 origin: spec-deferred 3a3801b1c64f
@@ -2710,7 +2746,16 @@ status: done
     None of the 36 is interactive, so none fails the Story 2-8 sweep, which measures interactive
     elements. The gap is recorded there under what the assertion deliberately does not cover, so a
     green A-5 is not read as "nothing on the Hub overflows at 360".
-  status: promoted to KV-5 in `ops/known-violations.md` on 2026-09-06
+
+    **Closed 2026-10-18 by the deferred-work triage** (`dw-triage-2026-10-18.md`): KV-5 retired 2026-09-23 by Story
+    2-33 (`31f4664`, "retire KV-5 and KV-6"; `ops/known-violations.md` table row and § KV-5). The body half landed in
+    Story 2-9 (`29a0e5c`): `apps/hub/app/app.scss` now reads `html, body { overflow-x: clip; }`, and the only `100vw`
+    left is a comment forbidding it. The component halves are gone: `WorkItem.scss` no longer sets `white-space:
+    nowrap`, `31f4664` rebuilt `WorkHero` without its `overflow: hidden`, and `/projects` with its eight elements was
+    removed by Story 2-14. The sweep was widened as asked: `tests/e2e/hit-target-floor.pw.ts` `outsideTheViewport`
+    reads every element under `body *` against both edges ("A-5 reads every element with a box"). Same on `dev`
+    610f0aa and `origin/main` 1cf5f35. The rendered-output suite was not re-run here.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
   id: DW-219
@@ -5846,7 +5891,20 @@ status: done
     Anchor's key) and 9 (`list-wheel`'s), each due after the first deploy that brings its script.
     Until both are dated, each key still opens a shell. Story 4.3 edits `list-wheel`'s script
     (`epics.md`, amended).
-  status: open
+
+    **Closed 2026-10-18 by the deferred-work triage** (`dw-triage-2026-10-18.md`): both lines are dated. In
+    `ops/contract-serving.md`, Pending Operator action 7 (the Anchor's key) is dated 2026-09-25, applied after the
+    Epic 2 merge deploy (run 36156753065, `bd21c5d`): dispatch run 36160902460 logged `read from SSH_ORIGINAL_COMMAND`,
+    an `ssh -tt` with a throwaway key was refused ("PTY allocation request failed", exit 255), and the same key asking
+    for `id` was refused by deploy-remote (exit 1). Action 9 (`list-wheel`'s key) is dated the same day: run
+    36110098514 brought the script and dispatch run 36160905951 deployed through the forced command. `gh run view`
+    reads both dispatches as `workflow_dispatch` on `main`, conclusion success: 36160902460 at `bd21c5da`,
+    2026-09-25T16:27:44Z, and 36160905951 (`list-wheel`) at `718f1943`, 2026-09-25T16:27:46Z. The script half was
+    already closed (`b0aeaff`, `list-wheel` `30e5e8b`): `.github/workflows/deploy.yml` and `list-wheel`'s only pass the
+    sha to `ops/deploy-remote.sh`. Both key rows in `ops/routing-inventory.md`'s credentials table carry the 2026-09-25
+    amendment, and `ops/traefik-cutover.md` says the key line carries the forced command. No later record lifts it.
+    Same on `dev` 610f0aa and `origin/main` 1cf5f35. The key lines on the box today were not re-read.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass.md`
   id: DW-95
