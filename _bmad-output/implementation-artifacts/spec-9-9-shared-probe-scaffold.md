@@ -30,7 +30,7 @@ the run here. Surface: `ops/` scripts and tests, no deploy.
 
 Route oneshot: no intent gap, nothing irreversible, two scripts changed, one module and one suite added.
 
-- **New `ops/probe-scaffold.mjs`** (`6cfad7fc076f698a7358476ba708a3879d3c5749`): `REPO_ROOT`, `CONTRACTS`,
+- **New `ops/probe-scaffold.mjs`** (`72a4ebc67d52e72968ad4506a3096142b88eec41`, rebased from `6cfad7f`): `REPO_ROOT`, `CONTRACTS`,
   `CS_TRACKER` (from its own guarded `moduleDir`, which is `ops/` for both probes), `BlockedError`, `say`, `run`,
   `describeRun`, `tailwindBanner`, `readOrNull`, `serve` (with `MIME`) and `invokedDirectly(import.meta.url)`, which
   replaces each probe's `sameFile`/`thisFile`/`entry` trio. The comments are the daisyUI copy's, including its
@@ -139,7 +139,7 @@ review subagents). Findings and verdicts:
 No deferred-work entry names this story. One sprint-status action item:
 
 - **epic-1-retro-item-10-extract-the-shared-probe-scaffold-into-o:** done 2026-10-18 by Story
-  9-9-shared-probe-scaffold (`6cfad7f`, `ops/probe-scaffold.mjs`): both probes import one scaffold module with the
+  9-9-shared-probe-scaffold (`72a4ebc`, `ops/probe-scaffold.mjs`): both probes import one scaffold module with the
   daisyUI copy's comments, and the adoption probe re-ran 19 of 19 against cs-tracker `0e5d0c4` (its current `main`
   blocks on the Story 8.1 restyle's fixture drift, before and after, returned to the Operator).
 
@@ -156,4 +156,21 @@ No deferred-work entry names this story. One sprint-status action item:
   against `run`'s inferred options type, fixed with a JSDoc `@param` naming `SpawnSyncOptions`).
 - `node --check` on all three modules: clean. No `apps/*` file changed, so no per-application suite applies.
 
-**Independent verifier:** pending. No independent verifier has run on this spec; a separate agent must run it.
+**Independent verifier:** PASS on round 1, 2026-10-18, separate agent; tests: all runs in the worktree at `d2eefe9`.
+(1) `corepack pnpm typecheck`: exit 0, no output. (2) `corepack pnpm exec vitest --run` (full root suite): 85 files,
+2006 tests, 2002 passed, 1 skipped, 3 failed, all three DW-135 `WSL did not answer` host stalls (E_UNEXPECTED,
+0x8007274c) in `demo-reset`, `deploy-remote` and `postgres-backup`. (3) Those three files re-run with
+`probe-scaffold`, `cs-tracker-adoption-probe`, `daisyui-route-probe`, `cs-tracker-accessibility-probe` and
+`ops-record-titles`: 8 files passed, 250 passed, 1 skipped (251). (4) The verifier's own planted failure: a local
+`export const CONTRACTS = CS_TRACKER` in `daisyui-route-probe.mjs` in place of the re-export failed the re-export case
+(`Tests 1 failed | 8 passed (9)`), restored with `git checkout`. (5) `NO_COLOR=1 node ops/cs-tracker-adoption-probe.mjs`
+by hand against the builder's public clone detached at cs-tracker `0e5d0c4`: exit 0, `# 19 cases, 19 PASS, 0 FAIL`,
+scratch tree removed, clone clean afterwards; the same run against cs-tracker `origin/main` `9f70d28` gave exit 3,
+`# BLOCKED: 32 fixture class string(s) ...`, confirming the builder's report. (6) Every added line scanned for
+em-dash, en-dash, spaced double-dash and emoji, none found; no change under `contracts/`, `ci.yml`,
+`deferred-work.md` or `sprint-status.yaml`, and no `apps/*` change, so no per-application suite or container e2e
+applies. Findings returned to the Operator: the BLOCKED probe on cs-tracker `main` needs a ruling (rework the fixture
+for the restyled markup, or retire or limit the probe), the adoption probe's header wrongly says it writes nothing
+into cs-tracker, the accessibility probe keeps its own `moduleDir` and `say` (outside action item 10), and the
+import pin in `probe-scaffold.test.ts` catches a redefinition only as a function or class declaration (low, no
+defect).

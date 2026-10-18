@@ -1243,7 +1243,8 @@ development_status:
   9-7-library-backup-suite-coverage: done
   # 2026-10-18: done (spec-9-8-tournament-export-sql-test.md, verifier pass round 1): DW-284 closed; EXPORT_SQL runs against ci.yml's test-job Postgres service, no new job.
   9-8-tournament-export-sql-test: done
-  9-9-shared-probe-scaffold: backlog
+  # 2026-10-18: done (spec-9-9-shared-probe-scaffold.md, verifier pass round 1): epic-1 retro item 10 closed; both probes import ops/probe-scaffold.mjs, the adoption probe ran 19 of 19 against cs-tracker 0e5d0c4 and is BLOCKED on its main by the Story 8.1 restyle, returned to the Operator.
+  9-9-shared-probe-scaffold: done
   9-10-commit-ad22-sweep-scripts: backlog
   9-11-contract-purity-followup-review: backlog
   9-12-e2e-harness-consolidation: backlog
@@ -1370,7 +1371,11 @@ action_items:
     action: "Extract the shared probe scaffold into one ops/ module imported by cs-tracker-adoption-probe.mjs
       and daisyui-route-probe.mjs, keeping the daisyUI copy's comments."
     owner: 'Cuatro'
-    status: open
+    # 2026-10-18: done by Story 9-9-shared-probe-scaffold (72a4ebc, ops/probe-scaffold.mjs, spec-9-9-shared-probe-scaffold.md):
+    # both probes import one scaffold module with the daisyUI copy's comments, and the adoption probe re-ran 19 of 19
+    # against cs-tracker 0e5d0c4 (its current main blocks on the Story 8.1 restyle's fixture drift, before and after,
+    # returned to the Operator).
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
   # 2026-09-24: done by Operator ruling: every remaining action of 1-16 and 1-19 is resolved,
