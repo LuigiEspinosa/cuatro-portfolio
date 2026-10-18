@@ -22,8 +22,8 @@ import { spawnBash } from './wsl-bash';
 // bash implementation to produce the same bytes in its `selftest` and on the
 // wire. The orchestration cases run `library-backup.sh` for real against a PATH
 // of stubs for `sqlite3`, `sudo`, `gpg`, `docker` and `curl`, in a scratch
-// directory, so `tar`, `gzip`, `find`, `timeout` and `openssl` are exercised as
-// themselves.
+// directory, so `gzip`, `find`, `timeout` and `openssl` are exercised as
+// themselves, and so is `tar` behind a stub that fails only when a case asks.
 
 // Every case spawns a real bash and runs real `tar`, `gzip`, `find` and
 // `openssl`, and on Windows that bash is WSL's, which costs roughly a second
@@ -68,6 +68,7 @@ const SCRIPT_VARIABLES = [
   'STUB_CURL_LOG', 'STUB_CURL_ARGV', 'STUB_BUCKET', 'STUB_PUT_CODE', 'STUB_GET_CODE',
   'STUB_CORRUPT_GET', 'STUB_REDIS_DBSIZE', 'STUB_DOCKER_FAIL', 'STUB_SQLITE_INTEGRITY',
   'STUB_SQLITE_OBJECTS', 'STUB_SQLITE_TABLES', 'STUB_DATE_STAMP', 'STUB_OPENSSL_ARGV',
+  'STUB_SQLITE_SIGNAL', 'STUB_SUDO_SEES', 'STUB_TAR_FAILS', 'STUB_TAR_MESSAGE', 'STUB_TAR_COUNT',
 ];
 
 const shellQuote = (value: string): string => `'${value.replace(/'/g, `'\\''`)}'`;
@@ -179,7 +180,8 @@ const GOLDEN_AUTHORIZATION =
 // ---------------------------------------------------------------------------
 // The stub box. `sqlite3`, `sudo`, `gpg`, `docker` and `curl` are the five
 // binaries the nightly job reaches for that either do not exist on the test
-// runner or must not be allowed to touch a network.
+// runner or must not be allowed to touch a network. `date` and `tar` are
+// stubbed only to inject a fixed stamp or a failure, and delegate otherwise.
 // ---------------------------------------------------------------------------
 
 const STUBS: Record<string, string> = {
@@ -200,6 +202,10 @@ case "$cmd" in
   .backup*)
     target="$(printf '%s' "$cmd" | sed "s/^[^']*'//; s/'.*$//")"
     cp "$db" "$target"
+    # The \`sudo\` stub execs, so the parent is the backup's own bash, which is
+    # waiting on this child. Bash holds the signal until the child exits and
+    # then runs the trap, which is the real shape of a kill mid-stage.
+    if [ -n "\${STUB_SQLITE_SIGNAL:-}" ]; then kill -s "\$STUB_SQLITE_SIGNAL" "\$PPID"; fi
     ;;
   *integrity_check*)
     printf '%s\\n' "\${STUB_SQLITE_INTEGRITY:-ok}"
@@ -226,7 +232,27 @@ while [ "$#" -gt 0 ]; do
   case "$1" in -n|-E|-H) shift ;; *) break ;; esac
 done
 case "\${1:-}" in chown) exit 0 ;; esac
+# Root seeing a path this account cannot: the shape of a config inside a
+# directory \`deploy\` cannot traverse, which a Windows drive mount cannot hold.
+if [ "\${1:-}" = 'test' ] && [ -n "\${STUB_SUDO_SEES:-}" ] && [ "\${3:-}" = "\$STUB_SUDO_SEES" ]; then exit 0; fi
 exec "$@"
+`,
+  // The real \`tar\`, except that the first STUB_TAR_FAILS archive creations fail
+  // with STUB_TAR_MESSAGE, counted in STUB_TAR_COUNT. Every other call, and
+  // every call when no failure is asked for, is the real binary.
+  tar: `#!/usr/bin/env bash
+if [ "\${1:-}" = '-cf' ] && [ -n "\${STUB_TAR_FAILS:-}" ]; then
+  n="\$(cat "\$STUB_TAR_COUNT" 2>/dev/null || printf 0)"
+  printf '%s\\n' "\$((n + 1))" > "\$STUB_TAR_COUNT"
+  if [ "\$n" -lt "\$STUB_TAR_FAILS" ]; then
+    printf 'tar: %s\\n' "\$STUB_TAR_MESSAGE" >&2
+    exit 1
+  fi
+fi
+for candidate in /usr/bin/tar /bin/tar; do
+  [ -x "\$candidate" ] && exec "\$candidate" "$@"
+done
+exit 127
 `,
   // Identity in both directions, so a real `tar -xzf` still reads what a real
   // `tar -czf` wrote and the round trip is exercised end to end. The real gpg
@@ -984,6 +1010,95 @@ describe('an offsite config that exists and cannot be read', () => {
     expect(result.stdout).toContain('Do not create it again');
     expect(result.stdout).not.toContain('to finish this, create');
     expect(archivesIn(box)).toHaveLength(1);
+  });
+
+  // The box's real shape: `/etc/cuatro` untraversable by `deploy`, so `[ -e ]`
+  // answers false and only `sudo test -e` sees the file. Without that second
+  // opinion the run would exit 75 and advise creating a file that exists.
+  // This case and the signal and tar cases below assert with `expect.soft`, so
+  // one planted fault reports every assertion it breaks, not only the first.
+  it('asks sudo before calling a config absent, so an untraversable directory is not read as unconfigured', () => {
+    const box = makeBox('config-hidden');
+    const result = runBackup(box, { STUB_SUDO_SEES: bashPath(box.config) });
+    const summary = summaryOf(result);
+
+    expect.soft(result.status).toBe(1);
+    expect.soft(field(summary, 'offsite')).toBe('config-unreadable');
+    expect.soft(result.stdout).toContain('Do not create it again');
+    expect.soft(result.stdout).not.toContain('to finish this, create');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A signal mid-run. The stub sends it to the backup's bash while that bash
+// waits on the snapshot, so the trap, not the source text, is what is proved.
+// ---------------------------------------------------------------------------
+
+describe('a signal mid-run', () => {
+  for (const [signal, code] of [['INT', 130], ['TERM', 143], ['HUP', 129]] as const) {
+    it(`exits ${code} on ${signal} with one summary line, no plaintext scratch copy and no lock left`, () => {
+      const box = makeBox(`signal-${signal.toLowerCase()}`);
+      writeConfig(box);
+      const result = runBackup(box, { STUB_SQLITE_SIGNAL: signal });
+      const summary = summaryOf(result);
+
+      expect.soft(result.status).toBe(code);
+      expect.soft(field(summary, 'exit')).toBe(String(code));
+      expect.soft(field(summary, 'snapshot')).toBe('not-reached');
+      expect.soft(readdirSync(join(box.root, 'work')), 'the scratch directory holding the plaintext snapshot survived').toEqual([]);
+      expect.soft(existsSync(join(box.backups, '.library-backup.lock')), 'the lock survived the signal').toBe(false);
+      expect.soft(archivesIn(box)).toHaveLength(0);
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// A `tar` that fails. The stub fails the first N archive creations and is the
+// real `tar` otherwise, so each branch of the retry runs for real.
+// ---------------------------------------------------------------------------
+
+describe('a tar that fails', () => {
+  const CHANGED = 'data/books/a.epub: file changed as we read it';
+  const runTar = (name: string, fails: number, message: string) => {
+    const box = makeBox(name);
+    writeConfig(box);
+    const count = join(box.root, 'tar.count');
+    const result = runBackup(box, { STUB_TAR_FAILS: String(fails), STUB_TAR_MESSAGE: message, STUB_TAR_COUNT: bashPath(count) });
+    return { box, result, summary: summaryOf(result), attempts: Number(readFileSync(count, 'utf8').trim()) };
+  };
+
+  it('retries once after a file changed under it, says so, and completes the run', () => {
+    const { box, result, summary, attempts } = runTar('tar-changed-once', 1, CHANGED);
+    expect.soft(result.status, result.stderr).toBe(0);
+    expect.soft(attempts).toBe(2);
+    expect.soft(field(summary, 'tar')).toBe('retried-once-after-file-changed');
+    expect.soft(result.stdout).toContain('retrying once');
+    expect.soft(archivesIn(box).some((name) => name.endsWith('.tar.gz.gpg'))).toBe(true);
+  });
+
+  it('fails after one retry when the file keeps changing, and uploads nothing', () => {
+    const { box, result, summary, attempts } = runTar('tar-changed-twice', 2, CHANGED);
+    expect.soft(result.status).toBe(1);
+    expect.soft(attempts).toBe(2);
+    expect.soft(field(summary, 'tar')).toBe('retried-once-and-failed');
+    expect.soft(field(summary, 'archive')).toBe('failed');
+    expect.soft(result.stderr).toContain('even after one retry');
+    expect.soft(archivesIn(box)).toHaveLength(0);
+    expect.soft(existsSync(box.curlLog)).toBe(false);
+  });
+
+  // `tar=first-attempt` beside `archive=failed` is what the script reports for
+  // a failure it does not retry. Pinned as it stands, so changing that field's
+  // wording has to change this case.
+  it('does not retry a failure of any other kind, and fails on the first attempt', () => {
+    const { box, result, summary, attempts } = runTar('tar-other', 1, 'books: Cannot open: Permission denied');
+    expect.soft(result.status).toBe(1);
+    expect.soft(attempts).toBe(1);
+    expect.soft(field(summary, 'tar')).toBe('first-attempt');
+    expect.soft(field(summary, 'archive')).toBe('failed');
+    expect.soft(result.stdout).not.toContain('retrying once');
+    expect.soft(result.stderr).toContain('Permission denied');
+    expect.soft(archivesIn(box)).toHaveLength(0);
   });
 });
 
