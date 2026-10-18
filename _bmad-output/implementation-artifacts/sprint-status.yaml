@@ -42,7 +42,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-17-2026 06:08
+last_updated: 10-18-2026 15:00
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1141,6 +1141,8 @@ development_status:
   # stay backlog. Spec spec-6-1-confirm-the-trigger-has-fired.md; the verifier sets done.
   # 6-1 done 2026-10-13: independent verifier round 1, pass with minor findings, the count of 1 re-read from the
   # Anchor's contracts/ history, cs-tracker's remote branches and a gh api tree sweep. No Operator step.
+  # 2026-10-18: trigger re-taken at 1 of 3 (ops/contract-adoption.md, 0f35438); by Operator ruling 6-2, 6-3, 6-4
+  # and the retrospective stay backlog until the count reaches three.
   epic-6: backlog
   6-1-confirm-the-trigger-has-fired: done
   6-2-publish-the-token-contract-as-an-npm-package: backlog
@@ -1148,9 +1150,11 @@ development_status:
   6-4-publish-the-reusable-ci-workflows-to-contracts-workflows: backlog
   epic-6-retrospective: optional
 
-  epic-7: backlog
-  7-1-copy-the-repositories-into-the-wsl2-ext4-filesystem: backlog
-  7-2-repair-worktrees-and-git-configuration: backlog
+  # 2026-10-18: closed out of scope by Operator ruling, never executed. The Operator works on the Windows host and
+  # keeps the recorded workarounds; the runbook epic-7-wsl2-relocation-runbook.md (610f0aa) stays as a record only.
+  epic-7: done
+  7-1-copy-the-repositories-into-the-wsl2-ext4-filesystem: done
+  7-2-repair-worktrees-and-git-configuration: done
   epic-7-retrospective: optional
 
   # Epic 8 added 2026-08-15 by the restyle scope change.
@@ -1402,6 +1406,9 @@ action_items:
     status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
+  # 2026-10-18: Twilio half closed by Operator statement: the Twilio account no longer exists, so the API key
+  # that signed the expired 2021-04-16 token in Mutuo 72c7edf went with it. Open: the cs-tracker
+  # secret_key_base review and the two KV-2 rows.
   - id: "epic-2-retro-item-4-revoke-the-twilio-api-key-found-in-mutuo"
     epic: 2
     action: "Revoke the Twilio API key found in Mutuo's 2021 history if it is still

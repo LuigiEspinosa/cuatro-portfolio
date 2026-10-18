@@ -1,5 +1,7 @@
 # Epic 7 runbook: relocate C:\CuatroEcosystem into the WSL2 ext4 filesystem
 
+**Ruled out of scope 2026-10-18 by the Operator, never executed.** Kept as a record of the inventory and method only.
+
 Written 2026-10-18 at `cuatro-portfolio` `dev` 63f6b06. Covers Story 7.1 (copy the repositories into the
 WSL2 ext4 filesystem) and Story 7.2 (repair worktrees and Git configuration).
 
