@@ -7710,7 +7710,19 @@ status: done
 
     **Owner: unassigned.** **Trigger: the next edit to `ops/library-backup.sh`, or Story 4.5, which
     carries this path onto the rebuilt box.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-7-library-backup-suite-coverage**
+    (`ops/__tests__/library-backup.test.ts`: `a signal mid-run`, `a tar that fails`, and `an offsite
+    config that exists and cannot be read` > `asks sudo before calling a config absent`): each of the
+    three paths now runs for real. A stub signals the backup's bash while it waits on the snapshot, and
+    INT, TERM and HUP each exit 130, 143 and 129 with one summary line, no scratch directory and no
+    lock; a `sudo` stub sees a config the account cannot, and the run exits 1 with
+    `offsite=config-unreadable` rather than 75; a delegating `tar` stub drives the retry that succeeds,
+    the retry that fails, and a non-retried failure. Each assertion's planted failure is in the spec.
+    `ops/library-backup.sh` is unchanged, so the `tar=first-attempt` reading beside `archive=failed` on
+    a non-retried failure is pinned as it stands, and its wording is an Operator question, not open
+    work here.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`
   id: DW-134

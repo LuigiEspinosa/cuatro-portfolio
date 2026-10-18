@@ -133,4 +133,21 @@ No action items are named for this story.
 
 ## Independent verifier
 
-pending
+Independent verifier: PASS on round 1, 2026-10-18, separate agent; tests: all commands ran in
+`C:\CuatroEcosystem\epic9-wt\9-7-library-backup-suite-coverage`.
+(1) `corepack pnpm exec vitest --run ops/__tests__/library-backup.test.ts`: 66 passed, 0 failed.
+(2) Its own plant check: three temporary edits to `ops/library-backup.sh` (the TERM trap became
+`trap ':' TERM`, the `|| sudo test -e` fallback was deleted, and line 386's `v_tar` became
+`'not-retried'`), then `vitest -t "signal mid-run|tar that fails|asks sudo"`: 3 failed, 4 passed,
+59 skipped. The failures were exactly the expected cases: the sudo case (75 vs 1, not-configured vs
+config-unreadable, plus both stdout assertions), only the TERM signal case (0 vs 143, exit field,
+snapshot ok vs not-reached, archive count), and the other-kind tar case (`'not-retried'` vs
+`'first-attempt'`). The script was restored with `git checkout`, and
+`git diff --quiet origin/dev -- ops/library-backup.sh` held afterwards.
+(3) `corepack pnpm test -- --run`, first full run: 2 failed, 1991 passed, 1 skipped (1994), 80 of 82
+files. `demo-reset` failed with WSL `Catastrophic failure E_UNEXPECTED`, and the existing
+library-backup `carries the timeouts` case failed after about 40s with empty stderr, both the DW-135
+shape. (4) Those two files re-run: 96 passed, 0 failed. (5) `corepack pnpm test -- --run`, second
+full run: 1993 passed, 1 skipped (1994), 82 of 82 files, 0 failed. (6) `corepack pnpm typecheck`:
+exit 0. No `apps/*`, `ci.yml`, `contracts/`, `tests/e2e` or rendered-output change, so no per-app
+suite and no container e2e run.
