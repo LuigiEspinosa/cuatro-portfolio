@@ -1534,7 +1534,29 @@ location: n/a
 source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260826-202635-4db0; this entry preserves the lingering recommendation for a deliberate later review.
-status: open
+note: |-
+  **Closed 2026-10-18 by the deferred-work triage** (`dw-triage-2026-10-18.md`, tail pass): superseded. The review
+  this entry preserves was never run, and the product change it would have read no longer exists. 1-18's product
+  change was the alias layer in `app/app.scss` (`f104202`). Story 2-22
+  (`spec-2-22-migration-step-7-delete-the-aliases.md`) deleted that layer: AGENTS.md says `apps/hub/app/app.scss`
+  declares no custom property of its own, `grep -nE '^\s*--' apps/hub/app/app.scss` returns nothing, and
+  `anchor-contract.test.ts` refuses the old names. 1-18's other edits were reworked by later stories: the four
+  font-weight lines (2-20), the error-page, WorkHero and ProjectsHero stylesheets (2-14, 2-30, 2-33), and DW-8
+  through DW-12 were all closed by later stories; git blame at `b6ef5cc` finds 0 lines from `f104202` in the
+  surviving GlitchText, ErrorPage and WorkHero stylesheets. 2-22 recorded its own independent verifier and fix round
+  (`spec-2-22` lines 176 and 318 to 333).
+
+  What survives of 1-18 is test code and frozen records, not product code. The first pass counted 186 of 624 lines
+  of `tests/e2e/anchor-aliases.pw.ts` and 54 of `tests/e2e/contract-anchor.pw.ts`; the independent recheck corrected
+  that by git blame at `b6ef5cc`: `tests/e2e/anchor-aliases.pw.ts` 209 of 624 (repurposed by 2-22 to assert the
+  layer's absence), `tests/e2e/contract-anchor.pw.ts` 54, `tests/e2e/rendered-output.pw.ts` 71 of 293 (including the
+  font-family probe helper), `apps/hub/app/__tests__/anchor-contract.test.ts` 53, `ops/anchor-token-adoption.md` 291
+  of 1061 lines of prose (the dated "Step 2: the alias layer" record, kept as history) and
+  `ops/rendered-output-harness.md` 20. The test lines run blocking in CI on every push. About 124 of them
+  (`rendered-output.pw.ts` and `anchor-contract.test.ts`) never had a separate independent review; both agents judge
+  that too small to keep this entry open, and if the Operator wants them reviewed it folds into DW-7's review of the
+  same suites rather than reopening this one.
+status: done
 
 ### DW-14: Nothing that runs on a schedule or in a gate can see the token mapping stop resolving in `cs-tracker`, because that repository has no CI at all and the only instrument that reads rendered output is a
 origin: spec-deferred 2a05e43684bb
