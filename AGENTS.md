@@ -277,3 +277,25 @@ block above so a context refresh does not replace it.
   security fixes, bot-authored pull requests and a workflow step that merges are observed by
   the `gh api` sweep the record describes, not by the test. That commit also moves the two
   literal pins in the same suite that state today's `none` cell and empty present list.
+
+## Process rules from retrospectives
+
+Kept outside the managed block for the same reason (Story 9-2, 2026-10-18). The rules Build applies
+itself are persistent facts in `_bmad/custom/bmad-build.toml`; these bind every agent working here.
+`ops/__tests__/process-rules.test.ts` holds both places.
+
+- **A story waiting on the Operator is not `done`** (Epic 2 action 10). A story whose remaining
+  acceptance criteria are Operator checks moves to `awaiting-operator` in `sprint-status.yaml`, or its
+  row carries a dated Operator override naming what was waived. A `done` row whose comment says it
+  waits on the Operator is a defect in the board.
+- **Cite code by symbol or test name, never by line number** (Epic 2 action 13). Name the file and
+  the function, constant or test case; a citation by line number drifts with the next edit. A comment
+  states a count only when a test holds that count. The existing line citations are DW-247's backfill.
+- **A box step lands in the standing runbook in the same change** (Epic 5 action 51). A step a story
+  makes by hand on the box is written into that application's standing runbook (its § Later rollouts)
+  in the same commit, never only into the story's run section.
+- **A dated row relying on CI names every workflow it read, on the full sha** (Epic 5 action 52).
+  "CI green" is not evidence. Name each workflow and its conclusion on the sha the row is about: the
+  `image-*.yml` workflows are no required check on `main`, so a row naming `ci.yml` alone never read them.
+- **An agent step gated on an Operator row waits for that row's dated completion** (Epic 8 action
+  60). Never push, or in a Satellite open the PR, first and draft the gated work after.
