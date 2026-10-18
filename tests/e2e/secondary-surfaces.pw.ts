@@ -63,7 +63,7 @@ const FOOTER_LINK = 'footer.site-footer a[href]';
 /**
  * Every surface that renders Hub markup, with the status each answers.
  *
- * The same five `SURFACES` in `tests/e2e/hit-target-floor.pw.ts` carries, minus its per-surface
+ * The same five `SURFACES` in `tests/e2e/harness.ts` (which `hit-target-floor.pw.ts` sweeps) carries, minus its per-surface
  * counts, which are that file's subject. `/recommendation` is deliberately absent: it renders the
  * 404 document, so it is `NOT_FOUND` under another URL and not a sixth surface, which is also why
  * the A-13 title comparison below is over five values rather than six.

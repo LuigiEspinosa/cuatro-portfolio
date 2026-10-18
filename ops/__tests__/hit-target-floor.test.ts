@@ -6,7 +6,8 @@ import { section, table, unticked } from '../contract-adoption.mjs';
 
 /**
  * The Story 2-8 record, `ops/hit-target-floor.md`, held equal to the two tables the assertion
- * actually applies: `EXEMPTIONS` and `SURFACES` in `tests/e2e/hit-target-floor.pw.ts`.
+ * actually applies: `EXEMPTIONS` in `tests/e2e/hit-target-floor.pw.ts`, and `SURFACES`, which that
+ * spec sweeps and which lives in `tests/e2e/harness.ts` since Story 9-12.
  *
  * **Both directions, because either file alone would rot.** A row in the record with no entry in
  * the ledger is a surface someone believes is tracked and is not; an entry in the ledger with no
