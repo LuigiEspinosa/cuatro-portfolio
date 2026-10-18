@@ -1,14 +1,15 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { main, mapIdentities, toTsv, fromTsv, verifyExistingUser } from '../tournament-identity.mjs';
 
 // Story 3-7: the tournament's identity export-and-map and its authenticate-as-an-existing-user check.
 // The export's refusals are held on rows shaped as its query returns them, and the check against a planted
-// Supabase that answers as GoTrue and PostgREST do. The real query ran against a real Postgres, in the
-// spec's Verification; the real check needs the target's keys, so it is the Operator's to run.
+// Supabase that answers as GoTrue and PostgREST do. The real query runs against a real Postgres in the
+// block at the end (Story 9-8); the real check needs the target's keys, so it is the Operator's to run.
 
 const ADMIN = '76561198000000001';
 const VIEWER = '76561198000000002';
@@ -145,5 +146,72 @@ describe('verifyExistingUser', () => {
     });
     await expect(main(['verify', file, ADMIN], {}, { fetch: lost.fetch, query: () => '' })).rejects.toThrow('TOURNAMENT_TARGET_SUPABASE_URL is not set');
     await expect(main(['verify', file, VIEWER], env, { fetch: lost.fetch, query: () => '' })).resolves.toMatchObject({ code: 1 });
+  });
+});
+
+// DW-284 (Story 9-8): `EXPORT_SQL` itself, against a real Postgres holding migration 0001, a minimal
+// `auth.users` shaped as GoTrue's and each case's rows. Everything runs in one `psql` session inside
+// `begin; ... rollback;`, so the database is left as found and nothing is dropped. CI's test job points
+// the variable at its `postgres` service; here, point it at a scratch Postgres 17 (Supabase's major),
+// with `127.0.0.1` as the host on Windows.
+const DATABASE_URL = process.env.TOURNAMENT_IDENTITY_DATABASE_URL ?? '';
+const MIGRATION = readFileSync(new URL('../../apps/tournament/supabase/migrations/0001_core_schema.sql', import.meta.url), 'utf8');
+const AUTH_USERS = `create schema auth;
+create table auth.users (id uuid primary key, email varchar(255), encrypted_password varchar(255), raw_app_meta_data jsonb, created_at timestamptz);`;
+
+/** `main`'s query seam, run for real: the case's rows, then the export's SQL, then a rollback. */
+const againstPostgres = (rows: string) => (sql: string, env: Record<string, string | undefined>) => {
+  const run = spawnSync('psql', [env.TOURNAMENT_SOURCE_DATABASE_URL ?? '', '-X', '-q', '-At', '-v', 'ON_ERROR_STOP=1'], {
+    input: ['begin;', AUTH_USERS, MIGRATION, rows, `${sql};`, 'rollback;'].join('\n'),
+    encoding: 'utf8',
+  });
+  if (run.status !== 0) throw new Error(`psql failed: ${(run.stderr || run.error?.message || '').trim()}`);
+  return run.stdout;
+};
+
+const exportFrom = (rows: string) => main(['export'], { TOURNAMENT_SOURCE_DATABASE_URL: DATABASE_URL }, { fetch, query: againstPostgres(rows) });
+const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+const THIRD = '76561198000000003';
+const user = (n: number, email: string, password: string | null, meta: string | null, day: number) =>
+  `insert into auth.users values ('${uuid(n)}', '${email}', ${password === null ? 'null' : `'${password}'`}, ${meta === null ? 'null' : `'${meta}'`}, '2026-01-0${day}T00:00:00Z');`;
+
+describe('EXPORT_SQL against a real Postgres', () => {
+  it('runs in CI, never silently skipped there', () => {
+    if (process.env.CI === 'true') expect(DATABASE_URL, 'TOURNAMENT_IDENTITY_DATABASE_URL').not.toBe('');
+  });
+
+  describe.skipIf(!DATABASE_URL)('(skipped when TOURNAMENT_IDENTITY_DATABASE_URL is unset, which CI never leaves it)', () => {
+    it('maps every Steam user by role and display name, in creation order, a user with no player row as a nameless viewer', async () => {
+      const rows = [
+        `insert into player (steamid64, display_name) values ('${ADMIN}', E'A\tB'), ('${VIEWER}', 'Player V');`,
+        `insert into app_role (steamid64, role) values ('${ADMIN}', 'admin');`,
+        user(1, `${ADMIN}@steam.inclusivcup.local`, null, `{"steamid64": "${ADMIN}", "role": "admin"}`, 3),
+        user(2, `${VIEWER}@steam.inclusivcup.local`, '', '{}', 1),
+        user(3, `${THIRD}@steam.inclusivcup.local`, null, null, 2),
+      ].join('\n');
+      await expect(exportFrom(rows)).resolves.toEqual({
+        code: 0,
+        message: [`${uuid(2)}\t${VIEWER}\tviewer\tPlayer V`, `${uuid(3)}\t${THIRD}\tviewer\t`, `${uuid(1)}\t${ADMIN}\tadmin\tA B`].join('\n'),
+        note: 'tournament-identity export users=3',
+      });
+    });
+
+    it('refuses a password hash and a claim its email contradicts, naming each user', async () => {
+      const rows = [
+        user(1, `${ADMIN}@steam.inclusivcup.local`, '$2a$10$abcdefghijklmnopqrstuv', null, 1),
+        user(2, `${THIRD}@steam.inclusivcup.local`, null, `{"steamid64": "${VIEWER}"}`, 2),
+      ].join('\n');
+      await expect(exportFrom(rows)).resolves.toEqual({
+        code: 1,
+        message: [
+          `user ${uuid(1)} holds a password hash, so the move could force a reset`,
+          `user ${uuid(2)} claims steamid64 ${VIEWER} but its email names ${THIRD}`,
+        ].join('\n'),
+      });
+    });
+
+    it('answers an empty export for a source with no Auth users', async () => {
+      await expect(exportFrom('')).resolves.toEqual({ code: 0, message: '', note: 'tournament-identity export users=0' });
+    });
   });
 });

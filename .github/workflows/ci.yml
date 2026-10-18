@@ -29,7 +29,9 @@ jobs:
           --health-retries 10
       # The tracker's `demo:reset` suite (Story 5.9) runs against a real Postgres: the reset's whole claim is
       # that it empties schema `demo` and never touches `public` beside it, which a mock cannot show. The
-      # suite fails rather than skips here when the variable below is missing.
+      # suite fails rather than skips here when the variable below is missing. The root suite's
+      # `EXPORT_SQL` case (`tournament-identity.test.ts`, Story 9-8) reads the default database `postgres`
+      # beside it, inside a transaction it rolls back, and fails the same way without its variable.
       postgres:
         image: postgres:18
         env:
@@ -61,6 +63,8 @@ jobs:
 
       - name: Unit tests
         run: pnpm test --run
+        env:
+          TOURNAMENT_IDENTITY_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
 
       # `apps/finance` is its own workspace with its own `@` alias and test environment, which the root
       # `tsc` and Vitest above exclude, so it runs its own here (Story 3-5, DW-258).
