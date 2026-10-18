@@ -39,7 +39,8 @@ no new ledger entry, no push, no box step. Records are edited with the Edit tool
 ## Implementation Notes
 
 Worktree `C:\CuatroEcosystem\epic9-wt\9-0-rehome-trigger-entries`, branch `epic9/9-0-rehome-trigger-entries`, from
-`origin/dev` `5bf8c3d`. Route `oneshot`: no intent gap, nothing irreversible, documentation only. The SCOPE
+`origin/dev` `5bf8c3d`, rebased on 2026-10-18 onto `origin/dev` `2e59b57` (which carries `b668c5c`'s rulings) for the
+round 1 fix. Route `oneshot`: no intent gap, nothing irreversible, documentation only. The SCOPE
 STANDARD's token check belongs to the dispatch route and was not reached. The intent above is about 600 tokens;
 § Ledger closures is output for the push step, not plan.
 
@@ -49,32 +50,42 @@ example `ops/deploy-remote.sh` last `b3b72d6`, `ops/capacity-sampler.sh` last `6
 change since DW-316 was filed). None has fired.
 
 **Outcomes (50).**
-- (b) closed into a record, 39: DW-24, DW-25, DW-78, DW-86, DW-89, DW-99, DW-102, DW-111, DW-112, DW-132, DW-170,
-  DW-175, DW-176, DW-177, DW-240, DW-264, DW-265, DW-267, DW-268, DW-269, DW-271, DW-288, DW-304, DW-316, DW-318,
-  DW-328, DW-336, DW-337, DW-342, DW-344, DW-345, DW-349, DW-353, DW-354, DW-355, DW-356, DW-357, DW-359, DW-362.
-- (a) named in an Epic 9 story, left open, 5: DW-256 (9-4: its first asset-budget reading, DW-38), DW-317 (9-26:
-  the `cs-tracker` compose change), DW-360 (9-23: the viewer's footer copy; check it there), DW-291 and DW-292
-  (conditional 9-40, which the plan says closes them with DW-275, which the Operator deferred).
-- Left open untouched, in the Operator question table, 2: DW-75 (its own row) and DW-120 (named in item-5's
-  recommended closer).
+- (b) closed into a record, 36: DW-24, DW-25, DW-78, DW-86, DW-89, DW-99, DW-102, DW-111, DW-112, DW-132,
+  DW-175, DW-176, DW-177, DW-240, DW-264, DW-265, DW-267, DW-268, DW-269, DW-271, DW-304, DW-316, DW-328, DW-336, DW-337, DW-342, DW-344, DW-345, DW-349, DW-353, DW-354, DW-355, DW-356, DW-357, DW-359, DW-362.
+- (a) named in an Epic 9 story, left open, 8: DW-256 (9-4: its first asset-budget reading, DW-38), DW-317 (9-26:
+  the `cs-tracker` compose change), DW-360 (9-23: the viewer's footer copy; check it there), DW-318
+  (9-36-backup-job-reporting, which `b668c5c` opened for DW-193 and DW-315: it changes each backup job and
+  re-installs the scripts and cron, so it meets "the next change to any backup script"), and DW-170, DW-288, DW-291
+  and DW-292 (9-40-per-id-deploy, which `b668c5c` opened for DW-275 and which that ruling says closes DW-291 and
+  DW-292). 9-40 wires the tracker and the tournament into a per-id deploy, so it places ids through the deploy, which
+  is DW-170's trigger in the triage, "Next new id or DW-275 wiring" (the gate call at a real placement), and it brings the first `docker
+  rollout` of `tournament`, which is DW-288's trigger (its owner is "the story that wires the tournament into a deploy
+  (DW-275)"). All four stay open for 9-40 on the same reasoning.
+- Closed by `b668c5c`, not this story, 1: DW-75 (Operator ruling 2026-10-18, won't fix). It was in the Operator
+  question table when this spec was first written on `5bf8c3d`.
+- Left open untouched, in the Operator question table, 1: DW-120 (named in item-5's ruled closer, a KV row the story
+  that takes item-5 writes).
 - Left open, no `ops/` record owns the event, 4: DW-140 (`EXPERIENCE.md` § Chrome), DW-245 (PRD § 5.1), DW-246
   (footer line and `ESTATE_LANGUAGES`, written by `EXPERIENCE.md` § UI strings), DW-241 (Build's ledger templates).
   The first three are spine edits the Operator owns, and the fourth needs a ruling. Each goes to the Operator. DW-140
   is not in the plan's § 3 at all.
 - (c) fixed: none. No entry's fix is on the records surface alone.
 
-**Files.** A `## Standing triggers` section before `## Pending Operator actions` in each of 20 records:
-`asset-budget`, `backup-digital-library`, `bot-mitigation`, `capacity-measurement`, `capacity-threshold`,
-`contract-serving`, `cs-tracker-accessibility-pass`, `demo-principal`, `estate`, `font-contract`,
-`hub-accessibility-pass`, `identity-issuer`, `postgres`, `postgres-backup`, `registry-verification`,
-`rendered-output-harness`, `restyle-floor`, `token-contract`, `tournament-placement`, `visitor-instrumentation`.
-Each quotes the ledger's trigger. For DW-24, DW-25, DW-170, DW-175, DW-176 and DW-177, the ledger has no trigger
+**Files.** A `## Standing triggers` section before `## Pending Operator actions` in each of 17 records:
+`asset-budget`, `backup-digital-library`, `bot-mitigation`, `capacity-measurement`, `contract-serving`,
+`cs-tracker-accessibility-pass`, `demo-principal`, `estate`, `font-contract`, `hub-accessibility-pass`,
+`identity-issuer`, `postgres`, `registry-verification`, `rendered-output-harness`, `restyle-floor`, `token-contract`,
+`visitor-instrumentation`. (The first build also gave `capacity-threshold`, `postgres-backup` and
+`tournament-placement` one line each, for DW-170, DW-318 and DW-288; the round 1 fix moved those three to (a) and
+removed the sections.)
+Each quotes the ledger's trigger. For DW-24, DW-25, DW-175, DW-176 and DW-177, the ledger has no trigger
 line, so the plan's § 3 wording is quoted and the line says so.
 
 **Choices.** DW-78 went to `bot-mitigation.md`, since no record mentions `robots.txt` and that record owns crawler
-policy. DW-316 went to `postgres.md`, which holds the paused-database heartbeat rehearsal. DW-102 and DW-318 are
-(b) and not (a): the stories that may meet them (9-16's forced regeneration, conditional 9-36's re-install) do not
-name them. Each standing line names the story.
+policy. DW-316 went to `postgres.md`, which holds the paused-database heartbeat rehearsal. DW-102 is (b) and
+not (a): 9-16's forced regeneration may meet it but is not certain to, and the standing line names that story.
+DW-318, first written as (b) on the same reasoning, is (a): `b668c5c` opened 9-36, whose re-install of every backup
+script does meet its trigger.
 
 **Tests.** No assertion was added, so there was nothing to plant. Root suite, first run: `Test Files 4 failed | 77
 passed (81)`, `Tests 6 failed | 1977 passed | 1 skipped (1984)`. The failures were in the WSL-bash suites (DW-135),
@@ -124,9 +135,6 @@ entry's `status:` moves to `done`.
 - **DW-132**: **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/backup-digital-library.md` § Standing
   triggers): trigger not met. "The next time the passphrase is verified or rotated" moved verbatim with the closer,
   dated and naming DW-132. The owner is still the Operator.
-- **DW-170**: **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/capacity-threshold.md` § Standing
-  triggers): no new id has been placed since Epic 4. The entry's two waiting sentences moved verbatim, with the
-  call-site closer, dated and naming DW-170.
 - **DW-175**: **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/capacity-measurement.md` § Standing
   triggers): trigger not met. The plan's § 3 wording ("The next measurement week (2027-02-25 review)") moved there
   with the `note`-row closer, dated and naming DW-175.
@@ -155,18 +163,12 @@ entry's `status:` moves to `done`.
   list predates Epic 4 and is to be read against Traefik and the estate Postgres.
 - **DW-271**: **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/estate.md` § Standing triggers): no
   placement story and no lint gate. The trigger moved verbatim, dated and naming DW-271.
-- **DW-288**: **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/tournament-placement.md` § Standing
-  triggers): rollouts are still `up -d` by hand. "The first `docker rollout` of `tournament`" moved verbatim, dated
-  and naming DW-288.
 - **DW-304**: **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/token-contract.md` § Standing
   triggers): trigger not met (npm's latest glob read 13.0.6 on 2026-10-18, per the triage). It moved verbatim,
   dated and naming DW-304. An override still needs its own ruling.
 - **DW-316**: **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/postgres.md` § Standing triggers): no
   change to `anchor-umami` since the entry was filed. The trigger moved verbatim with the closer, dated and naming
   DW-316.
-- **DW-318**: **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/postgres-backup.md` § Standing
-  triggers): no clean start and no backup-script change. The trigger moved verbatim, dated and naming DW-318, and
-  names the conditional Story 9-36 as one that would meet it.
 - **DW-328**: **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/identity-issuer.md` § Standing
   triggers): trigger not met. It moved verbatim, dated and naming DW-328.
 - **DW-336**: **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/registry-verification.md` § Standing
@@ -199,11 +201,21 @@ entry's `status:` moves to `done`.
 - **DW-362**: **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing
   triggers): no Tailwind bump. The trigger moved verbatim, dated and naming DW-362.
 
-**Stay open (no closing paragraph):** DW-256, DW-317, DW-360, DW-291 and DW-292 (named in an Epic 9 story); DW-75
-and DW-120 (Operator question table); DW-140, DW-241, DW-245 and DW-246 (no owning record; for the Operator).
+**Stay open (no closing paragraph):** DW-256 (9-4), DW-317 (9-26), DW-360 (9-23), DW-318 (9-36) and DW-170, DW-288,
+DW-291 and DW-292 (9-40), each named in an Epic 9 story; DW-120 (Operator question table, item-5); DW-140, DW-241,
+DW-245 and DW-246 (no owning record; for the Operator).
+
+**Already closed elsewhere:** DW-75, closed by `b668c5c` (Operator ruling 2026-10-18, won't fix). This story writes
+nothing for it.
 
 **Action items:** none in this story's scope.
 
 ## Verification
 
-**Independent verifier:** pending.
+**Independent verifier, round 1:** four findings, all fixed. (1) The branch was behind `origin/dev`, and the spec
+still listed DW-75 as open in the Operator question table, though `b668c5c` closed it: rebased, and DW-75 now reads
+as closed by `b668c5c`. (2) DW-318 was (b), though `b668c5c` opened 9-36, which fires its trigger: moved to (a) under
+9-36, its closing paragraph and its `postgres-backup.md` standing line removed. (3) DW-170 and DW-288 were (b), though
+the same 9-40 that holds DW-291 and DW-292 open fires both: moved to (a) under 9-40, their closing paragraphs and the
+`capacity-threshold.md` and `tournament-placement.md` standing lines removed. (4) The DW-288 line cited a § Later
+rollouts that does not exist: removed with that line. The three records now match `origin/dev`. Round 2: pending.
