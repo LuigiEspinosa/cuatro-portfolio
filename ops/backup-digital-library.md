@@ -49,7 +49,7 @@ The form Epic 2 needs for the Registry `tech` array and Epic 4 needs for the reb
 
 | Item | Value | Nature |
 |---|---|---|
-| Application id | `digital-library` | **Observed**, `content/projects.ts:12` |
+| Application id | `digital-library` | **Observed**, `content/projects.ts:12`. **Amended 2026-10-18 by Story 9-1** (DW-211): that file was retired by Story 2-7 (`ba9526d`), and the id now lives in `contracts/registry.json` |
 | Hostname | `library.cuatro.dev` | **Observed** |
 | Box | `177.7.52.248`, Ubuntu 24.04.4, 2 vCPU, `Etc/UTC` | **Observed 2026-08-24** |
 | Containers | `digital-library-web-1`, `digital-library-api-1`, `digital-library-redis-1` | **Observed 2026-08-24**, all three `Up 3 weeks (healthy)` |
@@ -57,7 +57,7 @@ The form Epic 2 needs for the Registry `tech` array and Epic 4 needs for the reb
 | Journal mode | `wal`. `library.db` is 4096 bytes, which is a single page: a header and nothing else. **The entire database lives in `library.db-wal`** | **Observed 2026-08-24**, 152472 byte WAL |
 | Media tree | `data/books`, `data/covers`, `data/inbox`, all root owned, all empty | **Observed 2026-08-24** |
 | Cache | `digital-library_redis_data`, Redis 7 alpine | **Observed 2026-08-24** |
-| Registry `tech` | `SQLite` and `Redis` are both already correct in `content/projects.ts:23,26`. **`Hetzner VPS` at line 30 is the stale value**, and it is C-1's, not this story's, to correct | **Observed 2026-08-24** |
+| Registry `tech` | `SQLite` and `Redis` are both already correct in `content/projects.ts:23,26`. **`Hetzner VPS` at line 30 is the stale value**, and it is C-1's, not this story's, to correct. **Amended 2026-10-18 by Story 9-1** (DW-211): `content/projects.ts` was retired by Story 2-7 (`ba9526d`); the entry's `tech` array lives in `contracts/registry.json` | **Observed 2026-08-24** |
 
 **The single-page main file is the reason a file copy is not an option and never was.** `cp` of
 `library.db` captures an empty database, and an empty database passes `PRAGMA integrity_check`.

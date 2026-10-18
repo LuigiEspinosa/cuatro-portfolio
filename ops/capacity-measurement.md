@@ -344,7 +344,9 @@ The named limits, written before the data exists so they cannot be quietly relax
   real traffic, not a narrower percentile.
 - **The sampler is inside every figure.** Its cost is stated above and never subtracted.
 - **`deploy.yml` still builds on the serving box** (`docker compose up --build -d`, the standing
-  AD-8 violation tracked in Story 1-9). A merge to `main` during the week compiles Next.js on the
+  AD-8 violation, KV-1 in `ops/known-violations.md`). **Amended 2026-10-18 by Story 9-1** (DW-180):
+  the pointer named the story that opened KV-1 rather than the register; KV-1's Anchor half retired
+  2026-09-29T20:41:37Z, so this caveat describes the measured week only. A merge to `main` during the week compiles Next.js on the
   two cores being measured, which will show as a large CPU peak attributed to
   `cuatro-portfolio-anchor-app-1`. That is a real cost of the current topology and is not
   excluded, but the close-out must say whether any such build fell inside the week, because a

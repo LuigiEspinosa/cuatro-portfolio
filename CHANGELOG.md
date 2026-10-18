@@ -114,7 +114,7 @@
 ### Added
 
 - `content/work.ts`: typed TypeScript array of 4 work experience exntries.
-- `content/projects.ts`: typed TypeScript array with 1 project entry.
+- `content/projects.ts`: typed TypeScript array with 1 project entry. (Amended 2026-10-18 by Story 9-1, DW-211: retired by Story 2-7, `ba9526d`; projects are read from `contracts/registry.json`.)
 - `app/work/page.ts`: static server-rendered work timeline page (unstyled).
 - `app/projects/page.ts`: static server-rendered projects page (unstyled).
 - Vitest + React Testing Library infraestructure (`vitest.config.ts`, `vitest.setup.ts`).

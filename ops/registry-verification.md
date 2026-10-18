@@ -92,12 +92,16 @@ Registry 1.4.0 dropped `inclusivcup.vercel.app` when Vercel left the estate (Ope
 
 ## Sources tolerated to answer 404 anonymously
 
-`ops/known-violations.md` KV-2 records four Registry `source` links that resolve for nobody but the
-Operator, tolerated deliberately, with the ruling on each. This table is the copy the script reads:
+`ops/known-violations.md` KV-2 records the Registry `source` links that resolve for nobody but the
+Operator, tolerated deliberately, with the ruling on each: three today (`cs-tracker`, `StreamVault`
+and `Mutuo`), the `cs-tournament` row below being struck since it was published on 2026-09-24. This
+table is the copy the script reads:
 `kv2Rows` in `ops/registry-verification.mjs` parses it on every run, and an anonymous 404 on a
 repository named here, whose Ruling does not begin `Struck` (in any case, behind any bold, italic or
 strikethrough markup), is `PASS ... tolerated by KV-2` rather than a failure. The authenticated half
-still runs on all four, so a tolerated repository that is deleted or renamed still fails.
+still runs on every tolerated repository, so one that is deleted or renamed still fails.
+**Amended 2026-10-18 by Story 9-1** (DW-139): this paragraph counted the table's rows, struck one
+included, as the tolerated links.
 
 | Repository | Ruling | Since |
 |---|---|---|
@@ -115,8 +119,11 @@ a row is an edit to this file and to the pins that hold it in
 **How a row is struck.** When the job reports `its KV-2 row can be struck` (the repository answered
 2xx anonymously), or when the Operator rules a repository public, replace the Ruling cell with
 `Struck YYYY-MM-DD: <why>` and leave the row in place; the script ignores a struck row and the next
-run holds that source to the ordinary rule. The same change moves the suite's pins: it lists the four
-repositories with none struck, and its committed-Registry fixture answers 404 for exactly those four.
+run holds that source to the ordinary rule. The same change moves the suite's pins in
+`ops/__tests__/registry-verification.test.ts`: `KV2_TABLE` lists every row, struck or not, `STRUCK`
+names the struck ones (`cs-tournament` since 2026-09-24), and the committed-Registry fixture answers
+404 for the rest (`PRIVATE`, three today). **Amended 2026-10-18 by Story 9-1** (DW-139): this
+described the pins as they stood before the first row was struck.
 Never delete a row, and never add a row without a ruling in `ops/known-violations.md` first: this
 table tolerates, it does not decide.
 
