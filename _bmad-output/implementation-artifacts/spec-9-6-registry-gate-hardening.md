@@ -93,7 +93,7 @@ restored from a copy (107 passed after).
 
 DW-28:
 
-**Closed 2026-10-18 by Story 9-6-registry-gate-hardening** (`e452ba25e4c83b5aaf8a501220b7ac98ef0f472d`,
+**Closed 2026-10-18 by Story 9-6-registry-gate-hardening** (`c39ec14613e7a806f8a529e9b447bb52941b39a2`,
 `ops/registry-schema.mjs:duplicateKey`): the gate scans both contract files after `JSON.parse` accepts them and
 refuses any object carrying one key twice, keys compared decoded, naming the file, the object's pointer, the key and
 the line, before the schema is applied. Five planted cases in `ops/__tests__/registry-schema.test.ts` hold it (a
@@ -103,7 +103,7 @@ by no other reader".
 
 DW-251:
 
-**Closed 2026-10-18 by Story 9-6-registry-gate-hardening** (`baba2f7a89b296571062067687d1fead28460b05`,
+**Closed 2026-10-18 by Story 9-6-registry-gate-hardening** (`ebc14299cfe98ce0edeb69ce1265190325cc392f`,
 `.github/workflows/registry-verification.yml`): the scheduled Registry check sets up Node 24, the third and last
 half. `STILL_ON_NODE_22` is deleted from `ops/__tests__/workflow-hardening.test.ts`, so every workflow's `setup-node`
 is held to Node 24 with no exception, and `ops/__tests__/registry-verification.test.ts` pins the 24. The record's
@@ -114,4 +114,16 @@ No action items are named by this story.
 
 ## Independent verifier
 
-pending. No independent verifier has run on this spec; a separate agent must run it (Epic 2 retrospective action 11).
+Independent verifier: PASS on round 2, 2026-10-18, separate agent; tests: all runs in the story worktree at
+`a7a6271` (4 commits on `origin/dev`, rebased since to `2b138bb`). `corepack pnpm vitest --run` on registry-schema,
+workflow-hardening, registry-verification and contract-purity: 4 files, 296 passed, 0 failed. `node
+ops/registry-schema.mjs`: green, 16 applications, success line unchanged. `corepack pnpm typecheck`: no errors.
+`corepack pnpm test --run` (full root suite): 82 files, 1988 passed, 1 skipped, 3 failed, all three WSL-spawning suites
+(demo-reset, tournament-backup, tracker-backup, the DW-135 flake), which passed 56 of 56 on re-run. The verifier's own
+plant (replacing `duplicateKey(body)` with `null`) failed 4 of 107 registry-schema cases (the entry, schema,
+control-character and two-spellings cases) while the positive control stayed green; the file was restored and the tree
+left clean. An edge probe against the real contracts through the exported `inspect` and `report` confirmed a duplicate
+in the last entry is reported at /applications/15, line 178; a BOM with CRLF gives the same report; the clean Registry
+with CRLF passes; a nested duplicate gets /zz/1; a key holding / and ~ escapes as /a~1b~0c; a string ending in an
+escaped backslash is handled; equal key names in sibling and nested objects give no false positive. No per-app suite
+or container e2e ran, since nothing under `apps/` or `tests/e2e` changed.

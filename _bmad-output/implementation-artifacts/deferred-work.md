@@ -2002,7 +2002,15 @@ reason: |-
   discarded value, which is why it is filed rather than fixed inside the story. The exposure is a
   hand-authored file with one author, so the realistic case is a merge that duplicates a key rather
   than a mistake nobody would make. `ops/registry-schema.md` records it as a stated limit.
-status: open
+
+  **Closed 2026-10-18 by Story 9-6-registry-gate-hardening** (`c39ec14613e7a806f8a529e9b447bb52941b39a2`,
+  `ops/registry-schema.mjs:duplicateKey`): the gate scans both contract files after `JSON.parse` accepts them and
+  refuses any object carrying one key twice, keys compared decoded, naming the file, the object's pointer, the key and
+  the line, before the schema is applied. Five planted cases in `ops/__tests__/registry-schema.test.ts` hold it (a
+  Registry entry, the schema, a key holding a newline, two spellings of one key, and a positive control).
+  `ops/registry-schema.md` records the decision and the stated-limit row "A duplicate key is refused by this gate and
+  by no other reader".
+status: done
 
 ### DW-29: `tests/e2e/contract-serving.pw.ts:68-72` still says `contracts/registry.json` arrives in Story 2-5.
 origin: spec-deferred 2026-08-29
@@ -8272,7 +8280,14 @@ status: done
     merge.** `deploy.yml`'s `gate` job sets up Node 24, and `deploy.yml` left `STILL_ON_NODE_22` in
     `ops/__tests__/workflow-hardening.test.ts`, so a return to 22 fails there.
     `registry-verification.yml` (unassigned) stays on 22 and keeps the entry open.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-6-registry-gate-hardening** (`ebc14299cfe98ce0edeb69ce1265190325cc392f`,
+    `.github/workflows/registry-verification.yml`): the scheduled Registry check sets up Node 24, the third and last
+    half. `STILL_ON_NODE_22` is deleted from `ops/__tests__/workflow-hardening.test.ts`, so every workflow's `setup-node`
+    is held to Node 24 with no exception, and `ops/__tests__/registry-verification.test.ts` pins the 24. The record's
+    Runner row is amended. Run locally on Node v24.15.0 the script passed 75 of 75 checks; the first runner observation
+    is the push of this workflow file to `dev`, which its `paths` trigger runs.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
   id: DW-252
