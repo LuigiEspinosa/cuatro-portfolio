@@ -31,6 +31,8 @@ const HERE = 'ops/__tests__/hit-target-floor.test.ts';
 
 const RECORD_REL = 'ops/hit-target-floor.md';
 const SPEC_REL = 'tests/e2e/hit-target-floor.pw.ts';
+/** Where `SURFACES` and `NOT_FOUND` live since Story 9-12, so `projects-redirect.pw.ts` can derive from them. */
+const HARNESS_REL = 'tests/e2e/harness.ts';
 const BOARD_REL = '_bmad-output/implementation-artifacts/sprint-status.yaml';
 const LIGHTHOUSE_REL = '.lighthouserc.js';
 const NEXT_CONFIG_REL = 'apps/hub/next.config.js';
@@ -62,6 +64,7 @@ const read = (relative: string): string => {
 
 const record = read(RECORD_REL);
 const spec = read(SPEC_REL);
+const harnessSource = read(HARNESS_REL);
 const board = read(BOARD_REL);
 const violations = read(VIOLATIONS_REL);
 
@@ -83,14 +86,14 @@ const sourceShape = (source: string): RegExp => {
 
 const SOURCE_SHAPE = sourceShape(spec);
 
-/** The 404 stand-in path, read from the spec so the two files cannot disagree about it. */
+/** The 404 stand-in path, read from the harness the spec imports it from, so the two cannot disagree. */
 const notFoundPath = (source: string): string => {
   const literal = /const NOT_FOUND = '([^']*)'/.exec(source)?.[1];
-  if (literal === undefined) throw new Error(`${SPEC_REL}: no "const NOT_FOUND" literal was found`);
+  if (literal === undefined) throw new Error(`${HARNESS_REL}: no "const NOT_FOUND" literal was found`);
   return literal;
 };
 
-const NOT_FOUND = notFoundPath(spec);
+const NOT_FOUND = notFoundPath(harnessSource);
 
 /** One ledger row, in whichever of the two files it was read from. */
 interface Row {
@@ -227,12 +230,12 @@ const specRows = (source: string): Row[] => {
   });
 };
 
-/** The `SURFACES` const in the Playwright spec, with the same cross-check. */
+/** The `SURFACES` const in `tests/e2e/harness.ts`, which the Playwright spec sweeps, with the same cross-check. */
 const specSurfaces = (source: string): Surface[] => {
   const block = /const SURFACES = \[\n([\s\S]*?)\n\] as const;/.exec(source)?.[1];
 
   if (block === undefined) {
-    throw new Error(`${SPEC_REL}: no "const SURFACES = [" literal was found`);
+    throw new Error(`${HARNESS_REL}: no "const SURFACES = [" literal was found`);
   }
 
   const entries = [
@@ -243,12 +246,12 @@ const specSurfaces = (source: string): Surface[] => {
   const declared = [...block.matchAll(/^\s*\{ route: /gm)].length;
 
   if (entries.length === 0) {
-    throw new Error(`${SPEC_REL}: the SURFACES literal parsed to zero rows, so there is nothing to compare`);
+    throw new Error(`${HARNESS_REL}: the SURFACES literal parsed to zero rows, so there is nothing to compare`);
   }
 
   if (entries.length !== declared) {
     throw new Error(
-      `${SPEC_REL}: the SURFACES literal parsed to ${entries.length} rows and declares ${declared}. ` +
+      `${HARNESS_REL}: the SURFACES literal parsed to ${entries.length} rows and declares ${declared}. ` +
         `The parser expects one surface per line in a fixed field order, so this is a reflow rather ` +
         `than a missing surface.`
     );
@@ -550,11 +553,11 @@ describe('the record and the exemption ledger agree in both directions', () => {
 
 describe('the record and the swept surfaces agree in both directions', () => {
   const fromRecord = recordSurfaces(record);
-  const fromSpec = specSurfaces(spec);
+  const fromSpec = specSurfaces(harnessSource);
 
   it('parses both tables, and they carry the same pinned counts', () => {
     expect(fromRecord.length, `${RECORD_REL} sweeps nothing`).toBeGreaterThan(0);
-    expect(fromSpec.length, `${SPEC_REL} sweeps nothing`).toBeGreaterThan(0);
+    expect(fromSpec.length, `${HARNESS_REL} declares no surface to sweep`).toBeGreaterThan(0);
     expect(fromSpec.map((row) => row.route)).toContain(NOT_FOUND);
     expect(
       surfaceDisagreements(fromRecord, fromSpec),
@@ -959,7 +962,10 @@ describe(`${HERE} reads the real files`, () => {
   it('found the record, the spec and the board', () => {
     expect(record.length).toBeGreaterThan(1000);
     expect(spec).toContain('const EXEMPTIONS');
-    expect(spec).toContain('const SURFACES');
+    expect(harnessSource).toContain('const SURFACES');
+    expect(spec, `${SPEC_REL} declares its own SURFACES again, beside the one in ${HARNESS_REL}`).not.toContain(
+      'const SURFACES'
+    );
     expect(board).toContain('development_status:');
   });
 });

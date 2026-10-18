@@ -1,5 +1,5 @@
 import { test, expect, type Browser, type BrowserContextOptions, type Page } from '@playwright/test';
-import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
+import { RENDERED_VIEWPORT, goTo, rootCustomPropertyValue } from './harness';
 
 /**
  * The 404 surface, as rendered (Story 2-30).
@@ -57,16 +57,6 @@ const SAYS_NOT_FOUND = /\bnot found\b|\bdoes not exist\b/i;
 
 /** A label cell in plain words: capitals separated by single spaces, no marker and no underscore. */
 const WORDS = /^[A-Z]+(?: [A-Z]+)*$/;
-
-/** Navigate, refuse anything but the status expected, and wait for the faces. */
-const goTo = async (page: Page, route: string = NOT_FOUND, expected = 404): Promise<void> => {
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer ${expected}`).toBe(expected);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-  });
-};
 
 /** A context that differs from the project's in the options given and in nothing else. */
 const contextWith = (browser: Browser, options: BrowserContextOptions) =>
@@ -240,7 +230,7 @@ const outputWithoutNumeral = async (page: Page): Promise<AccessibleOutput> => {
 test.describe('the surface is a Plate mark, the display line, one line and the exits', () => {
   for (const route of [NOT_FOUND, RETIRED]) {
     test(`reads on ${route} as the mark, one level-1 heading, one line and two links, and nothing named`, async ({ page }) => {
-      await goTo(page, route);
+      await goTo(page, route, 404);
       const snapshot = await page.locator(SURFACE).ariaSnapshot();
       expect(topLevelRoles(snapshot), `the surface does not read as mark, heading, line and two exits:\n${snapshot}`).toEqual([
         'text',
@@ -285,7 +275,7 @@ test.describe('the surface is a Plate mark, the display line, one line and the e
   }
 
   test('labels the surface in a plain word, on the section variant, and reads it the same with the stylesheets off', async ({ page }) => {
-    await goTo(page);
+    await goTo(page, NOT_FOUND, 404);
     const mark = page.locator(`${SURFACE} .plate-mark`);
     await expect(mark, 'the surface carries a number of marks other than one').toHaveCount(1);
     expect(await mark.getAttribute('class'), 'the mark is not the section variant').toBe('plate-mark');
@@ -309,7 +299,7 @@ test.describe('the surface is a Plate mark, the display line, one line and the e
     expect(off.tree, 'the numeral reaches the tree with the sheets off').not.toContain('404');
 
     // The control: the shipped label planted back into the same cell fails the same predicate.
-    await goTo(page);
+    await goTo(page, NOT_FOUND, 404);
     await page.evaluate(() => {
       const cell = document.querySelector('.error-page .plate-mark__label');
       if (cell) cell.textContent = '// ERR_NOT_FOUND';
@@ -328,7 +318,7 @@ test.describe('the redundancy test, run rather than assumed', () => {
   test('with the numeral removed from the tree, the title and the heading each say the page was not found and the message does not repeat it: branch A', async ({
     page,
   }) => {
-    await goTo(page);
+    await goTo(page, NOT_FOUND, 404);
     const output = await outputWithoutNumeral(page);
     const verdict = branchOf(output);
     console.log(
@@ -351,7 +341,7 @@ test.describe('the redundancy test, run rather than assumed', () => {
 
     // The control: the same page planted to say nothing of it, read through the same function, is
     // branch B. Without this, a predicate that answered A for anything would pass above.
-    await goTo(page);
+    await goTo(page, NOT_FOUND, 404);
     await page.evaluate(
       ({ line }) => {
         document.title = 'Planted | Luigi Espinosa';
@@ -374,7 +364,7 @@ test.describe('the redundancy test, run rather than assumed', () => {
 
 test.describe('the numeral, the heading and the line are set in the roles the design names', () => {
   test('the numeral is ornament: hidden, unnamed, the muted accent, on the scale in the display face', async ({ page }) => {
-    await goTo(page);
+    await goTo(page, NOT_FOUND, 404);
     const numeral = page.locator(NUMERAL);
     await expect(numeral).toHaveText('404');
     expect(await numeral.getAttribute('aria-hidden'), 'the numeral is exposed to assistive technology').toBe('true');
@@ -395,7 +385,7 @@ test.describe('the numeral, the heading and the line are set in the roles the de
   });
 
   test('the heading computes the display roles and the line the secondary text at the body floor, within the measure', async ({ page }) => {
-    await goTo(page);
+    await goTo(page, NOT_FOUND, 404);
     const heading = await page.locator(`${SURFACE} h1`).evaluate((node) => {
       const style = getComputedStyle(node);
       return {
@@ -433,7 +423,7 @@ test.describe('the numeral, the heading and the line are set in the roles the de
   });
 
   test('the ground is the paper role, with no grid and no scrim, sampled across the surface’s top padding', async ({ page }) => {
-    await goTo(page);
+    await goTo(page, NOT_FOUND, 404);
     const [paper] = await rasterise(page, [await role(page, '--token-bg')]);
     const surface = await boxOf(page, SURFACE);
     const mark = await boxOf(page, `${SURFACE} .plate-mark`);
@@ -501,7 +491,7 @@ test.describe('the exits are controls', () => {
   test('transparent, square, bordered in the interactive role on four sides, mono uppercase at the smallest control step, at the floor', async ({
     page,
   }) => {
-    await goTo(page);
+    await goTo(page, NOT_FOUND, 404);
     const floor = Number.parseFloat(await rootCustomPropertyValue(page, '--tap'));
     const expected = {
       width: await length(page, '--stroke-boundary'),
@@ -536,7 +526,7 @@ test.describe('the exits are controls', () => {
   });
 
   test('a fine pointer’s hover recolours the border and changes no other pixel', async ({ page }) => {
-    await goTo(page);
+    await goTo(page, NOT_FOUND, 404);
     expect(await page.evaluate(() => matchMedia('(hover: hover)').matches), 'the project context cannot hover').toBe(true);
     const [hover] = await rasterise(page, [await role(page, '--token-accent-hover')]);
     const exit = page.locator(EXIT).first();
@@ -585,7 +575,7 @@ test.describe('the exits are controls', () => {
     const context = await contextWith(browser, { hasTouch: true, isMobile: true });
     try {
       const page = await context.newPage();
-      await goTo(page);
+      await goTo(page, NOT_FOUND, 404);
       expect(await page.evaluate(() => matchMedia('(hover: hover)').matches), 'the touch context reports a hover-capable pointer').toBe(false);
       await page.evaluate(() => {
         const seen: string[] = [];
@@ -620,7 +610,7 @@ test.describe('the exits are controls', () => {
   });
 
   test('Tab paints the standard ring on each exit the frame focus lands, and a click paints none', async ({ page }) => {
-    await goTo(page);
+    await goTo(page, NOT_FOUND, 404);
     const expected = {
       width: await length(page, '--stroke-focus'),
       colour: await role(page, '--token-focus'),
@@ -721,7 +711,7 @@ test.describe('the entrance is one opacity keyframe, and nothing under reduced m
     const context = await contextWith(browser, { reducedMotion: 'no-preference' });
     try {
       const page = await context.newPage();
-      await goTo(page);
+      await goTo(page, NOT_FOUND, 404);
       // Both roles resolved through a probe, so each compares in the serialisation the element's own
       // computed value takes (`0.22s`, not the token stream's `220ms`).
       const role_ = await probe(page, { 'animation-duration': 'var(--dur-minor)', 'animation-timing-function': 'var(--ease-entrance)' }, [
@@ -769,7 +759,7 @@ test.describe('the entrance is one opacity keyframe, and nothing under reduced m
     // The project's own context asks for reduced motion (`playwright.config.ts`), so this is the
     // reading a visitor who asked for stillness gets: `animation: none`, not a 1ms run that would
     // still wait out its delay.
-    await goTo(page);
+    await goTo(page, NOT_FOUND, 404);
     const read = await entranceOf(page);
     for (const element of [...read.elements, ...read.heading]) {
       expect(element.name, 'an element animates under reduced motion').toBe('none');
@@ -786,7 +776,7 @@ test.describe('the entrance is one opacity keyframe, and nothing under reduced m
     const context = await contextWith(browser, { reducedMotion: 'no-preference' });
     try {
       const moving = await context.newPage();
-      await goTo(moving);
+      await goTo(moving, NOT_FOUND, 404);
       expect((await entranceOf(moving)).elements.map((element) => element.name), 'the read cannot see the keyframe at all').toEqual(
         ANIMATED.map(() => KEYFRAME)
       );
@@ -804,7 +794,7 @@ test.describe('the entrance is one opacity keyframe, and nothing under reduced m
         aborted += 1;
         await route.abort();
       });
-      await goTo(page);
+      await goTo(page, NOT_FOUND, 404);
       expect(aborted, 'no script was aborted, so this is not the no-script reading').toBeGreaterThan(0);
       await expect(page.locator(`${SURFACE} > *`), 'the served surface is not whole').toHaveCount(5);
       await expect(page.locator(EXIT), 'the exits are not in the served markup').toHaveCount(2);
@@ -823,7 +813,7 @@ test.describe('the entrance is one opacity keyframe, and nothing under reduced m
 
 test.describe('at 360', () => {
   test('nothing on the 404 sits past either viewport edge, and the exits share a line or wrap', async ({ page }) => {
-    await goTo(page);
+    await goTo(page, NOT_FOUND, 404);
     const outside = () =>
       page.evaluate(() => {
         const width = window.innerWidth;

@@ -79,16 +79,18 @@ export const NARRATIVE_ESTIMATE_BYTES = [300 * KB, 450 * KB];
  * `OrbitControls.js encountered`) with DW-119, which deleted the torus's orbit
  * controls, the only thing that pulled it in. Both on the Operator ruling of
  * 2026-09-24.
+ *
+ * **The rows live in `ops/asset-budget-fingerprints.json` since Story 9-12**,
+ * so the Playwright specs load the same table through `tests/e2e/harness.ts`
+ * rather than parsing this file as text (DW-40, DW-49): Playwright loads a spec
+ * as CommonJS, where this module's `import.meta` is a syntax error, and a JSON
+ * file loads in both. `ops/__tests__/asset-budget.test.ts` still pins the rows.
+ *
+ * @type {{ library: string, mark: string, webgl: boolean }[]}
  */
-export const FINGERPRINTS = [
-  { library: 'three', mark: 'WebGLRenderer', webgl: true },
-  { library: '@react-three/fiber', mark: 'react-three-fiber', webgl: true },
-  { library: '@react-three/drei', mark: 'onIncline', webgl: true },
-  { library: '@react-three/postprocessing', mark: '@react-three/postprocessing', webgl: true },
-  { library: 'postprocessing', mark: 'KawaseBlurPass', webgl: true },
-  { library: 'gsap', mark: 'GSAP target ', webgl: false },
-  { library: 'gsap/ScrollTrigger', mark: 'scrollerProxy', webgl: false },
-];
+export const FINGERPRINTS = JSON.parse(
+  readFileSync(new URL('./asset-budget-fingerprints.json', import.meta.url), 'utf8')
+);
 
 /**
  * Marks that name a chunk carrying no narrative library, so the record can say

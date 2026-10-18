@@ -1,5 +1,5 @@
 import { test, expect, type Download, type Page } from '@playwright/test';
-import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
+import { EDGE_SLACK, RENDERED_VIEWPORT, goTo, probeComputed, rootCustomPropertyValue } from './harness';
 
 /**
  * The header, reshaped to two destinations and made sticky (Story 2-15).
@@ -84,19 +84,6 @@ const HEADING_ID = 'suite';
 /** The header's second destination, a route since Story 2-16 removed the 308 that stood for it. */
 const CV_ROUTE = '/cv';
 
-/**
- * Navigate, and refuse to read anything off a page that did not answer the status expected.
- *
- * Local rather than shared, on the idiom `tests/e2e/celeste-header.pw.ts:36-40` and
- * `tests/e2e/hit-target-floor.pw.ts` already set. DW-22 records that this guard now has several
- * implementations and that hoisting it into `harness.ts` is its own change.
- */
-const goTo = async (page: Page, route: string, expected = 200): Promise<void> => {
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer ${expected}`).toBe(expected);
-};
-
 /** Every anchor the header's nav renders: its `href`, its text and whether it opens elsewhere. */
 const destinationsOn = (page: Page) =>
   page.locator('nav.navbar a').evaluateAll((nodes: Element[]) =>
@@ -134,41 +121,12 @@ const floorFrom = async (page: Page): Promise<number> => {
   return value;
 };
 
-/**
- * The computed value of one property on one element, resolved by laying out a probe.
- *
- * A custom property's computed value is its declared token stream, so `--z-sticky` read off
- * `:root` answers the string `200` and comparing it against a computed `z-index` compares a
- * declaration against a resolution. This resolves the reference the way the element does.
- */
-const probeComputed = (page: Page, declaration: string, property: string): Promise<string> =>
-  page.evaluate(
-    ([css, name]) => {
-      const probe = document.createElement('div');
-      probe.setAttribute('style', `position:absolute;left:-99999px;top:0;width:1px;height:1px;${css}`);
-      document.body.append(probe);
-      const read = window.getComputedStyle(probe).getPropertyValue(name);
-      probe.remove();
-      return read;
-    },
-    [declaration, property] as const
-  );
-
 /** Which of a set of boxes fails the floor, and on which axis. */
 interface Box {
   readonly label: string;
   readonly width: number;
   readonly height: number;
 }
-
-/**
- * Sub-pixel slack on the separation comparison alone, never on the floor.
- *
- * The same 0.5 `tests/e2e/hit-target-floor.pw.ts:268` takes, and for the same reason: layout
- * produces fractional positions, and two boxes a third of a pixel closer than `--s-lg` is a
- * rounding artifact rather than a pair a finger cannot separate.
- */
-const EDGE_SLACK = 0.5;
 
 /** What `boundingBox()` answers, including the `null` a detached or invisible element gives. */
 type MaybeBox = { x: number; y: number; width: number; height: number } | null;

@@ -3,7 +3,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, ex
 import { createServer, type Server } from 'node:http';
 import { tmpdir } from 'node:os';
 import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
-import { RENDERED_VIEWPORT, computedStyleValue } from './harness';
+import { RENDERED_VIEWPORT, computedStyleValue, goTo } from './harness';
 
 /**
  * The font contract, verified where it is actually consumed (Story 1-12).
@@ -213,11 +213,7 @@ const measureSwap = async (
   available: Record<string, boolean>;
 }> => {
   await page.route('**/*.woff2', (route) => route.abort());
-  const blocked = await page.goto(url, { waitUntil: 'load' });
-  if (!blocked || !blocked.ok()) {
-    throw new Error(`the vendored page at ${url} answered HTTP ${blocked ? blocked.status() : 'nothing'}`);
-  }
-  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  await goTo(page, url);
   const fallback = await geometryOf(page);
   await page.unroute('**/*.woff2');
 
@@ -227,11 +223,7 @@ const measureSwap = async (
   };
   page.on('response', record);
 
-  const allowed = await page.goto(`${url}?faces=1`, { waitUntil: 'load' });
-  if (!allowed || !allowed.ok()) {
-    throw new Error(`the vendored page at ${url} answered HTTP ${allowed ? allowed.status() : 'nothing'}`);
-  }
-  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  await goTo(page, `${url}?faces=1`);
 
   const available = await page.evaluate(
     (families) => Object.fromEntries(families.map((family) => [family, document.fonts.check(`16px "${family}"`)])),
@@ -294,9 +286,7 @@ test('resolves every face from a folder vendored at an arbitrary depth', async (
     if (response.url().endsWith('.woff2')) statuses.set(response.url(), response.status());
   });
 
-  const response = await page.goto(`${origin}/`, { waitUntil: 'load' });
-  expect(response?.status(), 'the vendored page did not answer 200').toBe(200);
-  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  await goTo(page, `${origin}/`);
 
   for (const face of FACES.faces) {
     const url = `${origin}/${VENDORED_AT.join('/')}/fonts/${face.file}`;

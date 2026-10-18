@@ -2,9 +2,14 @@ import { readdirSync } from 'node:fs';
 import { basename, dirname } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import {
+  NOT_FOUND,
   RENDERED_VIEWPORT,
   computedStyleValue,
   expectRouteScreenshot,
+  getWithRetry,
+  goTo,
+  plantStyle,
+  probeComputed,
   rootCustomPropertyValue,
 } from './harness';
 
@@ -131,7 +136,7 @@ test.describe('rendered-output harness', () => {
   });
 
   test('reads the computed value of a named property on a named selector', async ({ page }) => {
-    await page.goto(ROUTE);
+    await goTo(page, ROUTE);
 
     const family = await computedStyleValue(page, HEADING, 'font-family');
 
@@ -151,7 +156,7 @@ test.describe('rendered-output harness', () => {
   });
 
   test('reads the computed value of a custom property on :root', async ({ page }) => {
-    await page.goto(ROUTE);
+    await goTo(page, ROUTE);
 
     // The bold display alias until Story 2-33 moved the heading onto the display role itself; the pair
     // of shapes this reads is the same, and it no longer depends on an alias, which Story 2-22 deleted.
@@ -183,10 +188,7 @@ test.describe('rendered-output harness', () => {
       'would overwrite the baseline with its deliberately shifted render'
     );
 
-    await page.goto(ROUTE);
-    await page.evaluate(async () => {
-      await document.fonts.ready;
-    });
+    await goTo(page, ROUTE);
 
     // The shift is injected into this page only, through the browser, and touches no file.
     // That is the difference between this test and the probe Story 1-10 applied once and
@@ -219,7 +221,7 @@ test.describe('rendered-output harness', () => {
       'would write the baseline it exists to prove is absent'
     );
 
-    await page.goto(ROUTE);
+    await goTo(page, ROUTE);
 
     const absent = `work-${RENDERED_VIEWPORT.width}x${RENDERED_VIEWPORT.height}-absent-baseline.png`;
 
@@ -240,7 +242,7 @@ test.describe('rendered-output harness', () => {
   });
 
   test('fails naming the selector when nothing matches it', async ({ page }) => {
-    await page.goto(ROUTE);
+    await goTo(page, ROUTE);
 
     await expect(
       computedStyleValue(page, '.work-hero__heading-that-does-not-exist', 'font-family')
@@ -248,7 +250,7 @@ test.describe('rendered-output harness', () => {
   });
 
   test('fails naming the property when it resolves to an empty string', async ({ page }) => {
-    await page.goto(ROUTE);
+    await goTo(page, ROUTE);
 
     // An undeclared custom property read off an element is the empty-string case in its most
     // ordinary form. Returning it would compare equal to any other empty expectation.
@@ -258,7 +260,7 @@ test.describe('rendered-output harness', () => {
   });
 
   test('fails naming the custom property when it is not declared', async ({ page }) => {
-    await page.goto(ROUTE);
+    await goTo(page, ROUTE);
 
     await expect(rootCustomPropertyValue(page, '--monument-undeclared')).rejects.toThrow(
       /--monument-undeclared/
@@ -266,7 +268,7 @@ test.describe('rendered-output harness', () => {
   });
 
   test('refuses a name that is not a custom property', async ({ page }) => {
-    await page.goto(ROUTE);
+    await goTo(page, ROUTE);
 
     // `font-family` is a real property and resolves to a real value on `:root`, so without
     // this guard the mistake would return a plausible answer rather than a complaint.
@@ -277,7 +279,7 @@ test.describe('rendered-output harness', () => {
 
   test('refuses to photograph a route that does not answer 2xx', async ({ page }) => {
     await expect(
-      expectRouteScreenshot(page, '/a-route-that-does-not-exist', SNAPSHOT, { mask: [CANVAS] })
+      expectRouteScreenshot(page, NOT_FOUND, SNAPSHOT, { mask: [CANVAS] })
     ).rejects.toThrow(/answered HTTP 404/);
   });
 
@@ -285,6 +287,72 @@ test.describe('rendered-output harness', () => {
     await expect(
       expectRouteScreenshot(page, ROUTE, SNAPSHOT, { mask: ['.no-such-region'] })
     ).rejects.toThrow(/\.no-such-region/);
+  });
+
+  // The shared helpers Story 9-12 lifted out of the specs, each shown refusing what it exists to
+  // refuse. They are not capabilities in the ledger above: they navigate, probe and fetch for the
+  // specs, and every spec that uses one would turn red if it stopped working.
+
+  test('goTo refuses a status other than the one stated, and accepts the one stated', async ({ page }) => {
+    await expect(goTo(page, NOT_FOUND)).rejects.toThrow(`"${NOT_FOUND}" answered HTTP 404, not 200`);
+    await expect(goTo(page, NOT_FOUND, 404)).resolves.toBeUndefined();
+  });
+
+  test('probeComputed resolves a declaration and refuses an empty read', async ({ page }) => {
+    await goTo(page, ROUTE);
+
+    expect(await probeComputed(page, 'color: rgb(1, 2, 3)', 'color')).toBe('rgb(1, 2, 3)');
+    await expect(probeComputed(page, 'color: red', '--not-declared-anywhere')).rejects.toThrow(
+      /--not-declared-anywhere/
+    );
+  });
+
+  test('plantStyle plants a stylesheet and its removal takes that one away', async ({ page }) => {
+    await goTo(page, ROUTE);
+    const outline = (): Promise<string> => computedStyleValue(page, HEADING, 'outline-style');
+    const before = await outline();
+    expect(before, 'the heading is already dashed, so the plant below proves nothing').not.toBe('dashed');
+
+    const remove = await plantStyle(page, `${HEADING} { outline-style: dashed !important; }`);
+    expect(await outline(), 'the planted stylesheet did not reach the heading').toBe('dashed');
+    await remove();
+    expect(await outline(), 'the removal left the planted stylesheet in place').toBe(before);
+  });
+
+  test('getWithRetry retries a thrown request, never a status, and names the URL when it gives up', async ({
+    request,
+    baseURL,
+  }) => {
+    const url = new URL(NOT_FOUND, baseURL).href;
+
+    let calls = 0;
+    const flaky = {
+      get: async (target: string) => {
+        calls += 1;
+        if (calls < 3) throw new Error('socket hang up');
+        return request.get(target);
+      },
+    };
+    expect((await getWithRetry(flaky, url)).status(), 'the third attempt did not answer').toBe(404);
+    expect(calls, 'two transport failures were not retried').toBe(3);
+
+    calls = 0;
+    const counting = {
+      get: (target: string) => {
+        calls += 1;
+        return request.get(target);
+      },
+    };
+    expect((await getWithRetry(counting, url)).status()).toBe(404);
+    expect(calls, 'a 404 was retried, which would hide a real one behind attempts').toBe(1);
+
+    const dead = {
+      get: async (): Promise<never> => {
+        throw new Error('socket hang up');
+      },
+    };
+    await expect(getWithRetry(dead, url)).rejects.toThrow(`GET ${url} threw on all 3 attempts`);
+    await expect(getWithRetry(dead, url)).rejects.toThrow('socket hang up');
   });
 
   test('exercised every capability it claims to cover', () => {

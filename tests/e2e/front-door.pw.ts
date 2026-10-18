@@ -1,7 +1,5 @@
 import { test, expect, type APIRequestContext, type Browser, type Page } from '@playwright/test';
-import { readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { RENDERED_VIEWPORT, hydrated, rootCustomPropertyValue } from './harness';
+import { FINGERPRINTS, RENDERED_VIEWPORT, goTo, hydrated, rootCustomPropertyValue } from './harness';
 
 /**
  * The non-3D front door and the two skips, measured in a browser (Story 2-13).
@@ -62,14 +60,7 @@ const SETTLE_TIMEOUT = 15_000;
 const WIDE_VIEWPORT = { width: 1024, height: 800 } as const;
 
 /**
- * `__dirname` rather than `import.meta.url`: Playwright transpiles a spec to CommonJS and the
- * repository declares no `"type": "module"`, so `import.meta` is a syntax error at run time here.
- * Same as `tests/e2e/narrative.pw.ts:83` and `hit-target-floor.pw.ts:61`.
- */
-const REPO_ROOT = resolve(__dirname, '..', '..');
-
-/**
- * The gem's own fingerprint, read out of `ops/asset-budget.mjs` rather than restated.
+ * The gem's own fingerprint, from the table `ops/asset-budget.mjs` classifies with, never restated.
  *
  * `@react-three/postprocessing` is imported by `GemNarrative` and by nothing else in this
  * repository, so its mark in a fetched script is the gem's boundary and not the App Router
@@ -79,48 +70,24 @@ const REPO_ROOT = resolve(__dirname, '..', '..');
  * `/projects`, which carried `three-stdlib` the same way until Story 2-14 deleted that route on
  * 2026-09-07; it now prefetches a redirect until Story 2-15 repoints the chrome.
  *
- * Read as text rather than imported, for the reason DW-40 records: the tool is an ES module using
- * `import.meta`, which Playwright's CommonJS loader refuses. That entry books the third copy of
- * this parse, and this is it.
- *
- * **It throws on an empty result as well as on a missing table, and the difference matters.** A
- * parse that answered `[]` would make every payload case below pass by finding nothing anywhere, and
- * the standing case that checks the table is non-empty does not save them: Playwright runs the rest
- * of the file after a failing test, so one red case would sit beside eight green ones that measured
- * nothing. Throwing here fails the file at collection instead, which is the only place a broken
- * instrument can stop the measurements that use it.
+ * `FINGERPRINTS` comes from `tests/e2e/harness.ts`, which loads the table the tool loads (DW-49).
+ * **An empty selection throws, and the difference matters.** It would make every payload case below
+ * pass by finding nothing anywhere, and Playwright runs the rest of the file after a failing test, so
+ * a red case would sit beside eight green ones that measured nothing. Throwing here fails the file
+ * at collection, which is the only place a broken instrument can stop the measurements that use it.
  */
-const gemMarks = (): string[] => {
-  const source = readFileSync(join(REPO_ROOT, 'ops', 'asset-budget.mjs'), 'utf8');
-  const block = /export const FINGERPRINTS = \[([\s\S]*?)\n\];/.exec(source);
-  if (!block) {
-    throw new Error(
-      `ops/asset-budget.mjs no longer declares a FINGERPRINTS array this parse can find, so this ` +
-        `file has no table. Fix the parse against the tool, do not restate the table here.`
-    );
-  }
-
-  const marks = [
-    ...block[1].matchAll(
-      /\{\s*library:\s*'([^']+)',\s*mark:\s*'((?:[^'\\]|\\.)*)',\s*webgl:\s*(true|false)\s*\}/g
-    ),
-  ]
-    .filter((match) => match[3] === 'true' && match[1].includes('postprocessing'))
-    .map((match) => match[2].replace(/\\(.)/g, '$1'))
-    .filter((mark) => mark.length > 0);
-
+const GEM_MARKS = ((): string[] => {
+  const marks = FINGERPRINTS.filter((entry) => entry.webgl && entry.library.includes('postprocessing')).map(
+    (entry) => entry.mark
+  );
   if (marks.length === 0) {
     throw new Error(
-      `ops/asset-budget.mjs declares a FINGERPRINTS table with no WebGL-bearing ` +
-        `@react-three/postprocessing entry this parse could read, so every payload case in this ` +
-        `file would pass by classifying nothing. Fix the parse against the tool.`
+      `the fingerprint table has no WebGL-bearing postprocessing entry, so every payload case in this ` +
+        `file would pass by classifying nothing`
     );
   }
-
   return marks;
-};
-
-const GEM_MARKS = gemMarks();
+})();
 
 /** An init script that makes every WebGL context request answer `null`. */
 const NO_WEBGL = `
@@ -254,7 +221,8 @@ const ANSWERED_BEFORE_PAINT: readonly FrontDoor[] = [DEFAULT_PATH, ...NON_3D_PAT
  * Every option the project pins is restated here rather than inherited, because
  * `browser.newContext` does not inherit them: a context that silently defaulted to a different
  * width or motion preference would be measuring a different page. Same shape as
- * `tests/e2e/narrative.pw.ts:280-298` and `premise.pw.ts:90-108`.
+ * `withMotion` in `tests/e2e/narrative.pw.ts` and `atAWiderWidth` in `premise.pw.ts` (named rather
+ * than cited by line, which drifted, DW-105).
  */
 const onPath = async <T>(
   browser: Browser,
@@ -276,20 +244,6 @@ const onPath = async <T>(
   } finally {
     await context.close();
   }
-};
-
-/**
- * Navigate, refuse to read anything off a page that did not answer 200, and wait for the fonts.
- *
- * Not `networkidle`, for the reason `expectRouteScreenshot` in `tests/e2e/harness.ts` gives.
- */
-const goTo = async (page: Page, route: string = ROUTE): Promise<void> => {
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer 200`).toBe(200);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-  });
 };
 
 /**
@@ -360,7 +314,7 @@ const gemChunksOn = async (page: Page, request: APIRequestContext): Promise<stri
     if (response.request().resourceType() === 'script') scripts.add(response.url());
   });
 
-  await goTo(page);
+  await goTo(page, ROUTE);
   await settled(page);
 
   // Quiescence rather than a sleep: poll until the request set stops growing across two reads, so
@@ -393,16 +347,16 @@ const gemChunksOn = async (page: Page, request: APIRequestContext): Promise<stri
 
 test.describe('the fingerprint this file classifies with', () => {
   test('is read whole out of ops/asset-budget.mjs', () => {
-    // Every payload claim below rests on this mark. A parse that returned nothing would report a
-    // clean flat path and a clean default path alike, which is a scan that classifies nothing.
+    // Every payload claim below rests on this mark. A selection that returned nothing would report
+    // a clean flat path and a clean default path alike, which is a scan that classifies nothing.
     expect(
       GEM_MARKS.length,
-      'no @react-three/postprocessing fingerprint was parsed out of ops/asset-budget.mjs, so every ' +
+      'the table ops/asset-budget.mjs loads has no postprocessing fingerprint, so every ' +
         'payload case in this file would pass by finding nothing anywhere'
     ).toBeGreaterThan(0);
     expect(
       GEM_MARKS.every((mark) => mark.length > 0),
-      'a fingerprint parsed to an empty mark, which matches every position in every chunk'
+      'a fingerprint carries an empty mark, which matches every position in every chunk'
     ).toBe(true);
   });
 });
@@ -418,7 +372,7 @@ test.describe('the non-3D front door', () => {
       // the same on all four, because `EXPERIENCE.md:172-178` closes Q7 with one artefact rather
       // than two: there is one non-3D front door, whichever trigger opened it.
       const hero = await onPath(browser, door, async (page) => {
-        await goTo(page);
+        await goTo(page, ROUTE);
         await settled(page);
         return heroOn(page);
       });
@@ -447,7 +401,7 @@ test.describe('the non-3D front door', () => {
     // the same five reads, on the same build, on the path that does mount a canvas and does render
     // a control. Without it, a hero that had stopped rendering entirely would pass every case above.
     const hero = await onPath(browser, DEFAULT_PATH, async (page) => {
-      await goTo(page);
+      await goTo(page, ROUTE);
       await settled(page);
       await expect(page.locator('#gem-canvas canvas')).toBeVisible({ timeout: SETTLE_TIMEOUT });
       return heroOn(page);
@@ -610,7 +564,7 @@ test.describe('the fold on the non-3D path', () => {
         browser,
         doorNamed('reduced-motion'),
         async (page) => {
-          await goTo(page);
+          await goTo(page, ROUTE);
           await settled(page);
           return foldOn(page);
         },
@@ -621,7 +575,7 @@ test.describe('the fold on the non-3D path', () => {
         browser,
         DEFAULT_PATH,
         async (page) => {
-          await goTo(page);
+          await goTo(page, ROUTE);
           await settled(page);
           return foldOn(page);
         },
@@ -675,7 +629,7 @@ test.describe('the fold on the non-3D path', () => {
     // Directory is in the same document, below the hero, and that scrolling to it needs no click:
     // no route change, no expander, and no skip control, which is the default path's affordance.
     await onPath(browser, doorNamed('reduced-motion'), async (page) => {
-      await goTo(page);
+      await goTo(page, ROUTE);
       await settled(page);
       const before = page.url();
 
@@ -732,11 +686,7 @@ const servedHeroHeight = async (
         await route.abort();
       });
 
-      const response = await page.goto(ROUTE, { waitUntil: 'load' });
-      expect(response?.status(), 'the home route did not answer 200 with hydration blocked').toBe(200);
-      await page.evaluate(async () => {
-        await document.fonts.ready;
-      });
+      await goTo(page, ROUTE);
 
       expect(
         aborted.length,
@@ -813,7 +763,7 @@ const settledHeroHeight = (
     browser,
     door,
     async (page) => {
-      await goTo(page);
+      await goTo(page, ROUTE);
       await settled(page);
       const box = await page.locator('.home-container').boundingBox();
       expect(box, 'the settled page renders no .home-container at all').not.toBeNull();
@@ -937,7 +887,7 @@ const heightsOn = (
     browser,
     { ...door, inits: [HEIGHT_SAMPLER, ...door.inits] },
     async (page) => {
-      await goTo(page);
+      await goTo(page, ROUTE);
       await settled(page);
 
       // Several more frames than the resolution needs, so the sample after the decision is in the
@@ -1235,7 +1185,7 @@ test.describe('the skip control is never under a panel', () => {
         browser,
         DEFAULT_PATH,
         async (page) => {
-          await goTo(page);
+          await goTo(page, ROUTE);
           await settled(page);
           return skipControlAgainstPanels(page);
         },
@@ -1288,7 +1238,7 @@ test.describe('the hero below 768 on the default front door', () => {
       browser,
       DEFAULT_PATH,
       async (page) => {
-        await goTo(page);
+        await goTo(page, ROUTE);
         await settled(page);
         return stackedHero(page);
       },
@@ -1374,7 +1324,7 @@ test.describe('the hero holds its corners without the readout panel', () => {
         browser,
         DEFAULT_PATH,
         async (page) => {
-          await goTo(page);
+          await goTo(page, ROUTE);
           await settled(page);
           const clean = await cornerRead(page);
           await page.evaluate(() => {
@@ -1428,7 +1378,7 @@ test.describe('the skip control', () => {
         browser,
         DEFAULT_PATH,
         async (page) => {
-          await goTo(page);
+          await goTo(page, ROUTE);
           await settled(page);
 
           const floor = await floorFrom(page);
@@ -1508,7 +1458,7 @@ test.describe('the skip control', () => {
     // element, shrunk below the floor. Without it a `boundingBox` that answered the viewport would
     // pass the case above for the wrong reason.
     await onPath(browser, DEFAULT_PATH, async (page) => {
-      await goTo(page);
+      await goTo(page, ROUTE);
       await settled(page);
       const floor = await floorFrom(page);
 
@@ -1536,7 +1486,7 @@ test.describe('the skip control', () => {
     // what they just asked to skip to. Same shape as `suite-directory.pw.ts:317-328`, on a click
     // rather than on hash arrival.
     await onPath(browser, DEFAULT_PATH, async (page) => {
-      await goTo(page);
+      await goTo(page, ROUTE);
       await settled(page);
 
       const before = await page.evaluate(() => document.activeElement?.id ?? '(none)');
@@ -1594,7 +1544,7 @@ test.describe('the A-6 skip-link', () => {
       // creates one. It is asserted on both front doors because it belongs to the document rather
       // than to either path.
       await onPath(browser, door, async (page) => {
-        await goTo(page);
+        await goTo(page, ROUTE);
         await settled(page);
         const floor = await floorFrom(page);
 
@@ -1649,7 +1599,7 @@ test.describe('the A-6 skip-link', () => {
       // resolving, would leave a keyboard reader exactly where they were, having pressed the
       // control that exists to move them, with every assertion above still green.
       await onPath(browser, door, async (page) => {
-        await goTo(page);
+        await goTo(page, ROUTE);
         await settled(page);
 
         await page.keyboard.press('Tab');
@@ -1673,7 +1623,7 @@ test.describe('the A-6 skip-link', () => {
     // in front of it, which is exactly the regression the case above exists to catch: a header, a
     // banner or a live region rendered ahead of the link.
     await onPath(browser, DEFAULT_PATH, async (page) => {
-      await goTo(page);
+      await goTo(page, ROUTE);
       await settled(page);
 
       await page.evaluate(() => {
@@ -1713,7 +1663,7 @@ test.describe('the stylesheet and the hook agree about reduced motion', () => {
     // So both directions are read on the same page. The script rendered neither element, and the
     // stylesheet would have hidden either if it had.
     await onPath(browser, doorNamed('reduced-motion'), async (page) => {
-      await goTo(page);
+      await goTo(page, ROUTE);
       await settled(page);
 
       const rendered = await page.evaluate(() =>
@@ -1761,7 +1711,7 @@ test.describe('the narrative canvas', () => {
     // element rather than on the source, because `@react-three/fiber` spreads unknown props onto
     // its own wrapper and what matters is what the browser ends up with.
     await onPath(browser, DEFAULT_PATH, async (page) => {
-      await goTo(page);
+      await goTo(page, ROUTE);
       await settled(page);
       await expect(page.locator('#gem-canvas canvas')).toBeVisible({ timeout: SETTLE_TIMEOUT });
       // **The canvas's own two attributes are written when the renderer is created**, a moment after
@@ -1920,7 +1870,7 @@ test.describe('the hero links wait for their turn in the entrance (DW-106, DW-12
       browser,
       { ...DEFAULT_PATH, inits: [HOLD_ENTRANCE] },
       async (page) => {
-        await goTo(page);
+        await goTo(page, ROUTE);
         await settled(page);
 
         const held = await heroLinkState(page);
@@ -1994,7 +1944,7 @@ test.describe('the hero links wait for their turn in the entrance (DW-106, DW-12
       browser,
       { ...DEFAULT_PATH, inits: [RECORD_INERT] },
       async (page) => {
-        await goTo(page);
+        await goTo(page, ROUTE);
         await settled(page);
         await expect
           .poll(async () => (await heroLinkState(page)).filter((link) => link.inert || link.opacity !== '1').map((link) => link.name), {
@@ -2018,7 +1968,7 @@ test.describe('the hero links wait for their turn in the entrance (DW-106, DW-12
         browser,
         { ...doorNamed(id), inits: [RECORD_INERT, HOLD_ENTRANCE] },
         async (page) => {
-          await goTo(page);
+          await goTo(page, ROUTE);
           await settled(page);
           expect(await everInert(page), `a link was made inert on the ${id} door`).toEqual([]);
           expect(

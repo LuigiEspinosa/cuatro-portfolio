@@ -2,7 +2,7 @@ import { test, expect, type Locator, type Page } from '@playwright/test';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
+import { RENDERED_VIEWPORT, goTo, probeComputed, rootCustomPropertyValue } from './harness';
 
 /**
  * The Hub's focus standard, DOM-order traversal, depth tells, z-levels, type floor, headings and
@@ -58,11 +58,12 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  * `contracts/tokens.css`. The agreement suite scans this file for a hand-written threshold the
  * way `ops/__tests__/hit-target-floor.test.ts` scans for a hand-written floor.
  *
- * **Copied, not imported.** `routesOnDisk`, `INTERACTIVE`, the visibility rule, `settle`,
- * `tabTo` and `probeComputed` are the shapes `tests/e2e/hit-target-floor.pw.ts`, `cv.pw.ts` and
+ * **Copied, not imported.** `routesOnDisk`, `INTERACTIVE`, the visibility rule, `settle` and
+ * `tabTo` are the shapes `tests/e2e/hit-target-floor.pw.ts`, `cv.pw.ts` and
  * `secondary-surfaces.pw.ts` already carry. A `.pw.ts` imported by another registers its tests
  * twice, and `ops/__tests__/hit-target-floor.test.ts` pins `routesOnDisk` in that spec's own
- * text, so each spec keeps its own copy.
+ * text, so each spec keeps its own copy. `goTo` and `probeComputed` come from
+ * `tests/e2e/harness.ts` since Story 9-12.
  *
  * **No screenshot is taken.** `tests/e2e/rendered-output.pw.ts` pins one committed PNG, and this
  * file writes no snapshot directory.
@@ -256,7 +257,7 @@ const SIZE_SLACK = 0.01;
 // Navigation, settling, and the route set
 // ---------------------------------------------------------------------------
 
-/** The two in-page helpers every `evaluate` below reads, installed once per page by `goTo`. */
+/** The two in-page helpers every `evaluate` below reads, installed once per page by `goToArmed`. */
 declare global {
   interface Window {
     cuatroA11y: {
@@ -270,8 +271,8 @@ declare global {
 
 const armed = new WeakSet<Page>();
 
-/** Navigate, with the in-page helpers installed, and refuse to read anything off a page that did not answer the status expected. */
-const goTo = async (page: Page, route: string, expected = 200): Promise<void> => {
+/** Navigate through the harness's `goTo`, with the in-page helpers installed first. */
+const goToArmed = async (page: Page, route: string, expected = 200): Promise<void> => {
   if (!armed.has(page)) {
     armed.add(page);
     await page.addInitScript(() => {
@@ -307,9 +308,7 @@ const goTo = async (page: Page, route: string, expected = 200): Promise<void> =>
       };
     });
   }
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer ${expected}`).toBe(expected);
+  await goTo(page, route, expected);
 };
 
 /**
@@ -392,24 +391,6 @@ const settle = async (page: Page, surface: Surface): Promise<void> => {
     );
   }
 };
-
-/**
- * The computed value of one property, resolved by laying out a probe. Same shape as
- * `tests/e2e/cv.pw.ts:101-112`: a custom property's computed value is its declared token stream,
- * so a threshold is read as what it resolves to, never parsed.
- */
-const probeComputed = (page: Page, declaration: string, property: string): Promise<string> =>
-  page.evaluate(
-    ([css, name]) => {
-      const probe = document.createElement('div');
-      probe.setAttribute('style', `position:absolute;left:-99999px;top:0;width:1px;height:1px;${css}`);
-      document.body.append(probe);
-      const read = window.getComputedStyle(probe).getPropertyValue(name);
-      probe.remove();
-      return read;
-    },
-    [declaration, property] as const
-  );
 
 /** A pixel length off a probe, refused when it is not one. */
 const pxOf = (value: string, what: string): number => {
@@ -1179,7 +1160,7 @@ test.describe('the accessibility floor', () => {
     let buttonsClicked = 0;
 
     for (const surface of SURFACES) {
-      await goTo(page, surface.route, surface.status);
+      await goToArmed(page, surface.route, surface.status);
       await settle(page, surface);
       expect(page.viewportSize(), `${surface.route} was not measured at the pinned viewport`).toEqual({ ...RENDERED_VIEWPORT });
 
@@ -1348,7 +1329,7 @@ test.describe('the accessibility floor', () => {
     const planted: string[] = [];
     for (const token of GROUND_TOKENS) {
       if (groundsRead.has(token)) continue;
-      await goTo(page, NOT_FOUND, 404);
+      await goToArmed(page, NOT_FOUND, 404);
       await settle(page, { route: NOT_FOUND, status: 404, entrance: false });
       const contract = await ringContract(page);
       await page.evaluate((ground) => {
@@ -1410,7 +1391,7 @@ test.describe('the accessibility floor', () => {
     const found: string[] = [];
     const readings: string[] = [];
     for (const surface of SURFACES) {
-      await goTo(page, surface.route, surface.status);
+      await goToArmed(page, surface.route, surface.status);
       await settle(page, surface);
       const landmarks = await page.locator('main').evaluateAll((nodes: Element[]) => nodes.map((node) => `main#${node.id} tabindex=${node.getAttribute('tabindex')}`));
       if (landmarks.join(', ') !== 'main#main tabindex=-1') found.push(`${surface.route} carries [${landmarks.join(', ')}], not one main#main at tabindex -1`);
@@ -1443,7 +1424,7 @@ test.describe('the accessibility floor', () => {
 
     // **The control**, on `/work`: the standard offset put back on the landmark is named twice, as the
     // offset and as the sides the document's edge takes, which is F-20 as it was.
-    await goTo(page, '/work');
+    await goToArmed(page, '/work');
     await page.keyboard.press('Tab');
     await page.keyboard.press('Enter');
     await expect.poll(() => page.evaluate(() => document.activeElement?.id ?? '')).toBe('main');
@@ -1458,7 +1439,7 @@ test.describe('the accessibility floor', () => {
     const context = await browser.newContext({ viewport: { ...RENDERED_VIEWPORT }, deviceScaleFactor: 1, colorScheme: 'light', reducedMotion: 'no-preference' });
     try {
       const door = await context.newPage();
-      await goTo(door, '/');
+      await goToArmed(door, '/');
       await expect.poll(() => door.evaluate(() => document.querySelector('.skip-control') !== null), { timeout: 20_000 }).toBe(true);
       const doorContract = await ringContract(door);
       expect(await tabTo(door, door.locator('.skip-control'), 10), 'the skip control is not among the first ten Tab stops on the animated door').toBe(true);
@@ -1488,7 +1469,7 @@ test.describe('the accessibility floor', () => {
     });
     try {
       const page = await context.newPage();
-      await goTo(page, '/');
+      await goToArmed(page, '/');
       await expect
         .poll(() => page.evaluate(() => document.querySelector('.skip-control') !== null), {
           timeout: 20_000,
@@ -1520,7 +1501,7 @@ test.describe('the accessibility floor', () => {
     const unclaimed: string[] = [];
     const readings: string[] = [];
     for (const surface of SURFACES) {
-      await goTo(page, surface.route, surface.status);
+      await goToArmed(page, surface.route, surface.status);
       await settle(page, surface);
       const headings = await levelOneHeadings(page);
       readings.push(`${surface.route}: ${headings.length} [${headings.join(' | ')}]`);
@@ -1535,7 +1516,7 @@ test.describe('the accessibility floor', () => {
     expect(drift, `A-7: a route does not carry exactly one accessible level-1 heading:\n${drift.join('\n')}`).toEqual([]);
 
     // A second level-1 heading planted on `/cv` is seen, so a count of one is a measurement.
-    await goTo(page, '/cv');
+    await goToArmed(page, '/cv');
     await page.evaluate(() => {
       const planted = document.createElement('div');
       planted.setAttribute('role', 'heading');
@@ -1613,7 +1594,7 @@ test.describe('the accessibility floor', () => {
     let floor: TypeFloor | null = null;
 
     for (const surface of SURFACES) {
-      await goTo(page, surface.route, surface.status);
+      await goToArmed(page, surface.route, surface.status);
       await settle(page, surface);
       const routeFloor = await typeFloor(page);
       if (floor === null) floor = routeFloor;
@@ -1705,7 +1686,7 @@ test.describe('the accessibility floor', () => {
   // -------------------------------------------------------------------------
 
   test('with the ring taken off, the sweep names every element on the route with the five values', async ({ page }) => {
-    await goTo(page, NOT_FOUND, 404);
+    await goToArmed(page, NOT_FOUND, 404);
     await settle(page, { route: NOT_FOUND, status: 404, entrance: false });
     const contract = await ringContract(page);
     await page.addStyleTag({ content: ':focus-visible { outline: none !important; transition: color 1ms, outline 200ms !important; }' });
@@ -1738,7 +1719,7 @@ test.describe('the accessibility floor', () => {
   });
 
   test('a ring clipped by a clip-path ancestor and by the document edge is named, side by side', async ({ page }) => {
-    await goTo(page, NOT_FOUND, 404);
+    await goToArmed(page, NOT_FOUND, 404);
     await settle(page, { route: NOT_FOUND, status: 404, entrance: false });
     await page.evaluate(() => {
       const wrap = document.createElement('div');
@@ -1786,7 +1767,7 @@ test.describe('the accessibility floor', () => {
   });
 
   test('a planted positive tabindex, an aria-hidden focusable and an untagged landing fail the traversal, naming each', async ({ page }) => {
-    await goTo(page, NOT_FOUND, 404);
+    await goToArmed(page, NOT_FOUND, 404);
     await settle(page, { route: NOT_FOUND, status: 404, entrance: false });
     await page.evaluate(() => {
       const planted = document.createElement('a');
@@ -1917,7 +1898,7 @@ test.describe('the accessibility floor', () => {
   });
 
   test('a planted text under the floor, an italic, a synthesised weight and a small pseudo-element are named by the type sweep', async ({ page }) => {
-    await goTo(page, NOT_FOUND, 404);
+    await goToArmed(page, NOT_FOUND, 404);
     await settle(page, { route: NOT_FOUND, status: 404, entrance: false });
     const floor = await typeFloor(page);
     const fontsCss = readFileSync(FONTS_CSS, 'utf8');
@@ -2085,7 +2066,7 @@ test.describe('the scrim over the home canvas', () => {
     });
     try {
       const page = await context.newPage();
-      await goTo(page, '/');
+      await goToArmed(page, '/');
       await expect
         .poll(() => page.evaluate(() => document.querySelector('.home-gem .scanline-overlay') !== null), {
           timeout: 20_000,
@@ -2281,7 +2262,7 @@ test.describe('the muted-accent ornaments are generated content (DW-113)', () =>
     const found: string[] = [];
     const counted: string[] = [];
     for (const route of [...new Set(ORNAMENTS.map((ornament) => ornament.route))]) {
-      await goTo(page, route);
+      await goToArmed(page, route);
       await settle(page, { route, status: 200, entrance: route === '/' });
       for (const { selector } of ORNAMENTS.filter((ornament) => ornament.route === route)) {
         const reads = await ornamentReads(page, selector);
@@ -2296,7 +2277,7 @@ test.describe('the muted-accent ornaments are generated content (DW-113)', () =>
 
   test('and that read fires on an ornament set as text, painting nothing, or exposed', async ({ page }) => {
     // The controls, planted into the real elements: the same judgement has to name each.
-    await goTo(page, '/');
+    await goToArmed(page, '/');
     await settle(page, { route: '/', status: 200, entrance: true });
     await page.evaluate(() => {
       const role = document.querySelector('.home-role__jp');
@@ -2367,7 +2348,7 @@ test.describe('the landmark ring is painted above the hero (DW-127)', () => {
       });
       try {
         const page = await context.newPage();
-        await goTo(page, route);
+        await goToArmed(page, route);
         const surface = { route, status: 200, entrance: route === '/' };
         if (route === '/' && width >= 768) {
           await expect

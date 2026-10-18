@@ -1,0 +1,9 @@
+[
+  { "library": "three", "mark": "WebGLRenderer", "webgl": true },
+  { "library": "@react-three/fiber", "mark": "react-three-fiber", "webgl": true },
+  { "library": "@react-three/drei", "mark": "onIncline", "webgl": true },
+  { "library": "@react-three/postprocessing", "mark": "@react-three/postprocessing", "webgl": true },
+  { "library": "postprocessing", "mark": "KawaseBlurPass", "webgl": true },
+  { "library": "gsap", "mark": "GSAP target ", "webgl": false },
+  { "library": "gsap/ScrollTrigger", "mark": "scrollerProxy", "webgl": false }
+]

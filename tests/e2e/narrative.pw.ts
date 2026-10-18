@@ -1,7 +1,7 @@
 import { test, expect, type APIRequestContext, type Browser, type Page } from '@playwright/test';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { extname, join, resolve } from 'node:path';
-import { RENDERED_VIEWPORT } from './harness';
+import { FINGERPRINTS, RENDERED_VIEWPORT, goTo } from './harness';
 
 /**
  * The narrative behind one dynamic boundary, measured on what the browser fetches (Story 2-12).
@@ -24,12 +24,12 @@ import { RENDERED_VIEWPORT } from './harness';
  * worse defect than the one it fixes, so `the narrative still runs` looks for a real `<canvas>` in a
  * real browser, with the WebGL-less path as its discriminating control.
  *
- * **The fingerprints are read out of `ops/asset-budget.mjs`, never restated.** That file publishes
- * the table and `ops/__tests__/asset-budget.test.ts:780-797` pins it as literals. A second copy here
- * would drift from the record whose figures it is supposed to corroborate. It is read as text rather
- * than imported because Playwright transpiles a spec to CommonJS and the tool is an ES module using
- * `import.meta`, which that loader refuses; the parse is guarded by its own case below and by the
- * discrimination control, either of which fails loudly if the table arrives empty or half read.
+ * **The fingerprints are the table `ops/asset-budget.mjs` classifies with, never restated.** That
+ * table lives in `ops/asset-budget-fingerprints.json`, which the tool and `tests/e2e/harness.ts` both
+ * load (Story 9-12, DW-40), and `ops/__tests__/asset-budget.test.ts` pins it as literals. A second copy
+ * here would drift from the record whose figures it is supposed to corroborate. The harness refuses
+ * an empty table or an empty mark at load, and the discrimination control below fails loudly if the
+ * scan stops classifying.
  * Chunk file names are content hashes and are never matched: a test naming one measures a single
  * build and silently passes on the next.
  *
@@ -94,48 +94,6 @@ const REPO_ROOT = resolve(__dirname, '..', '..');
 /** The Hub's own tree, since Story 3-2, where its sources are. */
 const HUB_ROOT = join(REPO_ROOT, 'apps', 'hub');
 
-/** The tool that publishes the fingerprint table, and the one place it is written down. */
-const BUDGET_TOOL = join(REPO_ROOT, 'ops', 'asset-budget.mjs');
-
-interface Fingerprint {
-  library: string;
-  mark: string;
-  webgl: boolean;
-}
-
-/**
- * The `FINGERPRINTS` table, read out of `ops/asset-budget.mjs`.
- *
- * Two counts are taken, the entries this parse produced and the entries the block actually
- * declares, and `the fingerprint table is read whole` below holds them equal. A regex that matched
- * six of ten rows would otherwise narrow the scan silently, and a narrower scan is exactly a scan
- * that reports a clean document.
- */
-const readFingerprints = (): { entries: Fingerprint[]; declared: number } => {
-  const source = readFileSync(BUDGET_TOOL, 'utf8');
-  const block = /export const FINGERPRINTS = \[([\s\S]*?)\n\];/.exec(source);
-  if (!block) {
-    throw new Error(
-      `ops/asset-budget.mjs no longer declares a FINGERPRINTS array this parse can find, so the ` +
-        `narrative scan has no table. Fix the parse against the tool, do not restate the table here.`
-    );
-  }
-
-  const entries = [
-    ...block[1].matchAll(
-      /\{\s*library:\s*'([^']+)',\s*mark:\s*'((?:[^'\\]|\\.)*)',\s*webgl:\s*(true|false)\s*\}/g
-    ),
-  ].map((match) => ({
-    library: match[1],
-    mark: match[2].replace(/\\(.)/g, '$1'),
-    webgl: match[3] === 'true',
-  }));
-
-  return { entries, declared: (block[1].match(/\blibrary:/g) ?? []).length };
-};
-
-const { entries: FINGERPRINTS, declared: FINGERPRINTS_DECLARED } = readFingerprints();
-
 /** The marks that make a chunk the narrative rather than merely a narrative-adjacent library. */
 const WEBGL_MARKS = FINGERPRINTS.filter((entry) => entry.webgl);
 
@@ -182,17 +140,6 @@ const documentScriptUrls = (html: string, base: string): string[] => {
   return [...hrefs]
     .map((href) => new URL(href, base).href)
     .filter((url) => SCRIPT_EXTENSIONS.includes(extname(new URL(url).pathname)));
-};
-
-const goTo = async (page: Page, route: string): Promise<void> => {
-  // Not `networkidle`, for the reason `expectRouteScreenshot` in `tests/e2e/harness.ts` gives. That
-  // matters more than usual on a route whose whole subject is loading.
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer 200`).toBe(200);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-  });
 };
 
 /**
@@ -314,22 +261,16 @@ const withMotion = async <T>(
 test.describe('the narrative is not in what the browser fetches before it can paint', () => {
   test('the fingerprint table is read whole out of ops/asset-budget.mjs', async () => {
     // The instrument before the measurement. Every case in this file classifies a script with this
-    // table, so a parse that dropped rows would narrow the scan and report a clean document for the
-    // wrong reason. Held against the tool's own declaration count rather than against a literal:
-    // a literal here would be the second copy of the table this file exists to avoid.
-    expect(
-      FINGERPRINTS.length,
-      `the FINGERPRINTS parse produced ${FINGERPRINTS.length} entries against ${FINGERPRINTS_DECLARED} ` +
-        `declared in ops/asset-budget.mjs`
-    ).toBe(FINGERPRINTS_DECLARED);
-    expect(FINGERPRINTS_DECLARED, 'ops/asset-budget.mjs declares no fingerprint at all').toBeGreaterThan(0);
+    // table. Since Story 9-12 it is the same JSON the tool loads (`tests/e2e/harness.ts`), so no
+    // parse can drop rows; what is left to hold is that it arrived with something to classify by.
+    expect(FINGERPRINTS.length, 'the table ops/asset-budget.mjs loads holds no fingerprint at all').toBeGreaterThan(0);
     expect(
       WEBGL_MARKS.length,
       'the table carries no WebGL-bearing fingerprint, so this file classifies nothing'
     ).toBeGreaterThan(0);
     expect(
       FINGERPRINTS.every((entry) => entry.mark.length > 0),
-      'a fingerprint parsed to an empty mark, which matches every position in every chunk'
+      'a fingerprint carries an empty mark, which matches every position in every chunk'
     ).toBe(true);
   });
 
@@ -1007,11 +948,7 @@ test.describe('the page is whole with the narrative blocked', () => {
 
       const ledger = await blockNarrative(page, request);
 
-      const response = await page.goto(`${ROUTE}#${HEADING_ID}`, { waitUntil: 'load' });
-      expect(response?.status(), 'the home route did not answer 200').toBe(200);
-      await page.evaluate(async () => {
-        await document.fonts.ready;
-      });
+      await goTo(page, `${ROUTE}#${HEADING_ID}`);
 
       await expectCleanBlock(ledger);
       console.log(`narrative: aborted ${ledger.aborted.length} narrative request(s): ${ledger.aborted.join(', ')}`);
@@ -1790,9 +1727,7 @@ test.describe("FR-1's three consequences", () => {
 
   for (const route of NAVIGABLE_ROUTES) {
     test(`${route} still renders after the boundary move`, async ({ page }) => {
-      const response = await page.goto(route, { waitUntil: 'load' });
-      expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-      expect(response?.status(), `${route} answered ${response?.status()}`).toBe(route === NOT_FOUND ? 404 : 200);
+      await goTo(page, route, route === NOT_FOUND ? 404 : 200);
 
       // A 200 with an empty document is not a rendering. The Hub's chrome is what every one of
       // these surfaces has in common.

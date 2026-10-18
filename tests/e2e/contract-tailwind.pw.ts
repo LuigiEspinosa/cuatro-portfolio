@@ -13,7 +13,7 @@ import {
 } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
-import { RENDERED_VIEWPORT, computedStyleValue } from './harness';
+import { RENDERED_VIEWPORT, computedStyleValue, goTo } from './harness';
 
 /**
  * The Tailwind adapter, verified where it is actually consumed (Story 1-13).
@@ -473,9 +473,7 @@ test('every mapping in theme-map.json mints a utility that resolves to the same 
     ).toContain(`var(${extra.token})`);
   }
 
-  const response = await page.goto(`${origin}/`, { waitUntil: 'load' });
-  expect(response?.status(), 'the fixture page did not answer 200').toBe(200);
-  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  await goTo(page, `${origin}/`);
 
   const pairs = await readPairs(page, probes);
   const report: string[] = [];
@@ -531,9 +529,7 @@ test('the same fixture with no @theme block binds not one utility to the contrac
     ).not.toContain(`var(${probe.token})`);
   }
 
-  const response = await page.goto(`${origin}/no-theme.html`, { waitUntil: 'load' });
-  expect(response?.status()).toBe(200);
-  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  await goTo(page, `${origin}/no-theme.html`);
 
   // Read in the browser as well as in the text, on the colour rows, because
   // `background-color` has an unambiguous unset value and a token colour can
@@ -554,9 +550,7 @@ test('the same fixture with no @theme block binds not one utility to the contrac
 test('every face the adapter pulls in answers 200 and is available to the document', async ({ page }) => {
   const statuses = woff2Statuses(page);
 
-  const response = await page.goto(`${origin}/`, { waitUntil: 'load' });
-  expect(response?.status()).toBe(200);
-  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  await goTo(page, `${origin}/`);
 
   for (const face of FACES.faces) {
     const url = `${origin}/${VENDORED_AT.join('/')}/fonts/${face.file}`;
@@ -582,9 +576,7 @@ test('every face the adapter pulls in answers 200 and is available to the docume
 test('the identical build placed outside the vendored folder cannot resolve a single face', async ({ page }) => {
   const statuses = woff2Statuses(page);
 
-  const response = await page.goto(`${origin}/misplaced.html`, { waitUntil: 'load' });
-  expect(response?.status()).toBe(200);
-  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  await goTo(page, `${origin}/misplaced.html`);
 
   // The rule in `ops/tailwind-adapter.md` is an observation, and this is the
   // observation: the pinned CLI copies `./fonts/...` out of `fonts.css` through

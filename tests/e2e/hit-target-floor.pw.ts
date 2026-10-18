@@ -1,7 +1,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
+import { EDGE_SLACK, NOT_FOUND, RENDERED_VIEWPORT, SURFACES, goTo, rootCustomPropertyValue } from './harness';
 
 /**
  * The AD-19 hit-target floor, measured in a real browser (Story 2-8).
@@ -73,81 +73,6 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
 const REPO_ROOT = resolve(__dirname, '..', '..');
 /** The Hub's own tree, since Story 3-2, where its routes are. */
 const HUB_ROOT = join(REPO_ROOT, 'apps', 'hub');
-
-/**
- * A path the Hub does not route, which renders `app/not-found.tsx` through the root layout.
- *
- * It stands in for that file in the derived route set below: `not-found.tsx` has no URL of its
- * own, and any unrouted path reaches it.
- */
-const NOT_FOUND = '/a-route-that-does-not-exist';
-
-/**
- * Every surface that renders Hub markup, what each is expected to yield, and whether it carries
- * an animated entrance the measurement has to settle.
- *
- * **The three counts are pinned rather than bounded**, and they are the same numbers
- * `ops/hit-target-floor.md` publishes under "The surfaces swept"; the two are held equal by
- * `ops/__tests__/hit-target-floor.test.ts`. A bounded "at least one" guard would let a third
- * chrome link, or a control that stopped rendering, pass without a number moving. A story that
- * changes what a surface renders moves the number here, in the record, and nowhere else.
- *
- * `measured: 0` on `/celeste` is a measurement rather than an omission: `celeste.scss:8-10` sets
- * `display: none` on the header, so all four of its candidates are removed by the visibility
- * rule and none is left to measure.
- *
- * **`/` moved from 16 to 17 with Story 2-13, and only by one.** That story adds two controls and
- * this sweep can see exactly one of them. The A-6 skip-link renders on every path, positioned
- * above the viewport rather than clipped, so it is a real box this floor measures and passes. The
- * skip control renders on the default path only, and this project runs `reducedMotion: 'reduce'`
- * (`playwright.config.ts:79`), which is the non-3D path where it does not render at all:
- * `tests/e2e/front-door.pw.ts` measures that one, on a `no-preference` context, because nothing
- * here can.
- *
- * **`/projects` left this table with Story 2-14 and belongs in neither list.** That story replaced
- * the page with a 301 to `/#suite`, so `app/projects/page.tsx` is off disk and the walk below
- * would report the route as `phantom` if it were left here. It is not a `NON_HUB_ROUTE` either:
- * that list is for routes that answer something other than Hub markup, and this one lands on `/`,
- * which the case at the end of this file would reject for answering `text/html`. Playwright
- * follows redirects, so a row left in `SURFACES` would have gone green while measuring `/` twice.
- * The redirect itself is asserted in `tests/e2e/projects-redirect.pw.ts`.
- *
- * **The three surfaces that carry chrome each fell by four with Story 2-15**, on 2026-09-08. That
- * story replaced the header's five inline links plus a `mailto:`, six anchors in all, with two, so
- * `/work` went from 11 to 7,
- * `/celeste` from 7 to 3 and the 404 from 8 to 4. `/` did not move: `Header.tsx:48` renders no
- * header there, and the homepage panel's second link was repointed rather than removed.
- *
- * **`/cv` became a surface on 2026-09-10.** Story 2-16 removed the 308 that answered it and built
- * the page, so the route left `NON_HUB_ROUTES` below and arrived here. It carries `/work`'s seven,
- * the same chrome and the same four accordion triggers, plus the intro block's two links, which is
- * nine. `PlateMark` adds none: nothing in it is interactive, by its own docblock.
- *
- * **`/` and the 404 each moved by one with Story 2-17**, on 2026-09-11. The footer gained its one
- * link, to `/celeste`, so `/` went from 17 to 18; the 404's single back link became the header's
- * two destinations, so that surface went from 4 to 5. Both readings were taken off this sweep's
- * own failure output in the pinned container before the pins were moved. `/celeste` did not move:
- * it renders no footer and gained no exit, which `tests/e2e/secondary-surfaces.pw.ts` asserts.
- *
- * **Every surface with a header moved by one on 2026-09-24** (Operator ruling, DW-43). The skip link
- * moved into `Header` as the band's first child, so `/work` went from 7 to 8, `/cv` from 9 to 10 and
- * the 404 from 5 to 6, each new element parked above the viewport with a real box this floor measures
- * and passes; `/celeste` from 3 found and 3 skipped to 4 and 4, the link hidden with its band. `/` did
- * not move: it renders the same one link, from `Header` now rather than from `app/page.tsx`. Read off
- * this sweep's own failure output in the pinned container before the pins were moved.
- *
- * **`/` moved by four on 2026-09-26** (Operator ruling 2026-09-25). Registry 1.5.0 listed `covidmap`
- * and `future-vizion` as `Live`, two more rows each drawing a live link and a Source link, so `/` went
- * from 17 to 21. Read off this sweep's own failure output in the pinned container before the pin
- * moved; the other four surfaces did not move.
- */
-const SURFACES = [
-  { route: '/', status: 200, entrance: true, found: 22, skipped: 0, measured: 22 },
-  { route: '/work', status: 200, entrance: false, found: 8, skipped: 0, measured: 8 },
-  { route: '/cv', status: 200, entrance: false, found: 10, skipped: 0, measured: 10 },
-  { route: '/celeste', status: 200, entrance: false, found: 4, skipped: 4, measured: 0 },
-  { route: NOT_FOUND, status: 404, entrance: false, found: 6, skipped: 0, measured: 6 },
-] as const;
 
 /**
  * The routes the Hub serves that render no Hub markup at all.
@@ -325,15 +250,6 @@ const PLANTED_ROW: Exemption = {
 };
 
 /**
- * Sub-pixel slack on the edge comparison alone, never on the floor.
- *
- * Layout produces fractional positions and a target that ends a third of a pixel outside the
- * viewport is a rounding artifact rather than horizontal scroll. The floor takes no slack: a box
- * measured under `--tap` is under it.
- */
-const EDGE_SLACK = 0.5;
-
-/**
  * A-5 over every element, not only the interactive ones (Story 2-33, KV-5's retirement, DW-116).
  *
  * Every element with a box whose edge sits past either side of the viewport, by the predicate KV-5
@@ -408,20 +324,6 @@ interface Verdict {
   /** Per row and route, so half-stale rows are visible. */
   readonly hits: Map<PairKey, Tally>;
 }
-
-/**
- * Navigate, and refuse to read anything off a page that did not answer the status expected.
- *
- * Local rather than shared, on the idiom `tests/e2e/anchor-aliases.pw.ts:481-485` and
- * `tests/e2e/celeste-header.pw.ts:36-40` already set. DW-22 records that this guard now has
- * several implementations and that hoisting it into `harness.ts` is its own change; this is not
- * the story that makes it.
- */
-const goTo = async (page: Page, route: string, expected = 200): Promise<void> => {
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer ${expected}`).toBe(expected);
-};
 
 /**
  * Every route `app/` actually serves, derived from the filesystem rather than restated.

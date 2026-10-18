@@ -1,7 +1,7 @@
 import { test, expect, type APIRequestContext, type Locator, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { rootCustomPropertyValue } from './harness';
+import { EDGE_SLACK, goTo, probeComputed, rootCustomPropertyValue } from './harness';
 
 /**
  * The secondary surfaces: the retired `/recommendation`, the footer's one link, `/celeste`, and the
@@ -88,25 +88,6 @@ const SURFACES = [
  */
 const INTERACTIVE = 'a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])';
 
-/**
- * Sub-pixel slack on the separation comparison alone, never on the floor. Same figure and same
- * reason as `tests/e2e/chrome-nav.pw.ts:164`.
- */
-const EDGE_SLACK = 0.5;
-
-/**
- * Navigate, and refuse to read anything off a page that did not answer the status expected.
- *
- * Local rather than shared, on the idiom `tests/e2e/cv.pw.ts:70-74` and the files it cites set.
- * DW-22 records that this guard now has several implementations and that hoisting it into
- * `harness.ts` is its own change; this is not the story that makes it.
- */
-const goTo = async (page: Page, route: string, expected = 200): Promise<void> => {
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer ${expected}`).toBe(expected);
-};
-
 /** One response, read without following: the status, the `Location` header or `''`, and the type. */
 interface Answer {
   readonly status: number;
@@ -137,26 +118,6 @@ const floorFrom = async (page: Page): Promise<number> => {
   );
   return value;
 };
-
-/**
- * The computed value of one property, resolved by laying out a probe.
- *
- * A custom property's computed value is its declared token stream, so comparing `--token-focus`
- * read off `:root` against a computed `outline-color` compares a declaration against a resolution.
- * Same shape as `tests/e2e/cv.pw.ts:101-112`.
- */
-const probeComputed = (page: Page, declaration: string, property: string): Promise<string> =>
-  page.evaluate(
-    ([css, name]) => {
-      const probe = document.createElement('div');
-      probe.setAttribute('style', `position:absolute;left:-99999px;top:0;width:1px;height:1px;${css}`);
-      document.body.append(probe);
-      const read = window.getComputedStyle(probe).getPropertyValue(name);
-      probe.remove();
-      return read;
-    },
-    [declaration, property] as const
-  );
 
 /**
  * `--s-lg` resolved to pixels by laying a probe out, never parsed: it is authored in `rem`, so it
@@ -275,7 +236,8 @@ const celesteLinksOn = (page: Page): Promise<string[]> =>
 
 test.describe('the surface list', () => {
   test('equals the swept surfaces in hit-target-floor.pw.ts, which derives its own from app/', () => {
-    // `SURFACES` above is a hand copy. A route added to `app/` fails that file's standing case at
+    // `SURFACES` above is a hand copy. The list that file sweeps lives in `tests/e2e/harness.ts` since
+    // Story 9-12, so that is the text read here; the title still names the file that owns the counts. A route added to `app/` fails that file's standing case at
     // its `:813` until it is registered there, and this case fails until it is registered here
     // too, so a new surface cannot skip the A-13 read, the robots read or the single-entrance claim
     // in silence. Read as text with the same regex `ops/__tests__/hit-target-floor.test.ts:226-235`
@@ -283,12 +245,12 @@ test.describe('the surface list', () => {
     // duplicated here. Line endings are normalised first, as that suite's `read` does at its `:57`:
     // the Windows checkout is CRLF and the container reads it as the host wrote it, which is how
     // this case failed on its first run with the regex matching nothing.
-    const source = readFileSync(join(REPO_ROOT, 'tests', 'e2e', 'hit-target-floor.pw.ts'), 'utf8').replace(
+    const source = readFileSync(join(REPO_ROOT, 'tests', 'e2e', 'harness.ts'), 'utf8').replace(
       /\r\n/g,
       '\n'
     );
     const block = /const SURFACES = \[\n([\s\S]*?)\n\] as const;/.exec(source)?.[1];
-    expect(block, 'hit-target-floor.pw.ts no longer carries a SURFACES literal this file can read').toBeDefined();
+    expect(block, 'harness.ts no longer carries a SURFACES literal this file can read').toBeDefined();
 
     const entries = [
       ...(block ?? '').matchAll(

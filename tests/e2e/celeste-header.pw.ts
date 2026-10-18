@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { goTo } from './harness';
 
 /**
  * The header suppression on `/celeste`, measured in a real browser (Story 2-1).
@@ -30,19 +31,6 @@ import { expect, test, type Page } from '@playwright/test';
  * "keeps exactly one committed baseline" case in `rendered-output.pw.ts` is untouched: that
  * case reads the snapshot directory of its own test file.
  */
-
-/**
- * Navigate, and refuse to read anything off a page that did not answer the status expected.
- *
- * The 404 surface is one of the routes read here, and it is the one `app/not-found.tsx` renders,
- * so the expectation is a parameter rather than a hard 200. Same shape as `goTo` in
- * `tests/e2e/anchor-aliases.pw.ts`.
- */
-const goTo = async (page: Page, route: string, expected = 200): Promise<void> => {
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer ${expected}`).toBe(expected);
-};
 
 /** A path the Hub does not route, which renders `app/not-found.tsx` through the root layout. */
 const NOT_FOUND = '/a-route-that-does-not-exist';

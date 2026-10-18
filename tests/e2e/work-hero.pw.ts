@@ -1,7 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
 import { test, expect, type APIRequestContext, type Browser, type BrowserContextOptions, type Page } from '@playwright/test';
-import { RENDERED_VIEWPORT } from './harness';
+import { FINGERPRINTS, RENDERED_VIEWPORT, goTo } from './harness';
 
 /**
  * The `/work` hero and the timeline as a browser renders them (Story 2-33).
@@ -30,25 +28,11 @@ const ROUTE = '/work';
 const HEADING_NAME = 'Frontend Developer and Team Lead';
 const CONTAINMENT_LOG = 'WorkHero: the torus chunk failed to load';
 const CANVAS = '.work-hero__canvas-wrap canvas';
-const REPO_ROOT = resolve(__dirname, '..', '..');
 
 /**
- * The fingerprints, read out of `ops/asset-budget.mjs` rather than restated, the way
- * `tests/e2e/narrative.pw.ts` reads them (copied, not imported: a `.pw.ts` imported by another
- * registers its tests twice). A parse that dropped rows would narrow the scan to a clean result, so
- * the entries parsed are held to the entries declared.
+ * The marks of the WebGL stack, which is what makes a chunk the torus's. `FINGERPRINTS` is the table
+ * `ops/asset-budget.mjs` loads, through `tests/e2e/harness.ts`, never a parse or a copy (DW-40).
  */
-const FINGERPRINTS = ((): { library: string; mark: string; webgl: boolean }[] => {
-  const source = readFileSync(join(REPO_ROOT, 'ops', 'asset-budget.mjs'), 'utf8');
-  const block = /export const FINGERPRINTS = \[([\s\S]*?)\n\];/.exec(source)?.[1];
-  if (!block) throw new Error('ops/asset-budget.mjs declares no FINGERPRINTS array this parse can find');
-  const entries = [...block.matchAll(/\{\s*library:\s*'([^']+)',\s*mark:\s*'((?:[^'\\]|\\.)*)',\s*webgl:\s*(true|false)\s*\}/g)];
-  const declared = (block.match(/\blibrary:/g) ?? []).length;
-  if (entries.length !== declared) throw new Error(`FINGERPRINTS parsed to ${entries.length} of ${declared} entries`);
-  return entries.map((match) => ({ library: match[1], mark: match[2].replace(/\\(.)/g, '$1'), webgl: match[3] === 'true' }));
-})();
-
-/** The marks of the WebGL stack, which is what makes a chunk the torus's. */
 const WEBGL_MARKS = FINGERPRINTS.filter((entry) => entry.webgl).map((entry) => entry.mark);
 
 /** `ScrollTrigger`'s mark: the library that turns the torus with the scroll, and nothing else here. */
@@ -57,16 +41,6 @@ const SCROLL_BINDING_MARK = ((): string => {
   if (!entry) throw new Error('ops/asset-budget.mjs no longer fingerprints gsap/ScrollTrigger');
   return entry.mark;
 })();
-
-/** Navigate, refuse anything but a 200, and wait for the faces. */
-const goTo = async (page: Page, route: string = ROUTE): Promise<void> => {
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer 200`).toBe(200);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-  });
-};
 
 /**
  * Whether React has hydrated the hero: React's own mark on a host node it hydrated, the signal
@@ -240,7 +214,7 @@ test.describe('the hero, where motion is allowed', () => {
   for (const width of [768, 1280, 2400] as const) {
     test(`sets the display line left of the canvas at ${width}, the columns split 3 to 2, the torus drawn, closed beneath by the boundary rule`, async ({ browser }) => {
       await onContext(browser, { viewport: { width, height: 800 }, reducedMotion: 'no-preference' }, async (page) => {
-        await goTo(page);
+        await goTo(page, ROUTE);
         await page.locator(CANVAS).waitFor({ state: 'attached', timeout: 20_000 });
 
         const heading = await boxOf(page, '.work-hero__heading');
@@ -302,7 +276,7 @@ test.describe('the hero, where motion is allowed', () => {
 
   test('stacks the canvas box under the text at 360, full width at 4:3, with nothing past an edge', async ({ browser }) => {
     await onContext(browser, { reducedMotion: 'no-preference' }, async (page) => {
-      await goTo(page);
+      await goTo(page, ROUTE);
       await page.locator(CANVAS).waitFor({ state: 'attached', timeout: 20_000 });
       const text = await boxOf(page, '.work-hero__text');
       const wrap = await boxOf(page, '.work-hero__canvas-wrap');
@@ -333,7 +307,7 @@ test.describe('the hero, where motion is allowed', () => {
 
   test('keeps the heading a real <h1> in the tree, and the canvas out of it and out of the keyboard\'s path', async ({ page, browser }) => {
     // On the project's context first: no canvas, the heading still the one level-1 heading.
-    await goTo(page);
+    await goTo(page, ROUTE);
     await hydratedHero(page);
     const reduced = page.getByRole('heading', { level: 1 });
     await expect(reduced, '/work does not carry exactly one level-1 heading').toHaveCount(1);
@@ -345,7 +319,7 @@ test.describe('the hero, where motion is allowed', () => {
     await expect(page.getByRole('heading', { level: 1 }), 'an aria-hidden section leaves its heading in the tree').toHaveCount(0);
 
     await onContext(browser, { reducedMotion: 'no-preference' }, async (moving) => {
-      await goTo(moving);
+      await goTo(moving, ROUTE);
       await moving.locator(CANVAS).waitFor({ state: 'attached', timeout: 20_000 });
       // **The canvas's own two attributes are written when the renderer is created**, a moment after
       // the element is attached (`Scene.tsx`, `onCreated`); the wrapper is hidden from the start. So
@@ -399,7 +373,7 @@ test.describe('the torus is decoration: it takes no gesture', () => {
     // with the scroll, so with the page still the canvas draws the same frame over and over, and a
     // capture before a drag and one after it are compared byte for byte (never against a file).
     await onContext(browser, { viewport: { width: 1280, height: 1000 }, reducedMotion: 'no-preference' }, async (page) => {
-      await goTo(page);
+      await goTo(page, ROUTE);
       await page.locator(CANVAS).waitFor({ state: 'attached', timeout: 20_000 });
       await expect
         .poll(() => page.evaluate((selector) => document.querySelector(selector)?.getAttribute('tabindex') ?? null, CANVAS), {
@@ -468,7 +442,7 @@ test.describe('the torus is decoration: it takes no gesture', () => {
 test.describe('under reduced motion the torus is not requested at all', () => {
   test('requests no WebGL chunk, draws no canvas and omits its box, where a context allowing motion does all three', async ({ page, browser, request }) => {
     const ledger = scriptLedger(page);
-    await goTo(page);
+    await goTo(page, ROUTE);
     await hydratedHero(page);
     await frames(page, 4);
     const carrying = await ledger.carrying(request);
@@ -483,7 +457,7 @@ test.describe('under reduced motion the torus is not requested at all', () => {
     // The control: the same reads on a context that allows motion find the chunk, the canvas and the box.
     await onContext(browser, { reducedMotion: 'no-preference' }, async (moving) => {
       const movingLedger = scriptLedger(moving);
-      await goTo(moving);
+      await goTo(moving, ROUTE);
       await moving.locator(CANVAS).waitFor({ state: 'attached', timeout: 20_000 });
       const found = await movingLedger.carrying(request);
       console.log(`work-hero: with motion allowed, WebGL-carrying: ${found.join(', ')}`);
@@ -498,7 +472,7 @@ test.describe('under reduced motion the torus is not requested at all', () => {
     // that turns it. DW-36's Operator ruling of that day moved the binding and the registration into
     // `TorusCanvas`, behind the one boundary, so the library arrives with the torus or not at all.
     const ledger = scriptLedger(page);
-    await goTo(page);
+    await goTo(page, ROUTE);
     await hydratedHero(page);
     await frames(page, 4);
     const carrying = await ledger.carrying(request, [SCROLL_BINDING_MARK]);
@@ -509,7 +483,7 @@ test.describe('under reduced motion the torus is not requested at all', () => {
     // The control: where the torus is drawn, the same read finds the library among what was requested.
     await onContext(browser, { reducedMotion: 'no-preference' }, async (moving) => {
       const movingLedger = scriptLedger(moving);
-      await goTo(moving);
+      await goTo(moving, ROUTE);
       await moving.locator(CANVAS).waitFor({ state: 'attached', timeout: 20_000 });
       const found = await movingLedger.carrying(request, [SCROLL_BINDING_MARK]);
       console.log(`work-hero: with motion allowed, ScrollTrigger-carrying: ${found.join(', ')}`);
@@ -519,7 +493,7 @@ test.describe('under reduced motion the torus is not requested at all', () => {
 
   test('takes the torus away when reduced motion is asked for mid-session', async ({ browser }) => {
     await onContext(browser, { reducedMotion: 'no-preference' }, async (page) => {
-      await goTo(page);
+      await goTo(page, ROUTE);
       await page.locator(CANVAS).waitFor({ state: 'attached', timeout: 20_000 });
       expect(await page.locator(CANVAS).count(), 'the torus was not drawn before the preference changed').toBe(1);
       await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -548,7 +522,7 @@ test.describe('under reduced motion the torus is not requested at all', () => {
         }
         return route.fulfill({ response, body });
       });
-      await goTo(page);
+      await goTo(page, ROUTE);
       await hydratedHero(page);
       await expect
         .poll(() => consoleErrors.some((line) => line.startsWith(CONTAINMENT_LOG)), {
@@ -577,7 +551,7 @@ test.describe('the display line and the meta line', () => {
       const wrongs: string[] = [];
       for (const width of [360, 768, 1024, 1280, 2400]) {
         await page.setViewportSize({ width, height: 800 });
-        await goTo(page);
+        await goTo(page, ROUTE);
         const loaded = await page.evaluate(() => document.fonts.check('800 16px "Bricolage Grotesque"'));
         const read = await page.locator('.work-hero__heading').evaluate((node) => {
           const style = getComputedStyle(node);
@@ -650,7 +624,7 @@ test.describe('the display line and the meta line', () => {
   });
 
   test('carries the meta line as a section Plate mark: the count, then the period, no // and no loose mono text', async ({ page }) => {
-    await goTo(page);
+    await goTo(page, ROUTE);
     const rows = await page.locator('.work-item').count();
     expect(rows, 'the timeline rendered no row, so the count below is read against nothing').toBeGreaterThan(0);
     await expect(page.locator('.work-hero .plate-mark'), 'the hero does not carry exactly two marks').toHaveCount(2);
@@ -725,7 +699,7 @@ const animationsIn = (page: Page) =>
 test.describe('the entrance is one opacity keyframe, the route\'s only one', () => {
   test('with motion allowed, the heading then the meta fade in at the minor duration on the entrance curve, and nothing else moves', async ({ browser }) => {
     await onContext(browser, { reducedMotion: 'no-preference' }, async (page) => {
-      await goTo(page);
+      await goTo(page, ROUTE);
       const expected = await probe(page, { 'animation-duration': 'var(--dur-minor)', 'animation-timing-function': 'var(--ease-entrance)' }, [
         'animation-duration',
         'animation-timing-function',
@@ -770,7 +744,7 @@ test.describe('the entrance is one opacity keyframe, the route\'s only one', () 
   });
 
   test('under reduced motion nothing animates, and both are present at the first read', async ({ page, browser }) => {
-    await goTo(page);
+    await goTo(page, ROUTE);
     for (const element of await entranceOf(page)) {
       expect(element.name, `${element.selector} animates under reduced motion`).toBe('none');
       expect(element.opacity, `${element.selector} is not at full opacity`).toBe('1');
@@ -779,7 +753,7 @@ test.describe('the entrance is one opacity keyframe, the route\'s only one', () 
 
     // The control: the same read, on a context that allows motion, sees the keyframe.
     await onContext(browser, { reducedMotion: 'no-preference' }, async (moving) => {
-      await goTo(moving);
+      await goTo(moving, ROUTE);
       expect((await entranceOf(moving)).map((element) => element.name), 'the read cannot see the keyframe at all').toEqual([KEYFRAME, KEYFRAME]);
     });
   });
@@ -796,7 +770,7 @@ test.describe('the entrance is one opacity keyframe, the route\'s only one', () 
         aborted += 1;
         return route.abort();
       });
-      await goTo(page);
+      await goTo(page, ROUTE);
       expect(aborted, 'no script was aborted, so this is not the no-script reading').toBeGreaterThan(0);
       await page.evaluate(() =>
         Promise.all(

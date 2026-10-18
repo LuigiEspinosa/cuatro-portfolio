@@ -1,7 +1,14 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from './harness';
+import {
+  RENDERED_VIEWPORT,
+  SURFACES as HUB_SURFACES,
+  computedStyleValue,
+  goTo,
+  plantStyle,
+  rootCustomPropertyValue,
+} from './harness';
 
 /**
  * The type swap, observed on the Hub's real routes (Story 2-20, migration step 5).
@@ -65,17 +72,12 @@ const CONTRACT_FAMILIES = [
 const NOT_FOUND = '/a-route-that-does-not-exist';
 
 /**
- * Every surface the Hub serves, the list `tests/e2e/hit-target-floor.pw.ts` pins against `app/`.
- * The retired-family reads run on all five, because a `@font-face` re-declared in a chunk only
+ * Every surface the Hub serves, the list `tests/e2e/hit-target-floor.pw.ts` pins against `app/`,
+ * derived from `SURFACES` in `tests/e2e/harness.ts` since Story 9-12 rather than copied by hand.
+ * The retired-family reads run on all of them, because a `@font-face` re-declared in a chunk only
  * `/work` or `/cv` links would be invisible to a read taken on `/` alone.
  */
-const SURFACES: readonly { route: string; status: number }[] = [
-  { route: '/', status: 200 },
-  { route: '/work', status: 200 },
-  { route: '/cv', status: 200 },
-  { route: '/celeste', status: 200 },
-  { route: NOT_FOUND, status: 404 },
-];
+const SURFACES: readonly { route: string; status: number }[] = HUB_SURFACES.map(({ route, status }) => ({ route, status }));
 
 /** The one binary the layout preloaded on every route until this story, at the URL it preloaded. */
 const RETIRED_BINARY = '/fonts/ConfilliaNormal-Regular.woff2';
@@ -213,13 +215,6 @@ interface FontFaceRule {
   base: string;
 }
 
-/** Navigate, and refuse to read anything off a page that did not answer the status expected. */
-const goTo = async (page: Page, route: string, expected = 200): Promise<void> => {
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer ${expected}`).toBe(expected);
-};
-
 /**
  * Wait for every face the document needs, including one planted a moment ago.
  *
@@ -237,14 +232,6 @@ const fontsReady = (page: Page, planted: readonly string[] = []): Promise<void> 
 
 /** The first family in a stack, unquoted. `"Bricolage Grotesque", Archivo, …` reads as one name. */
 const firstFamily = (stack: string): string => (stack.split(',')[0] ?? '').trim().replace(/^["']|["']$/g, '');
-
-/** A stylesheet planted into the page, touching no file. Same shape as `tests/e2e/premise.pw.ts`. */
-const plantStyle = (page: Page, css: string): Promise<void> =>
-  page.evaluate((text) => {
-    const style = document.createElement('style');
-    style.textContent = text;
-    document.head.append(style);
-  }, css);
 
 /**
  * One `[data-sample]` span per name, all carrying `text`, appended to the body and laid out so

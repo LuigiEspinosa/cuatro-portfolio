@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { extname, join, resolve } from 'node:path';
+import { goTo } from './harness';
 
 /**
  * The published surface served over HTTP (Story 1-16, AD-1, AD-4).
@@ -234,8 +235,7 @@ ${samples}
     if (response.url().endsWith('.woff2')) requested.set(response.url(), response.status());
   });
 
-  const loaded = await page.goto(fixture, { waitUntil: 'load' });
-  expect(loaded?.status(), 'the same-origin fixture did not load').toBe(200);
+  await goTo(page, fixture);
 
   // The stylesheet itself has to have arrived, or the faces were never declared
   // and the assertions below would be measuring an empty document.
