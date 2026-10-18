@@ -794,7 +794,11 @@ the next free id, one above the highest in the file, and a status line.
     incompatible halves. The cheap version, if this recurs, is a `note` row carrying
     `cores=$(nproc)` once per run, which is schema-compatible, plus a close-out assertion that
     the run saw exactly one distinct value.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/capacity-measurement.md` § Standing triggers):
+    trigger not met. The plan's § 3 wording ("The next measurement week (2027-02-25 review)") moved there with the
+    `note`-row closer, dated and naming DW-175.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-5-capacity-measurement-week.md`
   id: DW-176
@@ -812,7 +816,11 @@ the next free id, one above the highest in the file, and a status line.
     header creation and the append. Left alone because changing the sampler mid-week means
     reinstalling the thing being measured, and the observed risk over one week on one timer is
     very low.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/capacity-measurement.md` § Standing triggers):
+    the sampler is unchanged since `6caac0b`. The plan's § 3 wording ("Next sampler edit") moved there with the `flock`
+    closer, alongside DW-175, dated and naming DW-176.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-5-capacity-measurement-week.md`
   id: DW-177
@@ -829,7 +837,11 @@ the next free id, one above the highest in the file, and a status line.
     that is missing an application without anything looking wrong. A fallback search across
     plausible parents, or an explicit assertion at install time that every running container
     resolves to a cgroup, would close it.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/capacity-measurement.md` § Standing triggers):
+    trigger not met. The plan's § 3 wording ("The next measurement week") moved there with the install-time
+    assertion, dated and naming DW-177.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
   id: DW-178
@@ -1897,7 +1909,12 @@ reason: |-
   column is what a later story would use to justify deleting a face, and a false unreachable is the
   expensive direction. Story 2.20 retires the legacy faces and is the natural place to widen the
   method, since it is the story that acts on the column.
-status: open
+
+  **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/asset-budget.md` § Standing triggers): the triage
+  of 2026-10-18 found the trigger not met. The entry has no trigger line, so the Epic 9 plan's § 3 wording ("A face is
+  deleted on the reachability word, a family is defined under a selector, or the `font` shorthand names a family")
+  moved to that record, with the work, dated and naming DW-24.
+status: done
 
 ### DW-25: `ops/asset-budget.mjs` re-reads the whole source tree on every call and re-gzips each chunk once per referencing document.
 origin: spec-deferred 2026-08-29
@@ -1915,7 +1932,11 @@ reason: |-
   hand rather than in CI, so nothing gates on its runtime. It is filed because the work grows with
   routes and with the source tree, and Epic 2 adds routes while Epic 3 moves the whole application
   under `apps/hub`. One read into a map removes the chunk half of it outright.
-status: open
+
+  **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/asset-budget.md` § Standing triggers): trigger not
+  met (no workflow runs the tool). The plan's § 3 wording ("asset-budget goes into CI, or its runtime becomes
+  noticeable") moved to that record, dated and naming DW-25. Story 9-4 meets it if it makes CI run the tool.
+status: done
 
 ### DW-26: `contracts/registry.schema.json` cannot carry `minItems: 1` on `applications` until Story 2.5 authors entries, so a Registry that loses every entry validates.
 origin: spec-deferred 2026-08-29
@@ -5299,7 +5320,11 @@ status: done
     **Owner: unassigned.** **Trigger: the first story that adds a `robots.txt`, a sitemap or a
     `robots` directive anywhere but `/celeste`**, at which point the framework's own tag on the
     404 is part of the policy being written down.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/bot-mitigation.md` § Standing triggers): trigger
+    not met. "The first story that adds a `robots.txt`, a sitemap or a `robots` directive anywhere but `/celeste`"
+    moved verbatim to that record, dated and naming DW-78.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-17-secondary-surface-states.md`
   id: DW-79
@@ -5623,7 +5648,11 @@ status: done
     the rotation before expiry and a `workflow_dispatch` run after it. **Trigger: the expiry date
     written into action 1, less the lead the Operator chooses; or the first run whose every
     `source exists` line is red.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/registry-verification.md` § Standing triggers):
+    trigger not met (expiry 2026-12-11). The trigger moved verbatim beside action 6, with the plan's lead (rotate by
+    about 2026-12-04), dated and naming DW-86. Action 6 stays `_not done_` until the rotation.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`
   id: DW-87
@@ -5728,7 +5757,10 @@ status: done
     **Owner: unassigned.** **Trigger: the first reading where SM-3 (the Marcus signal) reads
     implausibly low against the Operator's own knowledge of who visited, or a story that adds a
     server-side request count for any other reason.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/visitor-instrumentation.md` § Standing triggers):
+    trigger not met (no SM-3 reading recorded). The trigger moved verbatim, dated and naming DW-89.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
   id: DW-90
@@ -6171,7 +6203,11 @@ status: done
 
     **Owner: unassigned.** **Trigger: any story that touches the `app/layout.tsx` preloads or the
     type contract.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/asset-budget.md` § Standing triggers): trigger
+    not met (`apps/hub/app/layout.tsx` last changed by the move in `bc9cd25`). The trigger moved verbatim, with the
+    measurement that has to come before any preload, dated and naming DW-99.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-27-redesign-glitchtext-token-native.md`
   id: DW-100
@@ -6382,7 +6418,12 @@ status: done
     the per-pixel threshold makes the update run write nothing, and points at the forced form in
     `ops/rendered-output-harness.md` § Regenerating the baseline. The `threshold` question is what
     this entry still holds, owner and trigger unchanged, so it stays open.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/rendered-output-harness.md` § Standing triggers):
+    the `threshold` question's trigger, "the next baseline change the comparator measures as none", is not met. It
+    moved verbatim beside § Regenerating the baseline, dated and naming DW-102 and Story 9-16's possible forced
+    regeneration.
+  status: done
 
 - source_spec: `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/review-apple-design-2026-09-15.md`
   id: DW-103
@@ -6703,7 +6744,11 @@ status: done
     print readings DW-76 and DW-73 are about. **Owner: unassigned.** **Trigger: the next change
     to the disclosure's mechanism, or an accessibility pass that reads `/cv` with a screen
     reader.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/hub-accessibility-pass.md` § Standing triggers):
+    trigger not met. It moved verbatim, dated and naming DW-111. The Operator's screen-reader read of `/` does not
+    meet it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-31-redesign-workitem-and-hudlabel-token-native.md`
   id: DW-112
@@ -6730,7 +6775,10 @@ status: done
     is a change to the disclosure's markup rather than its look, so Story 2-31 did not make it.
     **Owner: unassigned.** **Trigger: DW-111's, the next change to the disclosure's mechanism,
     since both entries are the same component's semantics.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/hub-accessibility-pass.md` § Standing triggers):
+    trigger not met (shared with DW-111). It moved verbatim with the repair's shape, dated and naming DW-112.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-31-redesign-workitem-and-hudlabel-token-native.md`
   id: DW-113
@@ -7584,7 +7632,11 @@ status: done
     removes the plaintext on every path and prints gpg's own error.
 
     **Owner: the Operator.** **Trigger: the next time the passphrase is verified or rotated.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/backup-digital-library.md` § Standing triggers):
+    trigger not met. "The next time the passphrase is verified or rotated" moved verbatim with the closer, dated and
+    naming DW-132. The owner is still the Operator.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`
   id: DW-133
@@ -7854,7 +7906,11 @@ status: done
 
     **Owner: the Operator**, choosing the shape. **Trigger: the next contract release that opens for
     any other reason, or the first string found ligated on a surface.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/font-contract.md` § Standing triggers): trigger
+    not met (no fonts or token contract release since 2026-09-25). It moved verbatim with the Operator's two shapes,
+    dated and naming DW-240.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-process-and-upkeep.md`
   id: DW-241
@@ -8515,7 +8571,11 @@ status: done
     in.
 
     **Owner: unassigned.** **Trigger: the next edit to `ops/deploy-remote.sh`.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/contract-serving.md` § Standing triggers):
+    `ops/deploy-remote.sh` is unchanged since `b3b72d6`. "The next edit to `ops/deploy-remote.sh`" moved verbatim with
+    the hand-over closer, dated and naming DW-264.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-4-deploy-by-pulling-a-tag-with-docker-rollout.md`
   id: DW-265
@@ -8537,7 +8597,11 @@ status: done
 
     **Owner: unassigned.** **Trigger: the first Deploy run that times out, or the next edit to the report
     job.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/contract-serving.md` § Standing triggers): no
+    Deploy run has timed out, and the report job is unchanged since `b3b72d6`. The trigger moved verbatim with the
+    throwaway-run closer, dated and naming DW-265.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-4-deploy-by-pulling-a-tag-with-docker-rollout.md`
   id: DW-266
@@ -8583,7 +8647,10 @@ status: done
 
     **Owner: the Epic 8 wave that restyles finance, or an Operator ruling to adopt earlier.**
     **Trigger: finance moving towards `Live`, or its first placement.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/estate.md` § Standing triggers): finance is not
+    placed. The trigger moved verbatim, dated and naming DW-267, beside the three other finance placement entries.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
   id: DW-268
@@ -8602,7 +8669,10 @@ status: done
     serves traffic, and CI runs the toolchain against a real database before any push.
 
     **Owner: finance's placement story.** **Trigger: that story, or a Prisma upgrade.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/estate.md` § Standing triggers): no placement
+    story and no Prisma upgrade. The trigger moved verbatim, dated and naming DW-268.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
   id: DW-269
@@ -8624,7 +8694,11 @@ status: done
     started without `BETTER_AUTH_SECRET` logs Better Auth's default-secret error and keeps serving.
 
     **Owner: finance's placement story.** **Trigger: an AD-9 decision to place finance.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/estate.md` § Standing triggers): no AD-9 decision
+    to place finance. The trigger moved verbatim, dated and naming DW-269. The line says this entry's list predates
+    Epic 4 and is to be read against Traefik and the estate Postgres.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
   id: DW-270
@@ -8675,7 +8749,10 @@ status: done
 
     **Owner: finance's placement story (the seed path), and the story that lands a lint gate.**
     **Trigger: either.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/estate.md` § Standing triggers): no placement
+    story and no lint gate. The trigger moved verbatim, dated and naming DW-271.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
   id: DW-272
@@ -9516,7 +9593,11 @@ status: done
     **Owner: the next change that touches `packages/tokens`.** **Trigger: a Style Dictionary release
     whose range excludes 13.0.6, or a glob release above 13.0.6.** Re-read the lockfile then; forcing the
     prerelease with a `pnpm.overrides` entry is a dependency change that needs its own ruling.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/token-contract.md` § Standing triggers): trigger
+    not met (npm's latest glob read 13.0.6 on 2026-10-18, per the triage). It moved verbatim, dated and naming DW-304.
+    An override still needs its own ruling.
+  status: done
 - id: DW-305
   summary: >-
     One request through a throwaway Traefik timed out, unexplained, in Story 4-6's rollout rehearsal on
@@ -9884,7 +9965,10 @@ status: done
     change, or a lost day of events.** Point the healthcheck at a route that reads the database (or add a
     second check that does), prove it red with the database paused as the rehearsal did, and make
     `UMAMI_DB_PASSWORD` required (`${UMAMI_DB_PASSWORD:?}`) rather than defaulted.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/postgres.md` § Standing triggers): no change to
+    `anchor-umami` since the entry was filed. The trigger moved verbatim with the closer, dated and naming DW-316.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md`
   id: DW-317
   summary: >-
@@ -10194,7 +10278,10 @@ status: done
     ruling.** **Trigger: a second replica, or a logout observed lost at a rollout.** Move the revocations to
     a store both processes share (the estate Postgres for `cs-tracker`; the Hub has none), or record why
     the window is accepted.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/identity-issuer.md` § Standing triggers): trigger
+    not met. It moved verbatim, dated and naming DW-328.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the.md`
   id: DW-329
   summary: >-
@@ -10376,7 +10463,11 @@ status: done
     release lands; that release then adds the demo password as a second secret on the script step and a
     sign-in probe for `cuatro-tracker` and `digital-library`, leaving `cs-tracker` on its observation. Owner:
     the first demo release (action 9).
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/registry-verification.md` § Standing triggers): no
+    demo release yet. "The first demo release (action 9)" and the Operator's ruling of 2026-10-06 moved there, dated
+    and naming DW-336.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
   id: DW-337
   summary: >-
@@ -10392,7 +10483,11 @@ status: done
     **Amended 2026-10-13 (Epic 5 retrospective action 3):** `ops/demo-reset.schedule` sets `digital-library off`,
     because the scheduler now fails a run whose participant reports its principal absent. The same change that
     creates the account sets it back to `60`.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/demo-principal.md` § Standing triggers): no OIDC
+    story for `digital-library` is scheduled. "That story's rollout" moved verbatim with its four steps, including the
+    `demo-reset.schedule` flip, dated and naming DW-337.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
   id: DW-338
   summary: >-
@@ -10479,7 +10574,11 @@ status: done
     already measures the production image without a cookie the probe forges: it mints the session inside the
     release (`bin/cs_tracker rpc`), and it puts a local TLS front ahead of the image, so the LiveView socket's
     origin passes `check_origin` and the pages mount connected rather than dead. The port can take both.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/cs-tracker-accessibility-pass.md` § Standing
+    triggers): no AD-19 re-run since Story 8.1. "Before that re-run" moved verbatim with the port's seed, dated and
+    naming DW-342 and Story 9-25's Hex bump as a possible trigger.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-1-cs-tracker-visual-restyle.md`
   id: DW-343
   summary: >-
@@ -10517,7 +10616,10 @@ status: done
 
     **Owner: a `cs-tracker` story outside Epic 8.** **Trigger: the next story that touches `/browse`'s filter bar
     or its headings.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): trigger
+    not met. It moved verbatim, dated and naming DW-344.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
   id: DW-345
   summary: >-
@@ -10531,7 +10633,10 @@ status: done
 
     **Owner: a `list-wheel` story outside Epic 8.** **Trigger: the next story that touches the editor or the
     wheel's spin.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): trigger
+    not met. It moved verbatim, dated and naming DW-345.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
   id: DW-346
   summary: >-
@@ -10609,7 +10714,10 @@ status: done
 
     **Owner: a `digital-library` story outside Epic 8.** **Trigger: the next story that touches the grid's
     filter strip, the book page, the layout's transition, or renders one of the three components.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): trigger
+    not met. It moved verbatim, dated and naming DW-349.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
   id: DW-350
   summary: >-
@@ -10697,7 +10805,10 @@ status: done
     `.buttons-row .toast` style never shows and the `copied` screenshots carry no toast.
 
     **Owner: a `list-wheel` story outside Epic 8.** **Trigger: the next story that touches the copy action.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): trigger
+    not met. It moved verbatim, dated and naming DW-353.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-4-record-the-restyle-floor-and-the-per-application-coherence-ch.md`
   id: DW-354
   summary: >-
@@ -10714,7 +10825,10 @@ status: done
     **Owner: a `cs-tracker` story.** **Trigger: the next story that touches `core_components.ex`, or Story 8.5 if the
     Operator wants wave 1 clean before wave 2.** A `motion-reduce:transition-none` beside each literal is the likely
     shape; `mix precommit` and the image boot are its gate.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): trigger
+    not met. It moved verbatim with the `motion-reduce` closer, dated and naming DW-354.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
   id: DW-355
   summary: >-
@@ -10727,7 +10841,10 @@ status: done
 
     **Owner: a `cs-tracker` story.** **Trigger: the next change to `cs-tracker`'s `assets/css/app.css`.** Add
     `rounded` to the existing `@source not inline("shadow transition");`; `mix precommit` and the image boot are its gate.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): trigger
+    not met. It moved verbatim with the `@source not inline` closer, dated and naming DW-355.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
   id: DW-356
   summary: >-
@@ -10749,7 +10866,10 @@ status: done
     the Anchor's own `DESIGN.md` and is not one of them. The cleanup's branch touches none of the seven, so it leaves
     them. **Owner: a `digital-library` story.** **Trigger: the next change to one of the seven files**, or the story
     that renders or deletes the three components under DW-349.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): the
+    trigger as restated on 2026-10-17 is not met. It moved verbatim, dated and naming DW-356.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
   id: DW-357
   summary: >-
@@ -10772,7 +10892,10 @@ status: done
 
     **2026-10-17, R24 (`59f79ab`):** the vendored folder and its admission are gone; the tracker reads `contracts/`
     directly, so that change has neither to keep.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): R18 stands
+    as ruled. The trigger moved verbatim, dated and naming DW-357.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
   id: DW-358
   summary: >-
@@ -10804,7 +10927,10 @@ status: done
     first two change the accessibility tree, the third is content; none is presentation only.
 
     **Owner: a tracker accessibility story.** **Trigger: the next change to `LoginCRT.tsx` or `BootSequence`.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): trigger
+    not met. It moved verbatim, dated and naming DW-359 and Story 9-22 as the story to check.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-6-cs-tournament-visual-restyle.md`
   id: DW-360
   summary: >-
@@ -10853,7 +10979,10 @@ status: done
     render. Aligning the tracker's pair with the root's 4.3.3 is a dependency change, so it is its own story.
 
     **Owner: the next tracker story that touches its dependencies.** **Trigger: a Tailwind bump on either side.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): no
+    Tailwind bump. The trigger moved verbatim, dated and naming DW-362.
+  status: done
 - source_spec: `ops/restyle-floor.md` R23 (Epic 8 promotion, 2026-10-17)
   id: DW-363
   summary: >-

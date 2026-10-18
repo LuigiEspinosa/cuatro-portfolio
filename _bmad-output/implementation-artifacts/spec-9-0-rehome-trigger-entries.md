@@ -218,4 +218,16 @@ as closed by `b668c5c`. (2) DW-318 was (b), though `b668c5c` opened 9-36, which 
 9-36, its closing paragraph and its `postgres-backup.md` standing line removed. (3) DW-170 and DW-288 were (b), though
 the same 9-40 that holds DW-291 and DW-292 open fires both: moved to (a) under 9-40, their closing paragraphs and the
 `capacity-threshold.md` and `tournament-placement.md` standing lines removed. (4) The DW-288 line cited a § Later
-rollouts that does not exist: removed with that line. The three records now match `origin/dev`. Round 2: pending.
+rollouts that does not exist: removed with that line. The three records now match `origin/dev`.
+
+**Independent verifier:** PASS on round 2, 2026-10-18, separate agent; tests: worktree HEAD `8b600e3`, merge base
+`origin/dev` `2e59b57`. `corepack pnpm typecheck`: exit 0. `corepack pnpm test --run` (full root suite, first run, no
+WSL flakes): `Test Files 81 passed (81)`, `Tests 1983 passed | 1 skipped (1984)`, 204 s. Per-app suites and the
+container e2e were not run, because nothing under `apps/`, `tests/e2e` or the Hub's rendered output changed. No
+assertion was added, so the verifier planted a defect in an existing guard over the edited records: `ops/estate.md`
+line 1 set to "# The Estateundefined | planted", and `ops/__tests__/ops-record-titles.test.ts` failed 1 of 2 with
+"ops/estate.md line 1 carries a table cell"; restored, 2 passed, `git status` clean. `npm view
+@bundled-es-modules/glob versions` tops out at 13.0.6, so DW-304's trigger has not fired. A scan of the 518 added
+lines found no em-dash, en-dash, double-dash used as a dash, emoji or file:line citation, and the diff touches none of
+`deferred-work.md`, `sprint-status.yaml`, `contracts/` or `ci.yml`. The push step rebased onto `origin/dev`
+`c63895c` (clean) and applied § Ledger closures (36 entries to `done`).
