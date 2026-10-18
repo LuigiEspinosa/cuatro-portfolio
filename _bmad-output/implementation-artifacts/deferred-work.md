@@ -2617,7 +2617,14 @@ status: done
 
     The cheap next step is to run the suite with `--reporter=verbose` into a file a few times and
     watch for a case whose duration swings, rather than to go looking now with nothing to go on.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-5-wsl-suite-failure-naming** (`spec-9-5-wsl-suite-failure-naming.md`
+    § DW-210: ten verbose runs): ten `vitest --run --reporter=verbose` runs at `ae314fa` (on `dev` as
+    `de8b82a`) failed 28 cases in 7 runs, every one a named WSL stall in a WSL-spawning suite, with no
+    failure elsewhere and no duration swing outside those suites. On the 2026-09-03 tree (`75df819`)
+    the only suite spawning WSL's bash was `library-backup.test.ts`, which fails five times in the ten
+    runs on that stall. The lost case is attributed to DW-135 and closed with it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
   id: DW-211
@@ -7756,7 +7763,19 @@ status: done
 
     **Owner: unassigned.** **Trigger: the next time a local full run fails a WSL-spawning case that
     then passes, or the next edit to either harness's spawn helper.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-5-wsl-suite-failure-naming** (`de8b82a`,
+    `ops/__tests__/wsl-bash.ts`:`spawnBash`): all seven WSL-spawning suites (`deploy-remote`,
+    `library-backup`, `tracker-backup`, `postgres-backup`, `postgres-init`, `tournament-backup`,
+    `demo-reset`) spawn bash through one helper, and a stalled spawn now fails the case as `WSL did not
+    answer: ... exited 1 after <n> ms and wrote its own error, not the script's: "..."`, naming DW-135
+    and saying to re-run the file. The stall was never silent: `bash.exe` exits 1 after about 30 s with
+    an empty stderr and its own UTF-16LE error on stdout (`Catastrophic failure` with `Error code:
+    Bash/Service/E_UNEXPECTED`, or a connection-attempt timeout), which the harnesses never printed.
+    Ten full verbose runs failed 28 cases on the stall and named all 28
+    (`spec-9-5-wsl-suite-failure-naming.md` § DW-210). The stall itself is the host's and still
+    happens; a red local run of these files is now told apart from the change.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
   id: DW-136

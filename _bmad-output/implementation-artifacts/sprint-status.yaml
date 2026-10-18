@@ -42,7 +42,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-18-2026 16:45
+last_updated: 10-18-2026 23:30
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1235,7 +1235,8 @@ development_status:
   9-3-cs-tracker-secret-key-base-record: backlog
   # 2026-10-18: done (spec-9-4-ops-record-pins.md, verifier pass round 1): DW-53, 54, 59, 108 and 38 closed; hit-target-floor.md and asset-budget.md figures read by tests; DW-256 stays open, its trigger did not fire.
   9-4-ops-record-pins: done
-  9-5-wsl-suite-failure-naming: backlog
+  # 2026-10-18: done (spec-9-5-wsl-suite-failure-naming.md, verifier pass round 1): DW-135 and DW-210 closed; the seven WSL-spawning suites name a host stall through spawnBash.
+  9-5-wsl-suite-failure-naming: done
   9-6-registry-gate-hardening: backlog
   9-7-library-backup-suite-coverage: backlog
   9-8-tournament-export-sql-test: backlog

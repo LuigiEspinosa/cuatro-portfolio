@@ -130,7 +130,7 @@ review subagents); no Edge Case Hunter in the oneshot route. Findings and verdic
 
 No sprint-status action item names this story; it covers two deferred-work entries.
 
-- **DW-135:** **Closed 2026-10-18 by Story 9-5-wsl-suite-failure-naming** (`ae314fa`,
+- **DW-135:** **Closed 2026-10-18 by Story 9-5-wsl-suite-failure-naming** (`de8b82a`,
   `ops/__tests__/wsl-bash.ts`:`spawnBash`): all seven WSL-spawning suites (`deploy-remote`, `library-backup`,
   `tracker-backup`, `postgres-backup`, `postgres-init`, `tournament-backup`, `demo-reset`) spawn bash through one
   helper, and a stalled spawn now fails the case as `WSL did not answer: ... exited 1 after <n> ms and wrote its own
@@ -140,7 +140,8 @@ No sprint-status action item names this story; it covers two deferred-work entri
   full verbose runs failed 28 cases on the stall and named all 28 (`spec-9-5-wsl-suite-failure-naming.md` § DW-210).
   The stall itself is the host's and still happens; a red local run of these files is now told apart from the change.
 - **DW-210:** **Closed 2026-10-18 by Story 9-5-wsl-suite-failure-naming** (`spec-9-5-wsl-suite-failure-naming.md`
-  § DW-210: ten verbose runs): ten `vitest --run --reporter=verbose` runs at `ae314fa` failed 28 cases in 7 runs, every
+  § DW-210: ten verbose runs): ten `vitest --run --reporter=verbose` runs at `ae314fa` (on `dev` as
+  `de8b82a`) failed 28 cases in 7 runs, every
   one a named WSL stall in a WSL-spawning suite, with no failure elsewhere and no duration swing outside those suites.
   On the 2026-09-03 tree (`75df819`) the only suite spawning WSL's bash was `library-backup.test.ts`, which fails five
   times in the ten runs on that stall. The lost case is attributed to DW-135 and closed with it.
@@ -160,4 +161,18 @@ No sprint-status action item names this story; it covers two deferred-work entri
 - No `apps/*` file changed, so no per-application suite applies.
 - Added lines and this spec: 0 em-dashes, en-dashes, dash-standing double-dashes or emoji (read by `node`).
 
-**Independent verifier:** pending.
+**Independent verifier:** PASS on round 1, 2026-10-18, separate agent; tests: all run in the story worktree at
+`943c060` (rebased onto `dev` as `a59b796`, with `ae314fa` as `de8b82a` and `24c37d8` as `1094d9d`).
+(1) `corepack pnpm typecheck`: exit 0 (checked with pipefail). (2) `corepack pnpm exec vitest --run
+ops/__tests__/wsl-bash.test.ts`: 3 passed (3). (3) Planted failure: changed `result.status === 0 ||` to `false ||` in
+`ops/__tests__/wsl-bash.ts`; the suite then failed 1 of 3 ("leaves every other result to the case that reads it",
+`AssertionError: expected 'WSL did not answer: C:\WINDOWS\system...' to be null`); restored with `git checkout` and
+the tree confirmed clean. (4) Full root suite, `corepack pnpm exec vitest --run`: 82 files, 1987 tests, 3 failed, 1983
+passed, 1 skipped. The 3 failures were `demo-reset`, `tournament-backup` and `tracker-backup`, each a real host stall
+reported as `Error: WSL did not answer: C:\WINDOWS\system32\bash.exe exited 1 after 29055 to 30219 ms and wrote its own
+error, not the script's: ...` with either the `Catastrophic failure` / `E_UNEXPECTED` text or the connection-attempt
+text: end-to-end proof that the new message fires on real stalls. Nothing failed outside the WSL suites. (5) The three
+failing files re-run alone (the DW-135 procedure): 1 failed and 55 passed, the one failure another stall named as WSL
+(connection-attempt, `Bash/Service/0x8007274c`). (6) All seven WSL suites together, twice: 7 of 7 files passed both
+times (180 passed, 1 skipped). No `apps/*` file changed, so the per-application suites do not apply; `tests/e2e` and
+the Hub's rendered output are untouched, so no container e2e ran.
