@@ -301,7 +301,7 @@ the panel is above the scrim. Neither half depends on what the WebGL canvas draw
 makes this readable in a container running SwiftShader.
 
 **The z-level trap `epics.md:3300-3304` names is resolved by the header not being on this route.**
-**Observed 2026-09-21**, same case, which reads zero `.header-container` on `/`: `Header.tsx:12`
+**Observed 2026-09-21**, same case, which reads zero `.header-container` on `/`: `Header.tsx:48`
 returns `null` there, so no `--z-sticky` element exists to sit above a `--z-raised` scrim and
 compute against the imagery. The other permitted resolution also holds and is not relied on
 (`header.scss:59` sets `background-color: var(--token-bg)`), and neither was read off a `z-index`

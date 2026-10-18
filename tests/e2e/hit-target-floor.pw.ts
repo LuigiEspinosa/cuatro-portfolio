@@ -115,7 +115,7 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  * **The three surfaces that carry chrome each fell by four with Story 2-15**, on 2026-09-08. That
  * story replaced the header's five inline links plus a `mailto:`, six anchors in all, with two, so
  * `/work` went from 11 to 7,
- * `/celeste` from 7 to 3 and the 404 from 8 to 4. `/` did not move: `Header.tsx:12` renders no
+ * `/celeste` from 7 to 3 and the 404 from 8 to 4. `/` did not move: `Header.tsx:48` renders no
  * header there, and the homepage panel's second link was repointed rather than removed.
  *
  * **`/cv` became a surface on 2026-09-10.** Story 2-16 removed the 308 that answered it and built

@@ -2095,7 +2095,7 @@ test.describe('the scrim over the home canvas', () => {
       await settle(page, { route: '/', status: 200, entrance: true });
 
       // **The z-level trap, resolved by where the header is rather than by what it is painted on.**
-      // `Header.tsx:18` renders no band on `/`, only the skip link, so the sticky header is not in the
+      // `Header.tsx:48` renders no band on `/`, only the skip link, so the sticky header is not in the
       // document at all and cannot be a `--z-sticky` element over a `--z-raised` scrim. Read off the
       // DOM, and the scrim's own placement is then read off the composited pixels below rather than
       // off any `z-index` value.

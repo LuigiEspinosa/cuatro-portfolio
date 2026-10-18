@@ -137,7 +137,7 @@ from 11 to 7, `/celeste` from 7 to 3 and the 404 from 8 to 4; `/` did not move. 
 that carry chrome each lost four candidates, which is the five inline links plus the `mailto:` the
 header rendered, **six anchors**, less the two that replace them. `/` is unchanged for two reasons
 rather than one:
-`Header.tsx:12` renders no header on the home route at all, and the homepage panel's second link
+`Header.tsx:48` renders no header on the home route at all, and the homepage panel's second link
 was **repointed and relabelled rather than removed**, so it is the same element at the same size
 answering a different `href`.
 

@@ -35,7 +35,7 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  * and against an alpha channel, because a translucent ground would still equal its own probe.
  *
  * **`aria-current` had no live instance on the shipped Hub until 2026-09-10, and now it has one.**
- * `Suite` is current only on `/`, where `Header.tsx:18` renders no header at all, and `CV` is
+ * `Suite` is current only on `/`, where `Header.tsx:48` renders no header at all, and `CV` is
  * current only on `/cv`, which answered a 308 to a PDF until Story 2-16 built the page. This file
  * goes on asserting the attribute **absent** on the two surfaces that are neither destination,
  * watched against a planted mark, because that is the claim those two surfaces support and it is
@@ -736,9 +736,62 @@ test.describe('the chrome nav', () => {
         Number.parseFloat(padding),
         `${surface.route} reserves ${padding} for a header that measures ${height}`
       ).toBe(height);
+
+      // **A row that wraps** (Story 9-15, DW-118). The four-token restatement is exact for one row
+      // and short by a line for two; the band now measures itself, so the padding follows. A
+      // full-width child planted in the row forces the wrap, the way a narrower screen or text
+      // zoomed past `--tap` would, and the padding has to land on the taller box.
+      await page.evaluate(() => {
+        const wide = document.createElement('div');
+        wide.setAttribute('style', 'flex-basis:100%;block-size:40px;');
+        document.querySelector('.header-container__inner')?.append(wide);
+      });
+      const wrapped = (await page.locator('header.header-container').boundingBox())?.height ?? 0;
+      expect(wrapped, `the planted child did not wrap the row on ${surface.route}`).toBeGreaterThan(height);
+      await expect
+        .poll(
+          async () =>
+            Number.parseFloat(
+              await page.evaluate(() => window.getComputedStyle(document.documentElement).scrollPaddingBlockStart)
+            ),
+          { message: `${surface.route} reserves the one-row height for a header wrapped to ${wrapped}` }
+        )
+        .toBe(wrapped);
+
+      // **The band's own padding growing**, which a reader's larger text size does to the `rem`
+      // `--s-lg` while the `--tap` row keeps its height. The content box does not change, so this is
+      // what a measurement of the content box rather than the border box would miss.
+      await page.addStyleTag({ content: '.header-container { padding-block: 40px !important; }' });
+      const padded = (await page.locator('header.header-container').boundingBox())?.height ?? 0;
+      expect(padded, `the planted padding did not grow the header on ${surface.route}`).toBeGreaterThan(wrapped);
+      await expect
+        .poll(
+          async () =>
+            Number.parseFloat(
+              await page.evaluate(() => window.getComputedStyle(document.documentElement).scrollPaddingBlockStart)
+            ),
+          { message: `${surface.route} reserves ${wrapped} for a header whose padding grew it to ${padded}` }
+        )
+        .toBe(padded);
     }
 
-    // **The control, and it is the surface with no header.** `Header.tsx:18` renders no band on
+    // **`/celeste` renders the band and hides it** (`celeste.scss`), so there is nothing to clear and
+    // nothing may be reserved (DW-118). Read after React has hydrated the band (its own
+    // `__reactFiber$` mark, as `harness.ts` `hydrated` reads it on `/`) and two frames have passed,
+    // so the band's measurement has had its turn and the read is not one taken before it ran.
+    await goTo(page, '/celeste');
+    const band = page.locator('header.header-container');
+    await expect(band).toBeHidden();
+    await expect
+      .poll(() => band.evaluate((node) => Object.getOwnPropertyNames(node).some((key) => key.startsWith('__reactFiber$'))))
+      .toBe(true);
+    await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+    expect(
+      await page.evaluate(() => window.getComputedStyle(document.documentElement).scrollPaddingBlockStart),
+      '/celeste reserves scroll padding for a header it hides'
+    ).toBe('auto');
+
+    // **The control, and it is the surface with no header.** `Header.tsx` (`path !== '/'`) renders no band on
     // `/`, only the skip link, and `/` is the one route whose fragments the Hub actually uses, so
     // reserving space there would push `/#suite` and the skip-link's `#main` down by a header that
     // is not present. A rule applied to every route would pass every reading above and be wrong
@@ -749,6 +802,22 @@ test.describe('the chrome nav', () => {
       await page.evaluate(() => window.getComputedStyle(document.documentElement).scrollPaddingBlockStart),
       'the home route reserves scroll padding for a header it does not render'
     ).toBe('auto');
+
+    // **And reached by a client navigation, which is the case a load cannot see** (DW-118). The
+    // band's measurement is written inline on the root, which the router keeps across a route
+    // change, so leaving `/work` for `/` by the wordmark has to take it back with the band.
+    await goTo(page, '/work');
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue('scroll-padding-block-start')))
+      .not.toBe('');
+    await page.locator('header').getByRole('link', { name: SITE_NAME, exact: true }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator('header')).toHaveCount(0);
+    await expect
+      .poll(() => page.evaluate(() => window.getComputedStyle(document.documentElement).scrollPaddingBlockStart), {
+        message: 'the home route, reached from /work by the wordmark, keeps the padding the band wrote',
+      })
+      .toBe('auto');
   });
 
   test('the two destinations are separately addressable, --s-lg apart', async ({ page }) => {
