@@ -42,7 +42,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-18-2026 15:00
+last_updated: 10-18-2026 15:14
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1224,6 +1224,41 @@ development_status:
   # 2026-10-17: DW-363 closed. Pending action 8 done at 14:00:18Z from checkout 7dcb8b0: the tournament recreated
   # healthy with HOSTNAME 0.0.0.0, the Traefik probe 200, https://tournament.cuatro.dev/ 200 at 14:00:53Z.
   epic-8-retrospective: done
+  # Epic 9 (added 2026-10-18): deferred-work and retrospective follow-through, epic-9-plan-2026-10-18.md.
+  epic-9: in-progress
+  9-1-records-and-planning-sweep: backlog
+  9-2-process-rules-into-instruction-files: backlog
+  9-3-cs-tracker-secret-key-base-record: backlog
+  9-4-ops-record-pins: backlog
+  9-5-wsl-suite-failure-naming: backlog
+  9-6-registry-gate-hardening: backlog
+  9-7-library-backup-suite-coverage: backlog
+  9-8-tournament-export-sql-test: backlog
+  9-9-shared-probe-scaffold: backlog
+  9-10-commit-ad22-sweep-scripts: backlog
+  9-11-contract-purity-followup-review: backlog
+  9-12-e2e-harness-consolidation: backlog
+  9-13-hub-comment-and-test-hygiene: backlog
+  9-14-anchor-step1-followup-review: backlog
+  9-15-hub-chrome-and-headers: backlog
+  9-16-cv-tech-spellings: backlog
+  9-17-cv-and-404-baselines: backlog
+  9-18-tournament-inert-files-and-tsc: backlog
+  9-19-tracker-flake-and-inert-files: backlog
+  9-20-finance-db-naming: backlog
+  9-21-traefik-ci-job: backlog
+  9-22-tracker-image-fonts-and-size: backlog
+  9-23-tournament-signed-in-state: backlog
+  9-24-digital-library-hygiene-and-demo-match: backlog
+  9-25-cs-tracker-dependency-bump: backlog
+  9-26-cs-tracker-unique-alias: backlog
+  9-27-routing-headers-and-alias: backlog
+  9-28-cloudflare-range-refresh: backlog
+  9-29-www-monitor-location: backlog
+  9-30-list-wheel-off-box-build: backlog
+  9-31-origin-ca-record: backlog
+  9-32-tracker-redis-qbittorrent-home: backlog
+  epic-9-retrospective: optional
 action_items:
   # 2026-09-24: done by Operator ruling, Contract 2.0.0 (commit 40591cd): the keys are
   # --spacing-s-*, a MAJOR with no alias window. DW-15 closed in deferred-work.md.
