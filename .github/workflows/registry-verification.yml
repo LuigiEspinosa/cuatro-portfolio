@@ -56,7 +56,7 @@ jobs:
       # field in `package.json`, and this job has no pnpm for it to find.
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           package-manager-cache: false
 
       # AD-18: the job runs external to the VPS, verified by confirming the
