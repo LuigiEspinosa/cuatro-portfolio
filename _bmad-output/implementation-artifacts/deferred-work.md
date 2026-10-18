@@ -84,7 +84,12 @@ the next free id, one above the highest in the file, and a status line.
     needs a check that reads the line, or the epic should state that it is an
     honour-system gate. This is an architectural question spanning several stories,
     not a defect in this record.
-  status: open
+
+    **Closed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): declared honour-system, no check
+    added. Nothing in the repository consumes the line, so a check would guard a value no step reads. The
+    declaration is in `ops/monitoring.md` § The parse contract: a story that enables automation reads the line by
+    hand first.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
   id: DW-144
@@ -259,7 +264,11 @@ the next free id, one above the highest in the file, and a status line.
     IPv6, by verifying a Satellite over IPv6 first and then adding the three records.
     **2026-09-13:** `wheel.cuatro.dev` joined the group, `A` only, placed by Story 2-25
     mirroring the Anchor's three by its own Ask First rule, so the close is four records.
-  status: open
+
+    **Closed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): accepted, no AAAA records added. The
+    records are proxied, so visitors reach Cloudflare's edge, which already serves IPv6; an origin AAAA record would
+    change nothing a visitor sees.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
   id: DW-152
@@ -1015,6 +1024,12 @@ the next free id, one above the highest in the file, and a status line.
     comment rather than an observation. If it is real it is the estate's only offsite
     copy and it should be written into `ops/` with its retention and its restore
     procedure; if it is not real the estate has no offsite copy of anything.
+
+    **Narrowed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): the Redis and qBittorrent state
+    this entry names (`cuatro-tracker_redis_data`, `digital-library_redis_data`, `cuatro-tracker_qb_config`) is ruled
+    disposable, so it needs no backup. What stays open is the Origin CA private key, which now lives in volume
+    `traefik-origin-ca`: its record, reissue procedure and offsite copy cadence move to story 9-31-origin-ca-record,
+    which closes this entry.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
@@ -1119,6 +1134,14 @@ the next free id, one above the highest in the file, and a status line.
     Hostinger's bundled agent, reachable from nowhere outside the box, so it does not
     reach a hostname. It is third-party software with host-level visibility that nobody
     in the planning record chose, which is worth a knowing decision rather than silence.
+
+    **Ruled 2026-10-18 by the Operator** (`operator-rulings-2026-10-18.md`): both are knowing keeps. qBittorrent stays
+    on the box; where it runs from moves with story
+    9-32-tracker-redis-qbittorrent-home, and its WebUI password and bind address are DW-190's. Monarx is a knowing keep
+    if Hostinger provides it. That provenance is unverified: this entry's "Hostinger's bundled agent" is an inference
+    from the box, not an observation of the Hostinger console. The entry stays open on that half only. **Owner: the
+    Operator.** **Trigger: the Operator observes in the Hostinger console that Monarx is Hostinger's provided agent**,
+    which closes the entry; if it is not, Monarx's keep is re-ruled.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
@@ -1440,7 +1463,11 @@ location: n/a
 source_spec: `spec-1-15-determine-cs-tracker-s-daisyui-adoption-route.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260825-161421-c4ac; this entry preserves the lingering recommendation for a deliberate later review.
-status: open
+note: |-
+  **Closed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): accepted, no follow-up review. Story
+  1-19 executed the decision 1-15 recorded, and the probe re-ran green twice since, so a review of 1-15's record
+  would read a decision already carried out and verified.
+status: done
 
 ### DW-6: Three of the Hub's rendering surfaces, /cv, /recommendation and the 404, are visited by no test in this repository and captured by no screenshot baseline, and they are the only surfaces where the base
 origin: spec-deferred 60453c2584eb
@@ -1678,7 +1705,11 @@ location: n/a
 source_spec: `spec-1-20-record-the-adopted-contract-version-and-the-automation-polic.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260827-161430-4676; this entry preserves the lingering recommendation for a deliberate later review.
-status: open
+note: |-
+  **Closed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): superseded, no follow-up review. The
+  record 1-20 wrote, `ops/contract-adoption.md`, has been rewritten 23 times since, so the version a review would
+  read no longer exists.
+status: done
 
 ### DW-19: Nothing pins what `contracts/tailwind.css` makes `max-w-*` resolve to, so DW-15 shipped silently and its eventual fix has no gate to prove it landed.
 origin: operator-approved 2026-08-28
@@ -3339,7 +3370,11 @@ status: done
     `DESIGN.md:208` is a sentence of prose inside a design spine, and a parser over prose is a
     maintenance liability that fails on a rewording rather than on a change of fact. Choosing between
     a fragile parser and a stated non-goal is a decision, not an oversight.
-  status: open
+
+    **Closed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): a stated non-goal. The Registry is the
+    source of truth for the estate's frameworks and languages, and the Registry side is already asserted; holding the
+    constants against prose in `DESIGN.md` or `EXPERIENCE.md` would need the fragile parser this entry describes.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
   id: DW-239
@@ -5109,7 +5144,10 @@ status: done
     **Owner: unassigned**, and it may retire unfixed. **Trigger: a report of `/cv` still downloading
     a file**, or the first Umami reading after the epic merge showing `/cv` pageviews far below the
     header's other destination, which would be the only evidence the origin can produce.
-  status: open
+
+    **Closed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): won't fix. As this entry states,
+    nothing the origin can do reaches a locally cached 308, and the entry allows it to retire unfixed.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
   id: DW-76
@@ -8597,7 +8635,10 @@ status: done
     `packages/tokens`' importers are unchanged. Two peers were added on purpose, not by accident, and are
     DW-272's. The Hub builds (`corepack pnpm --filter hub build`, exit 0) and its image builds. Still no
     `peerDependencyRules`, since nothing fails.
-  status: open
+
+    **Closed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): accepted, no `peerDependencyRules`.
+    No version the Hub declares or resolves changed and nothing fails, so the linked optional peers are tolerated.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
   id: DW-271
@@ -9041,6 +9082,9 @@ status: done
     **Story 4-11, 2026-10-01: unchanged.** Moving `tournament.cuatro.dev` onto Traefik (`ops/caddy-retirement.md`
     step 2) moves its server's router only; the worker still has no router and no alias on the shared
     network, as ruled 2026-09-29.
+
+    **Ruled 2026-10-18 by the Operator** (`operator-rulings-2026-10-18.md`): no demo upload is needed now. The
+    authenticated route waits. **Trigger: the first real demo upload the tournament needs.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-placement-tournament-on-the-box.md`
@@ -10288,6 +10332,9 @@ status: done
     **Ruled 2026-10-06 by the Operator: all three deferred to his sign-in rework** (the tracker and
     `digital-library` onto the issuer, DW-337, and `cs-tracker`'s page beside them), so no participant's
     demo release (action 9) lands in Epic 5. Owner: that rework.
+
+    **Ruled 2026-10-18 by the Operator** (`operator-rulings-2026-10-18.md`): the sign-in rework stays deferred and is
+    not scheduled in Epic 9. The 2026-10-06 ruling stands. Owner and trigger unchanged: that rework.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-11-demo-and-identity-declarations-verified-against-reality.md`
   id: DW-336

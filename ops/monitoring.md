@@ -1023,6 +1023,12 @@ automation across the estate on the strength of a substring.
   and treat its presence as the gate being open, rather than testing for the positive form.
 - Never branch on the presence of the word `satisfied` alone.
 
+**The gate is honour-system (Operator ruling 2026-10-18, DW-143,
+`_bmad-output/implementation-artifacts/operator-rulings-2026-10-18.md`).** No script, workflow or
+test reads this line, and none is planned: nothing in the repository fails while it reads
+`not-satisfied`. A story that enables automation reads the line by hand before it does, and the
+contract above is what that reader holds it to.
+
 **This file carries exactly one such line.** If a reader finds two, the file is broken and the
 gate must be treated as open until a human resolves it.
 
