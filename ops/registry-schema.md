@@ -179,7 +179,7 @@ DW-28).** `JSON.parse` keeps the last of two equal keys and says nothing, so an 
 two `status` keys validated whichever value survived while the editor flagged the duplicate: AD-4's
 two readers disagreed about one file, and the realistic way in is a merge that duplicates a line. A
 reviver never sees the discarded value, so a scanner runs over the text after `JSON.parse` has
-accepted it, compares keys decoded (`"$schema"` and `"$schema"` are one key, as they are to the
+accepted it, compares keys decoded (`"$schema"` and `"\u0024schema"` are one key, as they are to the
 parser), and refuses at the parse stage, before the schema is applied: the refusal names the file,
 the object's pointer, the key and the line. It is not a fifth rule beyond the schema and does not
 appear in the green line, which enumerates rules applied to the parsed instance; a duplicate never

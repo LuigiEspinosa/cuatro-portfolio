@@ -1180,7 +1180,7 @@ export const RULES_BEYOND_THE_SCHEMA = [
  * editor flags the duplicate: the two halves of AD-4 disagree about the same
  * file. A reviver cannot see the discarded value, hence a scanner. It runs only
  * on text `JSON.parse` has already accepted, so it tracks structure and never
- * validates it. Keys are compared decoded, so `"a"` and `"a"` are one key,
+ * validates it. Keys are compared decoded, so `"a"` and `"\u0061"` are one key,
  * as they are to the parser.
  *
  * @param {string} text
