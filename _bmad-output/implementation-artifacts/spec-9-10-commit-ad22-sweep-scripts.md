@@ -101,11 +101,24 @@ Every layer ran inline in this session (no agent tool to launch reviewer subagen
 
 ## Independent verifier
 
-pending: no independent verifier has run on this story. A separate agent must run it and record its verdict here.
+Independent verifier: PASS on round 1, 2026-10-18, separate agent; tests: all commands run in the story worktree at `fc6d9c1`.
+- `corepack pnpm vitest run ops/__tests__/ad22-refresh.test.ts`: 12 passed of 12.
+- `corepack pnpm typecheck`: clean.
+- `corepack pnpm test -- --run`: 85 files passed of 85; 2009 tests passed and 4 skipped (2013); no WSL-bash flake.
+- Plants: removing the `(^|\/)` anchor in `isTestShaped` failed "counts condition 1 patterns and excludes a tsconfig"; forcing `planRefusal` to true failed "reads a plan 403 as not available, and any other 403 as a defect"; making pull-request pagination always stop after page 1 failed nothing (no test pages past 100). Each plant restored and confirmed with `cmp`.
+- `node ops/ad22-refresh.mjs` with no subcommand: usage, exit 2.
+- Live `node ops/ad22-refresh.mjs font-pins`: exit 0, all five pins moved=false; geist-font 17 commits ahead at `e1f671c` (release v1.8.1), bricolage 4 ahead at `84745e5`.
+- Live `node ops/ad22-refresh.mjs sweep`: exit 0 in 2 min 42 s; the six unmoved repositories match the builder's counts; the Anchor shows 348 test-shaped files and 14 required checks; no repository has a config file, auto-merge, security fixes or a bot-authored pull request.
+- Static: only the two ops files, the two records and this spec changed; nothing under `contracts/`, `.github/` or `apps/`; line 1 of both records unchanged; no dash or emoji on any added line.
+- No container e2e run: no Hub rendered output changed.
+
+Non-blocking notes returned to the Operator: `ops/ad22-refresh.mjs` writes the literal `package.json#renovate` rather than importing `PACKAGE_JSON_KEY`; the pull-request pagination is untested; the committed font control is the pinned bytes and sha256, not the 2026-09-25 fontTools reproduction; list-wheel's `deploy.yml` line 79 matched the soft-fail pattern and is unread.
+
+The closure below names `75dddf4`, the implementation commit as rebased onto `dev` (built as `91e7813`).
 
 ## Ledger closures
 
-**DW-243:** **Closed 2026-10-18 by Story 9-10-commit-ad22-sweep-scripts** (`91e7813`, `ops/ad22-refresh.mjs`: `sweepRepository`, `checkPin`): the estate automation-policy sweep and the upstream font-pin check are committed as one module with two subcommands, `node ops/ad22-refresh.mjs sweep` and `node ops/ad22-refresh.mjs font-pins`, which `ops/contract-adoption.md` § The estate, observed (and its Pending Operator action 5) and `ops/font-contract.md` § The upstream pins now name. The sweep makes the record's calls over the ten names `ops/estate.md` gives and counts test-shaped blobs by condition 1's patterns with `tsconfig.*` excluded, the rule the 2026-09-30 sweep applied by reading; the font check holds each pinned url to its recorded sha256 as its control before weighing the file at the upstream head. Any unexpected status, a non-plan `403` or a truncated tree exits 2. `ops/__tests__/ad22-refresh.test.ts` drives both through a planted `gh` and downloader, every assertion planted, and holds both records naming their command. First run 2026-10-18: both exit 0, and the six repositories whose default branch had not moved reproduced their 2026-09-30 counts.
+**DW-243:** **Closed 2026-10-18 by Story 9-10-commit-ad22-sweep-scripts** (`75dddf4`, `ops/ad22-refresh.mjs`: `sweepRepository`, `checkPin`): the estate automation-policy sweep and the upstream font-pin check are committed as one module with two subcommands, `node ops/ad22-refresh.mjs sweep` and `node ops/ad22-refresh.mjs font-pins`, which `ops/contract-adoption.md` § The estate, observed (and its Pending Operator action 5) and `ops/font-contract.md` § The upstream pins now name. The sweep makes the record's calls over the ten names `ops/estate.md` gives and counts test-shaped blobs by condition 1's patterns with `tsconfig.*` excluded, the rule the 2026-09-30 sweep applied by reading; the font check holds each pinned url to its recorded sha256 as its control before weighing the file at the upstream head. Any unexpected status, a non-plan `403` or a truncated tree exits 2. `ops/__tests__/ad22-refresh.test.ts` drives both through a planted `gh` and downloader, every assertion planted, and holds both records naming their command. First run 2026-10-18: both exit 0, and the six repositories whose default branch had not moved reproduced their 2026-09-30 counts.
 
 Action items: none named for this story.
 

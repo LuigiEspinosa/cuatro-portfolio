@@ -8053,7 +8053,19 @@ status: done
     tests, and the ruling asked for the checks to be scheduled and run once, not scripted.
 
     **Owner: unassigned.** **Trigger: the next AD-22 refresh, which pays the rebuild.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-10-commit-ad22-sweep-scripts** (`75dddf4`, `ops/ad22-refresh.mjs`:
+    `sweepRepository`, `checkPin`): the estate automation-policy sweep and the upstream font-pin check are committed
+    as one module with two subcommands, `node ops/ad22-refresh.mjs sweep` and `node ops/ad22-refresh.mjs font-pins`,
+    which `ops/contract-adoption.md` § The estate, observed (and its Pending Operator action 5) and
+    `ops/font-contract.md` § The upstream pins now name. The sweep makes the record's calls over the ten names
+    `ops/estate.md` gives and counts test-shaped blobs by condition 1's patterns with `tsconfig.*` excluded, the rule
+    the 2026-09-30 sweep applied by reading; the font check holds each pinned url to its recorded sha256 as its
+    control before weighing the file at the upstream head. Any unexpected status, a non-plan `403` or a truncated
+    tree exits 2. `ops/__tests__/ad22-refresh.test.ts` drives both through a planted `gh` and downloader, every
+    assertion planted, and holds both records naming their command. First run 2026-10-18: both exit 0, and the six
+    repositories whose default branch had not moved reproduced their 2026-09-30 counts.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-vercel-removal.md`
   id: DW-244
