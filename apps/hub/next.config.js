@@ -10,31 +10,20 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [],
   },
-  // The home document varies on a request header, so it says so (Story 2-13).
+  // **No `headers()` block, and no `Vary: Save-Data` (Story 9-15, DW-51).** `app/page.tsx` reads
+  // `Save-Data` and serves a different hero for it, so `/` is two documents behind one URL, and AD-26
+  // puts Cloudflare in front of this origin. Story 2-13 declared `Vary: Save-Data` here for it, and
+  // the declaration never reached the wire: Next's App Router handler
+  // (`next/dist/build/templates/app-page.js`, Next 16.2.1) calls `res.setHeader('Vary', ...)` with
+  // its own RSC list before every render, replacing whatever this block or a proxy set. A header the
+  // source claims and the response does not carry is the dishonest half, so it is gone.
   //
-  // `app/page.tsx` reads `Save-Data` and serves a different hero for it, and AD-26 puts Cloudflare
-  // in front of this origin. A shared cache that stored one visitor's document and replayed it for
-  // another would hand a data-saving visitor the 3D front door, or the reverse.
-  //
-  // **This declaration does not reach the wire today, and it is kept anyway.** Measured 2026-09-07
-  // against `.next/standalone/server.js`: a custom header from this block is applied (a probe key
-  // arrived), and then Next overwrites `Vary` with its own
-  // `RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch,
-  // Accept-Encoding` for every App Router response, so this value is replaced rather than merged.
-  // What actually forbids the mis-serve today is the `Cache-Control: no-store, must-revalidate,
-  // no-cache, max-age=0, private` Next sends for a dynamically rendered route, which no shared
-  // cache may store at all. `tests/e2e/front-door.pw.ts` asserts the guarantee rather than the
-  // header: `/` is either varying on `Save-Data` or unstorable by a shared cache, and the day
-  // someone makes it cacheable without the first, that case fails. DW-51 records the gap and what
-  // closing it costs.
-  async headers() {
-    return [
-      {
-        source: '/',
-        headers: [{ key: 'Vary', value: 'Save-Data' }],
-      },
-    ];
-  },
+  // What forbids a shared cache from replaying one visitor's document for another is the
+  // `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate` Next answers a
+  // dynamically rendered route with. `tests/e2e/front-door.pw.ts` holds both halves: `/` is either
+  // varying on `Save-Data` or unstorable, and every header a `headers()` block here declares for `/`
+  // arrives on the wire as written, so a declaration Next replaces fails there rather than reading
+  // as a promise.
   async redirects() {
     return [
       // **`statusCode: 301` rather than `permanent: true`, deliberately (Story 2-14).**

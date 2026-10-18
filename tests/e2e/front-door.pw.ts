@@ -527,12 +527,13 @@ test.describe('the served document', () => {
     // every visitor. A shared cache that stored one and replayed it for the other would hand a
     // data-saving visitor the 3D front door, or the reverse.
     //
-    // **Asserted as the guarantee rather than as one header, because Next owns `Vary` here.**
-    // `next.config.js` declares `Vary: Save-Data` for this route and Next overwrites it with its own
-    // RSC list on every App Router response, measured 2026-09-07 and recorded in DW-51. What holds
-    // today is the `no-store, private` a dynamically rendered route is answered with, which forbids
+    // **Asserted as the guarantee rather than as one header, because Next owns `Vary` here.** Next's
+    // App Router handler sets `Vary` to its own RSC list before every render, replacing any value a
+    // config or a proxy set (DW-51, measured 2026-09-07 and again 2026-10-18 on Next 16.2.1), so
+    // Story 9-15 removed the `Vary: Save-Data` that `next.config.js` declared and never sent. What
+    // holds is the `no-store, private` a dynamically rendered route is answered with, which forbids
     // shared storage outright. Either is sufficient and one of them must be true: the day someone
-    // makes this route cacheable without repairing the `Vary`, this case fails.
+    // makes this route cacheable without a `Vary` that reaches the wire, this case fails.
     const response = await request.get(new URL(ROUTE, baseURL as string).href, {
       headers: { 'Save-Data': 'on' },
     });
@@ -551,6 +552,31 @@ test.describe('the served document', () => {
       `/ varies on the Save-Data request header and neither says so nor forbids a shared cache ` +
         `from storing it. Vary is "${vary}" and Cache-Control is "${cacheControl}"`
     ).toBe(true);
+  });
+
+  test('carries every header next.config.js declares for it, as declared', async ({ request, baseURL }) => {
+    // **The source may not promise a header the wire does not carry** (Story 9-15, DW-51). The
+    // `Vary: Save-Data` Story 2-13 declared read as the route's cache rule for six weeks and never
+    // left the server, because Next replaces `Vary` after the config is applied. Today the config
+    // declares no header for `/`, so this reads zero declarations and passes on nothing; it is here
+    // for the next one, and the spec records it failing on the old declaration planted back.
+    const nextConfig = require(join(REPO_ROOT, 'apps', 'hub', 'next.config.js')) as {
+      headers?: () => Promise<{ source: string; headers: { key: string; value: string }[] }[]>;
+    };
+    const declared = ((await nextConfig.headers?.()) ?? [])
+      .filter((rule) => rule.source === ROUTE)
+      .flatMap((rule) => rule.headers);
+
+    const response = await request.get(new URL(ROUTE, baseURL as string).href);
+    expect(response.status(), 'the home route did not answer 200').toBe(200);
+    const served = response.headers();
+    for (const { key, value } of declared) {
+      expect(
+        served[key.toLowerCase()],
+        `next.config.js declares ${key}: ${value} for / and the response carries ` +
+          `${key}: ${served[key.toLowerCase()] ?? '(nothing)'}`
+      ).toBe(value);
+    }
   });
 });
 

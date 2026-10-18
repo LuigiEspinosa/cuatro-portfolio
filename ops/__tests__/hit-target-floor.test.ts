@@ -781,9 +781,10 @@ describe('the assertion is sourced and scoped the way the record says', () => {
     // score above is then asserted twice on one page. Story 2-14 removed `/projects` from the list
     // when it redirected that route; this is what notices the next time the two drift.
     // **Both sides are scoped to the block that carries the values, and symmetrically so.**
-    // `next.config.js` also declares a `headers()` source, and reading every `source:` in the file
-    // counts `/` as redirected and fails this case on a correct config, which is how the scoping was
-    // found rather than argued. `.lighthouserc.js` has the mirror hazard: a quoted URL can appear in
+    // `next.config.js` declared a `headers()` source for `/` until Story 9-15 (DW-51), and reading
+    // every `source:` in the file counted `/` as redirected and failed this case on a correct config,
+    // which is how the scoping was found rather than argued; a later `headers()` block meets the same
+    // reader. `.lighthouserc.js` has the mirror hazard: a quoted URL can appear in
     // a comment or in an `upload` target, and a reader that took any single-quoted `http` string
     // would then be comparing against something LHCI never collects.
     const redirectBlock = /async redirects\(\) \{\n([\s\S]*?)\n {2}\},/.exec(read(NEXT_CONFIG_REL))?.[1];
