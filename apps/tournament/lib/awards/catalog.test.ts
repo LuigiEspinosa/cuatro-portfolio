@@ -499,6 +499,9 @@ describe('toCuratePayload — the RPC projection (AC1/AC4)', () => {
         floorRounds: 24,
         floorKills: 0,
         priority: 1,
+        secondaryStat: 'adr',
+        effNumKey: 'kills',
+        effDenKey: 'deaths',
       },
     ]);
     expect(payload).toEqual([
@@ -511,6 +514,9 @@ describe('toCuratePayload — the RPC projection (AC1/AC4)', () => {
         floor_rounds: 24,
         floor_kills: 0,
         priority: 1,
+        secondary_stat: 'adr',
+        eff_num_key: 'kills',
+        eff_den_key: 'deaths',
       },
     ]);
   });

@@ -214,7 +214,7 @@ describe('fetchVerificationBundle — fails CLOSED', () => {
 function makeTableClient(result: { data?: unknown; error?: unknown }) {
   const maybeSingle = vi.fn(() => Promise.resolve(result));
   const eq = vi.fn(() => ({ maybeSingle }));
-  const select = vi.fn(() => ({ eq }));
+  const select = vi.fn((_columns: string) => ({ eq }));
   const from = vi.fn(() => ({ select }));
   return { client: { from } as unknown as SupabaseClient, from, select, eq, maybeSingle };
 }

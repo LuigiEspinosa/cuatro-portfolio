@@ -82,7 +82,7 @@ const REAL_SEED_HEX = '1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815
 const toHex = (b: Uint8Array): string =>
   Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
 
-const fromHex = (h: string): Uint8Array =>
+const fromHex = (h: string): Uint8Array<ArrayBuffer> =>
   new Uint8Array((h.match(/../g) ?? []).map((p) => Number.parseInt(p, 16)));
 
 // ── gate 1: the block function ─────────────────────────────────────────────────
