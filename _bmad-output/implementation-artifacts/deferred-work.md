@@ -10438,7 +10438,12 @@ status: done
 
     **Owner: the next `cs-tracker` story that touches `assets/css/app.css`.** **Trigger: that story.** Add the
     line to the unlayered rule, and extend `token_contract_test.exs`'s hand-fix 3 assertion to read it.
-  status: open
+
+    **Closed 2026-10-17 by the Operator's ruling R28 (`ops/restyle-floor.md`), Q-1:** § 4's `var(--r-hair)` does not
+    bind a control's or a link's focus ring; the ring follows the element's own square corner, consistent with I-11
+    and the square dot. `cs-tracker`'s square ring conforms as it stands, so no `cs-tracker` work follows.
+    Written into `RESTYLE-SPEC.md` 1.1.3.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
   id: DW-349
   summary: >-
@@ -10525,7 +10530,12 @@ status: done
     a `core.autocrlf=true` worktree of `dev` `9e4572d` (`expected -1 to be greater than 1016`), fixed by normalizing
     line ends in the test's `read` on `digital-library` branch `fix/retro8-field-focus-radius` (`83c61f0`). **Owner
     now: the Operator's merge, `ops/restyle-floor.md` R26.** **Trigger: R26 done**, which closes this entry.
-  status: open
+
+    **Closed 2026-10-17 by `ops/restyle-floor.md` R26, done at 15:59:39Z:** the Operator merged `digital-library` PR #71
+    (`dev` to `main`) as `main` `1e7df0c` (`1e7df0c3ed928c7f93a13bc3209f32971a9ae475`), carrying the line-end fix from
+    `83c61f0`; on that sha `ci.yml` (`CI`) run 39047041990 and `test.yml` (`Test`) run 39047042007 read success. The box's
+    `~/library-redeploy.sh` redeployed it, and the live `/login` stylesheet carries the I-11 rule.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
   id: DW-353
   summary: >-
@@ -10712,4 +10722,12 @@ status: done
     a probe from Traefik and a second recreate if it is refused.
 
     **Owner: the next Anchor story.** **Trigger: before the next tournament rollout.**
-  status: open
+
+    **Closed 2026-10-17 by `ops/tournament-placement.md` Pending Operator action 8,** done at 14:00:18Z on the box as
+    `deploy`, run by the orchestrator with the Operator's approval: checkout `7dcb8b0`, `docker-compose.yml` carries
+    `HOSTNAME=0.0.0.0` (grep count 2), `TOURNAMENT_TAG=3f8a12e9864fe6e406cdc6575cfb4618b0f5b5f9`, and
+    `"$C --profile tournament up -d tournament"` recreated it. Compose ps read `cuatro-portfolio-tournament-1 Up 40
+    seconds (healthy)`, `printenv HOSTNAME` read `0.0.0.0`, Next printed `Network: http://0.0.0.0:3000`, the Traefik
+    probe of `http://tournament:3000/api/health` answered `HTTP/1.1 200 OK`, and `https://tournament.cuatro.dev/`
+    answered 200 at 14:00:53Z.
+  status: done
