@@ -10,7 +10,7 @@ export const BASH = (() => {
   return existsSync(candidate) ? candidate : 'bash';
 })();
 
-// DW-135: on the Windows host WSL sometimes stalls for about 30 seconds (29116 ms to 30216 ms observed) and
+// DW-135: on the Windows host WSL sometimes stalls for about 30 seconds (25291 ms to 30469 ms observed on 2026-10-18) and
 // `bash.exe` exits 1 having run nothing, writing its own error to stdout in UTF-16LE, such as "Catastrophic
 // failure" with "Error code: Bash/Service/E_UNEXPECTED". Read as UTF-8 that text is NUL-interleaved, and the
 // harnesses print only stderr, which is empty, so the stall read as silence. No script here runs that long
