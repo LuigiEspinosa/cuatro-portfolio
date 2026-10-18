@@ -853,6 +853,54 @@ read only, never by checking out or editing an adopter's tree.
 raises the count, by the paragraph above, and the release after Epic 8's restyles reaches more
 Satellites by construction. The count is re-read here at each event, not when Epic 6 is considered.
 
+### The count re-taken after Epic 8, 2026-10-18
+
+**The count is still 1 of the 3 that open Epic 6, so Epic 6 does not open.** Two more events are
+needed; Stories 6.2 to 6.4 stay backlog. **Decision**, by Story 6.1's acceptance criteria, unchanged
+since 2026-10-13.
+
+The one counted event is still ledger row 1: **2026-09-24, Contract 1.0.0 to 2.0.0, `cs-tracker`
+re-vendored** (`991d0f6`, re-vendor of the bump `40591cd`). Every input below was **observed
+2026-10-18**, the `gh api` reads between 18:45:18Z and 18:45:59Z, read only, never by checking out or
+editing an adopter's tree.
+
+- **Releases published after `v1.0.0`: still one.** `git log` over `contracts/` with the two Registry
+  files excluded lists the same six commits on `dev` (`63f6b06`) and on `origin/main` (`1cf5f35`), the
+  last `40591cd` on 2026-09-24; `contracts/tokens.css` line 2 and `packages/tokens/package.json` read
+  2.0.0. The repository carries no git tag, local or on `origin`. No release followed 2.0.0, so no
+  event can have followed row 1.
+- **`cs-tracker`: no further re-vendor.** Its commits over `assets/css/cuatro-contracts/` on every
+  remote branch (`main` at `9f70d28`, `dev` and three `fix/` branches) are `3f37cce` (2026-08-27, the
+  1.0.0 adoption) and `991d0f6` (2026-09-24) only, and `tokens.css` on `main` reads `Contract v2.0.0`.
+- **`list-wheel` and `digital-library` vendor the folder now, and neither is an event.** `list-wheel`'s
+  `src/styles/cuatro-contracts/` has one commit on each branch that holds it (`main` and `fix/8-spec-field-focus-radius`;
+  `gh-pages` holds none), `e7b7887` (2026-10-13, on `main` at
+  `a0f7d5b`); `digital-library`'s `apps/web/src/lib/cuatro-contracts/` has one, `960050b` (2026-10-13,
+  on `main` at `1e7df0c` and on `dev`); both `tokens.css` read `Contract v2.0.0`. The rule counts a
+  **release**, and a release is one event however many Satellites it reaches; 2.0.0 is that release
+  and is row 1 already. Neither commit moves a folder from one version to another: each is the first
+  vendoring of a Satellite that held no folder, the case `cs-tracker`'s `3f37cce` set and § The adopted
+  versions ruled on 2026-10-17, so neither raises the count, nor adds a row (a row is a release, and a
+  second row for 2.0.0 would count it twice), nor joins row 1's re-vendored column, which names a
+  move from 1.0.0. Read strictly, Epic 8's two adoptions are zero events.
+- **The Anchor's `apps/tracker/app/cuatro-contracts/`** (`b238394`, 2026-10-17, deleted by R24 in
+  `59f79ab` the same day) is not a Satellite's folder and was a first copy of 2.0.0; `git ls-files`
+  names no `cuatro-contracts` path today. Not counted.
+- **No other repository vendors the folder.** The recursive tree of the default branch through
+  `gh api`, taken for every one of the account's 32 repositories, holds a `cuatro-contracts` path in
+  the three Satellites above only. None is in the other 27 that have a tree, `StreamVault`, `MaiCoin`,
+  `poketracker-go`, `Mutuo`, `covidmap` (`master`), `future-vizion`, `cuatro-finance`,
+  `cuatro-tracker` and `cs-tournament` among them, nor in this repository's `main`; `tcg-tracker` is
+  empty and has no tree.
+- **Excluded, by name, as on 2026-10-13:** everything present at `v1.0.0`; Story 1-20's unpublished
+  `v1.0.1` rehearsal; every Registry release (1.1.0 to 1.11.0 today, 1.11.0 giving `list-wheel` and
+  `digital-library` `token_contract` 2.0.0 in `47e5608`), because a Satellite fetches the Registry over
+  HTTPS and never vendors it; and every change to a document, this subsection included.
+
+**The next event** is still the next contract release after 2.0.0 re-vendored into a Satellite. Three
+Satellites now vendor the folder, so that release is hand-propagated by construction, and it counts
+once, as row 2, however many of the three it reaches.
+
 ## The AD-19 pass
 
 `cs-tracker` was measured on **2026-08-27** in Playwright's Chromium 151.0.7922.34 at a 360x800
