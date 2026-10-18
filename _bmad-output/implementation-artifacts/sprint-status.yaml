@@ -1249,7 +1249,8 @@ development_status:
   9-10-commit-ad22-sweep-scripts: done
   9-11-contract-purity-followup-review: backlog
   9-12-e2e-harness-consolidation: backlog
-  9-13-hub-comment-and-test-hygiene: backlog
+  # 2026-10-18: done (spec-9-13-hub-comment-and-test-hygiene.md, verifier pass round 2): DW-144, 155, 217 and 239 and epic-2 retro item 7 closed; Hub citations name the describe, /api/health's serialized body and the Umami tag are tested, .json is scanned.
+  9-13-hub-comment-and-test-hygiene: done
   9-14-anchor-step1-followup-review: backlog
   9-15-hub-chrome-and-headers: backlog
   9-16-cv-tech-spellings: backlog
@@ -1494,7 +1495,10 @@ action_items:
       and the stale counts at SuiteDirectory.scss:9-10 and useReduceMotion.ts:17-19,
       citing the describe by name."
     owner: "Cuatro"
-    status: open
+    # 2026-10-18: done by Story 9-13 (spec-9-13-hub-comment-and-test-hygiene.md, verifier pass round 2): the four
+    # citations name the describe 'the Registry stays out of the browser bundle'; SuiteDirectory.scss and
+    # useReduceMotion.ts state the true counts.
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
   - id: "epic-2-retro-item-8-fix-dw-21-s-strings-in-content-work-ts-n"

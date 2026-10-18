@@ -107,7 +107,15 @@ the next free id, one above the highest in the file, and a status line.
     monitor would report the Anchor down while it is healthy. A comment on the route
     and a test asserting the serialized form would close it. Left out of this story
     because its task list is confined to `ops/monitoring.md`.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-13-hub-comment-and-test-hygiene** (`bf0b58f`,
+    `apps/hub/app/api/health/__tests__/route.test.ts`: `GET /api/health`): the `next/server` mock is
+    gone, and the cases run under the node environment against the real `NextResponse`, reading the
+    serialized body: one asserts the literal substring `"status":"ok"` the keyword monitor asserts, one
+    the 200 status and JSON content type, one the version and uptime parsed back from the text.
+    `route.ts` carries a comment naming the monitored substring. Each assertion was planted,
+    pretty-printing the body among them.
+  status: done
 
 - source_spec: none, found during the Story 1.7 DNS pass on 2026-08-16
   id: DW-145
@@ -371,7 +379,15 @@ the next free id, one above the highest in the file, and a status line.
     and a Vitest render of `RootLayout` with both env values stubbed asserting the
     script `src` and `data-website-id`. This is the same class of gap that produced
     incident 3 in Story 1-21 and hid the inverted monitor.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-13-hub-comment-and-test-hygiene** (`bf0b58f`,
+    `apps/hub/app/__tests__/layout.test.tsx`: `the root layout carries the first-party Umami tag`): the
+    health half closes with DW-144. The tag half is a Vitest case that stubs both Umami variables and
+    finds the `next/script` element in the tree `RootLayout` returns, asserting its `src`
+    (`<url>/script.js`) and `data-website-id`, plus two cases that each empty one variable and find no
+    tag. Each assertion was planted. No job reads a monitor's configuration; `ops/monitoring.md`
+    remains the record of that.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
   id: DW-156
@@ -2777,7 +2793,13 @@ status: done
     Not widened here because the same constant feeds the root pin, `PRESENT_EXTENSIONS` and two
     count floors in that file, so the change is that file's to make deliberately rather than a
     side effect of this story. Nothing under a scanned root is JSON today, so the gap is latent.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-13-hub-comment-and-test-hygiene** (`421c0ce`,
+    `apps/hub/app/__tests__/anchor-contract.test.ts`: `SCANNED_EXTENSIONS`): `.json` is scanned. A
+    planted `lib/planted.json` naming `contracts/tokens.css` fails the `contracts/` mention check, and
+    a planted tracked JSON under a new root fails the root pin; no tracked JSON sits under a scanned
+    root, so the floors and `PRESENT_EXTENSIONS` are unchanged.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
   id: DW-218
@@ -3443,7 +3465,16 @@ status: done
     Story 2-31 owns the component next: it adds the Annotated and Side-ruled variants and retires
     `HudLabel` into it. That is the point at which the prop's contract is worth restating against
     every real call site rather than against one.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-13-hub-comment-and-test-hygiene** (`ee9e2d3`,
+    `apps/hub/components/molecules/PlateMark/PlateMark.tsx`: `PlateMarkProps.label`): the prop's
+    contract is restated against every call site rather than one: a page's identity (`CvIntro`,
+    `Error404`), the site's own identity over a block with no heading (`Premise`, as
+    `mockups/key-screens.html` draws it), and a counted readout (`WorkHero`'s meta line, which the old
+    text's "never a count" contradicted). The count is a length read from its source, never a typed
+    number. The component docblock says the same. `DESIGN.md`'s "section identity above a section
+    head" is left as written.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-31
