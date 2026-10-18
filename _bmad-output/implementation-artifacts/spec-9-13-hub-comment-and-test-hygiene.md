@@ -61,7 +61,7 @@ The Blind Hunter layer asks for a context-free subagent, and this run had no sub
 
 ## Independent verifier
 
-pending
+Round 1: findings. The verifier planted an envelope (`NextResponse.json({ data: { status, version, uptime } })`) and the substring case stayed green, because compact `{"data":{"status":"ok",...}}` still carries `"status":"ok"`; only the version case went red. So the new docblocks in `route.ts` and `__tests__/route.test.ts` were wrong to say an envelope takes the substring off the wire, and `route.ts` was wrong to require `status` at the top level. Both now name only what removes the substring: pretty-printing the body, or renaming or retyping `status`. This section also read `pending` while the front matter read `done`; this entry records the round. Fixed in the commit that follows this round.
 
 ## Ledger closures
 

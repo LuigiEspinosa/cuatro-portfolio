@@ -5,8 +5,8 @@ import { GET } from '../route';
 /**
  * The real `NextResponse`, never a mock of it (DW-144, DW-155). The external keyword monitor in
  * `ops/monitoring.md` asserts the literal substring `"status":"ok"` against the bytes on the wire,
- * so a case that read the plain object back would stay green while pretty-printing or an envelope
- * took that substring off the wire. Each case reads the serialized body.
+ * so a case that read the plain object back would stay green while pretty-printing the body, or
+ * renaming or retyping `status`, took that substring off the wire. Each case reads the serialized body.
  */
 describe('GET /api/health', () => {
   it('serializes the exact substring the keyword monitor asserts', async () => {
