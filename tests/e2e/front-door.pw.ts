@@ -1,4 +1,5 @@
 import { test, expect, type APIRequestContext, type Browser, type Page } from '@playwright/test';
+import { join, resolve } from 'node:path';
 import { FINGERPRINTS, RENDERED_VIEWPORT, goTo, hydrated, rootCustomPropertyValue } from './harness';
 
 /**
@@ -58,6 +59,13 @@ const SETTLE_TIMEOUT = 15_000;
  * same reason as `tests/e2e/premise.pw.ts:59`.
  */
 const WIDE_VIEWPORT = { width: 1024, height: 800 } as const;
+
+/**
+ * `__dirname` rather than `import.meta.url`: Playwright transpiles a spec to CommonJS and the
+ * repository declares no `"type": "module"`, so `import.meta` is a syntax error at run time here.
+ * The `next.config.js` case below is its one reader.
+ */
+const REPO_ROOT = resolve(__dirname, '..', '..');
 
 /**
  * The gem's own fingerprint, from the table `ops/asset-budget.mjs` classifies with, never restated.
