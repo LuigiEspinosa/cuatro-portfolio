@@ -68,11 +68,32 @@ Every layer ran inline in this session (no agent tool). The independent verifier
 
 ## Independent verifier
 
-pending
+**Independent verifier:** PASS on round 2, 2026-10-18, separate agent; tests: all runs on the story worktree at
+`dcfbc4d` (three commits over `origin/dev`, before the rebase that made the fix commit `2a05323`).
+- Compose config: `export HUB_TAG="$(git rev-parse HEAD)"; docker compose --env-file <empty file> --profile finance
+  --profile migrate config --format json`: exit 0, the only warning `UMAMI_APP_SECRET` (the empty env file).
+  `finance` and `finance-migrate` both resolve `DATABASE_URL=postgresql://cuatro_finance:@estate-postgres:5432/cuatro_finance`,
+  networks `[estate-postgres]`, no `depends_on`; no top-level `volumes`; services `anchor-app anchor-umami
+  anchor-umami-migrate finance finance-migrate tracker-migrate tracker-migrate-demo`.
+- `corepack pnpm typecheck` (root): exit 0. `corepack pnpm --filter finance typecheck`: exit 0.
+- `corepack pnpm --filter finance test -- --run`: 5 files, 70 tests passed.
+- `corepack pnpm test -- --run`, full root suite: 4 files failed, 83 passed (87); 4 failed, 2026 passed, 9 skipped
+  (2039 tests). All 4 failures were DW-135 WSL-bash stalls (`deploy-remote`, `demo-reset`, `library-backup`,
+  `postgres-backup`, "WSL did not answer" at about 30s); the four together again stalled in other cases; each alone
+  passed: `deploy-remote` 28/28, `demo-reset` 30/30, `library-backup` 66/66, `postgres-backup` 20 passed, 1 skipped.
+- Verifier's plants, each restored with `git checkout`, the worktree clean before and after: `provision.sql`'s
+  `CREATE ROLE` limit set to 11 failed `finance-image.test.ts` 2 of 10 (`expected [ 'cuatro_finance', '11' ] to
+  deeply equal [ 'cuatro_finance', '10' ]`); `finance-migrate`'s `estate-postgres` network replaced by
+  `depends_on: anchor-db` failed `compose.test.ts` 1 of 30 ("reaches cuatro_finance on the estate-postgres network,
+  and nothing declares anchor-db any more"). Restored, the two files passed 40/40.
+- Also checked: nothing under `contracts/`, and `ci.yml`, `deferred-work.md` and `sprint-status.yaml` untouched; no
+  em-dash, en-dash, dash-standing double hyphen or emoji on any added line; three single-line Conventional subjects;
+  the remaining `anchor-db` mentions in `ops/` are dated history and `docker-compose.yml` names it no more; the
+  DW-300 closure matches the diff; the spec states no box step, since finance is placed nowhere.
 
 ## Ledger closures
 
-**DW-300:** **Closed 2026-10-18 by Story 9-20-finance-db-naming** (`81adf0a`, `docker-compose.yml`: `finance`, `finance-migrate`): finance's role and database are `cuatro_finance` everywhere the repository names them. Both services read `postgresql://cuatro_finance:${CUATRO_FINANCE_DB_PASSWORD-}@estate-postgres:5432/cuatro_finance` and join `estate-postgres`, `apps/finance/prisma/provision.sql` creates `cuatro_finance` with the limit and `REVOKE` the estate init applies (a case in `docker/__tests__/finance-image.test.ts` holds the two equal), and `image-finance.yml`'s throwaway URL names it. Finance was `anchor-db`'s last reader, so that service and its `postgres_data` volume are removed from `docker-compose.yml`; the container and volume had already gone at `ops/caddy-retirement.md` step 12. Finance is placed nowhere, so no box step followed; the estate Postgres has held `cuatro_finance` since 2026-09-30.
+**DW-300:** **Closed 2026-10-18 by Story 9-20-finance-db-naming** (`2a05323`, `docker-compose.yml`: `finance`, `finance-migrate`): finance's role and database are `cuatro_finance` everywhere the repository names them. Both services read `postgresql://cuatro_finance:${CUATRO_FINANCE_DB_PASSWORD-}@estate-postgres:5432/cuatro_finance` and join `estate-postgres`, `apps/finance/prisma/provision.sql` creates `cuatro_finance` with the limit and `REVOKE` the estate init applies (a case in `docker/__tests__/finance-image.test.ts` holds the two equal), and `image-finance.yml`'s throwaway URL names it. Finance was `anchor-db`'s last reader, so that service and its `postgres_data` volume are removed from `docker-compose.yml`; the container and volume had already gone at `ops/caddy-retirement.md` step 12. Finance is placed nowhere, so no box step followed; the estate Postgres has held `cuatro_finance` since 2026-09-30.
 
 Action items: none named for this story.
 

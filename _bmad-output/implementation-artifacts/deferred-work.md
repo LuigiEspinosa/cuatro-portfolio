@@ -9627,7 +9627,9 @@ status: done
     `finance-migrate` still name it; after that step, starting it creates an empty database, which the
     `docker-compose.yml` comment now says. The fix stays this entry's: point finance at
     `estate-postgres:5432/cuatro_finance`, then remove the declaration.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-20-finance-db-naming** (`2a05323`, `docker-compose.yml`: `finance`, `finance-migrate`): finance's role and database are `cuatro_finance` everywhere the repository names them. Both services read `postgresql://cuatro_finance:${CUATRO_FINANCE_DB_PASSWORD-}@estate-postgres:5432/cuatro_finance` and join `estate-postgres`, `apps/finance/prisma/provision.sql` creates `cuatro_finance` with the limit and `REVOKE` the estate init applies (a case in `docker/__tests__/finance-image.test.ts` holds the two equal), and `image-finance.yml`'s throwaway URL names it. Finance was `anchor-db`'s last reader, so that service and its `postgres_data` volume are removed from `docker-compose.yml`; the container and volume had already gone at `ops/caddy-retirement.md` step 12. Finance is placed nowhere, so no box step followed; the estate Postgres has held `cuatro_finance` since 2026-09-30.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
   id: DW-301
   summary: >-
