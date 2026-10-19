@@ -30,7 +30,7 @@ jobs:
     env:
       IMAGE: ghcr.io/luigiespinosa/finance:${{ github.sha }}
       # A throwaway Postgres on this runner, torn down with it. The passwords below guard nothing.
-      DATABASE_URL: postgresql://finance:throwaway@finance-db:5432/finance
+      DATABASE_URL: postgresql://cuatro_finance:throwaway@finance-db:5432/cuatro_finance
 
     steps:
       - uses: actions/checkout@v7
@@ -38,9 +38,9 @@ jobs:
       - name: Build
         run: docker build --file apps/finance/Dockerfile --tag "$IMAGE" .
 
-      # AD-10 and AD-23 run for real before anything is pushed: the role and database `finance` are
-      # provisioned by the file placement will run, and the image's own migration toolchain applies every
-      # migration, as `finance-migrate` does before a rollout.
+      # AD-10 and AD-23 run for real before anything is pushed: the role and database `cuatro_finance` are
+      # provisioned as the estate Postgres's init creates them, and the image's own migration toolchain
+      # applies every migration, as `finance-migrate` does before a rollout.
       - name: Provision a throwaway finance database
         run: |
           docker network create finance

@@ -224,7 +224,11 @@ Each goes in its own step, in this order, and each step ends with the removal of
 **`anchor-db`'s declaration stays in `docker-compose.yml`.** Finance names it (`finance`, `finance-migrate`,
 DW-300) and is placed nowhere; nothing a deploy runs starts it (`ops/deploy-remote.sh` rolls `anchor-app`
 and runs `anchor-app-migrate` alone, neither depending on it). After step 12, starting it would create an
-empty database, which the file's comment now says.
+empty database, which the file's comment now says. **Story 9-20, 2026-10-18:** finance now names
+`cuatro_finance` at `estate-postgres`, and the declaration and its volume `postgres_data` are removed from
+`docker-compose.yml` (DW-300). Step 12's rollback recreated the container from that declaration; restoring
+the offsite dump `umami-anchor-db-20261001T055804Z.dump` now needs a throwaway `postgres:16-alpine` of the
+Operator's choosing, though nothing reads it: Umami serves from the estate.
 
 **What the Operator said about data, recorded as context only.** On 2026-10-01 the Operator said every
 application's data will be wiped for a clean start after this project. That changes nothing here: each
