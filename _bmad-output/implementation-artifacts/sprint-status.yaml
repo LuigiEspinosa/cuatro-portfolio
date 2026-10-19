@@ -1248,7 +1248,8 @@ development_status:
   # 2026-10-18: done (spec-9-10-commit-ad22-sweep-scripts.md, verifier pass round 1): DW-243 closed; ops/ad22-refresh.mjs runs the AD-22 sweep and font-pin check, named by contract-adoption.md and font-contract.md.
   9-10-commit-ad22-sweep-scripts: done
   9-11-contract-purity-followup-review: backlog
-  9-12-e2e-harness-consolidation: backlog
+  # 2026-10-18: done (spec-9-12-e2e-harness-consolidation.md, verifier pass round 1): DW-22, DW-232, DW-40, DW-49, DW-237, DW-221, DW-105, DW-61 and DW-224 closed; goTo, plantStyle, probeComputed, SURFACES and FINGERPRINTS live once in tests/e2e/harness.ts, SWEPT maps SURFACES, contract-anchor's re-fetches retry a thrown request.
+  9-12-e2e-harness-consolidation: done
   # 2026-10-18: done (spec-9-13-hub-comment-and-test-hygiene.md, verifier pass round 2): DW-144, 155, 217 and 239 and epic-2 retro item 7 closed; Hub citations name the describe, /api/health's serialized body and the Umami tag are tested, .json is scanned.
   9-13-hub-comment-and-test-hygiene: done
   9-14-anchor-step1-followup-review: backlog
@@ -1513,13 +1514,15 @@ action_items:
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
+  # 2026-10-18: done by Story 9-12 (spec-9-12-e2e-harness-consolidation.md, 292bfb8): probeComputed, goTo,
+  # plantStyle and the FINGERPRINTS table live once in tests/e2e/harness.ts; DW-22, DW-232 and DW-49 closed.
   - id: "epic-2-retro-item-9-move-the-duplicated-e2e-helpers-into-tes"
     epic: 2
     action: "Move the duplicated e2e helpers into tests/e2e/harness.ts, probeComputed
       first, then goTo, plantStyle and the FINGERPRINTS parse, closing DW-22, DW-232
       and DW-49."
     owner: "Cuatro"
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
   - id: "epic-2-retro-item-10-process-use-awaiting-operator-for-a-stor"

@@ -1872,7 +1872,9 @@ reason: |-
   all. Deferred rather than done because it edits a file shared by every rendered assertion in
   the repository, which is a change that deserves its own verification rather than riding along
   inside a defect fix.
-status: open
+
+  **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/harness.ts`: `goTo`): one navigation guard now lives in the harness and `expectRouteScreenshot` uses it, so the screenshot path and the assertion path cannot drift. The eighteen local copies are gone, every inline `page.goto` plus status check in the contract specs, narrative, front-door and suite-directory routes through it, and the unguarded Hub navigations in `projects-redirect.pw.ts` and `rendered-output.pw.ts` gained it after each target was checked. `rendered-output.pw.ts` plants its refusal.
+status: done
 
 ### DW-23: The container invocation that actually runs the e2e suite is nowhere recorded, and the one a reader would construct fails.
 origin: spec-deferred 2026-08-29
@@ -2925,7 +2927,9 @@ status: done
     `ops/rendered-output-harness.md` was updated to add the story; the file a reader actually opens
     was not. Story 2-8's boundaries made `harness.ts` reuse-only, so this is filed rather than
     fixed.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/harness.ts` header): the docstring no longer lists importing stories; it names the helpers and states that every `.pw.ts` under `tests/e2e` imports the file.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
   id: DW-222
@@ -2975,7 +2979,9 @@ status: done
     the failure mode it exists to prevent. Observed 2026-09-06. The fix is a bounded retry on the
     request, or asserting the served bytes rather than re-fetching over the network, not a
     `test.retry` on the whole case, which would hide a real 404 as readily as a hang up.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/harness.ts`: `getWithRetry`): both re-fetches in `contract-anchor.pw.ts` (the stylesheets and the faces) go through a request that is retried up to three times when it throws and never when it answers, so a socket hang-up no longer takes the blocking gate red while a real 404 still fails. No `test.retry` or `retries` change; planted both ways.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
   id: DW-225
   summary: The `Live` status dot fills 4px with `--token-accent`, which F-8's gate greps for and
@@ -3242,7 +3248,9 @@ status: done
     Filed rather than fixed because lifting them touches `hit-target-floor.pw.ts`, whose literals
     `ops/__tests__/hit-target-floor.test.ts` parses as text, and Story 2-10's boundaries put that
     file off limits. A story that owns the harness can lift all four helpers in one change.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/harness.ts`: `goTo`, `plantStyle`, `durationMs`, `EDGE_SLACK`): each lives once in the harness and every spec imports it; no spec declares its own edge slack figure any more (the other, different tolerances such as `SIZE_SLACK` and `TIME_SLACK` stay with their specs). `ops/__tests__/hit-target-floor.test.ts` reads none of the four, so lifting them out of `hit-target-floor.pw.ts` needed no change there.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
   id: DW-233
@@ -3411,7 +3419,9 @@ status: done
     an earlier entry in this ledger already books lifting them to a story that owns the harness; the
     scoping and the extraction are one change, and `hit-target-floor.pw.ts` is off limits to Story
     2-11 for the reason recorded there.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/premise.pw.ts`: `outsideViewport`): the sweep reads `.premise` and `.site-footer` and their descendants only, so an overflow elsewhere on `/` no longer turns the premise suite red; the route-wide claim stays `hit-target-floor.pw.ts`'s. A scope that matches nothing throws, planted.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
   id: DW-238
@@ -3804,7 +3814,9 @@ status: done
     the tool's `main` default argument, which is the only thing making it unloadable from CommonJS.
     The first is better and is a change to a file `ops/__tests__/asset-budget.test.ts` pins as
     literals, so it lands with that suite.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `ops/asset-budget-fingerprints.json`, `tests/e2e/harness.ts`: `FINGERPRINTS`): the table moved to a JSON file that `ops/asset-budget.mjs` and the harness both load, so the specs no longer parse the tool as text and a reformatted table cannot fail them with a parse message. `ops/__tests__/asset-budget.test.ts` still pins the seven rows; the harness refuses an empty table, a malformed row or an empty mark at collection.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-41
@@ -4159,7 +4171,9 @@ status: done
     Both copies now depend on the tool's exact literal formatting, and a reflow of that array would
     fail two specs with messages about a parse. The remedy DW-40 already names, a small `.ts` module
     both the tool and the specs import, is now worth more: three readers rather than two.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/harness.ts`: `FINGERPRINTS`): all three text parses (`narrative.pw.ts`, `front-door.pw.ts`, `work-hero.pw.ts`) are deleted and each imports the harness's table, closed with DW-40.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-50
@@ -4661,7 +4675,9 @@ status: done
     **Owner: unassigned**, because no planned story adds a Hub surface. **Trigger: the next story
     that adds a route under `app/` serving Hub markup**, at which point the gap is live rather
     than theoretical, and DW-22's note on the duplicated `goTo` guard is the same seam.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/projects-redirect.pw.ts`: `SWEPT`): `SURFACES` moved to `tests/e2e/harness.ts` and `SWEPT` maps it, so a surface `hit-target-floor.pw.ts`'s walk of `app/` forces into `SURFACES` is swept for NFR-9 too; planted with a sixth row, `/planted`, that the sweep visited (P7). `type-swap.pw.ts`'s hand copy is derived the same way.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-62
@@ -6583,7 +6599,9 @@ status: done
     no assertion reads them.
 
     **Owner and trigger.** The next story that edits either citing file; trigger, that edit.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/front-door.pw.ts`: `onPath` docblock, `tests/e2e/visitor-instrumentation.pw.ts`: `reach`): both stale line citations are replaced by symbol citations (`withMotion`, `atAWiderWidth`, and the front-door case by title), which do not drift with an edit.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
   id: DW-106
   summary: >-
