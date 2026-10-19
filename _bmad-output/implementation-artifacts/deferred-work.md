@@ -9179,7 +9179,9 @@ status: done
     them deletes `tsconfig.typecheck.json` and points `typecheck` at `tsconfig.json`.
 
     **Owner: unassigned, or Epic 8 wave 2.** **Trigger: the next change to a tournament test file.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-18-tournament-inert-files-and-tsc** (`01f9c98`, `apps/tournament/package.json`: `typecheck`): `tsc --noEmit -p tsconfig.json` over `apps/tournament` is clean. The 21 errors in nine `lib/**/*.test.ts` files were stale fixture shapes and mock typings, fixed without changing any test's verdict: the caller-supplied `SeedAward` fixture in `awards/catalog.test.ts` now carries the three FR-29 rung keys and asserts their projection, `revealedSpins` and `totalSpins` are gone from `reveal-model.test.ts`, `Dirent.path` became `parentPath`, the Supabase mocks take typed parameters, and `fromHex` returns a `Uint8Array<ArrayBuffer>`. `tsconfig.typecheck.json` is deleted and `typecheck` reads `tsconfig.json`, so CI's `Tournament type check` covers the tests; a planted type error in a test file fails it (exit 2).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
   id: DW-283
@@ -9198,7 +9200,9 @@ status: done
 
     **Passed to Epic 8 wave 2 on 2026-09-29 by Story 3-8.** Removing files from `apps/tournament` edits
     the merged application, which a record story does not, so the owner is now Epic 8 wave 2 alone.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-18-tournament-inert-files-and-tsc** (`01f9c98`, `apps/tournament`): `docs/`, `vercel.json`, `eslint.config.mjs` and `worker/cmd/qa54` are deleted; nothing built, imported or pinned them. The README drops the source repository's kickoff status, hosting table and links into its `_bmad-output/` tree (the BMAD trees went at `8440372`), and the worker README notes that the worker never reached Railway and is placed beside the tournament with no public hostname. The `eslint` and `eslint-config-next` devDependencies stay: dropping them rewrites other workspaces' lockfile entries, which is a lockfile change outside this story.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
   id: DW-284

@@ -1255,7 +1255,8 @@ development_status:
   9-15-hub-chrome-and-headers: backlog
   9-16-cv-tech-spellings: backlog
   9-17-cv-and-404-baselines: backlog
-  9-18-tournament-inert-files-and-tsc: backlog
+  # 2026-10-18: done (spec-9-18-tournament-inert-files-and-tsc.md, verifier pass round 1): DW-282 and 283 closed; tournament tsc clean over its tests with tsconfig.typecheck.json retired, docs/, vercel.json, eslint.config.mjs and worker/cmd/qa54 removed.
+  9-18-tournament-inert-files-and-tsc: done
   9-19-tracker-flake-and-inert-files: backlog
   9-20-finance-db-naming: backlog
   9-21-traefik-ci-job: backlog

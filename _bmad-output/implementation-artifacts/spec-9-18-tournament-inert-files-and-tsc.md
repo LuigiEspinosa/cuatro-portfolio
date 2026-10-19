@@ -65,13 +65,23 @@ Every layer ran inline in this session (no agent tool). The independent verifier
 
 ## Independent verifier
 
-pending
+Independent verifier: PASS on round 1, 2026-10-18, separate agent; tests: all runs in the story worktree at `02294a7` (before the rebase onto `928e32e`, which touched nothing under `apps/tournament`).
+- Baseline check: the nine test files put back to their `origin/dev` versions, `npx tsc --noEmit -p tsconfig.json` in `apps/tournament` reported 21 `error TS`, matching the builder's claim. Restored from HEAD and re-run: exit 0, no errors.
+- `corepack pnpm --filter tournament typecheck` (now `tsc --noEmit -p tsconfig.json`): exit 0.
+- `corepack pnpm typecheck` (root): exit 0.
+- `corepack pnpm --filter tournament test`: 58 of 58 files passed, 1988 of 1988 tests passed.
+- `go vet ./...` and `go test -count=1 ./...` in `apps/tournament/worker`: vet clean, all 7 packages ok (uncached run).
+- `corepack pnpm test -- --run` (full root suite): 4 of 86 files failed, 82 passed; tests 2026 passed, 4 failed, 4 skipped. The four failing files are all WSL-bash suites (`demo-reset`, `library-backup`, `postgres-backup`, `tournament-backup`), the known DW-135 flake. Re-run alone: 4 of 4 files passed, 131 tests passed, 1 skipped.
+- The verifier's own planted failure: in `lib/awards/catalog.ts` line 451, `eff_num_key` changed to read `a.effDenKey`. `catalog.test.ts` went to 2 failed and 39 passed, one of them the caller-supplied case whose fixture this story completed. Restored with `git checkout`: 41 of 41 passed, worktree clean.
+- No container e2e run: no Hub rendered output and nothing under `tests/e2e` changed.
+
+The verifier raised for the Operator: whether a lockfile story should drop the `eslint` and `eslint-config-next` devDependencies, and a check that Image (tournament) is green on the pushed sha, since CI's `Tournament type check` now covers test files.
 
 ## Ledger closures
 
 **DW-282:** **Closed 2026-10-18 by Story 9-18-tournament-inert-files-and-tsc** (`3268f02`, `apps/tournament/package.json`: `typecheck`): `tsc --noEmit -p tsconfig.json` over `apps/tournament` is clean. The 21 errors in nine `lib/**/*.test.ts` files were stale fixture shapes and mock typings, fixed without changing any test's verdict: the caller-supplied `SeedAward` fixture in `awards/catalog.test.ts` now carries the three FR-29 rung keys and asserts their projection, `revealedSpins` and `totalSpins` are gone from `reveal-model.test.ts`, `Dirent.path` became `parentPath`, the Supabase mocks take typed parameters, and `fromHex` returns a `Uint8Array<ArrayBuffer>`. `tsconfig.typecheck.json` is deleted and `typecheck` reads `tsconfig.json`, so CI's `Tournament type check` covers the tests; a planted type error in a test file fails it (exit 2).
 
-**DW-283:** **Closed 2026-10-18 by Story 9-18-tournament-inert-files-and-tsc** (`3268f02`, `apps/tournament`): `docs/`, `vercel.json`, `eslint.config.mjs` and `worker/cmd/qa54` are deleted; nothing built, imported or pinned them. The README drops the source repository's kickoff status, hosting table and links into its `_bmad-output/` tree (the BMAD trees went at `8440372`), and the worker README notes that the worker never reached Railway and is placed beside the tournament with no public hostname. The `eslint` and `eslint-config-next` devDependencies stay: dropping them rewrites other workspaces' lockfile entries, which is a lockfile change outside this story.
+**DW-283:** **Closed 2026-10-18 by Story 9-18-tournament-inert-files-and-tsc** (`01f9c98`, `apps/tournament`): `docs/`, `vercel.json`, `eslint.config.mjs` and `worker/cmd/qa54` are deleted; nothing built, imported or pinned them. The README drops the source repository's kickoff status, hosting table and links into its `_bmad-output/` tree (the BMAD trees went at `8440372`), and the worker README notes that the worker never reached Railway and is placed beside the tournament with no public hostname. The `eslint` and `eslint-config-next` devDependencies stay: dropping them rewrites other workspaces' lockfile entries, which is a lockfile change outside this story.
 
 Action items: none named for this story.
 
