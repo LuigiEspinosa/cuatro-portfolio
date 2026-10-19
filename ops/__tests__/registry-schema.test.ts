@@ -1863,6 +1863,8 @@ describe('the CI wiring', () => {
     // `ops/__tests__/literal-conformance.test.ts` beside the module it runs.
     // Story 5.7 added `provider-swap`, FR-23's demonstration, wired in
     // `ops/__tests__/provider-swap.test.ts` beside the script it runs.
+    // Story 9-21 added `traefik-routes`, DW-299's Traefik start, wired in
+    // `ops/__tests__/traefik-routes.test.ts` beside the script it runs.
     expect(
       jobNames,
       'the order is a reader convenience, since jobs run in parallel. The set is not: a job added or removed' +
@@ -1876,6 +1878,7 @@ describe('the CI wiring', () => {
       'rendered-output',
       'literal-conformance',
       'provider-swap',
+      'traefik-routes',
     ]);
   });
 
