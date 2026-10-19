@@ -179,4 +179,24 @@ No sprint-status action item names this story.
   next-router-segment-prefetch, Accept-Encoding`, `Cache-Control: private, no-cache, no-store, max-age=0,
   must-revalidate`.
 
-**Independent verifier:** pending.
+**Independent verifier:** PASS on round 1, 2026-10-18, separate agent; tests: all runs on the story worktree at
+`66d32e1` (before the rebase onto `7219305`, which touched nothing under `apps/hub`).
+- `corepack pnpm typecheck`: exit 0.
+- `corepack pnpm test -- --run`, full root suite: 81 of 85 files passed; 4 failed, 2016 passed, 4 skipped (2024
+  tests). The 4 failures were all DW-135 WSL-bash cases (`demo-reset`, `library-backup`, `tournament-backup`,
+  `tracker-backup`) while a container e2e run loaded the host; re-run, 4 of 4 files passed, 122 of 122 tests.
+- No per-application suite applies: nothing under `apps/finance`, `apps/tracker` or `apps/tournament` changed.
+- Container e2e, full `pnpm test:e2e` in `mcr.microsoft.com/playwright:v1.62.1-noble` on volumes
+  `epic-scratch-9-15-nm` and `epic-scratch-9-15-next`: 344 passed, 1 failed, `visitor-instrumentation.pw.ts:265`,
+  whose own message calls it a slow runner (stub installed 26974 ms after settle, bound 18500) under the concurrent
+  Vitest run; `visitor-instrumentation.pw.ts` and `chrome-nav.pw.ts` re-run in the same container: 25 passed,
+  0 failed. The new and changed cases `chrome-nav.pw.ts:710` and `front-door.pw.ts:557` passed, and the builder's
+  `narrative.pw.ts:839` flake passed (58.1s). `rendered-output.pw.ts` passed, the `/work` 360 x 800 baseline
+  included, and `git status` was clean after every run, so no snapshot was written.
+- Verifier's plant: deleting the cleanup's `root.style.removeProperty` in `Header.tsx` failed
+  `vitest --run apps/hub/components/molecules/Header` 1 of 27 ("the padding outlived the band, so `/` would
+  inherit it: expected '151.5px' to be ''"); restored, `git status` clean.
+- Also checked: the Next citation holds (`next/dist/build/templates/app-page.js` lines 453-454 in next 16.2.1 set
+  `Vary` before render); no em-dash, en-dash, dash-standing double hyphen or emoji on any added line; nothing under
+  `contracts/`, and `ci.yml`, `deferred-work.md` and `sprint-status.yaml` untouched; every `Header.tsx:N` citation
+  matches the file. The scratch volumes were removed afterwards.

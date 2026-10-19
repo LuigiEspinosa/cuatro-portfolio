@@ -4239,7 +4239,9 @@ status: done
     scope. Or the edge does it: `docker/Caddyfile` is already incomplete against
     `ops/routing-inventory.md` and is being rebuilt in Epic 4, which is the natural place for a
     `Vary` on one route.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-15-hub-chrome-and-headers** (`72676fd`, `apps/hub/next.config.js`): the `Vary: Save-Data` declaration is removed, since Next 16.2.1's App Router handler sets `Vary` before every render (`app-page.js:453-454`) and a proxy or the config cannot reach it. `/` stays guarded by the `private, no-store` a dynamic route is answered with, which `tests/e2e/front-door.pw.ts` keeps asserting, and a new case there fails any header a `headers()` block declares for `/` that does not arrive as written.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-52
@@ -7136,7 +7138,9 @@ status: done
 
     **Owner: unassigned.** **Trigger: a header that has to wrap at a supported width, a fragment
     target added to `/celeste`, or the next change to the header's contents.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-15-hub-chrome-and-headers** (`c03ae89`, `apps/hub/components/molecules/Header/Header.tsx`: `reserveScrollPadding`): the band measures itself with a `ResizeObserver` and writes its real height as the root's `scroll-padding-block-start`, retracting it when the band leaves the document or measures zero, so a wrapped row is covered; the four-token rule in `Header.scss` stays as the first paint's value and now reads `html:has(body:not(#celeste) .header-container)`, so `/celeste` reserves nothing. `tests/e2e/chrome-nav.pw.ts` holds the padding equal to a header wrapped by a planted full-width child and to one grown by its own padding on `/work` and the 404, `auto` on `/celeste`, and `auto` on `/` reached from `/work` by the wordmark; `Header.test.tsx` holds the write, the follow and both retractions.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`
   id: DW-119
