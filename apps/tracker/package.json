@@ -10,7 +10,7 @@
     "test": "prisma generate && vitest --run --passWithNoTests"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "node node_modules/tsx/dist/cli.mjs prisma/seed.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
