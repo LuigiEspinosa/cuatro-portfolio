@@ -2,9 +2,10 @@
 
 > **Now part of the Anchor.** This application was merged with its history into
 > `cuatro-portfolio` at `apps/tracker/` (Story 3-6, 2026-09-29) and is the pnpm workspace `tracker`.
-> Install from the repository root, then run `pnpm --filter tracker dev`, `test`, `typecheck` or
-> `build`. Its image is built in CI; how it replaces the containers serving tracker.cuatro.dev is
-> `ops/tracker-cutover.md`. The Docker and CI notes below describe the repository it came from.
+> Install from the repository root, then run `corepack pnpm --filter tracker dev`, `test`, `typecheck` or
+> `build`. Its image is built in CI by `.github/workflows/image-tracker.yml` from `apps/tracker/Dockerfile`,
+> and rolled onto the box by hand as `ops/tracker-cutover.md` § The sequence, Later rollouts, describes. The old
+> repository's CI workflow, compose files, Caddy build and e2e suite were removed in Story 9-19.
 
 A self-hosted, privacy-first media tracker. Tracks movies, TV shows, anime, manga, and video games in a unified
 PostgreSQL database.
@@ -30,7 +31,7 @@ media types, powered by four external APIs normalised into a single schema.
 | Server state  | TanStack Query v5                                    |
 | Job queue     | BullMQ + Redis                                       |
 | Validation    | Zod v4                                               |
-| Reverse proxy | Caddy (auto-HTTPS)                                   |
+| Reverse proxy | Traefik (the estate ingress, `ops/traefik/`)         |
 
 ## External APIs
 
@@ -41,29 +42,14 @@ media types, powered by four external APIs normalised into a single schema.
 | IGDB          | Games, covers, platforms        | Twitch app token (free)   |
 | Steam Web API | Library, achievements, playtime | API key + Steam ID        |
 
-## One-command deploy
-
-```bash
-git clone https://github.com/your-username/cuatro-tracker /opt/tracker
-cd /opt/tracker/cuatro-tracker
-cp .env.example .env
-# fill in .env values
-docker compose up -d
-docker compose exec app pnpm prisma migrate deploy
-docker compose exec app pnpm prisma db seed
-```
-
 ## Development
 
-```bash
-  # Prerequisites: Node 22, pnpm 10, Docker
-  cd cuatro-tracker
-  cp .env.example .env.local
+The unit suite needs a Redis on `localhost:6379`; the dev server also needs a Postgres named by
+`DATABASE_URL` in `.env.local` (start from `.env.example`). From the repository root:
 
-  # fill in DATABASE_URL pointing to local postgres
-  docker compose up -d postgres redis
-  pnpm install
-  pnpm prisma migrate dev
-  pnpm prisma db seed
-  pnpm dev
+```bash
+corepack pnpm install --frozen-lockfile
+corepack pnpm --filter tracker exec prisma migrate dev
+corepack pnpm --filter tracker exec prisma db seed
+corepack pnpm --filter tracker dev
 ```
