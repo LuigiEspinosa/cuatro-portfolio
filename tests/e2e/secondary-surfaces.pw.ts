@@ -63,10 +63,11 @@ const FOOTER_LINK = 'footer.site-footer a[href]';
 /**
  * Every surface that renders Hub markup, with the status each answers.
  *
- * The same five `SURFACES` in `tests/e2e/harness.ts` (which `hit-target-floor.pw.ts` sweeps) carries, minus its per-surface
- * counts, which are that file's subject. `/recommendation` is deliberately absent: it renders the
- * 404 document, so it is `NOT_FOUND` under another URL and not a sixth surface, which is also why
- * the A-13 title comparison below is over five values rather than six.
+ * The same five `SURFACES` in `tests/e2e/harness.ts` (which `hit-target-floor.pw.ts` sweeps)
+ * carries, minus its per-surface counts, which are that file's subject. `/recommendation` is
+ * deliberately absent: it renders the 404 document, so it is `NOT_FOUND` under another URL and not
+ * a sixth surface, which is also why the A-13 title comparison below is over five values rather
+ * than six.
  *
  * **A hand copy, held equal to that file's list by a case below.** That file derives its own list
  * from `app/` in a standing case, so the chain from disk reaches this list without a second walker.
@@ -236,11 +237,12 @@ const celesteLinksOn = (page: Page): Promise<string[]> =>
 
 test.describe('the surface list', () => {
   test('equals the swept surfaces in hit-target-floor.pw.ts, which derives its own from app/', () => {
-    // `SURFACES` above is a hand copy. The list that file sweeps lives in `tests/e2e/harness.ts` since
-    // Story 9-12, so that is the text read here; the title still names the file that owns the counts. A route added to `app/` fails that file's standing case at
-    // its `:813` until it is registered there, and this case fails until it is registered here
-    // too, so a new surface cannot skip the A-13 read, the robots read or the single-entrance claim
-    // in silence. Read as text with the same regex `ops/__tests__/hit-target-floor.test.ts:226-235`
+    // `SURFACES` above is a hand copy. The list that file sweeps lives in `tests/e2e/harness.ts`
+    // since Story 9-12, so that is the text read here; the title still names the file that owns
+    // the counts. A route added to `app/` fails that file's standing case (`every route app/
+    // serves is registered as a swept surface or as a non-Hub route`) until it is registered
+    // there, and this case fails until it is registered here too, so a new surface cannot skip the
+    // A-13 read, the robots read or the single-entrance claim in silence. Read as text with the same regex `ops/__tests__/hit-target-floor.test.ts:226-235`
     // uses on the same literal, rather than imported: the walker is that file's and is not
     // duplicated here. Line endings are normalised first, as that suite's `read` does at its `:57`:
     // the Windows checkout is CRLF and the container reads it as the host wrote it, which is how

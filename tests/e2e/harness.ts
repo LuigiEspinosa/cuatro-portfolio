@@ -379,7 +379,6 @@ export const FINGERPRINTS: readonly Fingerprint[] = ((rows: unknown): readonly F
   return Object.freeze(rows as Fingerprint[]);
 })(FINGERPRINT_ROWS);
 
-
 /**
  * A path the Hub does not route, which renders `app/not-found.tsx` through the root layout.
  *
