@@ -1261,7 +1261,8 @@ development_status:
   9-19-tracker-flake-and-inert-files: backlog
   # 2026-10-18: done (spec-9-20-finance-db-naming.md, verifier pass round 2): DW-300 closed; finance's services, provision.sql and image-finance.yml name cuatro_finance on estate-postgres, and anchor-db with its postgres_data volume is gone from docker-compose.yml.
   9-20-finance-db-naming: done
-  9-21-traefik-ci-job: backlog
+  # 2026-10-18: done (spec-9-21-traefik-ci-job.md, verifier pass round 1): DW-299 closed; a blocking traefik-routes job starts Traefik against ops/traefik and probes every router, not a required check on main until the Operator rules it in.
+  9-21-traefik-ci-job: done
   9-22-tracker-image-fonts-and-size: backlog
   9-23-tournament-signed-in-state: backlog
   9-24-digital-library-hygiene-and-demo-match: backlog

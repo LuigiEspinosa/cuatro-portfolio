@@ -9603,7 +9603,9 @@ status: done
     new job is a change to both suites that pin `ci.yml`'s job names.
 
     **Owner: Story 4.3 (the first hostname to move).** **Trigger: that story.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-21-traefik-ci-job** (`37ff0de`, `.github/workflows/ci.yml`: `traefik-routes`, `ops/traefik-routes.sh`): every push now starts `traefik:v3.7.13` from the committed `ops/traefik/compose.yml` with the committed `traefik.yml` and `dynamic/` against whoami stand-ins on a scratch internal network, and compares every router's answer (status, `X-Frame-Options`, the upstream that answered, redirect target, cs-tracker's forwarded scheme on an upgrade, the loaded routers and their statuses) with expected lines, with `DASHBOARD_FORWARD_AUTH` unset and `on`. A file Traefik rejects, a misrouted upstream, a dropped middleware and a typo inside the `on` branch each failed it locally. Both job-name pins moved; `ops/__tests__/traefik-routes.test.ts` fails a router or upstream the script does not name. The job is blocking but is not one of `main`'s required checks until the Operator rules it in.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
   id: DW-300
   summary: >-

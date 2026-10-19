@@ -73,11 +73,30 @@ Every layer ran inline in this session (no agent tool). The independent verifier
 
 ## Independent verifier
 
-pending
+**Independent verifier:** PASS on round 1, 2026-10-18, separate agent; tests: all runs on the story worktree at
+`89dd655` (two commits over `origin/dev`, before the rebase that made the CI commit `37ff0de`).
+- `TRAEFIK_ROUTES_PREFIX=epic-scratch-9-21-traefik-ci-job-v bash ops/traefik-routes.sh` (Docker 29.8.2): exit 0, every
+  probe line matched in both dashboard branches, 42 s, no epic-scratch-9-21 container, network or volume left behind.
+- Verifier's own Docker plant, different from the builder's four: `|| PathPrefix(/files/)` removed from the
+  digital-library-api rule. Exit 1, diff `-library-files 200 SAMEORIGIN library-api -` /
+  `+library-files 200 SAMEORIGIN library-web -`, then FAIL. Restored with `git checkout`.
+- Vitest plants on `ops/__tests__/traefik-routes.test.ts`: upstream `list-wheel:80` changed to `:8080` in `routes.yml`
+  failed 1, passed 6 ('stands in for every upstream'); `dashboard-oauth2` dropped from the script's `on` expected router
+  list failed 1, passed 6 ('the on branch'). Both restored, the tree clean.
+- `corepack pnpm vitest run` over traefik-routes, contract-purity, registry-schema and workflow-hardening: 4 files,
+  222 passed (the Verification line's 221 is a miscount that changes no result).
+- `corepack pnpm typecheck`: exit 0.
+- `corepack pnpm test -- --run`: 86 files passed, 2 failed of 88; 2040 passed, 4 skipped, 2 failed. Both failures were
+  DW-135 WSL-bash suites (`tournament-backup`, `tracker-backup`); re-run alone both passed, 26/26.
+- Nothing under `apps/`, `tests/e2e` or `contracts/` changed, so no per-app suite or container e2e ran.
+- The diff touches only `ci.yml`, the new script and its suite, both job-name pins, `AGENTS.md`,
+  `ops/traefik-cutover.md` and this spec. No em-dash, en-dash, dash-standing double-dash or emoji in an added line.
+  The new job has no `continue-on-error`, `if`, `needs` or `env`, and `ci.yml` runs on push to every branch.
+- Not verifiable locally: the job's first run on GitHub Actions, since nothing was pushed.
 
 ## Ledger closures
 
-**DW-299:** **Closed 2026-10-18 by Story 9-21-traefik-ci-job** (`5caf14d`, `.github/workflows/ci.yml`: `traefik-routes`, `ops/traefik-routes.sh`): every push now starts `traefik:v3.7.13` from the committed `ops/traefik/compose.yml` with the committed `traefik.yml` and `dynamic/` against whoami stand-ins on a scratch internal network, and compares every router's answer (status, `X-Frame-Options`, the upstream that answered, redirect target, cs-tracker's forwarded scheme on an upgrade, the loaded routers and their statuses) with expected lines, with `DASHBOARD_FORWARD_AUTH` unset and `on`. A file Traefik rejects, a misrouted upstream, a dropped middleware and a typo inside the `on` branch each failed it locally. Both job-name pins moved; `ops/__tests__/traefik-routes.test.ts` fails a router or upstream the script does not name. The job is blocking but is not one of `main`'s required checks until the Operator rules it in.
+**DW-299:** **Closed 2026-10-18 by Story 9-21-traefik-ci-job** (`37ff0de`, `.github/workflows/ci.yml`: `traefik-routes`, `ops/traefik-routes.sh`): every push now starts `traefik:v3.7.13` from the committed `ops/traefik/compose.yml` with the committed `traefik.yml` and `dynamic/` against whoami stand-ins on a scratch internal network, and compares every router's answer (status, `X-Frame-Options`, the upstream that answered, redirect target, cs-tracker's forwarded scheme on an upgrade, the loaded routers and their statuses) with expected lines, with `DASHBOARD_FORWARD_AUTH` unset and `on`. A file Traefik rejects, a misrouted upstream, a dropped middleware and a typo inside the `on` branch each failed it locally. Both job-name pins moved; `ops/__tests__/traefik-routes.test.ts` fails a router or upstream the script does not name. The job is blocking but is not one of `main`'s required checks until the Operator rules it in.
 
 Action items: none named for this story.
 
