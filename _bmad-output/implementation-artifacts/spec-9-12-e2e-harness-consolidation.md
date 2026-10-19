@@ -136,7 +136,7 @@ pending
 
 **DW-105:** **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`6612c2a`, `tests/e2e/front-door.pw.ts`: `onPath` docblock, `tests/e2e/visitor-instrumentation.pw.ts`: `reach`): both stale line citations are replaced by symbol citations (`withMotion`, `atAWiderWidth`, and the front-door case by title), which do not drift with an edit.
 
-**DW-61:** **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`6612c2a`, `tests/e2e/projects-redirect.pw.ts`: `SWEPT`): `SURFACES` moved to `tests/e2e/harness.ts` and `SWEPT` maps it, so a surface `hit-target-floor.pw.ts`'s walk of `app/` forces into `SURFACES` is swept for NFR-9 too; planted with a fifth row the sweep visited. `type-swap.pw.ts`'s hand copy is derived the same way.
+**DW-61:** **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`6612c2a`, `tests/e2e/projects-redirect.pw.ts`: `SWEPT`): `SURFACES` moved to `tests/e2e/harness.ts` and `SWEPT` maps it, so a surface `hit-target-floor.pw.ts`'s walk of `app/` forces into `SURFACES` is swept for NFR-9 too; planted with a sixth row, `/planted`, that the sweep visited (P7). `type-swap.pw.ts`'s hand copy is derived the same way.
 
 **DW-224:** **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`6612c2a`, `tests/e2e/harness.ts`: `getWithRetry`): both re-fetches in `contract-anchor.pw.ts` (the stylesheets and the faces) go through a request that is retried up to three times when it throws and never when it answers, so a socket hang-up no longer takes the blocking gate red while a real 404 still fails. No `test.retry` or `retries` change; planted both ways.
 

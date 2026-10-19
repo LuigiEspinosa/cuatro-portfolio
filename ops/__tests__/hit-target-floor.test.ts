@@ -330,7 +330,7 @@ const surfaceDisagreements = (fromRecord: readonly Surface[], fromSpec: readonly
 
     for (const field of ['status', 'found', 'skipped', 'measured'] as const) {
       if (left[field] !== right[field]) {
-        found.push(`${route}: ${RECORD_REL} says ${field} ${left[field]}, ${SPEC_REL} says ${right[field]}`);
+        found.push(`${route}: ${RECORD_REL} says ${field} ${left[field]}, ${HARNESS_REL} says ${right[field]}`);
       }
     }
   }
@@ -593,7 +593,7 @@ describe('the record and the swept surfaces agree in both directions', () => {
       '/work is swept by tests/e2e/hit-target-floor.pw.ts and has no row in ops/hit-target-floor.md',
     ]);
     expect(surfaceDisagreements(base, [{ ...base[0], measured: 12 }])).toEqual([
-      '/work: ops/hit-target-floor.md says measured 11, tests/e2e/hit-target-floor.pw.ts says 12',
+      '/work: ops/hit-target-floor.md says measured 11, tests/e2e/harness.ts says 12',
     ]);
   });
 
