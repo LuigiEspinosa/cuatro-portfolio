@@ -562,7 +562,13 @@ it: merging is not placing.
   node-postgres's default of ten per container, not Prisma's five, and no environment option changes it
   (read in the image, `ops/postgres.md` § The budget). Story 4-7 moves Umami to the estate's one Postgres
   as role `umami` with limit 25 (`ops/postgres.md` § Moving Umami), after which finance is `anchor-db`'s
-  only named consumer.
+  only named consumer. **Amended 2026-10-18 (Story 9-20, DW-300):** the role and database are
+  `cuatro_finance`, still `CONNECTION LIMIT 10` on both, in the estate Postgres (`estate-postgres`), which
+  `ops/postgres/init/10-consumers.sh` created on its first start; `docker-compose.yml`'s `finance` and
+  `finance-migrate` name it there and no longer declare `anchor-db`, whose container and volume went at
+  `ops/caddy-retirement.md` step 12 on 2026-10-01. `apps/finance/prisma/provision.sql` now creates the
+  role and database only in CI's throwaway Postgres (`image-finance.yml`) and is never run on the box.
+  The sum above is history; the estate Postgres's budget is `ops/postgres.md` § The budget.
 - **Tokens (AD-14).** Adoption is deferred whole, not half-applied: `apps/finance/app/tokens.css` keeps
   its own palette, and `app/layout.tsx` its own fonts (DW-267). The application is `In progress` and
   unrendered, and AD-25 gives it no restyle until it renders.
@@ -722,7 +728,7 @@ story takes all four together.
   router, the `NEXT_PUBLIC_BETTER_AUTH_URL` build argument, the runtime secrets, the provision run and the first
   admin seed. The entry was written on 2026-09-29, before Epic 4, so it names the shared Caddy and `anchor-db`.
   Read it against `ops/routing-inventory.md` (Traefik) and `ops/postgres.md` (the estate Postgres). Story 9-20
-  renames the database and role to `cuatro_finance` (DW-300).
+  renamed the database and role to `cuatro_finance` on the estate Postgres on 2026-10-18 (DW-300).
 - **DW-271**, 2026-10-18. Trigger: "either", meaning finance's placement story (for the seed path) or the story
   that lands a lint gate. The work: point `prisma.config.ts`'s seed at `prisma/seed/admin.ts`. Retire the unused
   `eslint.config.mjs` (or adopt it under the lint gate), and retire the local-development `docker-compose.yml` and

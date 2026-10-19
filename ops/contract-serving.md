@@ -618,7 +618,7 @@ and declares no `build:`, so nothing on the box can compile it, and compose refu
 tag rather than run a floating one.
 
 **What a deploy no longer does.** It rolls `anchor-app` alone, the one id it names (AD-7), and runs no
-`up` over the stack: `anchor-umami` and `anchor-db` keep running as they are, a change to either in
+`up` over the stack: `anchor-umami` keeps running as it is, a change to it in
 `docker-compose.yml` reaches the box only by the Operator's own `docker compose up -d <service>`, and
 `--remove-orphans` went with the line that carried it. A compose command run by hand on the box needs
 `HUB_TAG` set: `ps` and `logs` take any value, and whatever starts a container is the deploy's.
