@@ -24,7 +24,7 @@
     "@react-three/postprocessing": "^3.0.4",
     "gsap": "^3.14.2",
     "jose": "6.2.2",
-    "next": "^16.1.6",
+    "next": "^16.4.5",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "sass": "^1.97.3",
@@ -49,7 +49,13 @@
     "tailwindcss": "4.3.3",
     "turbo": "2.10.13",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.12"
   },
-  "packageManager": "pnpm@10.31.0+sha512.e3927388bfaa8078ceb79b748ffc1e8274e84d75163e67bc22e06c0d3aed43dd153151cbf11d7f8301ff4acb98c68bdc5cadf6989532801ffafe3b3e4a63c268"
+  "packageManager": "pnpm@10.31.0+sha512.e3927388bfaa8078ceb79b748ffc1e8274e84d75163e67bc22e06c0d3aed43dd153151cbf11d7f8301ff4acb98c68bdc5cadf6989532801ffafe3b3e4a63c268",
+  "pnpm": {
+    "overrides": {
+      "proxy-addr": ">=2.0.8",
+      "tinypool": ">=2.1.2"
+    }
+  }
 }
