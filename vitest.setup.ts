@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 
 // `vitest.config.ts` sets `jsdom` for the suite, and a file may opt out of it
 // with `// @vitest-environment node` when what it tests is not a component.
