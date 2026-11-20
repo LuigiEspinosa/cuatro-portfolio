@@ -4,8 +4,9 @@ import { EraGroundTint } from '../EraGroundTint'
 
 // containerRef is only read on the smooth path (skipped under reduced motion and
 // short-circuited when current is null), so a static null ref suffices here. The
-// smooth ScrollTrigger ramp needs real scroll geometry and is covered by the
-// gated e2e plus the manual browser smoke, not jsdom.
+// smooth ScrollTrigger ramp needs real scroll geometry, which jsdom lacks, and has
+// no automated coverage since Story 9-19 removed the e2e suite: only a manual
+// browser smoke exercises it.
 const nullRef: { readonly current: HTMLElement | null } = { current: null }
 
 function groundBase(): string {

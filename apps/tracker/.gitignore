@@ -6,9 +6,6 @@
 
 # testing
 /coverage
-/playwright-report
-/test-results
-/playwright/.cache
 
 # next.js
 /.next/
@@ -20,7 +17,6 @@
 # misc
 .DS_Store
 *.pem
-docker-compose.override.yml
 
 # debug
 npm-debug.log*

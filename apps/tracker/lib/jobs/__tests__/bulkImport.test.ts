@@ -21,7 +21,8 @@ import type Redis from 'ioredis'
 // Note: Story 11.5 Task 3 asks for real Postgres here, but every db-touching
 // suite in this repo (all 10, including the sibling BullMQ test) mocks @/lib/db
 // and there is no real-Postgres wiring in vitest.config. Matching that
-// convention; the real-stack path is covered by the gated e2e (Task 7).
+// convention. The real-stack path has no automated coverage since Story 9-19
+// removed the gated e2e (Task 7).
 const dbMock = vi.hoisted(() => ({
   mediaItem: {
     findUnique: vi.fn(),

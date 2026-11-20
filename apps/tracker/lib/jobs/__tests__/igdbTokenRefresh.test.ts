@@ -4,7 +4,7 @@ import type Redis from 'ioredis'
 
 // Integration test for the igdbTokenRefresh BullMQ processor wired through
 // the queue registry from lib/jobs/queues.ts. Hits real Redis from
-// `pnpm infra` (local) or the redis service in CI; mocks Twitch via
+// a local Redis on localhost:6379 or the redis service in CI; mocks Twitch via
 // vi.stubGlobal('fetch') so the processor never makes an external request.
 
 const validEnv: Record<string, string> = {

@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
-import { afterEach, vi } from 'vitest'
+import { afterAll, afterEach, vi } from 'vitest'
+import { stopScrollTrigger } from './scroll-trigger-teardown'
 
 /* Pre-populate process.env with valid defaults so component tests that
  * transitively load `@/lib/env` (via adapters, federation, normalisers) don't
@@ -32,6 +33,8 @@ for (const [k, v] of Object.entries(DEFAULT_ENV)) {
 afterEach(() => {
   cleanup()
 })
+
+afterAll(stopScrollTrigger)
 
 /* No request runs under the suite, so `getServerSession` answers no session, which is the Operator's
  * store (`lib/scoped-db.ts`). A test that needs a principal sets the mock's answer. */
