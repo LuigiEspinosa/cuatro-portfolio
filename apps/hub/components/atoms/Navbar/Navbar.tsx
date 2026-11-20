@@ -31,7 +31,7 @@ import './Navbar.scss';
  * `<header>` still holds three anchors. Story 2-32 rebuilt it as text and took it to the hit-target
  * floor, which deleted `chrome-logo`, the last row of the ledger in `ops/hit-target-floor.md`.
  *
- * **The pathname arrives as a prop rather than from a second `usePathname()`.** `Header.tsx:10` is
+ * **The pathname arrives as a prop rather than from a second `usePathname()`.** `Header.tsx:40` is
  * already the client boundary and already reads it to decide whether to render at all, so reading
  * it again here would be a second subscription answering a question that has been answered, and it
  * would make this file a client component for one attribute. Same shape as `HomeLayout` handing

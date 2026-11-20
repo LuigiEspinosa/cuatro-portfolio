@@ -26,8 +26,9 @@ tagged `retired-4-11`, restored and compared by sha256: `cuatro-portfolio-anchor
 `fd14edeb`), `cuatro-tracker-postgres-1` and `cuatro-tracker_pg_data` at 06:10Z
 (`tracker-cuatro-tracker-postgres-20261001T061043Z.dump`, `0b5d5e60`), and `cs-tracker-db-1` and
 `cs-tracker_pgdata` at 06:11Z (`cs-tracker-db-20261001T061118Z.dump`, `a4032342`). `postgres-estate-postgres-1`
-is the box's one Postgres since. `anchor-db` stays declared in `docker-compose.yml` for finance (DW-300);
-started now, it would create an empty database. The rollbacks this file's move sections describe onto the
+is the box's one Postgres since. `anchor-db` stayed declared in `docker-compose.yml` for finance until
+Story 9-20 (2026-10-18) pointed finance at `cuatro_finance` here and removed the declaration and its volume
+(DW-300). The rollbacks this file's move sections describe onto the
 old stores no longer apply.
 
 ## What runs today
@@ -86,7 +87,7 @@ always have room.
 | `umami` | 25 | Umami, its server and its start-time migration | node-postgres's default `max` of 10 per container: Umami 3.4.0 builds its pool as `new PrismaPg({connectionString})` on Prisma 7.10.0 (observed 2026-09-30 in `ghcr.io/umami-software/umami:postgresql-latest`, digest `sha256:85909afc...`; the box runs the 2026-08-12 digest `sha256:87312d33...`, whose version was not read; **amended 2026-09-30:** it is GHCR's `3.3.0`, § Moving Umami) | nowhere in 3.4.0: no pool option reaches it from the environment, so the role's limit is the cap. Two containers across a rollout at 10, plus the migration. Story 4.7 pins the version and re-reads this | Story 4.7 |
 | `cuatro_tracker` | 23 | the tracker: `tracker`, `tracker-worker`, `tracker-migrate`, `tracker-migrate-demo` | Prisma 6 default, 5 per process, no limit (`apps/tracker/lib/db.ts`) | `connection_limit=4` on `DATABASE_URL`: two servers and two workers across a rollout at 4 each, plus one migrate (`tracker-migrate` and `tracker-migrate-demo` run one after the other, never together) | Story 4.8; 20 to 23 by DP4 (DW-331, 2026-10-06): the demo client's one connection per server, and one for a running reset |
 | `cs_tracker` | 30 | `cs-tracker`, its `app` and `migrate` | Ecto `pool_size` from `POOL_SIZE`, default 10 (`config/runtime.exs:208` in `cs-tracker`) | `POOL_SIZE=10` in its env file, stated: two containers across a rollout at 10, plus the migrator's pool | Story 4.10; 25 to 30 by DP4 (DW-331, 2026-10-06): `DemoRepo`'s two per container, and one for a running reset |
-| `cuatro_finance` | 10 | finance, placed nowhere | `max: 5` per container (`apps/finance/lib/db.ts`) | already set; its `DATABASE_URL` and `provision.sql` name `finance` until it is placed (DW-300) | its placement (DW-269) |
+| `cuatro_finance` | 10 | finance, placed nowhere | `max: 5` per container (`apps/finance/lib/db.ts`) | already set; its `DATABASE_URL` names `cuatro_finance` at `estate-postgres` and `provision.sql` the same role and limit for CI's throwaway (Story 9-20, DW-300) | its placement (DW-269) |
 | **Sum** | **88** | | | of 97 usable | |
 
 `ops/__tests__/postgres-init.test.ts` holds this table equal to the script's and the sum under the budget.

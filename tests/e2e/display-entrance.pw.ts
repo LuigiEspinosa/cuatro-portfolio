@@ -1,7 +1,15 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { RENDERED_VIEWPORT, computedStyleValue, hydrated, rootCustomPropertyValue } from './harness';
+import {
+  RENDERED_VIEWPORT,
+  computedStyleValue,
+  goTo,
+  hydrated,
+  plantStyle,
+  probeComputed,
+  rootCustomPropertyValue,
+} from './harness';
 
 /**
  * The display entrance on `/`, measured in a browser (Story 2-27, `DESIGN.md:730-737`,
@@ -95,30 +103,6 @@ const onMotion = async <T>(
   }
 };
 
-/** Navigate, refuse a page that did not answer 200, wait for the fonts. `front-door.pw.ts:287-294`. */
-const goTo = async (page: Page): Promise<void> => {
-  const response = await page.goto(ROUTE, { waitUntil: 'load' });
-  expect(response, `navigating to ${ROUTE} produced no response`).toBeTruthy();
-  expect(response?.status(), `${ROUTE} did not answer 200`).toBe(200);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-  });
-};
-
-/** The computed value of one property, resolved by laying out a probe (`accessibility-floor.pw.ts:483-494`). */
-const probeComputed = (page: Page, declaration: string, property: string): Promise<string> =>
-  page.evaluate(
-    ([css, name]) => {
-      const probe = document.createElement('div');
-      probe.setAttribute('style', `position:absolute;left:-99999px;top:0;width:1px;height:1px;${css}`);
-      document.body.append(probe);
-      const read = window.getComputedStyle(probe).getPropertyValue(name);
-      probe.remove();
-      return read;
-    },
-    [declaration, property] as const
-  );
-
 /**
  * A `<time>` as seconds, from the contract's `220ms`, the built contract's minified `.22s` or the
  * serialiser's `0.22s`; refused otherwise.
@@ -211,17 +195,6 @@ const headingVars = (page: Page): Promise<{ count: string; delay: string }> =>
     return { count: node.style.getPropertyValue('--count').trim(), delay: node.style.getPropertyValue('--delay').trim() };
   }, HEADING);
 
-/** Plant a stylesheet into the page and hand back its removal. */
-const plantStyle = async (page: Page, css: string): Promise<() => Promise<void>> => {
-  await page.evaluate((text) => {
-    const style = document.createElement('style');
-    style.id = 'display-entrance-plant';
-    style.textContent = text;
-    document.head.append(style);
-  }, css);
-  return () => page.evaluate(() => document.getElementById('display-entrance-plant')?.remove());
-};
-
 /** Wait out the whole window: `--delay`, then one `--dur-major`, then a little for the last frame. */
 const waitOutTheEntrance = async (page: Page, delay: number, major: number): Promise<void> => {
   await page.waitForTimeout((delay + major) * 1000 + SETTLE_SLACK_MS);
@@ -245,7 +218,7 @@ test('the heading is a real h1 carrying the words, split into indexed inline spa
   browser,
 }) => {
   await onMotion(browser, 'no-preference', async (page) => {
-    await goTo(page);
+    await goTo(page, ROUTE);
     expect(await page.locator(HEADING).count(), `${ROUTE} renders no ${HEADING}`).toBe(1);
     expect(await page.locator(HEADING).evaluate((node) => node.parentElement?.className), 'the heading is not the name panel\'s own child').toContain('home-panel--name');
 
@@ -268,7 +241,7 @@ test('the heading is a real h1 carrying the words, split into indexed inline spa
 
 test('computes the display roles read off the page, and neither shadow, clip nor transform', async ({ browser }) => {
   await onMotion(browser, 'no-preference', async (page) => {
-    await goTo(page);
+    await goTo(page, ROUTE);
 
     // The roles, resolved on the same page, never typed: the weight and the line-height ratio are
     // the declared token streams off `:root`, the lengths and the colour are what a probe resolves.
@@ -307,7 +280,7 @@ test('computes the display roles read off the page, and neither shadow, clip nor
 
 test('every character enters on opacity alone, once, in DOM order, inside --dur-major after --delay', async ({ browser }) => {
   await onMotion(browser, 'no-preference', async (page) => {
-    await goTo(page);
+    await goTo(page, ROUTE);
     const minor = seconds(await rootCustomPropertyValue(page, '--dur-minor'), '--dur-minor');
     const major = seconds(await rootCustomPropertyValue(page, '--dur-major'), '--dur-major');
     // Declared on `:root`, and resolved through a probe because the built contract minifies the
@@ -364,11 +337,11 @@ test('under reduced motion every span is present at full opacity from the first 
   browser,
 }) => {
   const moving = await onMotion(browser, 'no-preference', async (page) => {
-    await goTo(page);
+    await goTo(page, ROUTE);
     return typeRead(page);
   });
   await onMotion(browser, 'reduce', async (page) => {
-    await goTo(page);
+    await goTo(page, ROUTE);
     const chars = await charsRead(page);
     expect(chars.length, 'no span was read on the reduced-motion door').toBe(NAME_LENGTH);
     expect(
@@ -385,7 +358,7 @@ test('under reduced motion every span is present at full opacity from the first 
 test('with the client bundle blocked the heading is served with its words and still arrives', async ({ browser }) => {
   await onMotion(browser, 'no-preference', async (page) => {
     await page.route('**/_next/static/chunks/*.js', (route) => route.abort());
-    await goTo(page);
+    await goTo(page, ROUTE);
 
     // The block took: React never marked the container, so nothing below depends on hydration.
     expect(await hydrated(page), 'the client bundle ran, so this case is not measuring the served document').toBe(false);
@@ -404,7 +377,7 @@ test('a one-character heading delays its one span by exactly --delay, and the st
   // Planted markup, read against the shipped stylesheet: the arithmetic in `animation-delay` on
   // the two ends of `--count`, and what a missing `--count` falls to.
   await onMotion(browser, 'no-preference', async (page) => {
-    await goTo(page);
+    await goTo(page, ROUTE);
     const minor = seconds(await rootCustomPropertyValue(page, '--dur-minor'), '--dur-minor');
     const major = seconds(await rootCustomPropertyValue(page, '--dur-major'), '--dur-major');
     const delayOf = (heading: string, span: string): Promise<string> =>
@@ -435,7 +408,7 @@ test('a one-character heading delays its one span by exactly --delay, and the st
 });
 
 test('the accessibility tree carries one level-1 heading named by the text, and nothing generic is named', async ({ page }) => {
-  await goTo(page);
+  await goTo(page, ROUTE);
   const heading = page.getByRole('heading', { level: 1, name: NAME, exact: true });
   expect(await heading.count(), `the tree does not carry exactly one level-1 heading named ${NAME}`).toBe(1);
   expect(await page.getByRole('heading', { level: 1 }).count(), 'the tree carries more than one level-1 heading').toBe(1);

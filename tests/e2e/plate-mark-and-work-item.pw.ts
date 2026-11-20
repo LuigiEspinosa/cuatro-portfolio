@@ -1,5 +1,5 @@
 import { test, expect, type Browser, type BrowserContextOptions, type Page } from '@playwright/test';
-import { RENDERED_VIEWPORT } from './harness';
+import { RENDERED_VIEWPORT, goTo, plantStyle } from './harness';
 
 /**
  * The Plate mark and the work item, as rendered (Story 2-31).
@@ -25,20 +25,6 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
 /** The two routes that render the timeline. */
 const TIMELINE_ROUTES = ['/work', '/cv'] as const;
 
-/** Navigate, refuse anything but the status expected, and wait for the faces. */
-const goTo = async (page: Page, route: string, expected = 200): Promise<void> => {
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer ${expected}`).toBe(expected);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-  });
-  // No canvas to wait for since Story 2-33. `/work`'s torus used to mount after hydration and widen
-  // the hero's column, moving every row below it, so this waited for it; the torus is never requested
-  // under the reduced motion every context here asks for, and its box is omitted, so the layout a
-  // read sees at `load` is the one it keeps.
-};
-
 /** A context that differs from the project's in the options given and in nothing else. */
 const contextWith = (browser: Browser, options: BrowserContextOptions) =>
   browser.newContext({
@@ -48,11 +34,6 @@ const contextWith = (browser: Browser, options: BrowserContextOptions) =>
     reducedMotion: 'reduce',
     ...options,
   });
-
-/** Plant a style for one page, which is how every control here is made. */
-const plantStyle = async (page: Page, css: string): Promise<void> => {
-  await page.addStyleTag({ content: css });
-};
 
 /**
  * What a set of declarations computes to on a probe, read for the properties named.

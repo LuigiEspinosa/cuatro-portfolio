@@ -196,9 +196,12 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   transient `next/font` Google Fonts fetch with nothing under `apps/tracker` changed; re-run it before
   debugging.
 - Traefik on the box bind-mounts `ops/traefik/traefik.yml` and `ops/traefik/dynamic/` from the checkout
-  the deploy resets to `main`, so a merged routing change goes live at the next deploy, and no CI job
-  starts Traefik to prove it first (DW-299). Rehearse a `dynamic/` change locally as
-  `ops/traefik-cutover.md` § Rehearsed off the box did. Caddy and its Caddyfile are gone; read
+  the deploy resets to `main`, so a merged routing change goes live at the next deploy. The `traefik-routes`
+  job in `ci.yml` starts Traefik first (Story 9-21, DW-299): `ops/traefik-routes.sh` probes every router
+  against whoami stand-ins and holds the expected answers, so a router, upstream or header change edits that
+  script in the same commit, and `ops/__tests__/traefik-routes.test.ts` fails a router or upstream it does not
+  name. Run it locally with `bash ops/traefik-routes.sh` (Docker). It is not one of `main`'s required checks
+  unless the Operator rules it in, so read it on the pushed sha. Caddy and its Caddyfile are gone; read
   `ops/routing-inventory.md`, never a dated Caddy section, for the routing table.
 - Adding an application to `deploy.yml` trips the Capacity Gate (AD-9), which refuses any id
   not in `placements` in `ops/capacity-gate.yml` (six today, `cs-tournament` the latest). The gate is

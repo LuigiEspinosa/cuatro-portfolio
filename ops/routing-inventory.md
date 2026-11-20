@@ -1238,7 +1238,8 @@ project runs `redis` and `qbittorrent` alone (DW-306): `cuatro-tracker-postgres-
 `cuatro-tracker-worker-1` and `cuatro-tracker-migrate-1` were removed with the volume `cuatro-tracker_pg_data`;
 its compose file is unchanged, so `docker compose up` there would recreate an empty Postgres and the old app,
 and must never run. `cuatro-portfolio-anchor-db-1` and the volume `cuatro-portfolio_postgres_data` were
-removed; `anchor-db` stays declared in `docker-compose.yml` for finance (DW-300). The `traefik` project runs
+removed; `anchor-db` stayed declared in `docker-compose.yml` for finance until Story 9-20 (2026-10-18) removed
+it (DW-300). The `traefik` project runs
 `traefik-ingress-1` alone. Each removal, with its final dump and offsite snapshot, is in
 `ops/caddy-retirement.md` § Retirement run. The containers running after it: `cs-tracker-app-2`,
 `cuatro-portfolio-anchor-app-8`, `cuatro-portfolio-anchor-umami-1`, `cuatro-portfolio-tournament-1`,

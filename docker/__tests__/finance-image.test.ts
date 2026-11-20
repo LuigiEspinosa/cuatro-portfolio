@@ -83,6 +83,7 @@ describe('.github/workflows/image-finance.yml', () => {
       'Push',
     ]);
     expect(WORKFLOW).toContain('< apps/finance/prisma/provision.sql');
+    expect(WORKFLOW).toMatch(/^ {6}DATABASE_URL: postgresql:\/\/cuatro_finance:throwaway@finance-db:5432\/cuatro_finance$/m);
     expect(WORKFLOW).toContain('node node_modules/prisma/build/index.js migrate deploy');
   });
 });
@@ -91,13 +92,23 @@ describe('apps/finance/prisma/provision.sql', () => {
   const sql = read('apps', 'finance', 'prisma', 'provision.sql');
 
   it('gives finance its own role and database, each with an explicit connection limit (AD-10)', () => {
-    expect(sql).toMatch(/^CREATE ROLE finance LOGIN PASSWORD :'password' CONNECTION LIMIT 10;$/m);
-    expect(sql).toMatch(/^CREATE DATABASE finance OWNER finance CONNECTION LIMIT 10;$/m);
+    expect(sql).toMatch(/^CREATE ROLE cuatro_finance LOGIN PASSWORD :'password' CONNECTION LIMIT 10;$/m);
+    expect(sql).toMatch(/^CREATE DATABASE cuatro_finance OWNER cuatro_finance CONNECTION LIMIT 10;$/m);
+    expect(sql).toMatch(/^REVOKE ALL ON DATABASE cuatro_finance FROM PUBLIC;$/m);
+  });
+
+  // Story 9-20: the throwaway CI provisions what the estate Postgres's init creates on the box, so the two
+  // name the same role and limit (AD-3: the Registry id `cuatro-finance`, hyphen as underscore).
+  it("names the role and limit the estate Postgres's init gives cuatro_finance", () => {
+    const consumer = /^cuatro_finance (\d+) CUATRO_FINANCE_DB_PASSWORD'?$/m.exec(read('ops', 'postgres', 'init', '10-consumers.sh'));
+    const role = /^CREATE ROLE (\S+) LOGIN PASSWORD :'password' CONNECTION LIMIT (\d+);$/m.exec(sql);
+    expect(consumer?.[1]).toBeDefined();
+    expect(role?.slice(1)).toEqual(['cuatro_finance', consumer?.[1]]);
   });
 
   it('keeps the application pool within the role limit across a two-container rollout', () => {
     const pool = Number(/\bmax: (\d+)\b/.exec(read('apps', 'finance', 'lib', 'db.ts'))?.[1]);
-    const limit = Number(/CREATE ROLE finance\b.*CONNECTION LIMIT (\d+)/.exec(sql)?.[1]);
+    const limit = Number(/CREATE ROLE cuatro_finance\b.*CONNECTION LIMIT (\d+)/.exec(sql)?.[1]);
     expect(pool).toBeGreaterThan(0);
     expect(2 * pool).toBeLessThanOrEqual(limit);
   });

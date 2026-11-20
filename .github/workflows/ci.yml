@@ -424,3 +424,23 @@ jobs:
 
       - name: Provider swap
         run: HUB_IMAGE=provider-swap-hub:ci bash ops/provider-swap.sh
+
+  traefik-routes:
+    runs-on: ubuntu-latest
+
+    # The box's Traefik watches `ops/traefik/dynamic/` in the checkout every deploy resets to `main`, so a routing
+    # change goes live at the next deploy with no Traefik start in between (DW-299). This job is that start:
+    # `ops/traefik-routes.sh` runs the committed `ops/traefik/compose.yml` service with the committed
+    # `traefik.yml` and `dynamic/` against whoami stand-ins on a scratch internal network, probes every router
+    # in both branches of the dashboard's template, and fails on any answer that differs from the expected
+    # lines it holds. A file Traefik rejects, or a router sent to the wrong upstream, fails it. It needs no
+    # account and no secret. It is blocking (AD-21); whether it joins `main`'s required checks is the
+    # Operator's ruling. See `ops/traefik-cutover.md` § Rehearsed off the box. It sits last so no line other
+    # records cite moves.
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Traefik routes
+        run: bash ops/traefik-routes.sh

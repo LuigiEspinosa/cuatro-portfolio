@@ -35,6 +35,17 @@ left as written rather than rewritten by a story that was not editing them.
 | Computed property on a selector | `computedStyleValue` | What value does a named CSS property resolve to on a named selector, in a real browser | **Decision.** Same |
 | Custom property on `:root` | `rootCustomPropertyValue` | What value does a named custom property resolve to on `:root` | **Decision.** Same |
 
+**The shared helpers, since Story 9-12 (2026-10-18).** The file also holds everything more than one
+spec needs, so no spec carries a copy: `goTo` (the one navigation guard, which refuses a status other
+than the one stated and then waits for the fonts; `expectRouteScreenshot` navigates through it),
+`probeComputed`, `plantStyle`, `durationMs`, `getWithRetry` (a bounded retry on a thrown request,
+never on a status), `EDGE_SLACK`, `NOT_FOUND`, `SURFACES` (moved from `hit-target-floor.pw.ts`, which
+`projects-redirect.pw.ts` now derives its sweep from) and `FINGERPRINTS` (loaded from
+`ops/asset-budget-fingerprints.json`, the table `ops/asset-budget.mjs` loads). Every `.pw.ts` under
+`tests/e2e` imports from it. `tests/e2e/rendered-output.pw.ts` shows `goTo`, `probeComputed`,
+`plantStyle` and `getWithRetry` refusing what each exists to refuse; they are not capabilities, and
+the capability ledger below still counts three.
+
 **What the specs built on those three capabilities assert.** This table is the coverage answer, and
 it lives here rather than under the heading below saying what is not covered: a reader scanning for
 whether something is asserted reads the heading before the cell.
@@ -467,7 +478,7 @@ rule a branch that has never been observed to fail is not known to work.
 | Custom property not declared on `:root` | Throws naming the property | **Observed 2026-08-24.** Same file, "fails naming the custom property when it is not declared" |
 | Property resolves to an empty string | Throws naming the property, because an empty string is what an unknown property name yields | **Observed 2026-08-24.** Same file, "fails naming the property when it resolves to an empty string", which reads an undeclared custom property off an element |
 | A name that is not a custom property is passed to the `:root` read | Throws saying so, rather than answering with a real property's real value | **Observed 2026-08-24.** Same file, "refuses a name that is not a custom property". `font-family` resolves on `:root`, so without the guard the mistake returns a plausible answer |
-| Route answers a non-2xx status | Throws naming the route and the status, rather than photographing an error page | **Observed 2026-08-24.** Same file, "refuses to photograph a route that does not answer 2xx", against `/a-route-that-does-not-exist` |
+| Route answers a non-2xx status | Throws naming the route and the status, rather than photographing an error page | **Observed 2026-08-24.** Same file, "refuses to photograph a route that does not answer 2xx", against `/a-route-that-does-not-exist`. Since Story 9-12 the check is `goTo`'s, which requires 200 exactly |
 | A navigation produces no response at all | Throws naming the route, because an unchecked status is how an error page becomes a baseline | **Decision.** `tests/e2e/harness.ts`. This is the same-document-navigation case; no route in the Hub reaches it today |
 | A mask selector matches nothing | Throws naming the selector, rather than masking nothing and comparing an animated region | **Observed 2026-08-24.** Same file, "refuses a mask selector that matches nothing". This is what a renamed `.work-hero__canvas-wrap` would otherwise do: unmask the WebGL torus and make the gate intermittently red for no stated reason |
 | A stray or extra baseline appears on disk | The run fails, because one test asserts the snapshot directory holds exactly the one committed PNG | **Observed 2026-08-24.** Same file, "keeps exactly one committed baseline" |

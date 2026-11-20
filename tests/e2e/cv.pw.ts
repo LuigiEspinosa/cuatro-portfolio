@@ -1,5 +1,5 @@
 import { test, expect, type Download, type Page } from '@playwright/test';
-import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
+import { RENDERED_VIEWPORT, goTo, probeComputed, rootCustomPropertyValue } from './harness';
 
 /**
  * `/cv`, the page built where a redirect used to be (Story 2-16).
@@ -60,20 +60,6 @@ const SUITE_LINK = "nav.navbar a[href='/#suite']";
 const INTERACTIVE = 'a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])';
 
 /**
- * Navigate, and refuse to read anything off a page that did not answer the status expected.
- *
- * Local rather than shared, on the idiom `tests/e2e/chrome-nav.pw.ts:72-76`,
- * `tests/e2e/celeste-header.pw.ts:36-40` and `tests/e2e/hit-target-floor.pw.ts` already set. DW-22
- * records that this guard now has several implementations and that hoisting it into `harness.ts` is
- * its own change; this is not the story that makes it.
- */
-const goTo = async (page: Page, route: string, expected = 200): Promise<void> => {
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer ${expected}`).toBe(expected);
-};
-
-/**
  * The pixel floor, read off `--tap` on `:root` in the running page.
  *
  * Never written here. A hand-written literal is what Story 2-34's conformance gate rejects
@@ -90,26 +76,6 @@ const floorFrom = async (page: Page): Promise<number> => {
   ).toBe(true);
   return value;
 };
-
-/**
- * The computed value of one property, resolved by laying out a probe.
- *
- * A custom property's computed value is its declared token stream, so comparing `--token-accent`
- * read off `:root` against a computed `border-bottom-color` compares a declaration against a
- * resolution. Same shape as `tests/e2e/chrome-nav.pw.ts:122-133`.
- */
-const probeComputed = (page: Page, declaration: string, property: string): Promise<string> =>
-  page.evaluate(
-    ([css, name]) => {
-      const probe = document.createElement('div');
-      probe.setAttribute('style', `position:absolute;left:-99999px;top:0;width:1px;height:1px;${css}`);
-      document.body.append(probe);
-      const read = window.getComputedStyle(probe).getPropertyValue(name);
-      probe.remove();
-      return read;
-    },
-    [declaration, property] as const
-  );
 
 /**
  * One measured box, labelled by what it is, so a failure names the control rather than an index.

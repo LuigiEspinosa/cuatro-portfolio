@@ -7,7 +7,7 @@ const STEAMID = '76561198388441171';
 function makeAdmin(
   opts: { createError?: { message: string; code?: string } | null; noUser?: boolean } = {},
 ) {
-  const createUser = vi.fn(async () => ({ error: opts.createError ?? null }));
+  const createUser = vi.fn(async (_attributes: unknown) => ({ error: opts.createError ?? null }));
   const generateLink = vi.fn(async () => ({
     data: {
       user: opts.noUser ? null : { id: 'user-1' },

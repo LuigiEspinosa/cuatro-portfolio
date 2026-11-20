@@ -1872,7 +1872,9 @@ reason: |-
   all. Deferred rather than done because it edits a file shared by every rendered assertion in
   the repository, which is a change that deserves its own verification rather than riding along
   inside a defect fix.
-status: open
+
+  **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/harness.ts`: `goTo`): one navigation guard now lives in the harness and `expectRouteScreenshot` uses it, so the screenshot path and the assertion path cannot drift. The eighteen local copies are gone, every inline `page.goto` plus status check in the contract specs, narrative, front-door and suite-directory routes through it, and the unguarded Hub navigations in `projects-redirect.pw.ts` and `rendered-output.pw.ts` gained it after each target was checked. `rendered-output.pw.ts` plants its refusal.
+status: done
 
 ### DW-23: The container invocation that actually runs the e2e suite is nowhere recorded, and the one a reader would construct fails.
 origin: spec-deferred 2026-08-29
@@ -2925,7 +2927,9 @@ status: done
     `ops/rendered-output-harness.md` was updated to add the story; the file a reader actually opens
     was not. Story 2-8's boundaries made `harness.ts` reuse-only, so this is filed rather than
     fixed.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/harness.ts` header): the docstring no longer lists importing stories; it names the helpers and states that every `.pw.ts` under `tests/e2e` imports the file.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
   id: DW-222
@@ -2975,7 +2979,9 @@ status: done
     the failure mode it exists to prevent. Observed 2026-09-06. The fix is a bounded retry on the
     request, or asserting the served bytes rather than re-fetching over the network, not a
     `test.retry` on the whole case, which would hide a real 404 as readily as a hang up.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/harness.ts`: `getWithRetry`): both re-fetches in `contract-anchor.pw.ts` (the stylesheets and the faces) go through a request that is retried up to three times when it throws and never when it answers, so a socket hang-up no longer takes the blocking gate red while a real 404 still fails. No `test.retry` or `retries` change; planted both ways.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
   id: DW-225
   summary: The `Live` status dot fills 4px with `--token-accent`, which F-8's gate greps for and
@@ -3242,7 +3248,9 @@ status: done
     Filed rather than fixed because lifting them touches `hit-target-floor.pw.ts`, whose literals
     `ops/__tests__/hit-target-floor.test.ts` parses as text, and Story 2-10's boundaries put that
     file off limits. A story that owns the harness can lift all four helpers in one change.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/harness.ts`: `goTo`, `plantStyle`, `durationMs`, `EDGE_SLACK`): each lives once in the harness and every spec imports it; no spec declares its own edge slack figure any more (the other, different tolerances such as `SIZE_SLACK` and `TIME_SLACK` stay with their specs). `ops/__tests__/hit-target-floor.test.ts` reads none of the four, so lifting them out of `hit-target-floor.pw.ts` needed no change there.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
   id: DW-233
@@ -3411,7 +3419,9 @@ status: done
     an earlier entry in this ledger already books lifting them to a story that owns the harness; the
     scoping and the extraction are one change, and `hit-target-floor.pw.ts` is off limits to Story
     2-11 for the reason recorded there.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/premise.pw.ts`: `outsideViewport`): the sweep reads `.premise` and `.site-footer` and their descendants only, so an overflow elsewhere on `/` no longer turns the premise suite red; the route-wide claim stays `hit-target-floor.pw.ts`'s. A scope that matches nothing throws, planted.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
   id: DW-238
@@ -3804,7 +3814,9 @@ status: done
     the tool's `main` default argument, which is the only thing making it unloadable from CommonJS.
     The first is better and is a change to a file `ops/__tests__/asset-budget.test.ts` pins as
     literals, so it lands with that suite.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `ops/asset-budget-fingerprints.json`, `tests/e2e/harness.ts`: `FINGERPRINTS`): the table moved to a JSON file that `ops/asset-budget.mjs` and the harness both load, so the specs no longer parse the tool as text and a reformatted table cannot fail them with a parse message. `ops/__tests__/asset-budget.test.ts` still pins the seven rows; the harness refuses an empty table, a malformed row or an empty mark at collection.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-41
@@ -4159,7 +4171,9 @@ status: done
     Both copies now depend on the tool's exact literal formatting, and a reflow of that array would
     fail two specs with messages about a parse. The remedy DW-40 already names, a small `.ts` module
     both the tool and the specs import, is now worth more: three readers rather than two.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/harness.ts`: `FINGERPRINTS`): all three text parses (`narrative.pw.ts`, `front-door.pw.ts`, `work-hero.pw.ts`) are deleted and each imports the harness's table, closed with DW-40.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-50
@@ -4239,7 +4253,9 @@ status: done
     scope. Or the edge does it: `docker/Caddyfile` is already incomplete against
     `ops/routing-inventory.md` and is being rebuilt in Epic 4, which is the natural place for a
     `Vary` on one route.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-15-hub-chrome-and-headers** (`72676fd`, `apps/hub/next.config.js`): the `Vary: Save-Data` declaration is removed, since Next 16.2.1's App Router handler sets `Vary` before every render (`app-page.js:453-454`) and a proxy or the config cannot reach it. `/` stays guarded by the `private, no-store` a dynamic route is answered with, which `tests/e2e/front-door.pw.ts` keeps asserting, and a new case there fails any header a `headers()` block declares for `/` that does not arrive as written.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-52
@@ -4659,7 +4675,9 @@ status: done
     **Owner: unassigned**, because no planned story adds a Hub surface. **Trigger: the next story
     that adds a route under `app/` serving Hub markup**, at which point the gap is live rather
     than theoretical, and DW-22's note on the duplicated `goTo` guard is the same seam.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/projects-redirect.pw.ts`: `SWEPT`): `SURFACES` moved to `tests/e2e/harness.ts` and `SWEPT` maps it, so a surface `hit-target-floor.pw.ts`'s walk of `app/` forces into `SURFACES` is swept for NFR-9 too; planted with a sixth row, `/planted`, that the sweep visited (P7). `type-swap.pw.ts`'s hand copy is derived the same way.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-62
@@ -6581,7 +6599,9 @@ status: done
     no assertion reads them.
 
     **Owner and trigger.** The next story that edits either citing file; trigger, that edit.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/front-door.pw.ts`: `onPath` docblock, `tests/e2e/visitor-instrumentation.pw.ts`: `reach`): both stale line citations are replaced by symbol citations (`withMotion`, `atAWiderWidth`, and the front-door case by title), which do not drift with an edit.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
   id: DW-106
   summary: >-
@@ -7136,7 +7156,9 @@ status: done
 
     **Owner: unassigned.** **Trigger: a header that has to wrap at a supported width, a fragment
     target added to `/celeste`, or the next change to the header's contents.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-15-hub-chrome-and-headers** (`c03ae89`, `apps/hub/components/molecules/Header/Header.tsx`: `reserveScrollPadding`): the band measures itself with a `ResizeObserver` and writes its real height as the root's `scroll-padding-block-start`, retracting it when the band leaves the document or measures zero, so a wrapped row is covered; the four-token rule in `Header.scss` stays as the first paint's value and now reads `html:has(body:not(#celeste) .header-container)`, so `/celeste` reserves nothing. `tests/e2e/chrome-nav.pw.ts` holds the padding equal to a header wrapped by a planted full-width child and to one grown by its own padding on `/work` and the 404, `auto` on `/celeste`, and `auto` on `/` reached from `/work` by the wordmark; `Header.test.tsx` holds the write, the follow and both retractions.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`
   id: DW-119
@@ -9179,7 +9201,9 @@ status: done
     them deletes `tsconfig.typecheck.json` and points `typecheck` at `tsconfig.json`.
 
     **Owner: unassigned, or Epic 8 wave 2.** **Trigger: the next change to a tournament test file.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-18-tournament-inert-files-and-tsc** (`01f9c98`, `apps/tournament/package.json`: `typecheck`): `tsc --noEmit -p tsconfig.json` over `apps/tournament` is clean. The 21 errors in nine `lib/**/*.test.ts` files were stale fixture shapes and mock typings, fixed without changing any test's verdict: the caller-supplied `SeedAward` fixture in `awards/catalog.test.ts` now carries the three FR-29 rung keys and asserts their projection, `revealedSpins` and `totalSpins` are gone from `reveal-model.test.ts`, `Dirent.path` became `parentPath`, the Supabase mocks take typed parameters, and `fromHex` returns a `Uint8Array<ArrayBuffer>`. `tsconfig.typecheck.json` is deleted and `typecheck` reads `tsconfig.json`, so CI's `Tournament type check` covers the tests; a planted type error in a test file fails it (exit 2).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
   id: DW-283
@@ -9198,7 +9222,9 @@ status: done
 
     **Passed to Epic 8 wave 2 on 2026-09-29 by Story 3-8.** Removing files from `apps/tournament` edits
     the merged application, which a record story does not, so the owner is now Epic 8 wave 2 alone.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-18-tournament-inert-files-and-tsc** (`01f9c98`, `apps/tournament`): `docs/`, `vercel.json`, `eslint.config.mjs` and `worker/cmd/qa54` are deleted; nothing built, imported or pinned them. The README drops the source repository's kickoff status, hosting table and links into its `_bmad-output/` tree (the BMAD trees went at `8440372`), and the worker README notes that the worker never reached Railway and is placed beside the tournament with no public hostname. The `eslint` and `eslint-config-next` devDependencies stay: dropping them rewrites other workspaces' lockfile entries, which is a lockfile change outside this story.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
   id: DW-284
@@ -9595,7 +9621,9 @@ status: done
     new job is a change to both suites that pin `ci.yml`'s job names.
 
     **Owner: Story 4.3 (the first hostname to move).** **Trigger: that story.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-21-traefik-ci-job** (`37ff0de`, `.github/workflows/ci.yml`: `traefik-routes`, `ops/traefik-routes.sh`): every push now starts `traefik:v3.7.13` from the committed `ops/traefik/compose.yml` with the committed `traefik.yml` and `dynamic/` against whoami stand-ins on a scratch internal network, and compares every router's answer (status, `X-Frame-Options`, the upstream that answered, redirect target, cs-tracker's forwarded scheme on an upgrade, the loaded routers and their statuses) with expected lines, with `DASHBOARD_FORWARD_AUTH` unset and `on`. A file Traefik rejects, a misrouted upstream, a dropped middleware and a typo inside the `on` branch each failed it locally. Both job-name pins moved; `ops/__tests__/traefik-routes.test.ts` fails a router or upstream the script does not name. The job is blocking but is not one of `main`'s required checks until the Operator rules it in.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
   id: DW-300
   summary: >-
@@ -9619,7 +9647,9 @@ status: done
     `finance-migrate` still name it; after that step, starting it creates an empty database, which the
     `docker-compose.yml` comment now says. The fix stays this entry's: point finance at
     `estate-postgres:5432/cuatro_finance`, then remove the declaration.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-20-finance-db-naming** (`2a05323`, `docker-compose.yml`: `finance`, `finance-migrate`): finance's role and database are `cuatro_finance` everywhere the repository names them. Both services read `postgresql://cuatro_finance:${CUATRO_FINANCE_DB_PASSWORD-}@estate-postgres:5432/cuatro_finance` and join `estate-postgres`, `apps/finance/prisma/provision.sql` creates `cuatro_finance` with the limit and `REVOKE` the estate init applies (a case in `docker/__tests__/finance-image.test.ts` holds the two equal), and `image-finance.yml`'s throwaway URL names it. Finance was `anchor-db`'s last reader, so that service and its `postgres_data` volume are removed from `docker-compose.yml`; the container and volume had already gone at `ops/caddy-retirement.md` step 12. Finance is placed nowhere, so no box step followed; the estate Postgres has held `cuatro_finance` since 2026-09-30.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
   id: DW-301
   summary: >-

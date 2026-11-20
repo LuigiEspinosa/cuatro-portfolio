@@ -76,6 +76,15 @@ longer applies: a new hostname is one router in `ops/traefik/dynamic/routes.yml`
 
 ## Rehearsed off the box
 
+**Amended 2026-10-18 (Story 9-21, DW-299):** this rehearsal now runs on every push as the `traefik-routes`
+job in `.github/workflows/ci.yml`. `ops/traefik-routes.sh` starts the committed `compose.yml` service with
+the committed `traefik.yml` and `dynamic/`, unpublished, on a scratch internal network with one whoami
+stand-in per upstream alias and a throwaway self-signed pair, and compares every router's answer (status,
+`X-Frame-Options`, the stand-in that answered, the redirect target, cs-tracker's forwarded scheme on an
+upgrade, the loaded router set and their statuses) with the expected lines it holds, once with
+`DASHBOARD_FORWARD_AUTH` unset and once `on`. Run it locally with `bash ops/traefik-routes.sh`. The block
+below is the 2026-09-30 run on the 8443 instance and is kept as it was observed.
+
 **Observed 2026-09-30 between 09:50Z and 09:59Z on the authoring machine** (Docker 29.8.1, Compose
 5.5.1), with the committed `ops/traefik/` files and throwaway stand-ins: a network named
 `cs-tracker_default`, a volume named `cs-tracker_caddy_data` holding a self-signed pair for

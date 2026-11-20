@@ -222,7 +222,7 @@ describe('ops/deploy-remote.sh, as the box runs it', () => {
         '    fi',
         '    echo "docker-rollout version ${STUB_ROLLOUT:-v0.14}"; exit 0 ;;',
         '  *" config --services")',
-        '    printf "%s\\n" anchor-app anchor-umami anchor-db ${STUB_MIGRATE:+anchor-app-migrate}; exit 0 ;;',
+        '    printf "%s\\n" anchor-app anchor-umami ${STUB_MIGRATE:+anchor-app-migrate}; exit 0 ;;',
         '  *" ps --format {{.Image}} anchor-app")',
         '    echo "${STUB_RUNNING:-ghcr.io/luigiespinosa/hub:$HUB_TAG}"; exit 0 ;;',
         'esac',

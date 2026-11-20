@@ -729,7 +729,7 @@ describe('stage1-pick.json covers the hard cases', () => {
   it('W8 — the clamp really clamps, and the empty shelf really is heaviest', () => {
     const c = get('shelf-to-weight-mapping-with-clamp-and-empty-shelf');
     const tableMax = c.weight_table.length - 1;
-    const sizes = Object.values(c.shelf);
+    const sizes = Object.values(c.shelf!);
     expect(
       sizes.some((s) => s > tableMax),
       'no shelf entry exceeds table_max — min(shelf, table_max) is untested',
@@ -747,7 +747,7 @@ describe('stage1-pick.json covers the hard cases', () => {
     // …and at least one candidate's winner must be ABSENT from the shelf map entirely — the
     // first-spin shape, and the branch where "a missing key is shelf 0" is exercised at all.
     expect(
-      Object.keys(c.shelf).length,
+      Object.keys(c.shelf!).length,
       'every player is in the shelf map, so the absent-key branch is untested by this row',
     ).toBeLessThan(c.candidates.length);
   });

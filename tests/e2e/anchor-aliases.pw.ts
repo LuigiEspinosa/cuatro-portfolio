@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { RENDERED_VIEWPORT, computedStyleValue } from './harness';
+import { RENDERED_VIEWPORT, computedStyleValue, goTo } from './harness';
 
 /**
  * The alias layer's deletion, measured in a real browser (Story 2-22, Anchor migration step 7).
@@ -346,13 +346,6 @@ const rasterise = async (page: Page, values: readonly string[]): Promise<string[
 
 const PURE_BLACK = '0,0,0,255';
 const PURE_WHITE = '255,255,255,255';
-
-/** Navigate, and refuse to read anything off a page that did not answer the status expected. */
-const goTo = async (page: Page, route: string, expected = 200): Promise<void> => {
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer ${expected}`).toBe(expected);
-};
 
 /**
  * **What left this file on 2026-09-23 with the layer it measured.** The alias map parsed out of

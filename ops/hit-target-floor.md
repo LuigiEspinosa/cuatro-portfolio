@@ -86,8 +86,9 @@ with the Suite Directory and mounted the same directory on `/`. `/` went from 5 
 failure output in the pinned container, not computed from the six rendered Registry entries, which
 is the arithmetic that would have been wrong had a link failed to render.
 
-**These three numbers are pinned, not bounded.** **Decision.** They are `SURFACES` in
-`tests/e2e/hit-target-floor.pw.ts`, held equal to this table by
+**These three numbers are pinned, not bounded.** **Decision.** They are `SURFACES`, which
+`tests/e2e/hit-target-floor.pw.ts` sweeps and which lives in `tests/e2e/harness.ts` since Story 9-12
+(2026-10-18) so `projects-redirect.pw.ts` derives from it too, held equal to this table by
 `ops/__tests__/hit-target-floor.test.ts` the same way the exemption ledger is. A bounded "at least
 one element" guard would let a seventh chrome link, or a control that stopped rendering, pass with
 no number moving. A story that changes what a surface renders moves the number in both places, in
@@ -137,7 +138,7 @@ from 11 to 7, `/celeste` from 7 to 3 and the 404 from 8 to 4; `/` did not move. 
 that carry chrome each lost four candidates, which is the five inline links plus the `mailto:` the
 header rendered, **six anchors**, less the two that replace them. `/` is unchanged for two reasons
 rather than one:
-`Header.tsx:12` renders no header on the home route at all, and the homepage panel's second link
+`Header.tsx:48` renders no header on the home route at all, and the homepage panel's second link
 was **repointed and relabelled rather than removed**, so it is the same element at the same size
 answering a different `href`.
 

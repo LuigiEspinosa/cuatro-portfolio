@@ -319,7 +319,7 @@ describe('AC9 — a shared co-winner is ONE card with N winner elements', () => 
 // ── the measured corpus ─────────────────────────────────────────────────────────────────────────
 
 describe('⭐ the MEASURED corpus — twelve “nobody qualified” cards and a 28-way consolation', () => {
-  const built = view(measuredCorpus(), { revealedSpins: 40, totalSpins: 40, complete: true });
+  const built = view(measuredCorpus(), { complete: true });
 
   it('reports twelve zero-winner main spins and nothing else on the shelf', () => {
     expect(built.mainSpins).toHaveLength(12);
@@ -351,10 +351,10 @@ describe('⭐ the MEASURED corpus — twelve “nobody qualified” cards and a 
 // ── the parity key (AC3's oracle) ───────────────────────────────────────────────────────────────
 
 describe('revealParityKey — AC3’s oracle, and it must be SENSITIVE to be worth anything', () => {
-  const base = view(measuredCorpus(), { revealedSpins: 40, totalSpins: 40, complete: true });
+  const base = view(measuredCorpus(), { complete: true });
 
   it('is stable for the same view', () => {
-    expect(revealParityKey(base)).toBe(revealParityKey(view(measuredCorpus(), { revealedSpins: 40, totalSpins: 40, complete: true })));
+    expect(revealParityKey(base)).toBe(revealParityKey(view(measuredCorpus(), { complete: true })));
   });
 
   it('is non-empty and covers every spin', () => {
@@ -371,7 +371,7 @@ describe('revealParityKey — AC3’s oracle, and it must be SENSITIVE to be wor
     ['a changed winner name', (s: RevealedSpin[]) => [...s.slice(0, 12), spin(13, 'pity', [award({ awardResultId: 200, awardId: null, isPity: true, winners: [winner(900, 'OTRO')] })]), ...s.slice(13)]],
     ['a changed outcome', (s: RevealedSpin[]) => [spin(1, 'main', [award({ awardResultId: 101, awardId: 401, name: 'Premio 1', outcomeKind: 'winner', decidingValue: null })]), ...s.slice(1)]],
   ])('changes when %s changes', (_label, mutate) => {
-    const mutated = view(mutate(measuredCorpus()), { revealedSpins: 40, totalSpins: 40, complete: true });
+    const mutated = view(mutate(measuredCorpus()), { complete: true });
     expect(revealParityKey(mutated)).not.toBe(revealParityKey(base));
   });
 
@@ -392,7 +392,7 @@ describe('revealParityKey — AC3’s oracle, and it must be SENSITIVE to be wor
     const renamed = spins.map((s, i) =>
       i !== 12 ? s : { ...s, awards: s.awards.map((a) => ({ ...a, winners: [{ ...a.winners[0]!, displayName: 'OTRO' }] })) },
     );
-    const after = view(renamed, { revealedSpins: 40, totalSpins: 40, complete: true });
+    const after = view(renamed, { complete: true });
     // The only difference is the name — assert that, so the case cannot silently become the old one.
     expect(after.pity!.winners[0]!.rosterEntryId).toBe(base.pity!.winners[0]!.rosterEntryId);
     expect(after.pity!.winners[0]!.displayName).not.toBe(base.pity!.winners[0]!.displayName);
@@ -411,8 +411,8 @@ describe('revealParityKey — AC3’s oracle, and it must be SENSITIVE to be wor
         ? s
         : { ...s, awards: s.awards.map((a) => ({ ...a, winners: [{ rosterEntryId: 900, displayName: null, nameRefusal: 'unresolved' as const }] })) },
     );
-    const a = revealParityKey(view(refused, { revealedSpins: 40, totalSpins: 40, complete: true }));
-    const b = revealParityKey(view(alsoRefused, { revealedSpins: 40, totalSpins: 40, complete: true }));
+    const a = revealParityKey(view(refused, { complete: true }));
+    const b = revealParityKey(view(alsoRefused, { complete: true }));
     expect(a).not.toBe(b);
   });
 

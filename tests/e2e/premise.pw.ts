@@ -1,5 +1,5 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
-import { RENDERED_VIEWPORT } from './harness';
+import { EDGE_SLACK, RENDERED_VIEWPORT, goTo, plantStyle } from './harness';
 
 /**
  * The premise block, the framework band, the plate mark and the footer line, as they render
@@ -41,14 +41,6 @@ import { RENDERED_VIEWPORT } from './harness';
 /** The homepage, the one route that renders the premise block and the footer. */
 const ROUTE = '/';
 
-/**
- * Sub-pixel slack, matching `hit-target-floor.pw.ts:252`, `suite-directory.pw.ts:57` and
- * `status-mark.pw.ts:80`. Layout produces fractional positions and a box ending a third of a pixel
- * past an edge is a rounding artifact rather than overflow. DW-22 records that these four copies
- * belong in `tests/e2e/harness.ts` and that lifting them is a story of its own.
- */
-const EDGE_SLACK = 0.5;
-
 /** A token with no line-breaking opportunity anywhere in it, for the wrapping control. */
 const UNBREAKABLE = `Aaa${'z'.repeat(120)}Zzz`;
 
@@ -71,13 +63,8 @@ const WIDE_VIEWPORT = { width: 1024, height: 800 } as const;
  */
 const MARK = '.premise .plate-mark';
 
-const goTo = async (page: Page, route: string): Promise<void> => {
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer 200`).toBe(200);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-  });
+const goToPremise = async (page: Page, route: string): Promise<void> => {
+  await goTo(page, route);
 
   await expect(page.locator('.premise__band')).toBeVisible();
 
@@ -119,14 +106,6 @@ const atAWiderWidth = async <T>(browser: Browser, read: (page: Page) => Promise<
     await context.close();
   }
 };
-
-/** Add a stylesheet to the running page, so a defect is planted without a fixture in the tree. */
-const plantStyle = (page: Page, css: string): Promise<void> =>
-  page.evaluate((text) => {
-    const style = document.createElement('style');
-    style.textContent = text;
-    document.head.append(style);
-  }, css);
 
 /**
  * The pinned viewport, asserted rather than assumed from the config.
@@ -232,13 +211,22 @@ const lengthPx = (page: Page, role: string): Promise<string> =>
     return resolved;
   }, role);
 
-/** Every element on the page whose box sits outside the viewport on either side. */
-const outsideViewport = (page: Page): Promise<string[]> =>
-  page.evaluate((slack) => {
+/**
+ * Every element of the premise block or the footer whose box sits outside the viewport on either side.
+ *
+ * Scoped to the blocks this file is about since Story 9-12 (DW-237). It swept the whole document
+ * before, so an overflow anywhere on `/`, in `WorkItem` or the Directory, turned this file red while
+ * naming the premise; the route-wide A-5 claim is `tests/e2e/hit-target-floor.pw.ts`'s. A scope that
+ * matched nothing would report every layout clean, so it throws instead.
+ */
+const outsideViewport = async (page: Page): Promise<string[]> => {
+  const found = await page.evaluate((slack) => {
     const width = window.innerWidth;
     const found: string[] = [];
+    const scoped = document.querySelectorAll('.premise, .premise *, .site-footer, .site-footer *');
+    if (scoped.length === 0) return null;
 
-    for (const node of document.querySelectorAll('*')) {
+    for (const node of scoped) {
       const box = node.getBoundingClientRect();
       if (box.width === 0 && box.height === 0) continue;
       if (box.right > width + slack || box.left < -slack) {
@@ -253,6 +241,12 @@ const outsideViewport = (page: Page): Promise<string[]> =>
 
     return found;
   }, EDGE_SLACK);
+
+  if (found === null) {
+    throw new Error('no element matches .premise or .site-footer on the home route, so the overflow sweep would read nothing');
+  }
+  return found;
+};
 
 /**
  * Every element in the two new blocks painting content wider than its own box.
@@ -326,7 +320,7 @@ test.describe('the premise takes the lede role, which is three tokens and a cap'
     // `:485-486` sets its leading. None of the three is visible to jsdom, and until this case
     // existed all three could be changed with the whole suite green: a reviewer swapped the weight
     // to `--w-bold` and the leading to `--lh-label` and nothing anywhere noticed.
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
 
     const expected = await typeScale(page, { size: '--t-base', weight: '--w-light', leading: '--lh-lede' });
     expect(expected.fontWeight, '--w-light did not resolve to a weight, so the comparison is unanchored').not.toBe('');
@@ -356,7 +350,7 @@ test.describe('the premise takes the lede role, which is three tokens and a cap'
     // The planted control, field by field rather than in one plant, so each read is attributable.
     // The plants accumulate, so every step compares against the reading before it and changes one
     // property. These are the exact mutations that survived the suite before this block existed.
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
     const clean = await ledeType(page);
 
     await plantStyle(page, '.premise__lede { font-weight: var(--w-bold) !important; }');
@@ -390,7 +384,7 @@ test.describe('the premise takes the lede role, which is three tokens and a cap'
     // the same layout there. A second context is the only way to reach it, which is the idiom
     // `anchor-aliases.pw.ts:133` and `suite-directory.pw.ts:244-262` already set.
     const measured = await atAWiderWidth(browser, async (wide) => {
-      await goTo(wide, ROUTE);
+      await goToPremise(wide, ROUTE);
 
       const read = () =>
         wide.evaluate(() => {
@@ -444,7 +438,7 @@ test.describe('the premise takes the lede role, which is three tokens and a cap'
 
 test.describe('the framework band alternates two roles, which is its whole rhythm', () => {
   test('paints odd positions secondary and even positions the muted accent', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
 
     const secondary = await roleColour(page, '--token-text-secondary');
     const muted = await roleColour(page, '--token-accent-muted');
@@ -473,7 +467,7 @@ test.describe('the framework band alternates two roles, which is its whole rhyth
   test('and that read follows the stylesheet rather than answering the same thing every time', async ({ page }) => {
     // The planted control. A band read as alternating proves nothing unless the instrument is seen
     // reporting something else when the stylesheet changes under it.
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
     const before = await bandNames(page);
     expect(new Set(before.map((name) => name.colour)).size).toBe(2);
 
@@ -490,7 +484,7 @@ test.describe('the framework band alternates two roles, which is its whole rhyth
 
 test.describe('the band is display type at the narrow end of its width axis', () => {
   test('renders bold uppercase at the smallest step, with the width axis selected', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
 
     const scale = await page.evaluate(() => {
       const probe = document.createElement('span');
@@ -521,7 +515,7 @@ test.describe('the band is display type at the narrow end of its width axis', ()
   test('and the width read is live, measured against a band widened back to the default', async ({ page }) => {
     // The control. `font-stretch` reporting `75%` twice proves nothing unless it is seen reporting
     // something else on the same element.
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
     expect((await bandNames(page))[0].fontStretch).toBe('75%');
 
     await plantStyle(page, '.premise__band { font-stretch: 100% !important; }');
@@ -540,7 +534,7 @@ test.describe('the band is bounded above and below by hairlines', () => {
     // two are a band, so the pair is the treatment rather than a doubled separator, and each has to
     // run the content width of the block (`RESTYLE-SPEC.md:312-313`) or it stops aligning with the
     // rules above and below it down the page.
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
 
     const stroke = await lengthPx(page, '--stroke-hair');
     const border = await roleColour(page, '--token-border');
@@ -576,7 +570,7 @@ test.describe('the band is bounded above and below by hairlines', () => {
   test('and the stroke read is live, measured against a band whose rules are widened', async ({ page }) => {
     // The control. A hairline read twice proves nothing unless the instrument is seen reporting a
     // different width on the same element.
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
     const stroke = await lengthPx(page, '--stroke-hair');
 
     await plantStyle(page, '.premise__band { border-block-start-width: 7px !important; }');
@@ -594,7 +588,7 @@ test.describe('the plate mark is tracked by the token and not by a figure', () =
     // reference mockup follows `epics.md` while its own nav and count rows follow `DESIGN.md`.
     // DESIGN.md wins any value, so the mark names the token and this case reads the token off the
     // running page rather than restating either figure.
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
 
     const expected = await trackingPx(page, '--tr-label', '--t-3xs');
     const measured = await page.locator(MARK).evaluate((element) => ({
@@ -618,7 +612,7 @@ test.describe('the plate mark is tracked by the token and not by a figure', () =
     // The control, and the reason it is worth having: the drift is one step on the same axis, so a
     // dead instrument would report agreement with either. The wider figure is planted here and
     // nowhere else in this story.
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
     const expected = await trackingPx(page, '--tr-label', '--t-3xs');
 
     await plantStyle(page, '.plate-mark { letter-spacing: 0.16em !important; }');
@@ -632,7 +626,7 @@ test.describe('the plate mark is tracked by the token and not by a figure', () =
   });
 
   test('sits on a hairline in the border role, running the content width and not the viewport', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
 
     const stroke = await lengthPx(page, '--stroke-hair');
     const border = await roleColour(page, '--token-border');
@@ -665,7 +659,7 @@ test.describe('every count-bearing element carries tabular numerals', () => {
     // `DESIGN.md:490` binds this to every count, plate mark and metric. Neither line carries a digit
     // today, both figures being spelled, and the rule is set on the element so the day one arrives
     // it does not shift the characters beside it.
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
 
     for (const selector of [MARK, '.site-footer__line']) {
       const value = await page
@@ -677,7 +671,7 @@ test.describe('every count-bearing element carries tabular numerals', () => {
   });
 
   test('and the read is live, measured against the same elements set back to normal', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
     await plantStyle(page, '.plate-mark, .site-footer__line { font-variant-numeric: normal !important; }');
 
     for (const selector of [MARK, '.site-footer__line']) {
@@ -692,7 +686,7 @@ test.describe('every count-bearing element carries tabular numerals', () => {
 
 test.describe('the footer line is fine print below a rule at the content width', () => {
   test('renders in mono at the smallest step in secondary text, over a hairline', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
 
     const stroke = await lengthPx(page, '--stroke-hair');
     const border = await roleColour(page, '--token-border');
@@ -729,7 +723,7 @@ test.describe('the footer line is fine print below a rule at the content width',
   test('follows the Directory in the document and sits outside main', async ({ page }) => {
     // FR-1: nothing follows the Directory except footer content. This is the placement half of it,
     // and it is what Stories 2-12 and 2-17 both assume exists.
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
 
     const placed = await page.evaluate(() => {
       const directory = document.querySelector('.suite-directory');
@@ -754,12 +748,12 @@ test.describe('the footer line is fine print below a rule at the content width',
 
 test.describe('the block holds at 360, where the viewport has least room', () => {
   test('puts nothing outside the viewport and paints nothing outside its own box', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
     await expectPinnedViewport(page);
 
     expect(
       await outsideViewport(page),
-      'the home route puts an element outside the viewport at 360, which is A-5 outright'
+      'the premise block or the footer puts an element outside the viewport at 360, which is A-5 outright'
     ).toEqual([]);
     expect(
       await contentOutsideItsBox(page),
@@ -769,7 +763,7 @@ test.describe('the block holds at 360, where the viewport has least room', () =>
   });
 
   test('wraps the band rather than scrolling it, which is what flex-wrap is doing there', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
     await expectPinnedViewport(page);
 
     const band = await page.locator('.premise__band').evaluate((element) => ({
@@ -792,7 +786,7 @@ test.describe('the block holds at 360, where the viewport has least room', () =>
     // measurement was broken look identical, and this is what separates them. Two changes, because
     // the band absorbs a long name by wrapping and a single unbreakable token defeats wrapping:
     // together they are the shape the layout has to survive.
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
     await expectPinnedViewport(page);
 
     const planted = await page.evaluate((token) => {
@@ -827,10 +821,10 @@ test.describe('the block holds at 360, where the viewport has least room', () =>
     // The mark reads its trailing cell off the Hub's own entry, so its width is whatever hostname
     // the estate is served from. The committed one is short and every layout holds for it; the day
     // the Hub moves, a longer one arrives with no other edit and nothing would have measured it.
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
     await expectPinnedViewport(page);
 
-    expect(await outsideViewport(page), 'the route already overflows, so the plant below proves nothing').toEqual([]);
+    expect(await outsideViewport(page), 'the premise or the footer already overflows, so the plant below proves nothing').toEqual([]);
     expect(await contentOutsideItsBox(page), 'the block already paints outside its own boxes').toEqual([]);
 
     const planted = await page.evaluate((token) => {
@@ -856,7 +850,7 @@ test.describe('the block holds at 360, where the viewport has least room', () =>
     // The control for the case above, and the demonstration that the two declarations doing the
     // work are the ones named. A flex item's automatic minimum is its own min-content width, so a
     // hostname left at `auto` never has to break however permissive the wrapping rule is.
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
     await page.evaluate((token) => {
       const cell = document.querySelector('.plate-mark__domain');
       if (cell) cell.textContent = `${token.toLowerCase()}.example`;
@@ -884,7 +878,7 @@ test.describe('the band disappears in a medium with no ornament, and the line do
     // of its own and correctly leaves a printed page. The footer line is not hidden and is a fact,
     // so it stays. Asserted because the two halves are one rule and a later exemption to that rule
     // could take either.
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
 
     const onScreen = await page.evaluate(() => ({
       band: getComputedStyle(document.querySelector('.premise__band') as Element).display,
@@ -921,7 +915,7 @@ test.describe('nothing this story adds to the premise block is interactive', () 
     // `tests/e2e/hit-target-floor.pw.ts` pins an exact number of interactive elements for `/`.
     // That number is held there; this is the local claim behind it, so a control arriving in the
     // premise block fails naming the component rather than naming a count.
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
 
     const found = await page.evaluate(
       (swept) =>
@@ -937,7 +931,7 @@ test.describe('nothing this story adds to the premise block is interactive', () 
   });
 
   test('and that sweep fires, measured against a control planted into the block', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToPremise(page, ROUTE);
     const planted = await page.evaluate(() => {
       const band = document.querySelector('.premise__band');
       if (!band) return false;
