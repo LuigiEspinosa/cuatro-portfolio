@@ -42,7 +42,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 10-17-2026 06:08
+last_updated: 10-18-2026 23:59
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -1141,6 +1141,8 @@ development_status:
   # stay backlog. Spec spec-6-1-confirm-the-trigger-has-fired.md; the verifier sets done.
   # 6-1 done 2026-10-13: independent verifier round 1, pass with minor findings, the count of 1 re-read from the
   # Anchor's contracts/ history, cs-tracker's remote branches and a gh api tree sweep. No Operator step.
+  # 2026-10-18: trigger re-taken at 1 of 3 (ops/contract-adoption.md, 0f35438); by Operator ruling 6-2, 6-3, 6-4
+  # and the retrospective stay backlog until the count reaches three.
   epic-6: backlog
   6-1-confirm-the-trigger-has-fired: done
   6-2-publish-the-token-contract-as-an-npm-package: backlog
@@ -1148,9 +1150,11 @@ development_status:
   6-4-publish-the-reusable-ci-workflows-to-contracts-workflows: backlog
   epic-6-retrospective: optional
 
-  epic-7: backlog
-  7-1-copy-the-repositories-into-the-wsl2-ext4-filesystem: backlog
-  7-2-repair-worktrees-and-git-configuration: backlog
+  # 2026-10-18: closed out of scope by Operator ruling, never executed. The Operator works on the Windows host and
+  # keeps the recorded workarounds; the runbook epic-7-wsl2-relocation-runbook.md (610f0aa) stays as a record only.
+  epic-7: done
+  7-1-copy-the-repositories-into-the-wsl2-ext4-filesystem: done
+  7-2-repair-worktrees-and-git-configuration: done
   epic-7-retrospective: optional
 
   # Epic 8 added 2026-08-15 by the restyle scope change.
@@ -1220,6 +1224,58 @@ development_status:
   # 2026-10-17: DW-363 closed. Pending action 8 done at 14:00:18Z from checkout 7dcb8b0: the tournament recreated
   # healthy with HOSTNAME 0.0.0.0, the Traefik probe 200, https://tournament.cuatro.dev/ 200 at 14:00:53Z.
   epic-8-retrospective: done
+  # Epic 9 (added 2026-10-18): deferred-work and retrospective follow-through, epic-9-plan-2026-10-18.md.
+  epic-9: in-progress
+  # 2026-10-18: done (spec-9-0-rehome-trigger-entries.md, verifier pass round 2): 36 trigger-not-met entries closed into their ops/ records' Standing triggers; DW-256, 317, 360, 318, 170, 288, 291, 292 stay open for their Epic 9 stories.
+  9-0-rehome-trigger-entries: done
+  # 2026-10-18: done (spec-9-1-records-and-planning-sweep.md, verifier pass round 1): DW-139, 180, 211, 286 and epic-2 item 6 closed.
+  9-1-records-and-planning-sweep: done
+  # 2026-10-18: done (spec-9-2-process-rules-into-instruction-files.md, verifier pass round 1): epic-2 items 10 to 14, epic-5 items 51, 52 and epic-8 items 60, 61 landed and in-progress until proven.
+  9-2-process-rules-into-instruction-files: done
+  9-3-cs-tracker-secret-key-base-record: backlog
+  # 2026-10-18: done (spec-9-4-ops-record-pins.md, verifier pass round 1): DW-53, 54, 59, 108 and 38 closed; hit-target-floor.md and asset-budget.md figures read by tests; DW-256 stays open, its trigger did not fire.
+  9-4-ops-record-pins: done
+  # 2026-10-18: done (spec-9-5-wsl-suite-failure-naming.md, verifier pass round 1): DW-135 and DW-210 closed; the seven WSL-spawning suites name a host stall through spawnBash.
+  9-5-wsl-suite-failure-naming: done
+  # 2026-10-18: done (spec-9-6-registry-gate-hardening.md, verifier pass round 2): DW-28 and DW-251 closed; the Registry gate refuses a duplicate key, registry-verification.yml runs on Node 24 and STILL_ON_NODE_22 is gone.
+  9-6-registry-gate-hardening: done
+  # 2026-10-18: done (spec-9-7-library-backup-suite-coverage.md, verifier pass round 1): DW-133 closed; the traps, the sudo fallback and the tar retry each run behaviourally, library-backup.sh unchanged.
+  9-7-library-backup-suite-coverage: done
+  # 2026-10-18: done (spec-9-8-tournament-export-sql-test.md, verifier pass round 1): DW-284 closed; EXPORT_SQL runs against ci.yml's test-job Postgres service, no new job.
+  9-8-tournament-export-sql-test: done
+  # 2026-10-18: done (spec-9-9-shared-probe-scaffold.md, verifier pass round 1): epic-1 retro item 10 closed; both probes import ops/probe-scaffold.mjs, the adoption probe ran 19 of 19 against cs-tracker 0e5d0c4 and is BLOCKED on its main by the Story 8.1 restyle, returned to the Operator.
+  9-9-shared-probe-scaffold: done
+  # 2026-10-18: done (spec-9-10-commit-ad22-sweep-scripts.md, verifier pass round 1): DW-243 closed; ops/ad22-refresh.mjs runs the AD-22 sweep and font-pin check, named by contract-adoption.md and font-contract.md.
+  9-10-commit-ad22-sweep-scripts: done
+  9-11-contract-purity-followup-review: backlog
+  # 2026-10-18: done (spec-9-12-e2e-harness-consolidation.md, verifier pass round 1): DW-22, DW-232, DW-40, DW-49, DW-237, DW-221, DW-105, DW-61 and DW-224 closed; goTo, plantStyle, probeComputed, SURFACES and FINGERPRINTS live once in tests/e2e/harness.ts, SWEPT maps SURFACES, contract-anchor's re-fetches retry a thrown request.
+  9-12-e2e-harness-consolidation: done
+  # 2026-10-18: done (spec-9-13-hub-comment-and-test-hygiene.md, verifier pass round 2): DW-144, 155, 217 and 239 and epic-2 retro item 7 closed; Hub citations name the describe, /api/health's serialized body and the Umami tag are tested, .json is scanned.
+  9-13-hub-comment-and-test-hygiene: done
+  9-14-anchor-step1-followup-review: backlog
+  # 2026-10-18: done (spec-9-15-hub-chrome-and-headers.md, verifier pass round 1): DW-118 and DW-51 closed; the header measures itself for the root's scroll padding and retracts it, /celeste reserves nothing, and the dead Vary: Save-Data is gone from next.config.js.
+  9-15-hub-chrome-and-headers: done
+  9-16-cv-tech-spellings: backlog
+  9-17-cv-and-404-baselines: backlog
+  # 2026-10-18: done (spec-9-18-tournament-inert-files-and-tsc.md, verifier pass round 1): DW-282 and 283 closed; tournament tsc clean over its tests with tsconfig.typecheck.json retired, docs/, vercel.json, eslint.config.mjs and worker/cmd/qa54 removed.
+  9-18-tournament-inert-files-and-tsc: done
+  9-19-tracker-flake-and-inert-files: backlog
+  # 2026-10-18: done (spec-9-20-finance-db-naming.md, verifier pass round 2): DW-300 closed; finance's services, provision.sql and image-finance.yml name cuatro_finance on estate-postgres, and anchor-db with its postgres_data volume is gone from docker-compose.yml.
+  9-20-finance-db-naming: done
+  # 2026-10-18: done (spec-9-21-traefik-ci-job.md, verifier pass round 1): DW-299 closed; a blocking traefik-routes job starts Traefik against ops/traefik and probes every router, not a required check on main until the Operator rules it in.
+  9-21-traefik-ci-job: done
+  9-22-tracker-image-fonts-and-size: backlog
+  9-23-tournament-signed-in-state: backlog
+  9-24-digital-library-hygiene-and-demo-match: backlog
+  9-25-cs-tracker-dependency-bump: backlog
+  9-26-cs-tracker-unique-alias: backlog
+  9-27-routing-headers-and-alias: backlog
+  9-28-cloudflare-range-refresh: backlog
+  9-29-www-monitor-location: backlog
+  9-30-list-wheel-off-box-build: backlog
+  9-31-origin-ca-record: backlog
+  9-32-tracker-redis-qbittorrent-home: backlog
+  epic-9-retrospective: optional
 action_items:
   # 2026-09-24: done by Operator ruling, Contract 2.0.0 (commit 40591cd): the keys are
   # --spacing-s-*, a MAJOR with no alias window. DW-15 closed in deferred-work.md.
@@ -1322,7 +1378,11 @@ action_items:
     action: "Extract the shared probe scaffold into one ops/ module imported by cs-tracker-adoption-probe.mjs
       and daisyui-route-probe.mjs, keeping the daisyUI copy's comments."
     owner: 'Cuatro'
-    status: open
+    # 2026-10-18: done by Story 9-9-shared-probe-scaffold (72a4ebc, ops/probe-scaffold.mjs, spec-9-9-shared-probe-scaffold.md):
+    # both probes import one scaffold module with the daisyUI copy's comments, and the adoption probe re-ran 19 of 19
+    # against cs-tracker 0e5d0c4 (its current main blocks on the Story 8.1 restyle's fixture drift, before and after,
+    # returned to the Operator).
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
   # 2026-09-24: done by Operator ruling: every remaining action of 1-16 and 1-19 is resolved,
@@ -1402,6 +1462,9 @@ action_items:
     status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
+  # 2026-10-18: Twilio half closed by Operator statement: the Twilio account no longer exists, so the API key
+  # that signed the expired 2021-04-16 token in Mutuo 72c7edf went with it. Open: the cs-tracker
+  # secret_key_base review and the two KV-2 rows.
   - id: "epic-2-retro-item-4-revoke-the-twilio-api-key-found-in-mutuo"
     epic: 2
     action: "Revoke the Twilio API key found in Mutuo's 2021 history if it is still
@@ -1426,7 +1489,9 @@ action_items:
     action: "Correct epics.md:2005-2010 to thirty-one stories, twenty FRs and the
       migration steps as they shipped."
     owner: "Cuatro"
-    status: open
+    # 2026-10-18: done by Story 9-1 (spec-9-1-records-and-planning-sweep.md, verifier pass round 1): epics.md Epic 2
+    # header reads thirty-one stories, twenty FRs and the migration steps as shipped, citing the proposal's § 7.3.
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
   - id: "epic-2-retro-item-7-correct-the-stale-registry-test-ts-621-6"
@@ -1435,7 +1500,10 @@ action_items:
       and the stale counts at SuiteDirectory.scss:9-10 and useReduceMotion.ts:17-19,
       citing the describe by name."
     owner: "Cuatro"
-    status: open
+    # 2026-10-18: done by Story 9-13 (spec-9-13-hub-comment-and-test-hygiene.md, verifier pass round 2): the four
+    # citations name the describe 'the Registry stays out of the browser bundle'; SuiteDirectory.scss and
+    # useReduceMotion.ts state the true counts.
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
   - id: "epic-2-retro-item-8-fix-dw-21-s-strings-in-content-work-ts-n"
@@ -1446,13 +1514,15 @@ action_items:
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
+  # 2026-10-18: done by Story 9-12 (spec-9-12-e2e-harness-consolidation.md, 292bfb8): probeComputed, goTo,
+  # plantStyle and the FINGERPRINTS table live once in tests/e2e/harness.ts; DW-22, DW-232 and DW-49 closed.
   - id: "epic-2-retro-item-9-move-the-duplicated-e2e-helpers-into-tes"
     epic: 2
     action: "Move the duplicated e2e helpers into tests/e2e/harness.ts, probeComputed
       first, then goTo, plantStyle and the FINGERPRINTS parse, closing DW-22, DW-232
       and DW-49."
     owner: "Cuatro"
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
   - id: "epic-2-retro-item-10-process-use-awaiting-operator-for-a-stor"
@@ -1461,6 +1531,7 @@ action_items:
       Operator checks, or record a dated override; reconcile 2-27, moved to done before
       its screen-reader read."
     owner: "Cuatro"
+    # 2026-10-18: rule landed in AGENTS.md § Process rules from retrospectives (Story 9-2); the 2-27 reconcile waits on Q-item-10; proved by the next retro's grep for a done row that waits on the Operator.
     status: in-progress
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
@@ -1469,6 +1540,7 @@ action_items:
     action: "Process: keep an independent verifier on every unattended story and package;
       it refused six deliveries the inline review layers had passed, in three days."
     owner: "Cuatro"
+    # 2026-10-18: rule landed in _bmad/custom/bmad-build.toml persistent_facts (Independent verifier) and on_complete (Story 9-2); proved by each Epic 9 spec naming a separate verifier run.
     status: in-progress
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
@@ -1477,6 +1549,7 @@ action_items:
     action: "Process: plant every new assertion, including guards added in review
       and fix rounds, and record the planted failure beside it."
     owner: "Cuatro"
+    # 2026-10-18: rule landed in _bmad/custom/bmad-build.toml persistent_facts (Planted assertions) (Story 9-2); proved by each later Epic 9 spec recording one planted failure per new assertion.
     status: in-progress
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
@@ -1485,7 +1558,8 @@ action_items:
     action: "Process: cite code by symbol or test name, never by line number, and
       state in a comment only a count a test holds."
     owner: "Cuatro"
-    status: open
+    # 2026-10-18: rule landed in AGENTS.md § Process rules from retrospectives (Story 9-2); proved by later Epic 9 diffs adding no file:N citation; backfill stays with DW-247.
+    status: in-progress
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
   - id: "epic-2-retro-item-14-process-each-package-names-which-of-its"
@@ -1493,6 +1567,7 @@ action_items:
     action: "Process: each package names which of its new ledger entries bind the
       next merge."
     owner: "Cuatro"
+    # 2026-10-18: reworded rule (Operator ruling 2026-10-18) landed in _bmad/custom/bmad-build.toml persistent_facts (No new deferred work) (Story 9-2); proved by deferred-work.md gaining no entry during Epic 9.
     status: in-progress
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
@@ -1732,6 +1807,7 @@ action_items:
       section"
     owner: "Cuatro"
     # 2026-10-17: followed through Epic 8 (epic-8-retro-2026-10-17.md); the Operator moved it to in-progress.
+    # 2026-10-18: rule landed in AGENTS.md § Process rules from retrospectives (Story 9-2); proved by 9-22, 9-23, 9-24, 9-25, 9-30 and 9-32 editing the runbook's § Later rollouts in the same commit.
     status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-5-retro-item-52-process-a-dated-row-relying-on-a-reposit"
@@ -1740,6 +1816,7 @@ action_items:
       it read on that sha, not CI green"
     owner: "Cuatro"
     # 2026-10-17: followed through Epic 8 (epic-8-retro-2026-10-17.md); the Operator moved it to in-progress.
+    # 2026-10-18: rule landed in AGENTS.md § Process rules from retrospectives (Story 9-2); proved by the dated rows of 9-22 and 9-25 naming each workflow and the sha.
     status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-5-retro-2026-10-12.md"
   - id: "epic-8-retro-item-53-promote-dev-to-main-and-roll-the-tracker"
@@ -1829,7 +1906,8 @@ action_items:
     action: "Process: an agent step gated on an Operator row waits for the row's dated
       completion; never open then draft"
     owner: "Cuatro"
-    status: open
+    # 2026-10-18: rule landed in AGENTS.md § Process rules from retrospectives (Story 9-2); proved by the push times of 9-16, 9-22 and 9-23 falling after their rulings.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"
   - id: "epic-8-retro-item-61-process-an-implementer-s-open-inference"
     epic: 8
@@ -1837,5 +1915,6 @@ action_items:
       the merge that depends on it, and a workflow does not launch a story that builds
       on an unruled reading"
     owner: "Cuatro"
-    status: open
+    # 2026-10-18: rule landed in _bmad/custom/bmad-build.toml persistent_facts (Open inferences) (Story 9-2); proved by each later spec listing its I-n readings with ruling dates before the dependent commit.
+    status: in-progress
     ref: "_bmad-output/implementation-artifacts/epic-8-retro-2026-10-17.md"

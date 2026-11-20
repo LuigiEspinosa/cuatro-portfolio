@@ -49,7 +49,7 @@ The form Epic 2 needs for the Registry `tech` array and Epic 4 needs for the reb
 
 | Item | Value | Nature |
 |---|---|---|
-| Application id | `digital-library` | **Observed**, `content/projects.ts:12` |
+| Application id | `digital-library` | **Observed**, `content/projects.ts:12`. **Amended 2026-10-18 by Story 9-1** (DW-211): that file was retired by Story 2-7 (`ba9526d`), and the id now lives in `contracts/registry.json` |
 | Hostname | `library.cuatro.dev` | **Observed** |
 | Box | `177.7.52.248`, Ubuntu 24.04.4, 2 vCPU, `Etc/UTC` | **Observed 2026-08-24** |
 | Containers | `digital-library-web-1`, `digital-library-api-1`, `digital-library-redis-1` | **Observed 2026-08-24**, all three `Up 3 weeks (healthy)` |
@@ -57,7 +57,7 @@ The form Epic 2 needs for the Registry `tech` array and Epic 4 needs for the reb
 | Journal mode | `wal`. `library.db` is 4096 bytes, which is a single page: a header and nothing else. **The entire database lives in `library.db-wal`** | **Observed 2026-08-24**, 152472 byte WAL |
 | Media tree | `data/books`, `data/covers`, `data/inbox`, all root owned, all empty | **Observed 2026-08-24** |
 | Cache | `digital-library_redis_data`, Redis 7 alpine | **Observed 2026-08-24** |
-| Registry `tech` | `SQLite` and `Redis` are both already correct in `content/projects.ts:23,26`. **`Hetzner VPS` at line 30 is the stale value**, and it is C-1's, not this story's, to correct | **Observed 2026-08-24** |
+| Registry `tech` | `SQLite` and `Redis` are both already correct in `content/projects.ts:23,26`. **`Hetzner VPS` at line 30 is the stale value**, and it is C-1's, not this story's, to correct. **Amended 2026-10-18 by Story 9-1** (DW-211): `content/projects.ts` was retired by Story 2-7 (`ba9526d`); the entry's `tech` array lives in `contracts/registry.json` | **Observed 2026-08-24** |
 
 **The single-page main file is the reason a file copy is not an option and never was.** `cp` of
 `library.db` captures an empty database, and an empty database passes `PRAGMA integrity_check`.
@@ -1025,6 +1025,19 @@ Written down because a coverage claim with an unstated hole reads as coverage.
    catches the change but does not re-prove the round trip.
 10. **No rendered-output or browser check is claimed anywhere in this story.** Playwright arrives in
     Story 1-10.
+
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-132**, 2026-10-18. Trigger: "the next time the passphrase is verified or rotated." The owner is the Operator.
+  The work, in `ops/verify-backup-passphrase.ps1`, before that run: wrap everything after the download in `try` and
+  `finally`, check the exit status of `aws s3api get-object`, and make the WSL command remove the plaintext archive
+  on every path and print gpg's own error. Without this, the script can leave a decrypted archive in WSL's `/tmp`
+  and reports one `DECRYPT: FAILED` for several different causes (named limit 5).
 
 ## Pending Operator actions
 

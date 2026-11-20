@@ -15,10 +15,10 @@ const REDUCE_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
  *
  * `matchMedia` is absent in a bare jsdom and in some embedded webviews. Calling it there throws
  * inside a `useState` initializer, which is not a caught render error but a component that never
- * mounts, and this hook has four consumers across `/`, `/work` and `/cv`: `HomeLayout.tsx`,
- * `WorkHero.tsx`, `WorkItem.tsx` and `hooks/useNarrativePath.ts` (calling since 2026-09-07 and never
- * counted here until A-17). `GlitchText` was one more until 2026-09-14, when Story 2-27 rebuilt it
- * with no script in it, and `app/providers.tsx` was one on every route from 2026-09-15 (A-17) until
+ * mounts, and this hook has three consumers: `WorkHero`, `WorkItem` and `useNarrativePath`
+ * (calling since 2026-09-07 and never counted here until A-17). `HomeLayout` was one until Story
+ * 2-29 moved its entrance into CSS, as its own docblock records. `GlitchText` was one more until
+ * 2026-09-14, when Story 2-27 rebuilt it with no script in it, and `app/providers.tsx` was one on every route from 2026-09-15 (A-17) until
  * 2026-09-24, when DW-36 deleted it with Lenis.
  */
 const canAsk = (): boolean => typeof window !== 'undefined' && typeof window.matchMedia === 'function';

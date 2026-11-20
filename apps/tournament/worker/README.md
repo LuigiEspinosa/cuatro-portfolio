@@ -1,5 +1,10 @@
 # `worker/` — CS2 demo-ingestion worker (Epic 3)
 
+> **Now part of the Anchor.** The worker never reached Railway. It is imaged in CI as
+> `tournament-worker` (`.github/workflows/image-tournament.yml`) and placed on the box beside the
+> tournament with no public hostname (`ops/tournament-placement.md`, DW-287). Every Railway and Vercel
+> mention below describes the repository it came from (Story 9-18, DW-283).
+
 The repo's **first Go module** and first object-storage integration. It runs **off Vercel** (host:
 Railway) so the 50–170 MB demo bytes bypass the ~4.5 MB Vercel request cap (SPEC Constraint 6, AD-16).
 It has **no code dependency** on `app/` + `lib/` — the only coupling is the `supabase/migrations`

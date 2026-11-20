@@ -271,8 +271,9 @@ to ten. Nothing in this list is outstanding.
 Sixteen applications (fourteen until 2026-09-26). The Status column is the Status recorded in PRD
 section 5.1, except where story 2-4 confirmed it on 2026-09-02 and it differs, and for the two rows
 the Operator ruling of 2026-09-25 added, which PRD section 5.1 does not carry. For the three applications whose
-Status reads `Archived`, that is the decided disposition: two are archived in fact and
-`connect-four-react` is not yet. See Pending Operator actions below.
+Status reads `Archived`, that is the decided disposition, and all three are archived in fact.
+**Amended 2026-10-18 by Story 9-1** (DW-286): this read `connect-four-react` as unarchived; it was
+archived on 2026-09-29 (Pending Operator actions below).
 
 **Amended 2026-09-02.** `apple-music-workspace` was a fifteenth row here and was removed,
 because no repository of that name exists under this owner and no conforming Registry entry
@@ -561,7 +562,13 @@ it: merging is not placing.
   node-postgres's default of ten per container, not Prisma's five, and no environment option changes it
   (read in the image, `ops/postgres.md` § The budget). Story 4-7 moves Umami to the estate's one Postgres
   as role `umami` with limit 25 (`ops/postgres.md` § Moving Umami), after which finance is `anchor-db`'s
-  only named consumer.
+  only named consumer. **Amended 2026-10-18 (Story 9-20, DW-300):** the role and database are
+  `cuatro_finance`, still `CONNECTION LIMIT 10` on both, in the estate Postgres (`estate-postgres`), which
+  `ops/postgres/init/10-consumers.sh` created on its first start; `docker-compose.yml`'s `finance` and
+  `finance-migrate` name it there and no longer declare `anchor-db`, whose container and volume went at
+  `ops/caddy-retirement.md` step 12 on 2026-10-01. `apps/finance/prisma/provision.sql` now creates the
+  role and database only in CI's throwaway Postgres (`image-finance.yml`) and is never run on the box.
+  The sum above is history; the estate Postgres's budget is `ops/postgres.md` § The budget.
 - **Tokens (AD-14).** Adoption is deferred whole, not half-applied: `apps/finance/app/tokens.css` keeps
   its own palette, and `app/layout.tsx` its own fonts (DW-267). The application is `In progress` and
   unrendered, and AD-25 gives it no restyle until it renders.
@@ -700,17 +707,46 @@ Observations below were made by the Operator and the orchestrator and relayed; t
   merging to `main` only after the URL has served (FR-28): `dev` holds it back at 1.6.0 (`6d72963`) and
   the runbook's step 10 releases it by reverting that commit. Step 7 was done on 2026-09-25.
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator. All four belong to `cuatro-finance` (§ `cuatro-finance`,
+merged on `dev` and not placed). Its placement is an AD-9 decision (`ops/capacity-gate.yml`), and that decision's
+story takes all four together.
+
+- **DW-267**, 2026-10-18. Trigger: "finance moving towards `Live`, or its first placement." The work: adopt the
+  token contract whole. Import `contracts/tailwind.css`, replace the palette in `apps/finance/app/tokens.css` and
+  the fonts with contract roles, and in the same change delete finance's `OTHER_APPLICATIONS` entry in
+  `ops/literal-conformance.mjs`.
+- **DW-268**, 2026-10-18. Trigger: "that story, or a Prisma upgrade." ("That story" is finance's placement story.)
+  The work: the image's `migrate` stage installs the Prisma CLI and `dotenv` with `npm`, outside the lockfile. The
+  lockfile-faithful alternative is `pnpm --filter finance deploy --prod` into that stage.
+- **DW-269**, 2026-10-18. Trigger: "an AD-9 decision to place finance." The work: the ledger entry lists what
+  placement needs in one change. That is a `placements` entry and its `deploy.yml` wiring, a hostname and a `Host`
+  router, the `NEXT_PUBLIC_BETTER_AUTH_URL` build argument, the runtime secrets, the provision run and the first
+  admin seed. The entry was written on 2026-09-29, before Epic 4, so it names the shared Caddy and `anchor-db`.
+  Read it against `ops/routing-inventory.md` (Traefik) and `ops/postgres.md` (the estate Postgres). Story 9-20
+  renamed the database and role to `cuatro_finance` on the estate Postgres on 2026-10-18 (DW-300).
+- **DW-271**, 2026-10-18. Trigger: "either", meaning finance's placement story (for the seed path) or the story
+  that lands a lint gate. The work: point `prisma.config.ts`'s seed at `prisma/seed/admin.ts`. Retire the unused
+  `eslint.config.mjs` (or adopt it under the lint gate), and retire the local-development `docker-compose.yml` and
+  `docker/Caddyfile` under `apps/finance`.
+
 ## Pending Operator actions
 
 Archiving a repository is a GitHub console action outside this repository. Of the four
-actions recorded on 2026-08-16, **two have been performed** and **one dissolved**: only
-`connect-four-react` is outstanding. **No repository state was changed by any session that
-wrote this file**, here or on 2026-08-16: the two archives were Operator acts, observed
-afterwards.
+actions recorded on 2026-08-16, **three have been performed** and **one dissolved**, and the three
+added on 2026-09-29 are performed too: **no archive is outstanding.** **No repository state was
+changed by any session that wrote this file**, here or on 2026-08-16: every archive was an Operator
+act, observed afterwards. **Amended 2026-10-18 by Story 9-1** (DW-286): this intro and the
+`connect-four-react` row still read that archive as owed, though it was performed on 2026-09-29;
+the row is struck below and the observed state re-gathered (§ Observed GitHub state, 2026-10-18).
 
 | Repository | Action | Constraint |
 |---|---|---|
-| `connect-four-react` | Archive on GitHub | Must stay publicly readable |
+| `connect-four-react` | Archive on GitHub | Must stay publicly readable. **Done 2026-09-29:** archived at 21:43:05Z, kept public (§ The end state); struck 2026-10-18 by Story 9-1 |
 | `cuatro-finance` | Archive on GitHub | Must stay publicly readable, so its `source` resolves; DW-285 then writes `absorbed_into` and moves `source`. **Done 2026-09-29:** archived at 21:43:05Z, kept public, and DW-285 wrote both in Registry 1.6.0 |
 | `cs-tournament` | Archive on GitHub | Stays public, so its `source` resolves (published 2026-09-24, KV-2); DW-285 then writes `absorbed_into` and moves `source`. **Done 2026-09-29:** archived at 21:43:05Z, kept public, and DW-285 wrote both in Registry 1.6.0 |
 | `cuatro-tracker` | Archive on GitHub, a week after `ops/tracker-cutover.md` has run | Must stay publicly readable, so its `source` resolves; the box keeps its checkout, which runs the stores until Story 4.8; DW-285 then writes `absorbed_into` and moves `source`. **Done 2026-09-29:** archived at 21:53:16Z, kept public, and DW-285 wrote both in Registry 1.6.0 |
@@ -754,12 +790,14 @@ break its `source` link. Archived and read only is the target state. Deleted, re
 private is not. The same constraint governed `Lumen` and `tcg-tracker`, and the observation
 below confirms both were archived public rather than made private.
 
-**The count of 11 above is the decided waypoint, not the observed GitHub state, and the two
-still differ.** The observed count of non-archived repositories under Ecosystem governance is
-**12**, as of 2026-09-02. It reaches the decided 11 when `connect-four-react` is archived,
-which is the single outstanding action. **Amended 2026-09-26:** 13 decided and 14 observed since the
+**The count of 11 above is the decided waypoint, not the observed GitHub state, and on
+2026-09-02 the two differed.** The observed count of non-archived repositories under Ecosystem
+governance was **12**, as of 2026-09-02. It reaches the decided 11 when `connect-four-react` is
+archived. **Amended 2026-09-26:** 13 decided and 14 observed since the
 Operator ruling of 2026-09-25 admitted `covidmap` and `future-vizion`; the one outstanding action
-is unchanged.
+was unchanged then. **Amended 2026-10-18 by Story 9-1** (DW-286): the two no longer differ. Every
+archive is performed (§ The end state), and the observed count is **10**, the decided end state,
+re-gathered in § Observed GitHub state, 2026-10-18.
 
 **That figure can be stated exactly for the first time**, which it could not be on
 2026-08-16. The obstacle then was that `apple-music-workspace` could not be located, so the
@@ -805,6 +843,37 @@ monitors, every one on a `cuatro.dev` host and none on a Vercel URL, as the ruli
 above: which name went before which project is what a later reader needs if a name is ever found
 pointing at nothing.
 
+### Observed GitHub state, 2026-10-18
+
+Re-gathered by Story 9-1 (DW-286) at **2026-10-18T20:20:21Z**, read only, with the same single
+`gh repo list LuigiEspinosa --limit 100 --json name,visibility,isArchived` call as the reading
+below, which listed 32 repositories. It replaces the 2026-09-02 reading as the current one; that
+reading stays below as written. **Scope: archive state and visibility for all sixteen governed
+repositories**, and nothing about what any of them contains.
+
+| Repository | Visibility | Archived |
+|---|---|---|
+| `cuatro-portfolio` | public | no |
+| `cs-tracker` | private | no |
+| `digital-library` | public | no |
+| `StreamVault` | private | no |
+| `MaiCoin` | public | no |
+| `poketracker-go` | public | no |
+| `Mutuo` | private | no |
+| `list-wheel` | public | no |
+| `covidmap` | public | no |
+| `future-vizion` | public | no |
+| `Lumen` | public | **yes** |
+| `tcg-tracker` | public | **yes** |
+| `connect-four-react` | public | **yes** |
+| `cuatro-finance` | public | **yes** |
+| `cs-tournament` | public | **yes** |
+| `cuatro-tracker` | public | **yes** |
+
+Ten governed repositories are not archived, the end state of 10 that § The end state records as
+reached on 2026-09-29. Every archived repository is public, so each archived `source` still
+resolves, and the three private ones are KV-2's three tolerated rows.
+
 ### Observed GitHub state, 2026-09-02
 
 Re-gathered by story `2-4-confirm-the-assumed-statuses-hostnames-and-tech-values`, replacing
@@ -830,8 +899,9 @@ governed set is claimed either way.
 `archived_at: null` for both, and both carry `updated_at: 2026-08-16T07:42Z`, which is the same
 day the earlier reading found them **un**archived. That timestamp is therefore not safe evidence
 of when the archive landed, so the bound above is the honest one: after the 2026-08-16 reading
-and by the 2026-09-02 one. Whoever performs the remaining `connect-four-react` archive should
-record the date at the time, because it cannot be recovered afterwards.
+and by the 2026-09-02 one. The `connect-four-react` archive was to have its date recorded at the
+time, because it cannot be recovered afterwards. **Amended 2026-10-18 by Story 9-1** (DW-286): it
+was, 2026-09-29T21:43:05Z (§ The end state).
 
 **`apple-music-workspace` has no repository under owner `LuigiEspinosa`, re-confirmed
 2026-09-02.** A full account listing of 31 repositories contains no repository under that

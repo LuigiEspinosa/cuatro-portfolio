@@ -2003,12 +2003,16 @@ one. Marcus skips the narrative, reads an accurate `tech` array, and reaches any
 hop. The Registry cannot lie about either of them, and the Operator can see how Visitors move
 through the Hub.
 
-Twenty-six stories. This is the largest epic in the breakdown by a wide margin, and deliberately
-so: it carries nineteen FRs, six of the nine UX open items, the AD-19 assertion suite,
-and the five Anchor migration steps that `DESIGN.md` leaves trailing after Epic 1. **`DESIGN.md`
-assigns migration steps 1–2 to Epic 1 and says steps 3–7 "can trail" without naming where: they
-land here** (Stories 2.18–2.22), because the Hub's stylesheets are being reshaped in this epic
-anyway.
+Thirty-one stories *(amended 2026-10-18 by Story 9-1, Epic 2 retro action 6: this paragraph kept the
+counts and the migration placement from before the restyle change of 2026-08-15, which never reached
+it; the story keys follow `sprint-change-proposal-2026-08-15.md` § 7.3)*. This is the largest epic in
+the breakdown by a wide margin, and deliberately so: it carries twenty FRs, six of the nine UX open
+items, the AD-19 assertion suite, and the Anchor migration steps that `DESIGN.md` leaves trailing
+after Epic 1. **`DESIGN.md` assigns migration steps 1 and 2 to Epic 1 and says steps 3 to 7 "can
+trail" without naming where. As shipped:** steps 1 and 2 as Stories 1-17 and 1-18, step 3 inside
+Story 2-31, step 4 as Story 2-34's blocking gate, step 5 as Story 2-20, step 7 as Story 2-22, and
+step 6 deleted with Story 2.21. Stories 2.18, 2.19 and 2.21 carry no `sprint-status.yaml` key, and the Hub's inherited
+components were rebuilt token-native in Stories 2.27 to 2.34 instead.
 
 **Gated by Story 1.3** (AD-17b), binding at **Story 2.9** and everything downstream of it. AD-17b
 requires bot mitigation live before *the Suite Directory ships*, and the Directory is a crawler

@@ -46,15 +46,16 @@
 // this a fragment target, and any element the browser scrolls to the top edge when focus reaches it,
 // lands behind the header. `scroll-padding` is read off the scroll container, which for viewport
 // scrolling is the root element, so it is declared on `html`, and only where a header is in the
-// document: `Header.tsx` renders none on `/`, whose fragments the Hub actually uses.
+// document: `Header.tsx` renders none on `/`, whose fragments the Hub actually uses, and never on
+// `/celeste`, whose stylesheet hides the band (`celeste.scss`), so there is nothing to clear.
 //
-// **The band's own block size, restated from the same four tokens that produce it**: the padding
-// above, one `--tap` row, the padding below and the hairline. It is not a number that can drift from
-// the band, the way the 2023 `140px` spent twice could, and `tests/e2e/chrome-nav.pw.ts` holds it
-// equal to the rendered box on every surface that renders one. **Its ceiling, stated**: it is exact
-// while the row is one line, which it is from 360 wide up; a row wrapped below the supported floor,
-// or text zoomed past `--tap`, leaves it short by the second line (DW-118). Measuring the band from
-// script instead would write onto the root element from a component, which `AGENTS.md` rules out.
-html:has(.header-container) {
+// **This is the first paint's value; the band's measured height replaces it** (Story 9-15, DW-118).
+// It restates the one-row block size from the same four tokens that produce it: the padding above,
+// one `--tap` row, the padding below and the hairline. That is exact while the row is one line and
+// short by a line when it wraps, so once the page hydrates `Header.tsx` measures the band and writes
+// its real height inline on the root, which outranks this rule, and takes it back when the band
+// leaves the document. `tests/e2e/chrome-nav.pw.ts` holds the padding equal to the rendered box,
+// a wrapped one included.
+html:has(body:not(#celeste) .header-container) {
   scroll-padding-block-start: calc(var(--s-lg) + var(--tap) + var(--s-lg) + var(--stroke-hair));
 }

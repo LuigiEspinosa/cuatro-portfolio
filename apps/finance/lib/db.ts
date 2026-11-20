@@ -4,8 +4,8 @@ import { PrismaPg } from "@prisma/adapter-pg";
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 function createPrismaClient() {
-  // AD-10: an explicit pool ceiling. Two containers during a rollout hold at most ten, the `finance`
-  // role's CONNECTION LIMIT in prisma/provision.sql.
+  // AD-10: an explicit pool ceiling. Two containers during a rollout hold at most ten, the
+  // `cuatro_finance` role's CONNECTION LIMIT in prisma/provision.sql.
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL!, max: 5 });
   return new PrismaClient({ adapter });
 }

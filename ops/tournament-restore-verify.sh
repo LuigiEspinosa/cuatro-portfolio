@@ -86,7 +86,7 @@ docker run --detach --name "${SCRATCH}" --network none \
   "${IMAGE}" > /dev/null || fail "cannot start a throwaway ${IMAGE}"
 
 # Over TCP, never the socket: on a fresh volume the image runs a bootstrap server on the socket alone,
-# which a socket check reports ready before the real one starts (`docker-compose.yml`, anchor-db).
+# which a socket check reports ready before the real one starts (`ops/postgres/compose.yml`, its healthcheck).
 ready=0
 for _ in $(seq 1 60); do
   if docker exec "${SCRATCH}" pg_isready -h 127.0.0.1 -U postgres -d tournament > /dev/null 2>&1; then ready=1; break; fi

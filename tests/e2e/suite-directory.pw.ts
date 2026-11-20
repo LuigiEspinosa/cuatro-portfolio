@@ -1,4 +1,5 @@
 import { test, expect, type Browser, type Locator, type Page } from '@playwright/test';
+import { EDGE_SLACK, durationMs, goTo, plantStyle } from './harness';
 
 /**
  * The Suite Directory's two rendered claims that only a browser can settle (Story 2-9).
@@ -56,15 +57,6 @@ const LANDING_SLACK = 1;
  * AD-19's 360. Same shape as `tests/e2e/anchor-aliases.pw.ts:494-508`.
  */
 const WIDE_VIEWPORT = { width: 761, height: 900 } as const;
-
-/**
- * Sub-pixel slack on both comparisons.
- *
- * Layout produces fractional positions, and an element ending a third of a pixel past an edge is a
- * rounding artifact rather than overflow. Same value and same reasoning as
- * `tests/e2e/hit-target-floor.pw.ts`.
- */
-const EDGE_SLACK = 0.5;
 
 /**
  * A token with no line-breaking opportunity anywhere in it.
@@ -135,13 +127,8 @@ const contentOutsideItsBox = (page: Page): Promise<string[]> =>
     return found;
   }, EDGE_SLACK);
 
-const goTo = async (page: Page, route: string): Promise<void> => {
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer 200`).toBe(200);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-  });
+const goToDirectory = async (page: Page, route: string): Promise<void> => {
+  await goTo(page, route);
   await expect(page.locator('.suite-directory__row').first()).toBeVisible();
 };
 
@@ -163,33 +150,6 @@ const plantLongToken = async (page: Page): Promise<void> => {
   expect(planted.description, 'no description was found to plant a token into').toBe(true);
   expect(planted.live, 'no live link was found to plant a token into').toBe(true);
 };
-
-/** Add a stylesheet to the running page, so a defect is planted without a fixture in the tree. */
-const plantStyle = (page: Page, css: string): Promise<void> =>
-  page.evaluate((text) => {
-    const style = document.createElement('style');
-    style.textContent = text;
-    document.head.append(style);
-  }, css);
-
-/**
- * A duration token's value in milliseconds, resolved through a probe rather than written down.
- *
- * Same principle as reading `--tap` and `--s-lg` off the running page: a length or a duration that
- * governs the interface comes from the contract, and a hand-written millisecond figure here would
- * drift from `--dur-major` the day it moves. `transition-duration` computes to seconds, which is
- * what the probe reads back.
- */
-const durationMs = (page: Page, role: string): Promise<number> =>
-  page.evaluate((name) => {
-    const probe = document.createElement('span');
-    probe.style.transitionDuration = `var(${name})`;
-    document.body.append(probe);
-    const resolved = getComputedStyle(probe).transitionDuration;
-    probe.remove();
-    const seconds = Number.parseFloat(resolved);
-    return Number.isFinite(seconds) ? seconds * 1000 : Number.NaN;
-  }, role);
 
 /** A contract role's resolved colour, read through a probe rather than written down. */
 const roleColour = (page: Page, role: string): Promise<string> =>
@@ -273,11 +233,7 @@ const pastTheBreakpoint = async <T>(browser: Browser, read: (page: Page) => Prom
  * fails the run that allows motion, by name.
  */
 const landsOnHeading = async (page: Page): Promise<void> => {
-  const response = await page.goto(`${ROUTE}#${HEADING_ID}`, { waitUntil: 'load' });
-  expect(response?.status(), 'the home route did not answer 200').toBe(200);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-  });
+  await goTo(page, `${ROUTE}#${HEADING_ID}`);
 
   // Long enough for hydration to have had its chance to take the scroll position back, which a poll
   // cannot prove absent. A snap back would land inside this window, not after it.
@@ -341,7 +297,7 @@ test.describe('the home route can be scrolled to the directory', () => {
     // that `clip` does not make the element a scroll container, which is why `hidden` breaks
     // descendant `position: sticky` (`DESIGN.md:558-559`). A silent swap back would reintroduce
     // that with nothing failing.
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
 
     const layout = await page.evaluate(() => ({
       htmlOverflowX: getComputedStyle(document.documentElement).overflowX,
@@ -383,7 +339,7 @@ test.describe('the home route can be scrolled to the directory', () => {
   test('and the overflow read is a live read, not a constant', async ({ page }) => {
     // The planted control for the case above. `getComputedStyle` returning `clip` twice proves
     // nothing unless it is seen returning something else on the same page.
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     await plantStyle(page, 'html, body { overflow-x: hidden !important; }');
 
     const planted = await page.evaluate(() => ({
@@ -418,7 +374,7 @@ test.describe('the home route can be scrolled to the directory', () => {
 
 test.describe('the Suite Directory absorbs a long unbroken token', () => {
   test('at 360, where the cell spans a flexible track and the grid cannot grow for it', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
 
     // Clean before anything is planted. Without this the case cannot tell a layout that survived
     // the token from one that was already overflowing for an unrelated reason.
@@ -451,7 +407,7 @@ test.describe('the Suite Directory absorbs a long unbroken token', () => {
     // the row lets a long word break rather than paint past its cell. `min-inline-size: 0` on the
     // underline span lets that span shrink at all: it is a flex item of an `inline-flex` link, so
     // its automatic minimum is its min-content width, and left at `auto` it never has to wrap.
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     await plantLongToken(page);
 
     await plantStyle(page, '.suite-directory__row, .suite-directory__row * { overflow-wrap: normal !important; }');
@@ -474,7 +430,7 @@ test.describe('the Suite Directory absorbs a long unbroken token', () => {
 
   test('one pixel past the breakpoint, where minmax(0, 5fr) sizes the column', async ({ browser }) => {
     const { clean, cleanContent, planted, plantedContent } = await pastTheBreakpoint(browser, async (wide) => {
-      await goTo(wide, ROUTE);
+      await goToDirectory(wide, ROUTE);
       const before = await outsideViewport(wide);
       const beforeContent = await contentOutsideItsBox(wide);
       await plantLongToken(wide);
@@ -504,7 +460,7 @@ test.describe('the Suite Directory absorbs a long unbroken token', () => {
     // blows the grid out. This is that sentence demonstrated, with nothing else changed, so what
     // fires is attributable to the one declaration.
     const { outside, painted } = await pastTheBreakpoint(browser, async (wide) => {
-      await goTo(wide, ROUTE);
+      await goToDirectory(wide, ROUTE);
       await plantLongToken(wide);
       await plantStyle(
         wide,
@@ -525,7 +481,7 @@ test.describe('the Suite Directory absorbs a long unbroken token', () => {
     // The other direction of the control above, and the cheapest evidence that the three-column
     // rule really is confined to one media query: the declaration that blows the layout out past
     // the breakpoint is inert below it.
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     await plantLongToken(page);
     await plantStyle(
       page,
@@ -539,7 +495,7 @@ test.describe('the Suite Directory absorbs a long unbroken token', () => {
 
 test.describe('the Suite Directory on hover', () => {
   test('recolours the underline and moves nothing else', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
 
     const hover = await roleColour(page, '--token-accent-hover');
     const accent = await roleColour(page, '--token-accent');
@@ -597,7 +553,7 @@ test.describe('the Suite Directory on hover', () => {
     // The hierarchy `DESIGN.md:672-676` describes: the live link takes the emphasis stroke in
     // accent, the source link a hairline in the boundary role. Read here because the case above
     // compares each link against itself and would pass with both painted identically.
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
 
     const live = await linkState(page.locator('.suite-directory__live').first());
     const source = await linkState(page.locator('.suite-directory__source').first());
@@ -666,7 +622,7 @@ test.describe('the Suite Directory links say they open a new tab', () => {
     });
 
   test('each ends in the external mark, hidden, in its own type, and its name says a new tab opens', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     const reads = await readLinks(page);
     expect(reads.length, 'the Directory drew no link, so this reads nothing').toBeGreaterThan(0);
     expect(newTabFindings(reads)).toEqual([]);

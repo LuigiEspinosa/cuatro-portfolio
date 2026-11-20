@@ -877,6 +877,22 @@ lines, verbatim:
 # finished 2026-09-30T08:33:24.955Z
 ```
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-342**, 2026-10-18. Trigger: "before that re-run." ("That re-run" is the next story that re-runs AD-19 on
+  `cs-tracker`: AD-22's refresh, or a Tailwind or daisyUI bump; see Pending action 2.) The problem:
+  `ops/cs-tracker-accessibility-probe.mjs` still mints a Steam session cookie and measures `/auth/steam/callback`,
+  and Story 5.7 deleted both. The work: port the cookie to the OIDC session shape (`oidc_sub`, and an `oidc_iat`
+  minted after the server started) and the route list to the five live routes, and keep its unit suite in step.
+  The ledger's seed is Story 8.1's verifier round 2 `measure.mjs`, which mints the session inside the release and
+  puts a local TLS front ahead of the image. Story 9-25 bumps `cs-tracker`'s Hex packages: if Tailwind or daisyUI
+  is among them, it meets this trigger.
+
 ## Pending Operator actions
 
 Mirrored as actions 3 and 4 of `ops/contract-adoption.md`; completing one completes both.

@@ -53,7 +53,7 @@ carries the date it was read.
 | Where it lives | Its own file, `.github/workflows/registry-verification.yml`, never a job in `ci.yml` | **Decision.** `ops/__tests__/contract-purity.test.ts` and `ops/__tests__/registry-schema.test.ts` both pin `ci.yml`'s six-job set and its `on:` block verbatim, and a schedule is a different trigger from a push |
 | Triggers | `schedule`, `workflow_dispatch`, and `push` with `paths` limited to the workflow, `ops/registry-verification.mjs`, this file and `contracts/registry.json` | **Decision.** `schedule` fires only from `main`, which lacks the Registry until Epic 2 merges; `push` on the four paths is the pre-merge proof on `dev` and the "confirms it resolves" later stories expect after a Registry edit. `ops/contract-adoption.md` is read by the script and is not a trigger path: an edit there that matters to this job is a re-vendor, which edits the Registry too. Pinned verbatim by a standing case |
 | Schedule | `17 6 * * *` UTC, daily | **Decision.** Once a day is the interval AD-18 implies and SM-4's "continuously" tolerates; an off-the-hour minute avoids GitHub's top-of-hour queue. Any other interval is an Ask First of the story |
-| Runner | `ubuntu-latest`, Node 22 through `setup-node`, `RUNNER_ENVIRONMENT` asserted equal to `github-hosted` in a step of its own before the script runs | **Decision.** AD-18: external to the VPS, verified by confirming the execution environment rather than assumed from where it was configured. A self-hosted runner registered on the box later fails that step rather than satisfying the rule by accident. The first real run's "Set up job" lines are the observation, § Observed runs |
+| Runner | `ubuntu-latest`, Node 24 through `setup-node`, `RUNNER_ENVIRONMENT` asserted equal to `github-hosted` in a step of its own before the script runs | **Decision.** AD-18: external to the VPS, verified by confirming the execution environment rather than assumed from where it was configured. A self-hosted runner registered on the box later fails that step rather than satisfying the rule by accident. The first real run's "Set up job" lines are the observation, § Observed runs. **Amended 2026-10-18:** Node 22 until Story 9-6 moved the job to the stack's Node 24 LTS, the major every other workflow pins (DW-251); the runs recorded under § Observed runs before that date ran on 22 |
 | Installs | Nothing. No `pnpm/action-setup`, no `pnpm install`, `package-manager-cache: false` | **Decision.** The `contract-purity` shape: the script imports `node:` builtins and two sibling modules only, so the Registry is still verified on a run where an install would have failed |
 | Ceiling | `timeout-minutes: 10` | **Decision.** Checkout, `setup-node`, and at most four requests per entry (eight with retries) with a 15 s ceiling each, all fourteen entries in parallel (sixteen from Registry 1.5.0, 2026-09-26). Pinned by a standing case. **Amended 2026-10-03 by Story 5.11:** an `oidc` entry adds two requests and a `demo-account` entry at most `MAX_HOPS` (5), so the worst entry makes about eleven, 330 s with every retry spent, still inside the ceiling |
 | Command | `node ops/registry-verification.mjs`, no argument | **Decision.** The Registry and both records are resolved beside the module, so no argument can point it at another tree. Pinned as the whole run line |
@@ -92,12 +92,16 @@ Registry 1.4.0 dropped `inclusivcup.vercel.app` when Vercel left the estate (Ope
 
 ## Sources tolerated to answer 404 anonymously
 
-`ops/known-violations.md` KV-2 records four Registry `source` links that resolve for nobody but the
-Operator, tolerated deliberately, with the ruling on each. This table is the copy the script reads:
+`ops/known-violations.md` KV-2 records the Registry `source` links that resolve for nobody but the
+Operator, tolerated deliberately, with the ruling on each: three today (`cs-tracker`, `StreamVault`
+and `Mutuo`), the `cs-tournament` row below being struck since it was published on 2026-09-24. This
+table is the copy the script reads:
 `kv2Rows` in `ops/registry-verification.mjs` parses it on every run, and an anonymous 404 on a
 repository named here, whose Ruling does not begin `Struck` (in any case, behind any bold, italic or
 strikethrough markup), is `PASS ... tolerated by KV-2` rather than a failure. The authenticated half
-still runs on all four, so a tolerated repository that is deleted or renamed still fails.
+still runs on every tolerated repository, so one that is deleted or renamed still fails.
+**Amended 2026-10-18 by Story 9-1** (DW-139): this paragraph counted the table's rows, struck one
+included, as the tolerated links.
 
 | Repository | Ruling | Since |
 |---|---|---|
@@ -115,8 +119,11 @@ a row is an edit to this file and to the pins that hold it in
 **How a row is struck.** When the job reports `its KV-2 row can be struck` (the repository answered
 2xx anonymously), or when the Operator rules a repository public, replace the Ruling cell with
 `Struck YYYY-MM-DD: <why>` and leave the row in place; the script ignores a struck row and the next
-run holds that source to the ordinary rule. The same change moves the suite's pins: it lists the four
-repositories with none struck, and its committed-Registry fixture answers 404 for exactly those four.
+run holds that source to the ordinary rule. The same change moves the suite's pins in
+`ops/__tests__/registry-verification.test.ts`: `KV2_TABLE` lists every row, struck or not, `STRUCK`
+names the struck ones (`cs-tournament` since 2026-09-24), and the committed-Registry fixture answers
+404 for the rest (`PRIVATE`, three today). **Amended 2026-10-18 by Story 9-1** (DW-139): this
+described the pins as they stood before the first row was struck.
 Never delete a row, and never add a row without a ruling in `ops/known-violations.md` first: this
 table tolerates, it does not decide.
 
@@ -292,6 +299,22 @@ October row falls due in early November.
 | **`open` and `none` read the first hop only** (Story 5.11) | A host whose `live` URL redirects within itself before the application (`/` to `/en`) reads as a sign-in, so `open` fails and `none` passes. The `live` URL is the one a Visitor lands on, so it should be the page itself; a `none` 3xx to a page that is not a sign-in also passes | **Decision.** The `live` row's own rule, § What resolves means |
 | **`identity: none` sees the estate's session route only** (Story 5.11) | It reads `/auth/session`, the path Stories 5.3 and 5.4 built; an application that federated at another path would not be seen. A new participant follows the estate's routes or adds its own row here | **Decision** |
 | **One immediate retry, then the last answer decides** | A flapping host that answers 503 twice in immediate succession is red; the 15 s figure is the per-request timeout, not a pause between the two. The next scheduled run is the second opinion | **Decision** |
+
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-86**, 2026-10-18. Trigger: "the expiry date written into action 1, less the lead the Operator chooses; or the
+  first run whose every `source exists` line is red." Action 1 dates the expiry 2026-12-11, and the Epic 9 plan
+  sets the lead: rotate by about 2026-12-04. The work is action 6: rotate the PAT, replace the secret, and re-run
+  by `workflow_dispatch`.
+- **DW-336**, 2026-10-18. Trigger: "the first demo release (action 9)." The Operator ruled on 2026-10-06 (action 11):
+  (a) now, (b) later. That release adds the demo password as a second secret on the script step, and a sign-in
+  probe for `cuatro-tracker` and `digital-library`. `cs-tracker` stays on its dated observation. Until then, the
+  stated limit "The demo account is not signed in by the job" stands.
 
 ## Pending Operator actions
 

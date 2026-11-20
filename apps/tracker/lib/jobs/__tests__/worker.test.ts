@@ -3,7 +3,7 @@ import { Queue, Worker } from 'bullmq'
 import type Redis from 'ioredis'
 
 // Integration test for the BullMQ worker scaffold per Story 1.23 AC-4.
-// Hits real Redis from `pnpm infra` (local) or the redis service in CI (post-1.15).
+// Hits a real Redis: one on localhost:6379 locally, or the redis service in CI (post-1.15).
 // Does NOT spawn worker.ts as a child process; exercises the same Worker construction
 // shape inline so the close-drains-in-flight contract can be asserted in-process.
 

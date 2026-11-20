@@ -17,7 +17,8 @@ import './SiteFooter.scss';
  *
  * **A server component**, for the same reason the Directory above it is one: a client component
  * that value-imported the Registry would ship every entry to the browser to render one figure,
- * which `lib/__tests__/registry.test.ts:621-668` refuses.
+ * which the `describe` named `the Registry stays out of the browser bundle` in
+ * `lib/__tests__/registry.test.ts` refuses.
  *
  * **Both figures are lengths, never words typed here.** `EXPERIENCE.md:295` writes the line and adds
  * that it is updated when the count changes or deleted. A rule that cannot go stale satisfies both

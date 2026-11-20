@@ -84,7 +84,12 @@ the next free id, one above the highest in the file, and a status line.
     needs a check that reads the line, or the epic should state that it is an
     honour-system gate. This is an architectural question spanning several stories,
     not a defect in this record.
-  status: open
+
+    **Closed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): declared honour-system, no check
+    added. Nothing in the repository consumes the line, so a check would guard a value no step reads. The
+    declaration is in `ops/monitoring.md` § The parse contract: a story that enables automation reads the line by
+    hand first.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
   id: DW-144
@@ -102,7 +107,15 @@ the next free id, one above the highest in the file, and a status line.
     monitor would report the Anchor down while it is healthy. A comment on the route
     and a test asserting the serialized form would close it. Left out of this story
     because its task list is confined to `ops/monitoring.md`.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-13-hub-comment-and-test-hygiene** (`bf0b58f`,
+    `apps/hub/app/api/health/__tests__/route.test.ts`: `GET /api/health`): the `next/server` mock is
+    gone, and the cases run under the node environment against the real `NextResponse`, reading the
+    serialized body: one asserts the literal substring `"status":"ok"` the keyword monitor asserts, one
+    the 200 status and JSON content type, one the version and uptime parsed back from the text.
+    `route.ts` carries a comment naming the monitored substring. Each assertion was planted,
+    pretty-printing the body among them.
+  status: done
 
 - source_spec: none, found during the Story 1.7 DNS pass on 2026-08-16
   id: DW-145
@@ -211,7 +224,20 @@ the next free id, one above the highest in the file, and a status line.
     with Traefik and per-application routers, which dissolves the problem; until
     then the cheap mitigation is to move the shared Caddyfile out of any project
     checkout, or to add its blocks to a directory Caddy imports.
-  status: open
+
+    **Closed 2026-10-18 by the deferred-work triage** (`dw-triage-2026-10-18.md`): superseded by Epic 4. Caddy and
+    the shared Caddyfile are gone: `cs-tracker` commit `9a5a4be` ("chore: retire caddy and the Caddyfile") removed the
+    file, `gh api repos/LuigiEspinosa/cs-tracker/contents/Caddyfile` answers 404 on its default branch, and
+    `ops/caddy-retirement.md` § Retirement run, step 11.2, records the box pull of `9a5a4be`, the six `Caddyfile.bak-*`
+    removed and a clean `git status`, with steps 11.3 and 11.4 removing `cs-tracker-caddy-1` and its volumes
+    (recorded in `c4b8068`, Story 4-11; AGENTS.md since `503af55` says "Caddy and its Caddyfile are gone"). Routing is
+    committed in this repository as `ops/traefik/traefik.yml` and `ops/traefik/dynamic/routes.yml`, one `Host()`
+    router per hostname, and `ops/traefik/compose.yml` binds both read-only from the checkout the deploy resets to
+    `main`, so a `git reset --hard` now restores the routing rather than erasing it. Same on `dev` 610f0aa and
+    `origin/main` 1cf5f35 (`git diff origin/main dev -- ops/traefik` empty). A read-only fetch on 2026-10-18 found
+    all seven public hostnames answering normally. The box itself was not re-read; its state is the 2026-10-01 run
+    record. The successor risk, a merged routing change going live unproven, is DW-299.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
   id: DW-150
@@ -246,7 +272,11 @@ the next free id, one above the highest in the file, and a status line.
     IPv6, by verifying a Satellite over IPv6 first and then adding the three records.
     **2026-09-13:** `wheel.cuatro.dev` joined the group, `A` only, placed by Story 2-25
     mirroring the Anchor's three by its own Ask First rule, so the close is four records.
-  status: open
+
+    **Closed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): accepted, no AAAA records added. The
+    records are proxied, so visitors reach Cloudflare's edge, which already serves IPv6; an origin AAAA record would
+    change nothing a visitor sees.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
   id: DW-152
@@ -349,7 +379,15 @@ the next free id, one above the highest in the file, and a status line.
     and a Vitest render of `RootLayout` with both env values stubbed asserting the
     script `src` and `data-website-id`. This is the same class of gap that produced
     incident 3 in Story 1-21 and hid the inverted monitor.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-13-hub-comment-and-test-hygiene** (`bf0b58f`,
+    `apps/hub/app/__tests__/layout.test.tsx`: `the root layout carries the first-party Umami tag`): the
+    health half closes with DW-144. The tag half is a Vitest case that stubs both Umami variables and
+    finds the `next/script` element in the tree `RootLayout` returns, asserting its `src`
+    (`<url>/script.js`) and `data-website-id`, plus two cases that each empty one variable and find no
+    tag. Each assertion was planted. No job reads a monitor's configuration; `ops/monitoring.md`
+    remains the record of that.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
   id: DW-156
@@ -369,7 +407,18 @@ the next free id, one above the highest in the file, and a status line.
     records that a `git reset --hard` in the `cs-tracker` checkout would erase every
     appended block, and Story 1-21 made `deploy.yml` do exactly that in the Anchor's
     own directory.
-  status: open
+
+    **Closed 2026-10-18 by the deferred-work triage** (`dw-triage-2026-10-18.md`): superseded. `f76e526` deleted
+    `docker/Caddyfile` (DW-312), and `git ls-tree` on `dev` 610f0aa and `origin/main` 1cf5f35 shows no such file (the
+    Caddy files left under `apps/finance` and `apps/tracker` are per-application, not the Anchor fragment). The
+    installed Caddyfile it mirrored is gone too: `ops/caddy-retirement.md` § Retirement run end state and
+    `ops/routing-inventory.md` § Ingress record Caddy, its Caddyfile, volumes and compose service retired at step 11
+    (2026-10-01). Routing now has no mirror: `ops/traefik/compose.yml` mounts `./traefik.yml` and `./dynamic` read-only
+    from `/home/deploy/cuatro-portfolio` (`ops/traefik-cutover.md`), the checkout `ops/deploy-remote.sh` resets to a
+    commit on `origin/main`, so the committed copy is the serving copy. That no CI job starts Traefik before a routing
+    change goes live is DW-299. That the running `traefik-ingress-1` still mounts from that checkout is box state, last
+    recorded 2026-10-01, not re-read here.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
   id: DW-157
@@ -761,7 +810,11 @@ the next free id, one above the highest in the file, and a status line.
     incompatible halves. The cheap version, if this recurs, is a `note` row carrying
     `cores=$(nproc)` once per run, which is schema-compatible, plus a close-out assertion that
     the run saw exactly one distinct value.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/capacity-measurement.md` § Standing triggers):
+    trigger not met. The plan's § 3 wording ("The next measurement week (2027-02-25 review)") moved there with the
+    `note`-row closer, dated and naming DW-175.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-5-capacity-measurement-week.md`
   id: DW-176
@@ -779,7 +832,11 @@ the next free id, one above the highest in the file, and a status line.
     header creation and the append. Left alone because changing the sampler mid-week means
     reinstalling the thing being measured, and the observed risk over one week on one timer is
     very low.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/capacity-measurement.md` § Standing triggers):
+    the sampler is unchanged since `6caac0b`. The plan's § 3 wording ("Next sampler edit") moved there with the `flock`
+    closer, alongside DW-175, dated and naming DW-176.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-5-capacity-measurement-week.md`
   id: DW-177
@@ -796,7 +853,11 @@ the next free id, one above the highest in the file, and a status line.
     that is missing an application without anything looking wrong. A fallback search across
     plausible parents, or an explicit assertion at install time that every running container
     resolves to a cgroup, would close it.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/capacity-measurement.md` § Standing triggers):
+    trigger not met. The plan's § 3 wording ("The next measurement week") moved there with the install-time
+    assertion, dated and naming DW-177.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
   id: DW-178
@@ -876,7 +937,11 @@ the next free id, one above the highest in the file, and a status line.
     anyway, and have the `bmad:context` refresh replace "tracked in story 1-9" with the
     register path. That refresh is already queued by the earlier entry about the stale
     "one Hetzner box" line.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-1-records-and-planning-sweep** (`ops/capacity-measurement.md`, the
+    `deploy.yml` stated limit): the AD-8 violation resolves to KV-1 in `ops/known-violations.md`, with a dated note that
+    KV-1's Anchor half retired 2026-09-29T20:41:37Z. The `AGENTS.md` half closed at `967abfd`.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
   id: DW-181
@@ -991,6 +1056,12 @@ the next free id, one above the highest in the file, and a status line.
     comment rather than an observation. If it is real it is the estate's only offsite
     copy and it should be written into `ops/` with its retention and its restore
     procedure; if it is not real the estate has no offsite copy of anything.
+
+    **Narrowed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): the Redis and qBittorrent state
+    this entry names (`cuatro-tracker_redis_data`, `digital-library_redis_data`, `cuatro-tracker_qb_config`) is ruled
+    disposable, so it needs no backup. What stays open is the Origin CA private key, which now lives in volume
+    `traefik-origin-ca`: its record, reissue procedure and offsite copy cadence move to story 9-31-origin-ca-record,
+    which closes this entry.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
@@ -1095,6 +1166,14 @@ the next free id, one above the highest in the file, and a status line.
     Hostinger's bundled agent, reachable from nowhere outside the box, so it does not
     reach a hostname. It is third-party software with host-level visibility that nobody
     in the planning record chose, which is worth a knowing decision rather than silence.
+
+    **Ruled 2026-10-18 by the Operator** (`operator-rulings-2026-10-18.md`): both are knowing keeps. qBittorrent stays
+    on the box; where it runs from moves with story
+    9-32-tracker-redis-qbittorrent-home, and its WebUI password and bind address are DW-190's. Monarx is a knowing keep
+    if Hostinger provides it. That provenance is unverified: this entry's "Hostinger's bundled agent" is an inference
+    from the box, not an observation of the Hostinger console. The entry stays open on that half only. **Owner: the
+    Operator.** **Trigger: the Operator observes in the Hostinger console that Monarx is Hostinger's provided agent**,
+    which closes the entry; if it is not, Monarx's keep is re-ruled.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
@@ -1345,7 +1424,19 @@ the next free id, one above the highest in the file, and a status line.
     `digital-library` and only `digital-library`, and because the same argument applies to
     `cs-tracker`'s and the Anchor's Postgres, neither of which has any backup at all. That
     is one story, not three, and it is not this one.
-  status: open
+
+    **Closed 2026-10-18 by the deferred-work triage** (`dw-triage-2026-10-18.md`): superseded by Stories 4-5 and 4-11.
+    `ops/caddy-retirement.md:191` and its run record (about lines 1045 to 1050) record the last dump
+    `tracker-cuatro-tracker-postgres-20261001T061043Z.dump`, offsite snapshot `0b5d5e60`, the 03:30 cron line removed,
+    the script moved to `cuatro-backup.sh.retired-2026-10-01` and the `cuatro-tracker_pg_data` volume removed
+    (`ops/routing-inventory.md`, about lines 1672 to 1678, agrees). Its replacement is committed and tested: `3851f01`
+    (Story 4-5) adds `ops/postgres-backup.sh`, `ops/postgres-restore-verify.sh`, `ops/postgres-backup.md` and
+    `ops/__tests__/postgres-backup.test.ts`; the script lists every consumer database in the estate container, runs
+    `pg_dump -Fc --snapshot` for each, sends them offsite with `restic backup` (encrypted) and prunes with `restic
+    forget --prune`, with a restore check. `ops/postgres.md` records Umami, the tracker and `cs-tracker` all in
+    `postgres-estate-postgres-1`, so the `cs-tracker` and Anchor gap this entry names is covered by the same job. That
+    the box crontab holds the 03:15 job and no 03:30 line is the 2026-10-01 record, not a fresh reading.
+  status: done
 
 ### DW-1: Nothing under `contracts/` identifies the folder to a repository that vendors it: no README, no source repository or commit, and no licence line.
 origin: spec-deferred 3a3801b1c64f
@@ -1404,7 +1495,11 @@ location: n/a
 source_spec: `spec-1-15-determine-cs-tracker-s-daisyui-adoption-route.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260825-161421-c4ac; this entry preserves the lingering recommendation for a deliberate later review.
-status: open
+note: |-
+  **Closed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): accepted, no follow-up review. Story
+  1-19 executed the decision 1-15 recorded, and the probe re-ran green twice since, so a review of 1-15's record
+  would read a decision already carried out and verified.
+status: done
 
 ### DW-6: Three of the Hub's rendering surfaces, /cv, /recommendation and the 404, are visited by no test in this repository and captured by no screenshot baseline, and they are the only surfaces where the base
 origin: spec-deferred 60453c2584eb
@@ -1498,7 +1593,29 @@ location: n/a
 source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260826-202635-4db0; this entry preserves the lingering recommendation for a deliberate later review.
-status: open
+note: |-
+  **Closed 2026-10-18 by the deferred-work triage** (`dw-triage-2026-10-18.md`, tail pass): superseded. The review
+  this entry preserves was never run, and the product change it would have read no longer exists. 1-18's product
+  change was the alias layer in `app/app.scss` (`f104202`). Story 2-22
+  (`spec-2-22-migration-step-7-delete-the-aliases.md`) deleted that layer: AGENTS.md says `apps/hub/app/app.scss`
+  declares no custom property of its own, `grep -nE '^\s*--' apps/hub/app/app.scss` returns nothing, and
+  `anchor-contract.test.ts` refuses the old names. 1-18's other edits were reworked by later stories: the four
+  font-weight lines (2-20), the error-page, WorkHero and ProjectsHero stylesheets (2-14, 2-30, 2-33), and DW-8
+  through DW-12 were all closed by later stories; git blame at `b6ef5cc` finds 0 lines from `f104202` in the
+  surviving GlitchText, ErrorPage and WorkHero stylesheets. 2-22 recorded its own independent verifier and fix round
+  (`spec-2-22` lines 176 and 318 to 333).
+
+  What survives of 1-18 is test code and frozen records, not product code. The first pass counted 186 of 624 lines
+  of `tests/e2e/anchor-aliases.pw.ts` and 54 of `tests/e2e/contract-anchor.pw.ts`; the independent recheck corrected
+  that by git blame at `b6ef5cc`: `tests/e2e/anchor-aliases.pw.ts` 209 of 624 (repurposed by 2-22 to assert the
+  layer's absence), `tests/e2e/contract-anchor.pw.ts` 54, `tests/e2e/rendered-output.pw.ts` 71 of 293 (including the
+  font-family probe helper), `apps/hub/app/__tests__/anchor-contract.test.ts` 53, `ops/anchor-token-adoption.md` 291
+  of 1061 lines of prose (the dated "Step 2: the alias layer" record, kept as history) and
+  `ops/rendered-output-harness.md` 20. The test lines run blocking in CI on every push. About 124 of them
+  (`rendered-output.pw.ts` and `anchor-contract.test.ts`) never had a separate independent review; both agents judge
+  that too small to keep this entry open, and if the Operator wants them reviewed it folds into DW-7's review of the
+  same suites rather than reopening this one.
+status: done
 
 ### DW-14: Nothing that runs on a schedule or in a gate can see the token mapping stop resolving in `cs-tracker`, because that repository has no CI at all and the only instrument that reads rendered output is a
 origin: spec-deferred 2a05e43684bb
@@ -1620,7 +1737,11 @@ location: n/a
 source_spec: `spec-1-20-record-the-adopted-contract-version-and-the-automation-polic.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260827-161430-4676; this entry preserves the lingering recommendation for a deliberate later review.
-status: open
+note: |-
+  **Closed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): superseded, no follow-up review. The
+  record 1-20 wrote, `ops/contract-adoption.md`, has been rewritten 23 times since, so the version a review would
+  read no longer exists.
+status: done
 
 ### DW-19: Nothing pins what `contracts/tailwind.css` makes `max-w-*` resolve to, so DW-15 shipped silently and its eventual fix has no gate to prove it landed.
 origin: operator-approved 2026-08-28
@@ -1751,7 +1872,9 @@ reason: |-
   all. Deferred rather than done because it edits a file shared by every rendered assertion in
   the repository, which is a change that deserves its own verification rather than riding along
   inside a defect fix.
-status: open
+
+  **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/harness.ts`: `goTo`): one navigation guard now lives in the harness and `expectRouteScreenshot` uses it, so the screenshot path and the assertion path cannot drift. The eighteen local copies are gone, every inline `page.goto` plus status check in the contract specs, narrative, front-door and suite-directory routes through it, and the unguarded Hub navigations in `projects-redirect.pw.ts` and `rendered-output.pw.ts` gained it after each target was checked. `rendered-output.pw.ts` plants its refusal.
+status: done
 
 ### DW-23: The container invocation that actually runs the e2e suite is nowhere recorded, and the one a reader would construct fails.
 origin: spec-deferred 2026-08-29
@@ -1804,7 +1927,12 @@ reason: |-
   column is what a later story would use to justify deleting a face, and a false unreachable is the
   expensive direction. Story 2.20 retires the legacy faces and is the natural place to widen the
   method, since it is the story that acts on the column.
-status: open
+
+  **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/asset-budget.md` § Standing triggers): the triage
+  of 2026-10-18 found the trigger not met. The entry has no trigger line, so the Epic 9 plan's § 3 wording ("A face is
+  deleted on the reachability word, a family is defined under a selector, or the `font` shorthand names a family")
+  moved to that record, with the work, dated and naming DW-24.
+status: done
 
 ### DW-25: `ops/asset-budget.mjs` re-reads the whole source tree on every call and re-gzips each chunk once per referencing document.
 origin: spec-deferred 2026-08-29
@@ -1822,7 +1950,11 @@ reason: |-
   hand rather than in CI, so nothing gates on its runtime. It is filed because the work grows with
   routes and with the source tree, and Epic 2 adds routes while Epic 3 moves the whole application
   under `apps/hub`. One read into a map removes the chunk half of it outright.
-status: open
+
+  **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/asset-budget.md` § Standing triggers): trigger not
+  met (no workflow runs the tool). The plan's § 3 wording ("asset-budget goes into CI, or its runtime becomes
+  noticeable") moved to that record, dated and naming DW-25. Story 9-4 meets it if it makes CI run the tool.
+status: done
 
 ### DW-26: `contracts/registry.schema.json` cannot carry `minItems: 1` on `applications` until Story 2.5 authors entries, so a Registry that loses every entry validates.
 origin: spec-deferred 2026-08-29
@@ -1888,7 +2020,15 @@ reason: |-
   discarded value, which is why it is filed rather than fixed inside the story. The exposure is a
   hand-authored file with one author, so the realistic case is a merge that duplicates a key rather
   than a mistake nobody would make. `ops/registry-schema.md` records it as a stated limit.
-status: open
+
+  **Closed 2026-10-18 by Story 9-6-registry-gate-hardening** (`c39ec14613e7a806f8a529e9b447bb52941b39a2`,
+  `ops/registry-schema.mjs:duplicateKey`): the gate scans both contract files after `JSON.parse` accepts them and
+  refuses any object carrying one key twice, keys compared decoded, naming the file, the object's pointer, the key and
+  the line, before the schema is applied. Five planted cases in `ops/__tests__/registry-schema.test.ts` hold it (a
+  Registry entry, the schema, a key holding a newline, two spellings of one key, and a positive control).
+  `ops/registry-schema.md` records the decision and the stated-limit row "A duplicate key is refused by this gate and
+  by no other reader".
+status: done
 
 ### DW-29: `tests/e2e/contract-serving.pw.ts:68-72` still says `contracts/registry.json` arrives in Story 2-5.
 origin: spec-deferred 2026-08-29
@@ -2503,7 +2643,14 @@ status: done
 
     The cheap next step is to run the suite with `--reporter=verbose` into a file a few times and
     watch for a case whose duration swings, rather than to go looking now with nothing to go on.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-5-wsl-suite-failure-naming** (`spec-9-5-wsl-suite-failure-naming.md`
+    § DW-210: ten verbose runs): ten `vitest --run --reporter=verbose` runs at `ae314fa` (on `dev` as
+    `de8b82a`) failed 28 cases in 7 runs, every one a named WSL stall in a WSL-spawning suite, with no
+    failure elsewhere and no duration swing outside those suites. On the 2026-09-03 tree (`75df819`)
+    the only suite spawning WSL's bash was `library-backup.test.ts`, which fails five times in the ten
+    runs on that stall. The lost case is attributed to DW-135 and closed with it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
   id: DW-211
@@ -2524,7 +2671,12 @@ status: done
 
     The cheap fix, when someone is in those files anyway, is a trailing "retired by Story 2.7"
     rather than a rewritten citation.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-1-records-and-planning-sweep** (`ops/backup-digital-library.md` § The
+    store, `CHANGELOG.md` 2.2.0, `portfolio-architecture-guide.docx.md`): each mention of `content/projects.ts` carries a
+    trailing dated note that Story 2-7 retired it (`ba9526d`) and where the data lives now (`contracts/registry.json`);
+    the observations themselves are not rewritten.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
   id: DW-212
@@ -2643,7 +2795,13 @@ status: done
     Not widened here because the same constant feeds the root pin, `PRESENT_EXTENSIONS` and two
     count floors in that file, so the change is that file's to make deliberately rather than a
     side effect of this story. Nothing under a scanned root is JSON today, so the gap is latent.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-13-hub-comment-and-test-hygiene** (`421c0ce`,
+    `apps/hub/app/__tests__/anchor-contract.test.ts`: `SCANNED_EXTENSIONS`): `.json` is scanned. A
+    planted `lib/planted.json` naming `contracts/tokens.css` fails the `contracts/` mention check, and
+    a planted tracked JSON under a new root fails the root pin; no tracked JSON sits under a scanned
+    root, so the floors and `PRESENT_EXTENSIONS` are unchanged.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
   id: DW-218
@@ -2710,7 +2868,16 @@ status: done
     None of the 36 is interactive, so none fails the Story 2-8 sweep, which measures interactive
     elements. The gap is recorded there under what the assertion deliberately does not cover, so a
     green A-5 is not read as "nothing on the Hub overflows at 360".
-  status: promoted to KV-5 in `ops/known-violations.md` on 2026-09-06
+
+    **Closed 2026-10-18 by the deferred-work triage** (`dw-triage-2026-10-18.md`): KV-5 retired 2026-09-23 by Story
+    2-33 (`31f4664`, "retire KV-5 and KV-6"; `ops/known-violations.md` table row and § KV-5). The body half landed in
+    Story 2-9 (`29a0e5c`): `apps/hub/app/app.scss` now reads `html, body { overflow-x: clip; }`, and the only `100vw`
+    left is a comment forbidding it. The component halves are gone: `WorkItem.scss` no longer sets `white-space:
+    nowrap`, `31f4664` rebuilt `WorkHero` without its `overflow: hidden`, and `/projects` with its eight elements was
+    removed by Story 2-14. The sweep was widened as asked: `tests/e2e/hit-target-floor.pw.ts` `outsideTheViewport`
+    reads every element under `body *` against both edges ("A-5 reads every element with a box"). Same on `dev`
+    610f0aa and `origin/main` 1cf5f35. The rendered-output suite was not re-run here.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
   id: DW-219
@@ -2760,7 +2927,9 @@ status: done
     `ops/rendered-output-harness.md` was updated to add the story; the file a reader actually opens
     was not. Story 2-8's boundaries made `harness.ts` reuse-only, so this is filed rather than
     fixed.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/harness.ts` header): the docstring no longer lists importing stories; it names the helpers and states that every `.pw.ts` under `tests/e2e` imports the file.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
   id: DW-222
@@ -2810,7 +2979,9 @@ status: done
     the failure mode it exists to prevent. Observed 2026-09-06. The fix is a bounded retry on the
     request, or asserting the served bytes rather than re-fetching over the network, not a
     `test.retry` on the whole case, which would hide a real 404 as readily as a hang up.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/harness.ts`: `getWithRetry`): both re-fetches in `contract-anchor.pw.ts` (the stylesheets and the faces) go through a request that is retried up to three times when it throws and never when it answers, so a socket hang-up no longer takes the blocking gate red while a real 404 still fails. No `test.retry` or `retries` change; planted both ways.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
   id: DW-225
   summary: The `Live` status dot fills 4px with `--token-accent`, which F-8's gate greps for and
@@ -3077,7 +3248,9 @@ status: done
     Filed rather than fixed because lifting them touches `hit-target-floor.pw.ts`, whose literals
     `ops/__tests__/hit-target-floor.test.ts` parses as text, and Story 2-10's boundaries put that
     file off limits. A story that owns the harness can lift all four helpers in one change.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/harness.ts`: `goTo`, `plantStyle`, `durationMs`, `EDGE_SLACK`): each lives once in the harness and every spec imports it; no spec declares its own edge slack figure any more (the other, different tolerances such as `SIZE_SLACK` and `TIME_SLACK` stay with their specs). `ops/__tests__/hit-target-floor.test.ts` reads none of the four, so lifting them out of `hit-target-floor.pw.ts` needed no change there.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
   id: DW-233
@@ -3246,7 +3419,9 @@ status: done
     an earlier entry in this ledger already books lifting them to a story that owns the harness; the
     scoping and the extraction are one change, and `hit-target-floor.pw.ts` is off limits to Story
     2-11 for the reason recorded there.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/premise.pw.ts`: `outsideViewport`): the sweep reads `.premise` and `.site-footer` and their descendants only, so an overflow elsewhere on `/` no longer turns the premise suite red; the route-wide claim stays `hit-target-floor.pw.ts`'s. A scope that matches nothing throws, planted.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
   id: DW-238
@@ -3272,7 +3447,11 @@ status: done
     `DESIGN.md:208` is a sentence of prose inside a design spine, and a parser over prose is a
     maintenance liability that fails on a rewording rather than on a change of fact. Choosing between
     a fragile parser and a stated non-goal is a decision, not an oversight.
-  status: open
+
+    **Closed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): a stated non-goal. The Registry is the
+    source of truth for the estate's frameworks and languages, and the Registry side is already asserted; holding the
+    constants against prose in `DESIGN.md` or `EXPERIENCE.md` would need the fragile parser this entry describes.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
   id: DW-239
@@ -3296,7 +3475,16 @@ status: done
     Story 2-31 owns the component next: it adds the Annotated and Side-ruled variants and retires
     `HudLabel` into it. That is the point at which the prop's contract is worth restating against
     every real call site rather than against one.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-13-hub-comment-and-test-hygiene** (`ee9e2d3`,
+    `apps/hub/components/molecules/PlateMark/PlateMark.tsx`: `PlateMarkProps.label`): the prop's
+    contract is restated against every call site rather than one: a page's identity (`CvIntro`,
+    `Error404`), the site's own identity over a block with no heading (`Premise`, as
+    `mockups/key-screens.html` draws it), and a counted readout (`WorkHero`'s meta line, which the old
+    text's "never a count" contradicted). The count is a length read from its source, never a typed
+    number. The component docblock says the same. `DESIGN.md`'s "section identity above a section
+    head" is left as written.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-31
@@ -3562,7 +3750,14 @@ status: done
     `three` with it. **Not re-measured on `/`**: the request recording this entry was made with was
     not repeated, and the `§ Stated limits` line it asks for is still unwritten, so the entry stays
     open on both.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-4-ops-record-pins** (`ops/asset-budget.md` § Stated limits, the
+    prefetch row): re-measured in the pinned image on build `J6-yUrEUgcvXw3AX_9acr` by the entry's
+    own method. Under reduced motion a prefetch from `/` (of `/`, `/celeste` and `/work`) pulls
+    `gsap` (26,971 gzipped) and one 4,469 chunk beyond the document, and no WebGL chunk; with motion
+    allowed, the three/R3F/drei and post-processing chunks that arrive are `/`'s own hero boundary.
+    The § Stated limits line exists and carries the dated re-measurement.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-39
@@ -3619,7 +3814,9 @@ status: done
     the tool's `main` default argument, which is the only thing making it unloadable from CommonJS.
     The first is better and is a change to a file `ops/__tests__/asset-budget.test.ts` pins as
     literals, so it lands with that suite.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `ops/asset-budget-fingerprints.json`, `tests/e2e/harness.ts`: `FINGERPRINTS`): the table moved to a JSON file that `ops/asset-budget.mjs` and the harness both load, so the specs no longer parse the tool as text and a reformatted table cannot fail them with a parse message. `ops/__tests__/asset-budget.test.ts` still pins the seven rows; the harness refuses an empty table, a malformed row or an empty mark at collection.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-41
@@ -3974,7 +4171,9 @@ status: done
     Both copies now depend on the tool's exact literal formatting, and a reflow of that array would
     fail two specs with messages about a parse. The remedy DW-40 already names, a small `.ts` module
     both the tool and the specs import, is now worth more: three readers rather than two.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/harness.ts`: `FINGERPRINTS`): all three text parses (`narrative.pw.ts`, `front-door.pw.ts`, `work-hero.pw.ts`) are deleted and each imports the harness's table, closed with DW-40.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-50
@@ -4054,7 +4253,9 @@ status: done
     scope. Or the edge does it: `docker/Caddyfile` is already incomplete against
     `ops/routing-inventory.md` and is being rebuilt in Epic 4, which is the natural place for a
     `Vary` on one route.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-15-hub-chrome-and-headers** (`72676fd`, `apps/hub/next.config.js`): the `Vary: Save-Data` declaration is removed, since Next 16.2.1's App Router handler sets `Vary` before every render (`app-page.js:453-454`) and a proxy or the config cannot reach it. `/` stays guarded by the `private, no-store` a dynamic route is answered with, which `tests/e2e/front-door.pw.ts` keeps asserting, and a new case there fails any header a `headers()` block declares for `/` that does not arrive as written.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-52
@@ -4118,7 +4319,15 @@ status: done
     column and compare it against the number in that sentence, with the same both-directions message
     the other comparisons carry. It was not done here because that suite is Story 2-8's instrument
     and this story's boundaries name the two numbers rather than the agreement between them.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-4-ops-record-pins**
+    (`ops/__tests__/hit-target-floor.test.ts:derivedDisagreements`): the headline total under § The
+    surfaces swept, and its surface count, are derived from the record's own surfaces table, which
+    is already held equal to `SURFACES`, and the suite fails naming the figure and both values. The
+    headline read 41 against a table summing to 46 and is restated with a date in
+    `ops/hit-target-floor.md`; the planted run at `5bf8c3d` printed "the headline total:
+    ops/hit-target-floor.md states 41, the surfaces table derives 46".
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
   id: DW-54
@@ -4143,7 +4352,14 @@ status: done
     DW-53 as written, by summing the `Measured` column and comparing it against the sentence, would
     not catch these. The cheapest honest fix is to derive all three in the same case, which is the
     Story 2-8 instrument's to change and not this story's.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-4-ops-record-pins**
+    (`ops/__tests__/hit-target-floor.test.ts:derivedDisagreements`): both derived counts in § The
+    tolerated breach, "None of the N measured elements is under the floor" (also failed if the
+    ledger covers any element) and "All N since", are derived in the same case as DW-53's total,
+    which is the fix this entry asked for. Both read 39 against 46 and are restated with dated
+    paragraphs, the 2026-09-23 readings kept.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
   id: DW-55
@@ -4389,7 +4605,14 @@ status: done
     section is read for a cost comparison**, or the next story that adds a spec file, since the file
     count in the last row is the one figure a reader uses to tell a nine-file run from an eleven-file
     one. Adding the new row costs three readings of the same tree, per the method the section states.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-4-ops-record-pins** (`ops/hit-target-floor.md` § Running it): two
+    dated rows restate the stale ones from three readings of one tree in
+    `mcr.microsoft.com/playwright:v1.62.1-noble`: `Cases in this file` at 18, and the whole suite at
+    twenty-four spec files and 344 tests, 10.7, 10.3 and 10.8 min (walls 650.9, 626.8 and 659.0 s),
+    one run failing one unrelated case, recorded. The newest `Cases in this file` row is held to the
+    spec file's `test(` count by `derivedDisagreements`; the timing rows stay readings.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
   id: DW-60
@@ -4452,7 +4675,9 @@ status: done
     **Owner: unassigned**, because no planned story adds a Hub surface. **Trigger: the next story
     that adds a route under `app/` serving Hub markup**, at which point the gap is live rather
     than theoretical, and DW-22's note on the duplicated `goTo` guard is the same seam.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/projects-redirect.pw.ts`: `SWEPT`): `SURFACES` moved to `tests/e2e/harness.ts` and `SWEPT` maps it, so a surface `hit-target-floor.pw.ts`'s walk of `app/` forces into `SURFACES` is swept for NFR-9 too; planted with a sixth row, `/planted`, that the sweep visited (P7). `type-swap.pw.ts`'s hand copy is derived the same way.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-62
@@ -5042,7 +5267,10 @@ status: done
     **Owner: unassigned**, and it may retire unfixed. **Trigger: a report of `/cv` still downloading
     a file**, or the first Umami reading after the epic merge showing `/cv` pageviews far below the
     header's other destination, which would be the only evidence the origin can produce.
-  status: open
+
+    **Closed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): won't fix. As this entry states,
+    nothing the origin can do reaches a locally cached 308, and the entry allows it to retire unfixed.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
   id: DW-76
@@ -5185,7 +5413,11 @@ status: done
     **Owner: unassigned.** **Trigger: the first story that adds a `robots.txt`, a sitemap or a
     `robots` directive anywhere but `/celeste`**, at which point the framework's own tag on the
     404 is part of the policy being written down.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/bot-mitigation.md` § Standing triggers): trigger
+    not met. "The first story that adds a `robots.txt`, a sitemap or a `robots` directive anywhere but `/celeste`"
+    moved verbatim to that record, dated and naming DW-78.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-17-secondary-surface-states.md`
   id: DW-79
@@ -5509,7 +5741,11 @@ status: done
     the rotation before expiry and a `workflow_dispatch` run after it. **Trigger: the expiry date
     written into action 1, less the lead the Operator chooses; or the first run whose every
     `source exists` line is red.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/registry-verification.md` § Standing triggers):
+    trigger not met (expiry 2026-12-11). The trigger moved verbatim beside action 6, with the plan's lead (rotate by
+    about 2026-12-04), dated and naming DW-86. Action 6 stays `_not done_` until the rotation.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`
   id: DW-87
@@ -5614,7 +5850,10 @@ status: done
     **Owner: unassigned.** **Trigger: the first reading where SM-3 (the Marcus signal) reads
     implausibly low against the Operator's own knowledge of who visited, or a story that adds a
     server-side request count for any other reason.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/visitor-instrumentation.md` § Standing triggers):
+    trigger not met (no SM-3 reading recorded). The trigger moved verbatim, dated and naming DW-89.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
   id: DW-90
@@ -5846,7 +6085,20 @@ status: done
     Anchor's key) and 9 (`list-wheel`'s), each due after the first deploy that brings its script.
     Until both are dated, each key still opens a shell. Story 4.3 edits `list-wheel`'s script
     (`epics.md`, amended).
-  status: open
+
+    **Closed 2026-10-18 by the deferred-work triage** (`dw-triage-2026-10-18.md`): both lines are dated. In
+    `ops/contract-serving.md`, Pending Operator action 7 (the Anchor's key) is dated 2026-09-25, applied after the
+    Epic 2 merge deploy (run 36156753065, `bd21c5d`): dispatch run 36160902460 logged `read from SSH_ORIGINAL_COMMAND`,
+    an `ssh -tt` with a throwaway key was refused ("PTY allocation request failed", exit 255), and the same key asking
+    for `id` was refused by deploy-remote (exit 1). Action 9 (`list-wheel`'s key) is dated the same day: run
+    36110098514 brought the script and dispatch run 36160905951 deployed through the forced command. `gh run view`
+    reads both dispatches as `workflow_dispatch` on `main`, conclusion success: 36160902460 at `bd21c5da`,
+    2026-09-25T16:27:44Z, and 36160905951 (`list-wheel`) at `718f1943`, 2026-09-25T16:27:46Z. The script half was
+    already closed (`b0aeaff`, `list-wheel` `30e5e8b`): `.github/workflows/deploy.yml` and `list-wheel`'s only pass the
+    sha to `ops/deploy-remote.sh`. Both key rows in `ops/routing-inventory.md`'s credentials table carry the 2026-09-25
+    amendment, and `ops/traefik-cutover.md` says the key line carries the forced command. No later record lifts it.
+    Same on `dev` 610f0aa and `origin/main` 1cf5f35. The key lines on the box today were not re-read.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass.md`
   id: DW-95
@@ -6044,7 +6296,11 @@ status: done
 
     **Owner: unassigned.** **Trigger: any story that touches the `app/layout.tsx` preloads or the
     type contract.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/asset-budget.md` § Standing triggers): trigger
+    not met (`apps/hub/app/layout.tsx` last changed by the move in `bc9cd25`). The trigger moved verbatim, with the
+    measurement that has to come before any preload, dated and naming DW-99.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-27-redesign-glitchtext-token-native.md`
   id: DW-100
@@ -6255,7 +6511,12 @@ status: done
     the per-pixel threshold makes the update run write nothing, and points at the forced form in
     `ops/rendered-output-harness.md` § Regenerating the baseline. The `threshold` question is what
     this entry still holds, owner and trigger unchanged, so it stays open.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/rendered-output-harness.md` § Standing triggers):
+    the `threshold` question's trigger, "the next baseline change the comparator measures as none", is not met. It
+    moved verbatim beside § Regenerating the baseline, dated and naming DW-102 and Story 9-16's possible forced
+    regeneration.
+  status: done
 
 - source_spec: `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/review-apple-design-2026-09-15.md`
   id: DW-103
@@ -6338,7 +6599,9 @@ status: done
     no assertion reads them.
 
     **Owner and trigger.** The next story that edits either citing file; trigger, that edit.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-12-e2e-harness-consolidation** (`292bfb8`, `tests/e2e/front-door.pw.ts`: `onPath` docblock, `tests/e2e/visitor-instrumentation.pw.ts`: `reach`): both stale line citations are replaced by symbol citations (`withMotion`, `atAWiderWidth`, and the front-door case by title), which do not drift with an edit.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
   id: DW-106
   summary: >-
@@ -6476,7 +6739,16 @@ status: done
 
     **Owner: unassigned.** **Trigger: the next story that records a reading in that file, or the
     first time a figure in it is found wrong.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-4-ops-record-pins**
+    (`ops/__tests__/asset-budget-record.test.ts`): the record is read back under the blocking `test`
+    job. Every § Every route reading's before and after pairs close on their deltas and equal the
+    route table, and its non-3D line, decomposition, narrative total and build bytes close; every §
+    Findings run's halves make its narrative total, its distance to the estimate's top and both
+    budget lines close, and its figures equal the reading of the same `BUILD_ID`. Every row it reads
+    must parse. All 20 readings and 20 runs are consistent today. Holding the figures to a build
+    still needs a build and stays a hand re-run, as `ops/asset-budget.md` § Stated limits now says.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-19-cs-tracker-adopts-the-token-contract.md`
   id: DW-109
@@ -6576,7 +6848,11 @@ status: done
     print readings DW-76 and DW-73 are about. **Owner: unassigned.** **Trigger: the next change
     to the disclosure's mechanism, or an accessibility pass that reads `/cv` with a screen
     reader.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/hub-accessibility-pass.md` § Standing triggers):
+    trigger not met. It moved verbatim, dated and naming DW-111. The Operator's screen-reader read of `/` does not
+    meet it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-31-redesign-workitem-and-hudlabel-token-native.md`
   id: DW-112
@@ -6603,7 +6879,10 @@ status: done
     is a change to the disclosure's markup rather than its look, so Story 2-31 did not make it.
     **Owner: unassigned.** **Trigger: DW-111's, the next change to the disclosure's mechanism,
     since both entries are the same component's semantics.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/hub-accessibility-pass.md` § Standing triggers):
+    trigger not met (shared with DW-111). It moved verbatim with the repair's shape, dated and naming DW-112.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-31-redesign-workitem-and-hudlabel-token-native.md`
   id: DW-113
@@ -6877,7 +7156,9 @@ status: done
 
     **Owner: unassigned.** **Trigger: a header that has to wrap at a supported width, a fragment
     target added to `/celeste`, or the next change to the header's contents.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-15-hub-chrome-and-headers** (`c03ae89`, `apps/hub/components/molecules/Header/Header.tsx`: `reserveScrollPadding`): the band measures itself with a `ResizeObserver` and writes its real height as the root's `scroll-padding-block-start`, retracting it when the band leaves the document or measures zero, so a wrapped row is covered; the four-token rule in `Header.scss` stays as the first paint's value and now reads `html:has(body:not(#celeste) .header-container)`, so `/celeste` reserves nothing. `tests/e2e/chrome-nav.pw.ts` holds the padding equal to a header wrapped by a planted full-width child and to one grown by its own padding on `/work` and the 404, `auto` on `/celeste`, and `auto` on `/` reached from `/work` by the wordmark; `Header.test.tsx` holds the write, the follow and both retractions.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`
   id: DW-119
@@ -7457,7 +7738,11 @@ status: done
     removes the plaintext on every path and prints gpg's own error.
 
     **Owner: the Operator.** **Trigger: the next time the passphrase is verified or rotated.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/backup-digital-library.md` § Standing triggers):
+    trigger not met. "The next time the passphrase is verified or rotated" moved verbatim with the closer, dated and
+    naming DW-132. The owner is still the Operator.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`
   id: DW-133
@@ -7486,7 +7771,19 @@ status: done
 
     **Owner: unassigned.** **Trigger: the next edit to `ops/library-backup.sh`, or Story 4.5, which
     carries this path onto the rebuilt box.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-7-library-backup-suite-coverage**
+    (`ops/__tests__/library-backup.test.ts`: `a signal mid-run`, `a tar that fails`, and `an offsite
+    config that exists and cannot be read` > `asks sudo before calling a config absent`): each of the
+    three paths now runs for real. A stub signals the backup's bash while it waits on the snapshot, and
+    INT, TERM and HUP each exit 130, 143 and 129 with one summary line, no scratch directory and no
+    lock; a `sudo` stub sees a config the account cannot, and the run exits 1 with
+    `offsite=config-unreadable` rather than 75; a delegating `tar` stub drives the retry that succeeds,
+    the retry that fails, and a non-retried failure. Each assertion's planted failure is in the spec.
+    `ops/library-backup.sh` is unchanged, so the `tar=first-attempt` reading beside `archive=failed` on
+    a non-retried failure is pinned as it stands, and its wording is an Operator question, not open
+    work here.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`
   id: DW-134
@@ -7539,7 +7836,19 @@ status: done
 
     **Owner: unassigned.** **Trigger: the next time a local full run fails a WSL-spawning case that
     then passes, or the next edit to either harness's spawn helper.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-5-wsl-suite-failure-naming** (`de8b82a`,
+    `ops/__tests__/wsl-bash.ts`:`spawnBash`): all seven WSL-spawning suites (`deploy-remote`,
+    `library-backup`, `tracker-backup`, `postgres-backup`, `postgres-init`, `tournament-backup`,
+    `demo-reset`) spawn bash through one helper, and a stalled spawn now fails the case as `WSL did not
+    answer: ... exited 1 after <n> ms and wrote its own error, not the script's: "..."`, naming DW-135
+    and saying to re-run the file. The stall was never silent: `bash.exe` exits 1 after about 30 s with
+    an empty stderr and its own UTF-16LE error on stdout (`Catastrophic failure` with `Error code:
+    Bash/Service/E_UNEXPECTED`, or a connection-attempt timeout), which the harnesses never printed.
+    Ten full verbose runs failed 28 cases on the stall and named all 28
+    (`spec-9-5-wsl-suite-failure-naming.md` § DW-210). The stall itself is the host's and still
+    happens; a red local run of these files is now told apart from the change.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
   id: DW-136
@@ -7658,7 +7967,15 @@ status: done
     counting three private repositories, and the policy table records `cs-tournament` public. The
     `AGENTS.md` dependency automation policy (`:181-183` after the refresh) and the two passages in
     `ops/registry-verification.md` stay as this entry describes, owner and trigger unchanged.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-1-records-and-planning-sweep** (`ops/registry-verification.md` § Sources
+    tolerated to answer 404 anonymously): the section's opening counts three tolerated links (`cs-tracker`,
+    `StreamVault`, `Mutuo`) with the `cs-tournament` row struck since 2026-09-24, and § How a row is struck names the
+    suite's pins as they are (`KV2_TABLE` every row, `STRUCK` the struck ones, the fixture's 404 for `PRIVATE`), each
+    with a dated amendment. The `AGENTS.md` and `ops/contract-adoption.md` halves closed earlier (`2974ceb`,
+    `ad52501`); the remaining four-count lines in `contract-adoption.md` are dated 2026-08-27 readings, already
+    amended, and stay as evidence.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
   id: DW-140
@@ -7719,7 +8036,11 @@ status: done
 
     **Owner: the Operator**, choosing the shape. **Trigger: the next contract release that opens for
     any other reason, or the first string found ligated on a surface.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/font-contract.md` § Standing triggers): trigger
+    not met (no fonts or token contract release since 2026-09-25). It moved verbatim with the Operator's two shapes,
+    dated and naming DW-240.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-process-and-upkeep.md`
   id: DW-241
@@ -7785,7 +8106,19 @@ status: done
     tests, and the ruling asked for the checks to be scheduled and run once, not scripted.
 
     **Owner: unassigned.** **Trigger: the next AD-22 refresh, which pays the rebuild.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-10-commit-ad22-sweep-scripts** (`75dddf4`, `ops/ad22-refresh.mjs`:
+    `sweepRepository`, `checkPin`): the estate automation-policy sweep and the upstream font-pin check are committed
+    as one module with two subcommands, `node ops/ad22-refresh.mjs sweep` and `node ops/ad22-refresh.mjs font-pins`,
+    which `ops/contract-adoption.md` § The estate, observed (and its Pending Operator action 5) and
+    `ops/font-contract.md` § The upstream pins now name. The sweep makes the record's calls over the ten names
+    `ops/estate.md` gives and counts test-shaped blobs by condition 1's patterns with `tsconfig.*` excluded, the rule
+    the 2026-09-30 sweep applied by reading; the font check holds each pinned url to its recorded sha256 as its
+    control before weighing the file at the upstream head. Any unexpected status, a non-plan `403` or a truncated
+    tree exits 2. `ops/__tests__/ad22-refresh.test.ts` drives both through a planted `gh` and downloader, every
+    assertion planted, and holds both records naming their command. First run 2026-10-18: both exit 0, and the six
+    repositories whose default branch had not moved reproduced their 2026-09-30 counts.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-vercel-removal.md`
   id: DW-244
@@ -8012,7 +8345,14 @@ status: done
     merge.** `deploy.yml`'s `gate` job sets up Node 24, and `deploy.yml` left `STILL_ON_NODE_22` in
     `ops/__tests__/workflow-hardening.test.ts`, so a return to 22 fails there.
     `registry-verification.yml` (unassigned) stays on 22 and keeps the entry open.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-6-registry-gate-hardening** (`ebc14299cfe98ce0edeb69ce1265190325cc392f`,
+    `.github/workflows/registry-verification.yml`): the scheduled Registry check sets up Node 24, the third and last
+    half. `STILL_ON_NODE_22` is deleted from `ops/__tests__/workflow-hardening.test.ts`, so every workflow's `setup-node`
+    is held to Node 24 with no exception, and `ops/__tests__/registry-verification.test.ts` pins the 24. The record's
+    Runner row is amended. Run locally on Node v24.15.0 the script passed 75 of 75 checks; the first runner observation
+    is the push of this workflow file to `dev`, which its `paths` trigger runs.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
   id: DW-252
@@ -8380,7 +8720,11 @@ status: done
     in.
 
     **Owner: unassigned.** **Trigger: the next edit to `ops/deploy-remote.sh`.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/contract-serving.md` § Standing triggers):
+    `ops/deploy-remote.sh` is unchanged since `b3b72d6`. "The next edit to `ops/deploy-remote.sh`" moved verbatim with
+    the hand-over closer, dated and naming DW-264.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-4-deploy-by-pulling-a-tag-with-docker-rollout.md`
   id: DW-265
@@ -8402,7 +8746,11 @@ status: done
 
     **Owner: unassigned.** **Trigger: the first Deploy run that times out, or the next edit to the report
     job.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/contract-serving.md` § Standing triggers): no
+    Deploy run has timed out, and the report job is unchanged since `b3b72d6`. The trigger moved verbatim with the
+    throwaway-run closer, dated and naming DW-265.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-4-deploy-by-pulling-a-tag-with-docker-rollout.md`
   id: DW-266
@@ -8448,7 +8796,10 @@ status: done
 
     **Owner: the Epic 8 wave that restyles finance, or an Operator ruling to adopt earlier.**
     **Trigger: finance moving towards `Live`, or its first placement.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/estate.md` § Standing triggers): finance is not
+    placed. The trigger moved verbatim, dated and naming DW-267, beside the three other finance placement entries.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
   id: DW-268
@@ -8467,7 +8818,10 @@ status: done
     serves traffic, and CI runs the toolchain against a real database before any push.
 
     **Owner: finance's placement story.** **Trigger: that story, or a Prisma upgrade.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/estate.md` § Standing triggers): no placement
+    story and no Prisma upgrade. The trigger moved verbatim, dated and naming DW-268.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
   id: DW-269
@@ -8489,7 +8843,11 @@ status: done
     started without `BETTER_AUTH_SECRET` logs Better Auth's default-secret error and keeps serving.
 
     **Owner: finance's placement story.** **Trigger: an AD-9 decision to place finance.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/estate.md` § Standing triggers): no AD-9 decision
+    to place finance. The trigger moved verbatim, dated and naming DW-269. The line says this entry's list predates
+    Epic 4 and is to be read against Traefik and the estate Postgres.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
   id: DW-270
@@ -8517,7 +8875,10 @@ status: done
     `packages/tokens`' importers are unchanged. Two peers were added on purpose, not by accident, and are
     DW-272's. The Hub builds (`corepack pnpm --filter hub build`, exit 0) and its image builds. Still no
     `peerDependencyRules`, since nothing fails.
-  status: open
+
+    **Closed 2026-10-18 by Operator ruling** (`operator-rulings-2026-10-18.md`): accepted, no `peerDependencyRules`.
+    No version the Hub declares or resolves changed and nothing fails, so the linked optional peers are tolerated.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
   id: DW-271
@@ -8537,7 +8898,10 @@ status: done
 
     **Owner: finance's placement story (the seed path), and the story that lands a lint gate.**
     **Trigger: either.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/estate.md` § Standing triggers): no placement
+    story and no lint gate. The trigger moved verbatim, dated and naming DW-271.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
   id: DW-272
@@ -8837,7 +9201,9 @@ status: done
     them deletes `tsconfig.typecheck.json` and points `typecheck` at `tsconfig.json`.
 
     **Owner: unassigned, or Epic 8 wave 2.** **Trigger: the next change to a tournament test file.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-18-tournament-inert-files-and-tsc** (`01f9c98`, `apps/tournament/package.json`: `typecheck`): `tsc --noEmit -p tsconfig.json` over `apps/tournament` is clean. The 21 errors in nine `lib/**/*.test.ts` files were stale fixture shapes and mock typings, fixed without changing any test's verdict: the caller-supplied `SeedAward` fixture in `awards/catalog.test.ts` now carries the three FR-29 rung keys and asserts their projection, `revealedSpins` and `totalSpins` are gone from `reveal-model.test.ts`, `Dirent.path` became `parentPath`, the Supabase mocks take typed parameters, and `fromHex` returns a `Uint8Array<ArrayBuffer>`. `tsconfig.typecheck.json` is deleted and `typecheck` reads `tsconfig.json`, so CI's `Tournament type check` covers the tests; a planted type error in a test file fails it (exit 2).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
   id: DW-283
@@ -8856,7 +9222,9 @@ status: done
 
     **Passed to Epic 8 wave 2 on 2026-09-29 by Story 3-8.** Removing files from `apps/tournament` edits
     the merged application, which a record story does not, so the owner is now Epic 8 wave 2 alone.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-18-tournament-inert-files-and-tsc** (`01f9c98`, `apps/tournament`): `docs/`, `vercel.json`, `eslint.config.mjs` and `worker/cmd/qa54` are deleted; nothing built, imported or pinned them. The README drops the source repository's kickoff status, hosting table and links into its `_bmad-output/` tree (the BMAD trees went at `8440372`), and the worker README notes that the worker never reached Railway and is placed beside the tournament with no public hostname. The `eslint` and `eslint-config-next` devDependencies stay: dropping them rewrites other workspaces' lockfile entries, which is a lockfile change outside this story.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
   id: DW-284
@@ -8874,7 +9242,19 @@ status: done
 
     **Owner: unassigned.** **Trigger: the next change to `EXPORT_SQL`, or the Operator's placement of
     `cs-tournament`, whichever comes first.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-8-tournament-export-sql-test** (`67f873b`, on `dev` as `8c7d6d7`,
+    `ops/__tests__/tournament-identity.test.ts`: `EXPORT_SQL against a real Postgres`): `EXPORT_SQL` now
+    runs in the blocking `test` job against the `postgres` service it already had, with no new job:
+    `Unit tests` sets `TOURNAMENT_IDENTITY_DATABASE_URL` to the service's default database, and the root
+    suite drives `main(['export'])` through `psql` over migration `0001_core_schema.sql`, a GoTrue-shaped
+    `auth.users` and each case's rows, inside a transaction it rolls back. Three cases hold the role
+    join, the playerless default, the creation order, both SQL-side refusals (a password hash, a
+    contradicted claim) and the empty export, each planted; a guard case fails the job if the variable
+    goes missing in CI. Locally the block runs against any reachable scratch Postgres (17 in the build,
+    18 in the independent verification) and is skipped, its title naming why, only when the variable is
+    unset.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-8-record-the-estate-end-state.md`
   id: DW-285
@@ -8940,7 +9320,13 @@ status: done
 
     **Owner: the next story that edits `ops/estate.md`.** **Trigger: that edit, or AD-22's next
     refresh check, whichever comes first.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-1-records-and-planning-sweep** (`ops/estate.md` § Pending Operator
+    actions and § Observed GitHub state, 2026-10-18): the intro reads no archive outstanding, the `connect-four-react`
+    row is dated Done 2026-09-29T21:43:05Z, the waypoint and disposition sentences carry dated amendments, and the
+    observed state was re-gathered by `gh repo list` at 2026-10-18T20:20:21Z: ten governed repositories not archived,
+    the end state of 10.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-placement-tournament-on-the-box.md`
   id: DW-287
@@ -8961,6 +9347,9 @@ status: done
     **Story 4-11, 2026-10-01: unchanged.** Moving `tournament.cuatro.dev` onto Traefik (`ops/caddy-retirement.md`
     step 2) moves its server's router only; the worker still has no router and no alias on the shared
     network, as ruled 2026-09-29.
+
+    **Ruled 2026-10-18 by the Operator** (`operator-rulings-2026-10-18.md`): no demo upload is needed now. The
+    authenticated route waits. **Trigger: the first real demo upload the tournament needs.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-placement-tournament-on-the-box.md`
@@ -9232,7 +9621,9 @@ status: done
     new job is a change to both suites that pin `ci.yml`'s job names.
 
     **Owner: Story 4.3 (the first hostname to move).** **Trigger: that story.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-21-traefik-ci-job** (`37ff0de`, `.github/workflows/ci.yml`: `traefik-routes`, `ops/traefik-routes.sh`): every push now starts `traefik:v3.7.13` from the committed `ops/traefik/compose.yml` with the committed `traefik.yml` and `dynamic/` against whoami stand-ins on a scratch internal network, and compares every router's answer (status, `X-Frame-Options`, the upstream that answered, redirect target, cs-tracker's forwarded scheme on an upgrade, the loaded routers and their statuses) with expected lines, with `DASHBOARD_FORWARD_AUTH` unset and `on`. A file Traefik rejects, a misrouted upstream, a dropped middleware and a typo inside the `on` branch each failed it locally. Both job-name pins moved; `ops/__tests__/traefik-routes.test.ts` fails a router or upstream the script does not name. The job is blocking but is not one of `main`'s required checks until the Operator rules it in.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
   id: DW-300
   summary: >-
@@ -9256,7 +9647,9 @@ status: done
     `finance-migrate` still name it; after that step, starting it creates an empty database, which the
     `docker-compose.yml` comment now says. The fix stays this entry's: point finance at
     `estate-postgres:5432/cuatro_finance`, then remove the declaration.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-20-finance-db-naming** (`2a05323`, `docker-compose.yml`: `finance`, `finance-migrate`): finance's role and database are `cuatro_finance` everywhere the repository names them. Both services read `postgresql://cuatro_finance:${CUATRO_FINANCE_DB_PASSWORD-}@estate-postgres:5432/cuatro_finance` and join `estate-postgres`, `apps/finance/prisma/provision.sql` creates `cuatro_finance` with the limit and `REVOKE` the estate init applies (a case in `docker/__tests__/finance-image.test.ts` holds the two equal), and `image-finance.yml`'s throwaway URL names it. Finance was `anchor-db`'s last reader, so that service and its `postgres_data` volume are removed from `docker-compose.yml`; the container and volume had already gone at `ops/caddy-retirement.md` step 12. Finance is placed nowhere, so no box step followed; the estate Postgres has held `cuatro_finance` since 2026-09-30.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
   id: DW-301
   summary: >-
@@ -9369,7 +9762,11 @@ status: done
     **Owner: the next change that touches `packages/tokens`.** **Trigger: a Style Dictionary release
     whose range excludes 13.0.6, or a glob release above 13.0.6.** Re-read the lockfile then; forcing the
     prerelease with a `pnpm.overrides` entry is a dependency change that needs its own ruling.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/token-contract.md` § Standing triggers): trigger
+    not met (npm's latest glob read 13.0.6 on 2026-10-18, per the triage). It moved verbatim, dated and naming DW-304.
+    An override still needs its own ruling.
+  status: done
 - id: DW-305
   summary: >-
     One request through a throwaway Traefik timed out, unexplained, in Story 4-6's rollout rehearsal on
@@ -9737,7 +10134,10 @@ status: done
     change, or a lost day of events.** Point the healthcheck at a route that reads the database (or add a
     second check that does), prove it red with the database paused as the rehearsal did, and make
     `UMAMI_DB_PASSWORD` required (`${UMAMI_DB_PASSWORD:?}`) rather than defaulted.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/postgres.md` § Standing triggers): no change to
+    `anchor-umami` since the entry was filed. The trigger moved verbatim with the closer, dated and naming DW-316.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/epic-4-retro-2026-10-01.md`
   id: DW-317
   summary: >-
@@ -10047,7 +10447,10 @@ status: done
     ruling.** **Trigger: a second replica, or a logout observed lost at a rollout.** Move the revocations to
     a store both processes share (the estate Postgres for `cs-tracker`; the Hub has none), or record why
     the window is accepted.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/identity-issuer.md` § Standing triggers): trigger
+    not met. It moved verbatim, dated and naming DW-328.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the.md`
   id: DW-329
   summary: >-
@@ -10208,6 +10611,9 @@ status: done
     **Ruled 2026-10-06 by the Operator: all three deferred to his sign-in rework** (the tracker and
     `digital-library` onto the issuer, DW-337, and `cs-tracker`'s page beside them), so no participant's
     demo release (action 9) lands in Epic 5. Owner: that rework.
+
+    **Ruled 2026-10-18 by the Operator** (`operator-rulings-2026-10-18.md`): the sign-in rework stays deferred and is
+    not scheduled in Epic 9. The 2026-10-06 ruling stands. Owner and trigger unchanged: that rework.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-11-demo-and-identity-declarations-verified-against-reality.md`
   id: DW-336
@@ -10226,7 +10632,11 @@ status: done
     release lands; that release then adds the demo password as a second secret on the script step and a
     sign-in probe for `cuatro-tracker` and `digital-library`, leaving `cs-tracker` on its observation. Owner:
     the first demo release (action 9).
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/registry-verification.md` § Standing triggers): no
+    demo release yet. "The first demo release (action 9)" and the Operator's ruling of 2026-10-06 moved there, dated
+    and naming DW-336.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
   id: DW-337
   summary: >-
@@ -10242,7 +10652,11 @@ status: done
     **Amended 2026-10-13 (Epic 5 retrospective action 3):** `ops/demo-reset.schedule` sets `digital-library off`,
     because the scheduler now fails a run whose participant reports its principal absent. The same change that
     creates the account sets it back to `60`.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/demo-principal.md` § Standing triggers): no OIDC
+    story for `digital-library` is scheduled. "That story's rollout" moved verbatim with its four steps, including the
+    `demo-reset.schedule` flip, dated and naming DW-337.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-8-the-demo-principal-contract.md`
   id: DW-338
   summary: >-
@@ -10329,7 +10743,11 @@ status: done
     already measures the production image without a cookie the probe forges: it mints the session inside the
     release (`bin/cs_tracker rpc`), and it puts a local TLS front ahead of the image, so the LiveView socket's
     origin passes `check_origin` and the pages mount connected rather than dead. The port can take both.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/cs-tracker-accessibility-pass.md` § Standing
+    triggers): no AD-19 re-run since Story 8.1. "Before that re-run" moved verbatim with the port's seed, dated and
+    naming DW-342 and Story 9-25's Hex bump as a possible trigger.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-1-cs-tracker-visual-restyle.md`
   id: DW-343
   summary: >-
@@ -10367,7 +10785,10 @@ status: done
 
     **Owner: a `cs-tracker` story outside Epic 8.** **Trigger: the next story that touches `/browse`'s filter bar
     or its headings.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): trigger
+    not met. It moved verbatim, dated and naming DW-344.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
   id: DW-345
   summary: >-
@@ -10381,7 +10802,10 @@ status: done
 
     **Owner: a `list-wheel` story outside Epic 8.** **Trigger: the next story that touches the editor or the
     wheel's spin.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): trigger
+    not met. It moved verbatim, dated and naming DW-345.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-3-list-wheel-visual-restyle.md`
   id: DW-346
   summary: >-
@@ -10459,7 +10883,10 @@ status: done
 
     **Owner: a `digital-library` story outside Epic 8.** **Trigger: the next story that touches the grid's
     filter strip, the book page, the layout's transition, or renders one of the three components.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): trigger
+    not met. It moved verbatim, dated and naming DW-349.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-2-digital-library-adopts-the-contract-and-is-restyled.md`
   id: DW-350
   summary: >-
@@ -10547,7 +10974,10 @@ status: done
     `.buttons-row .toast` style never shows and the `copied` screenshots carry no toast.
 
     **Owner: a `list-wheel` story outside Epic 8.** **Trigger: the next story that touches the copy action.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): trigger
+    not met. It moved verbatim, dated and naming DW-353.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-4-record-the-restyle-floor-and-the-per-application-coherence-ch.md`
   id: DW-354
   summary: >-
@@ -10564,7 +10994,10 @@ status: done
     **Owner: a `cs-tracker` story.** **Trigger: the next story that touches `core_components.ex`, or Story 8.5 if the
     Operator wants wave 1 clean before wave 2.** A `motion-reduce:transition-none` beside each literal is the likely
     shape; `mix precommit` and the image boot are its gate.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): trigger
+    not met. It moved verbatim with the `motion-reduce` closer, dated and naming DW-354.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
   id: DW-355
   summary: >-
@@ -10577,7 +11010,10 @@ status: done
 
     **Owner: a `cs-tracker` story.** **Trigger: the next change to `cs-tracker`'s `assets/css/app.css`.** Add
     `rounded` to the existing `@source not inline("shadow transition");`; `mix precommit` and the image boot are its gate.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): trigger
+    not met. It moved verbatim with the `@source not inline` closer, dated and naming DW-355.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
   id: DW-356
   summary: >-
@@ -10599,7 +11035,10 @@ status: done
     the Anchor's own `DESIGN.md` and is not one of them. The cleanup's branch touches none of the seven, so it leaves
     them. **Owner: a `digital-library` story.** **Trigger: the next change to one of the seven files**, or the story
     that renders or deletes the three components under DW-349.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): the
+    trigger as restated on 2026-10-17 is not met. It moved verbatim, dated and naming DW-356.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
   id: DW-357
   summary: >-
@@ -10622,7 +11061,10 @@ status: done
 
     **2026-10-17, R24 (`59f79ab`):** the vendored folder and its admission are gone; the tracker reads `contracts/`
     directly, so that change has neither to keep.
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): R18 stands
+    as ruled. The trigger moved verbatim, dated and naming DW-357.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-5-cuatro-tracker-visual-restyle.md`
   id: DW-358
   summary: >-
@@ -10654,7 +11096,10 @@ status: done
     first two change the accessibility tree, the third is content; none is presentation only.
 
     **Owner: a tracker accessibility story.** **Trigger: the next change to `LoginCRT.tsx` or `BootSequence`.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): trigger
+    not met. It moved verbatim, dated and naming DW-359 and Story 9-22 as the story to check.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-6-cs-tournament-visual-restyle.md`
   id: DW-360
   summary: >-
@@ -10703,7 +11148,10 @@ status: done
     render. Aligning the tracker's pair with the root's 4.3.3 is a dependency change, so it is its own story.
 
     **Owner: the next tracker story that touches its dependencies.** **Trigger: a Tailwind bump on either side.**
-  status: open
+
+    **Closed 2026-10-18 by Story 9-0-rehome-trigger-entries** (`ops/restyle-floor.md` § Standing triggers): no
+    Tailwind bump. The trigger moved verbatim, dated and naming DW-362.
+  status: done
 - source_spec: `ops/restyle-floor.md` R23 (Epic 8 promotion, 2026-10-17)
   id: DW-363
   summary: >-

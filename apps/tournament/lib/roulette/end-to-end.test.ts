@@ -404,7 +404,7 @@ describe('gate 5 — the end-to-end ceremony vector', () => {
     // ⭐ THE DECLARATION IS CHECKED, NOT TRUSTED. Rung 3 needs a STRICT h2h dominator over the
     // remaining survivors; with exactly one opponent each, no player can beat two others.
     for (const p of PLAYERS) {
-      expect(Object.keys(p.h2h)).toHaveLength(1);
+      expect(Object.keys(p.h2h!)).toHaveLength(1);
     }
   });
 

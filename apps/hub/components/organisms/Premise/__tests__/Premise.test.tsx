@@ -32,7 +32,7 @@ import { capitalise, pluralise, spellOut } from '@/lib/words';
  */
 
 // `fileURLToPath(import.meta.url)` rather than `__dirname`, which is the idiom
-// `lib/__tests__/registry.test.ts:36-37` sets: Vitest transforms this file as an ES module and
+// `lib/__tests__/registry.test.ts` sets in its `HERE` constant: Vitest transforms this file as an ES module and
 // `__dirname` survives only through a shim.
 const HUB_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 

@@ -1,7 +1,7 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from './harness';
+import { RENDERED_VIEWPORT, computedStyleValue, getWithRetry, goTo, rootCustomPropertyValue } from './harness';
 
 /**
  * The Anchor consumes the published contract (Story 1-17, Anchor migration step 1).
@@ -523,8 +523,7 @@ const inContext = async <T>(
   });
   try {
     const page = await context.newPage();
-    const response = await page.goto(ROUTE, { waitUntil: 'load' });
-    expect(response?.status(), `${ROUTE} did not answer 200`).toBe(200);
+    await goTo(page, ROUTE);
     return await use(page);
   } finally {
     await context.close();
@@ -612,8 +611,7 @@ test('the token contract declares a real list of names', () => {
 });
 
 test('every custom property the token contract declares resolves on :root in the browser', async ({ page }) => {
-  const response = await page.goto(ROUTE, { waitUntil: 'load' });
-  expect(response?.status(), `${ROUTE} did not answer 200`).toBe(200);
+  await goTo(page, ROUTE);
 
   // The harness runs with `reducedMotion: 'reduce'` (`playwright.config.ts:79`), so the four
   // `--dur-*` values the contract redefines under that query are the ones that resolve here.
@@ -876,8 +874,7 @@ test('the fluid tokens resolve their middle term at a width where it wins', asyn
 });
 
 test('the compiled stylesheet carries the contract faces and every face URL answers 200', async ({ page, request }) => {
-  const response = await page.goto(ROUTE, { waitUntil: 'load' });
-  expect(response?.status(), `${ROUTE} did not answer 200`).toBe(200);
+  await goTo(page, ROUTE);
 
   const hrefs = await page.evaluate(() =>
     [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][href]')].map((link) => link.href)
@@ -894,7 +891,9 @@ test('the compiled stylesheet carries the contract faces and every face URL answ
   const markers = new Map<string, string[]>();
 
   for (const href of hrefs) {
-    const sheet = await request.get(href);
+    // `getWithRetry`, here and for each face below: a thrown request (the `socket hang up` of
+    // DW-224) is retried a bounded number of times, and a status never is, so a real 404 still fails.
+    const sheet = await getWithRetry(request, href);
     expect(sheet.status(), `${href} did not answer 200`).toBe(200);
     const css = await sheet.text();
 
@@ -966,7 +965,7 @@ test('the compiled stylesheet carries the contract faces and every face URL answ
 
   for (const entry of found) {
     const absolute = new URL(entry.url, entry.from).toString();
-    const face = await request.get(absolute);
+    const face = await getWithRetry(request, absolute);
     const body = await face.body();
     const signature = body.subarray(0, 4).toString('latin1');
     const type = (face.headers()['content-type'] ?? '').split(';')[0].trim().toLowerCase();
@@ -1031,8 +1030,7 @@ test('the compiled stylesheet carries the contract faces and every face URL answ
 });
 
 test('the Hub renders the token roles its base rule names', async ({ page }) => {
-  const onWork = await page.goto(ROUTE, { waitUntil: 'load' });
-  expect(onWork?.status(), `${ROUTE} did not answer 200`).toBe(200);
+  await goTo(page, ROUTE);
 
   // **What changed here, and which stories changed it.** This case was
   // `the Hub renders the values it rendered before the contract was wired in`, and it asserted
@@ -1083,8 +1081,7 @@ test('the Hub declares the dark colour scheme and an accent selection (RESTYLE-S
   // controls for a dark page, and a selection on the accent ground with `--token-bg` text, the one
   // accent fill `RESTYLE-SPEC.md` F-8 permits. F-11's method is the computed style, read here off the
   // root and off the page's own heading, against the roles resolved in the same page.
-  const onWork = await page.goto(ROUTE, { waitUntil: 'load' });
-  expect(onWork?.status(), `${ROUTE} did not answer 200`).toBe(200);
+  await goTo(page, ROUTE);
 
   const roles = await probeRoleColours(page, ['--token-accent', '--token-bg']);
   expect(roles['--token-accent'], '--token-accent and --token-bg resolve to one colour').not.toBe(roles['--token-bg']);

@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { describe, it, expect, afterAll, vi } from 'vitest';
-import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnBash } from './wsl-bash';
 
 // Story 5.10: `ops/demo-reset.sh`, the estate's one host-level demo reset scheduler, run for real under bash
 // against a `docker` stub that answers as each participant's one-shot reset and as `docker ps` does. PATH
@@ -27,12 +27,6 @@ const bashPath = (path: string): string =>
   process.platform === 'win32'
     ? path.replace(/^([A-Za-z]):/, (_match, drive: string) => `/mnt/${drive.toLowerCase()}`).replace(/\\/g, '/')
     : path;
-
-const BASH = (() => {
-  if (process.platform !== 'win32') return 'bash';
-  const candidate = join(process.env.SystemRoot ?? 'C:\\Windows', 'system32', 'bash.exe');
-  return existsSync(candidate) ? candidate : 'bash';
-})();
 
 const shellQuote = (value: string): string => `'${value.replace(/'/g, `'\\''`)}'`;
 const lf = (text: string): string => text.replace(/\r\n/g, '\n');
@@ -174,8 +168,7 @@ const run = (box: Box, args: string[] = [], env: Record<string, string> = {}, pr
       '',
     ].join('\n')
   );
-  const result = spawnSync(BASH, [bashPath(launcher), ...args], { encoding: 'utf8' });
-  if (result.error) throw result.error;
+  const result = spawnBash([bashPath(launcher), ...args]);
   const stdout = result.stdout ?? '';
   const lines = stdout.trim() === '' ? [] : stdout.trim().split('\n');
   const calls = readFileSync(box.log, 'utf8')

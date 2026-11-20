@@ -148,7 +148,7 @@ luigi-portfolio/
 │  
 ├── content/                      \# Typed content \- no CMS needed  
 │   ├── work.ts                   \# Array of work experience objects  
-│   └── projects.ts               \# Array of project objects  
+│   └── projects.ts               \# Array of project objects (retired by Story 2-7; amended 2026-10-18, Story 9-1)  
 │  
 ├── hooks/  
 │   ├── useGsapContext.ts         \# GSAP context tied to ref, reverts on unmount  
@@ -176,7 +176,7 @@ luigi-portfolio/
 | Pattern | Where & Why |
 | :---- | :---- |
 | Atomic Design | Atoms → Molecules → Organisms. Already in place; continue following it. A Scene organism wraps any R3F \<Canvas\> so camera/lighting defaults are never repeated. |
-| Content-as-Code | Work experience and projects live in content/work.ts and content/projects.ts as plain TypeScript arrays. No database, no CMS. Update content by editing a TS file and deploying. |
+| Content-as-Code | Work experience and projects live in content/work.ts and content/projects.ts as plain TypeScript arrays. No database, no CMS. Update content by editing a TS file and deploying. **Amended 2026-10-18 by Story 9-1** (DW-211): content/projects.ts was retired by Story 2-7 (`ba9526d`); projects are read from the published Registry, `contracts/registry.json`, through `apps/hub/lib/registry.ts`. |
 | Per-Route Body ID | components/atoms/Container sets body\#routeId. CSS can target body\#work .timeline without component-scoped specificity fights. |
 | GSAP Context Cleanup | Every component that registers GSAP animations uses gsap.context(() \=\> {...}, ref) and returns ctx.revert() from the effect cleanup. Mandatory \- stale tweens cause layout bugs across route navigations. |
 | Progressive Enhancement for 3D | WebGL is not guaranteed. Wrap every \<Canvas\> in a boundary that checks for WebGL support or catches context-loss events. Show a static fallback image when 3D is unavailable. |
@@ -189,7 +189,7 @@ Follow this order to always have a working, demonstrable build at each milestone
 | \# | Phase | What to build |
 | :---- | :---- | :---- |
 | 1 | Housekeeping | Upgrade dependencies, remove Vercel coupling, wire Docker. Upgrade Next.js to 15.x and React to 19.x. Remove experimental: { appDir: true } from next.config.js. Set output: 'standalone'. Update tsconfig.json: change moduleResolution from node to bundler, update target to ES2017. Remove @vercel/analytics, @vercel/speed-insights, env-cmd. Add sharp to dependencies. Write Dockerfile and docker-compose.yml. Confirm pnpm build passes and Docker image runs locally. |
-| 2 | Content & Navigation | Add the two missing content pages \- still zero new animations. Create content/work.ts (typed array of work experience). Create content/projects.ts (typed array of projects). Create app/work/page.tsx \- renders work array as a static list, no styling yet. Create app/projects/page.tsx \- renders projects array as a static list. Add /work and /projects links to Navbar. Ensure header appears correctly on both new routes. |
+| 2 | Content & Navigation | Add the two missing content pages \- still zero new animations. Create content/work.ts (typed array of work experience). Create content/projects.ts (typed array of projects; retired by Story 2-7, amended 2026-10-18 by Story 9-1). Create app/work/page.tsx \- renders work array as a static list, no styling yet. Create app/projects/page.tsx \- renders projects array as a static list. Add /work and /projects links to Navbar. Ensure header appears correctly on both new routes. |
 | 3 | GSAP Scroll Animations | Add scroll-triggered reveals on the new content pages. Install Lenis: pnpm add @darkroomengineering/lenis. Initialize in app/providers.tsx; wrap layout.tsx children in it. Create hooks/useGsapContext.ts \- a utility hook that creates a GSAP context tied to a ref and reverts it on unmount. Create hooks/useReducedMotion.ts \- reads prefers-reduced-motion, returns boolean. Animate /work: stagger entries in as user scrolls with ScrollTrigger.batch(). Animate /projects: scale-in project cards with ScrollTrigger. |
 | 4 | Three.js Scene Upgrades | Create components/Scene/Scene.tsx \- shared R3F \<Canvas\> wrapper with sensible defaults (camera, tone mapping, performance monitor, WebGL context-loss handler). Upgrade GemComponent: move static material properties out of useFrame into useEffect. Add @react-three/postprocessing: Bloom on gem with low threshold. Add background particle system using \<Sparkles\> from @react-three/drei \- restrained, slow-moving. On /work page: embed minimal Three.js canvas in hero area (wireframe torus that reacts to scroll position via ScrollTrigger → useRef → useFrame). |
 | 5 | Polish & Performance | Add \<meta\> Open Graph tags to every page (og:title, og:description, og:image). Generate OG image statically. Add \<link rel='canonical'\> in app/layout.tsx. Lazy-load all \<Canvas\> with next/dynamic({ ssr: false }). Run Lighthouse against Docker build; fix Core Web Vitals regressions. Add print stylesheet (@media print) for clean browser-printed CV. Wire Umami analytics script tag into app/layout.tsx pointing to analytics.cuatro.dev. |

@@ -228,6 +228,19 @@ a reading: the month is not over and the one visit is the Operator's own. **The 
 the same three events in the dashboard's Events view on 2026-09-13**, which closes the third
 acceptance criterion on every instrument the story names.
 
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-89**, 2026-10-18. Trigger: "the first reading where SM-3 (the Marcus signal) reads implausibly low against
+  the Operator's own knowledge of who visited, or a story that adds a server-side request count for any other
+  reason." The work: the three events undercount. A blocked script sends nothing, and a middle click or a
+  context-menu open fires no `click`. An `auxclick` handler would be an event beyond the three (Ask First), and a
+  server-side denominator is a different instrument. Each share in § Readings counts only the visits the tracker saw.
+
 ## Pending Operator actions
 
 This file hands the Operator work Story 2.24 may not do: reaching the box, browsing cuatro.dev as a

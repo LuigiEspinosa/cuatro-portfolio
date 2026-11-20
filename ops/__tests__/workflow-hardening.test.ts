@@ -53,14 +53,11 @@ const unpinned = (text: string): string[] =>
     .map(([, ref]) => ref);
 
 // Story 3-1 pinned Node 24 LTS, the stack's runtime, in `ci.yml` and `lighthouse.yml`, the two workflows its
-// criterion names. Two more copied Node 22 after the story was written and keep it until their owners move
-// them (DW-251). When one moves, delete its entry here and close its half of DW-251. DW-251's third place,
-// the image, moved in Story 3-3 and is held below: `apps/hub/Dockerfile` builds and runs on the same major.
-// `deploy.yml` moved in Story 3-4, which rewrote the deploy.
+// criterion names. Two more copied Node 22 after the story was written (DW-251): `deploy.yml` moved in Story
+// 3-4 and `registry-verification.yml` in Story 9-6, so every workflow is now held to the one major, with no
+// exception. DW-251's third place, the image, moved in Story 3-3 and is held below: `apps/hub/Dockerfile`
+// builds and runs on the same major.
 const STACK_NODE = '24';
-const STILL_ON_NODE_22: Record<string, string> = {
-  'registry-verification.yml': 'no story yet',
-};
 
 const DOCKERFILE = resolve(process.cwd(), 'apps/hub/Dockerfile');
 // Story 3-5: the finance application's image, held to the same major.
@@ -152,19 +149,15 @@ describe('every workflow', () => {
     for (const [action, found] of pins) expect([...found], action).toHaveLength(1);
   });
 
-  it.each(FILES)('%s pins every setup-node step to Node 24, or to the Node 22 DW-251 defers', (name) => {
+  it.each(FILES)('%s pins every setup-node step to Node 24', (name) => {
     const text = read(name);
     const versions = nodeVersions(text);
     expect(versions, `${name} has a setup-node step with no node-version, which runs the runner's Node`).toHaveLength(
       setupNodeSteps(text)
     );
-    const owner = STILL_ON_NODE_22[name];
-    const expected = owner === undefined ? STACK_NODE : '22';
     expect(
-      versions.filter((version) => version !== expected),
-      owner === undefined
-        ? `${name} pins a Node other than the stack's ${STACK_NODE}`
-        : `${name} left Node 22 (owner: ${owner}). Delete its STILL_ON_NODE_22 entry and close its half of DW-251`
+      versions.filter((version) => version !== STACK_NODE),
+      `${name} pins a Node other than the stack's ${STACK_NODE}`
     ).toEqual([]);
   });
 

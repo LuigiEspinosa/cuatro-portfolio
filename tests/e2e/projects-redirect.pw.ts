@@ -1,4 +1,5 @@
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
+import { NOT_FOUND, SURFACES, goTo } from './harness';
 
 /**
  * `/projects` answers a permanent redirect to `/#suite`, and nothing renders the Suite Directory
@@ -47,27 +48,17 @@ const HEADING_ID = 'suite';
 /** The Directory's root element. Exactly one of these may exist across the whole Hub. */
 const DIRECTORY = '.suite-directory';
 
-/** A path the Hub does not route, which renders `app/not-found.tsx`. Same as `hit-target-floor.pw.ts`. */
-const NOT_FOUND = '/a-route-that-does-not-exist';
-
 /**
  * Every surface that renders Hub markup, which is the set NFR-9 is asserted over.
  *
- * The same `SURFACES` in `tests/e2e/hit-target-floor.pw.ts` carries, minus its per-surface counts,
- * which are that file's subject rather than this one's. `/projects` is deliberately absent: it is
- * no longer a surface, which is the whole of this story.
- *
- * **Five since 2026-09-10.** Story 2-16 built `/cv`, which had been a 308 to a PDF, so it renders
- * Hub markup and is swept here for the same reason the other four are: NFR-9 is a claim about every
- * surface, and a route left out of this list could grow a second Directory unwatched.
+ * **Derived from `SURFACES` in `tests/e2e/harness.ts` since Story 9-12 (DW-61)**, minus its
+ * per-surface counts, which are `hit-target-floor.pw.ts`'s subject rather than this one's. Until then
+ * this was a hand copy, so a surface added there and not here escaped the one-rendering count below
+ * silently; `hit-target-floor.pw.ts`'s walk of `app/` fails a route that is on disk and not in
+ * `SURFACES`, so none can escape this sweep now. `/projects` is deliberately absent: it is no longer
+ * a surface, which is the whole of this story.
  */
-const SWEPT = [
-  { route: LANDING, status: 200 },
-  { route: '/work', status: 200 },
-  { route: '/cv', status: 200 },
-  { route: '/celeste', status: 200 },
-  { route: NOT_FOUND, status: 404 },
-] as const;
+const SWEPT = SURFACES.map(({ route, status }) => ({ route, status }));
 
 /**
  * The routes this story must leave exactly as it found them, with the status each answered at
@@ -142,9 +133,7 @@ const walk = async (request: APIRequestContext, from: string): Promise<string[]>
 
 /** How many `.suite-directory` elements a route renders, after navigating to it. */
 const directoriesOn = async (page: Page, route: string, expected: number): Promise<number> => {
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer ${expected}`).toBe(expected);
+  await goTo(page, route, expected);
   return page.locator(DIRECTORY).count();
 };
 
@@ -214,9 +203,7 @@ test.describe('the /projects redirect', () => {
     // **This is the document-request path**, which is what an inbound link, a bookmark or a search
     // result takes. The in-app path a chrome `<Link>` takes is a different navigation and behaves
     // differently; it has its own case below.
-    const response = await page.goto(SOURCE, { waitUntil: 'load' });
-    expect(response, `navigating to ${SOURCE} produced no response`).toBeTruthy();
-    expect(response?.status(), `${SOURCE} did not land on a 200`).toBe(200);
+    await goTo(page, SOURCE);
 
     const landed = new URL(page.url());
     expect(landed.pathname, `${SOURCE} landed on ${landed.pathname} rather than on ${LANDING}`).toBe(LANDING);
@@ -341,7 +328,7 @@ test.describe('the /projects redirect', () => {
     // the home route and zero everywhere else, which is exactly what passing looks like.
     //
     // Injected into the live page, so nothing is left in the tree.
-    await page.goto('/work', { waitUntil: 'load' });
+    await goTo(page, '/work');
     await expect(page.locator(DIRECTORY), '/work already renders a directory before anything is planted').toHaveCount(
       0
     );
@@ -421,7 +408,7 @@ test.describe('the /projects redirect', () => {
     ] as const;
 
     for (const journey of journeys) {
-      await page.goto(journey.from, { waitUntil: 'load' });
+      await goTo(page, journey.from);
 
       // **The premise, asserted before the click.** A chrome link left pointing at the redirect
       // would make every reading below a reading of the redirect's behaviour rather than of the
@@ -487,7 +474,7 @@ test.describe('the /projects redirect', () => {
     // view reads as "this page is short" rather than as the fragment having been applied: the same
     // measurement over the same document has to produce the failing answer when nothing asked for
     // `#suite`. This is the 2026-09-07 reading of the old behaviour, taken here on the same build.
-    await page.goto(LANDING, { waitUntil: 'load' });
+    await goTo(page, LANDING);
     const unanchored = await page.evaluate((id) => {
       const node = document.getElementById(id);
       return {
@@ -506,7 +493,7 @@ test.describe('the /projects redirect', () => {
 
     // And the document-request path still behaves as it did, so the repoint took nothing away from
     // the visitors who arrive on the old URL.
-    await page.goto(SOURCE, { waitUntil: 'load' });
+    await goTo(page, SOURCE);
     expect(
       new URL(page.url()).hash,
       'the document-request path lost the fragment, which is a regression in the redirect rather ' +

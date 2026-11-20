@@ -1,5 +1,5 @@
 import { test, expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
-import { RENDERED_VIEWPORT, hydrated } from './harness';
+import { RENDERED_VIEWPORT, goTo, hydrated } from './harness';
 
 /**
  * The `suite-reach` mechanism in a browser (Story 2-24).
@@ -105,16 +105,6 @@ const openDoor = async (browser: Browser, door: FrontDoor, inits: readonly strin
   return context;
 };
 
-/** Navigate, refuse a page that did not answer 200, wait for the fonts. `front-door.pw.ts:287-294`. */
-const goTo = async (page: Page): Promise<void> => {
-  const response = await page.goto(ROUTE, { waitUntil: 'load' });
-  expect(response, `navigating to ${ROUTE} produced no response`).toBeTruthy();
-  expect(response?.status(), `${ROUTE} did not answer 200`).toBe(200);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-  });
-};
-
 /**
  * Hydrated and decided, and decided the way the door says. `hydrated` in `tests/e2e/harness.ts`
  * is the first half and carries its reasoning (React's own `__reactFiber$` mark on the container,
@@ -159,7 +149,10 @@ const hasTracker = (page: Page): Promise<boolean> =>
 const flagged = (page: Page, key: string): Promise<boolean> =>
   page.evaluate((name) => sessionStorage.getItem(name) !== null, key);
 
-/** Scroll the heading into view, and wait until the browser agrees it is there. `front-door.pw.ts:665-669`. */
+/**
+ * Scroll the heading into view, and wait until the browser agrees it is there: the scroll and
+ * `toBeInViewport` of `reaches the Directory with no control to activate` in `front-door.pw.ts`.
+ */
 const reach = async (page: Page): Promise<void> => {
   await page.evaluate((id) => document.getElementById(id)?.scrollIntoView(), HEADING_ID);
   await expect(page.locator(`#${HEADING_ID}`), 'the heading could not be scrolled into view').toBeInViewport({
@@ -196,7 +189,7 @@ for (const door of DOORS) {
       const context = await openDoor(browser, door, [TRACKER_STUB]);
       try {
         const page = await context.newPage();
-        await goTo(page);
+        await goTo(page, ROUTE);
         await settled(page, door);
 
         expect(await hasTracker(page), 'the stub is not installed, so nothing here can record').toBe(true);
@@ -225,14 +218,14 @@ for (const door of DOORS) {
       const first = await openDoor(browser, door, [TRACKER_STUB]);
       try {
         const page = await first.newPage();
-        await goTo(page);
+        await goTo(page, ROUTE);
         await settled(page, door);
         await reach(page);
         await expectOneReach(page, door);
 
         // The reload. `addInitScript` runs again, so the recorder starts empty and the stub is
         // back; `sessionStorage` survives, which is the whole of the once-per-session rule.
-        await goTo(page);
+        await goTo(page, ROUTE);
         await settled(page, door);
         expect(await hasTracker(page), 'the stub did not reinstall on reload, so silence below would prove nothing').toBe(
           true
@@ -252,7 +245,7 @@ for (const door of DOORS) {
       const second = await openDoor(browser, door, [TRACKER_STUB]);
       try {
         const page = await second.newPage();
-        await goTo(page);
+        await goTo(page, ROUTE);
         await settled(page, door);
         expect(await flagged(page, REACH_EVENT), 'a fresh context carries the flag, so it is not fresh').toBe(false);
         await reach(page);
@@ -270,7 +263,7 @@ for (const door of DOORS) {
       const context = await openDoor(browser, door, []);
       try {
         const page = await context.newPage();
-        await goTo(page);
+        await goTo(page, ROUTE);
         await settled(page, door);
         const settledAt = Date.now();
         expect(await hasTracker(page), 'a tracker is present on the e2e build, so this case cannot arrive late').toBe(
@@ -311,7 +304,7 @@ for (const door of DOORS) {
       const context = await openDoor(browser, door, [TRACKER_STUB]);
       try {
         const page = await context.newPage();
-        await goTo(page);
+        await goTo(page, ROUTE);
         await settled(page, door);
         expect(await hasTracker(page), 'the stub is not installed, so nothing here can record').toBe(true);
         await expect(page.locator(`#${HEADING_ID}`)).not.toBeInViewport();

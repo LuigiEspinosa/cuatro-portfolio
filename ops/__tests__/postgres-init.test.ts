@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { spawnBash } from './wsl-bash';
 
 // Story 4-4 (AD-10, AD-3): the estate's one Postgres under `ops/postgres/`. One database and one role per
 // consumer, never a shared role or a schema per application, no PgBouncer, and every role's CONNECTION
@@ -176,12 +177,6 @@ const shPath = (path: string): string =>
     ? path.replace(/^([A-Za-z]):/, (_match, drive: string) => `/mnt/${drive.toLowerCase()}`).replace(/\\/g, '/')
     : path;
 
-const BASH = (() => {
-  if (process.platform !== 'win32') return 'bash';
-  const candidate = join(process.env.SystemRoot ?? 'C:\\Windows', 'system32', 'bash.exe');
-  return existsSync(candidate) ? candidate : 'bash';
-})();
-
 const POSIX_PATH = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
 const shellQuote = (value: string): string => `'${value.replace(/'/g, `'\\''`)}'`;
 
@@ -220,8 +215,7 @@ const runInit = (env: Record<string, string>) => {
   // The checkout may hold CRLF; the image reads the committed LF bytes, so the copy run here is LF too.
   const script = join(root, '10-consumers.sh');
   writeFileSync(script, INIT);
-  const result = spawnSync(BASH, [shPath(launcher), shPath(script)], { encoding: 'utf8' });
-  if (result.error) throw result.error;
+  const result = spawnBash([shPath(launcher), shPath(script)]);
   return { status: result.status ?? -1, stdout: result.stdout ?? '', stderr: result.stderr ?? '', log: readFileSync(log, 'utf8') };
 };
 

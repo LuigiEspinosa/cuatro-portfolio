@@ -37,6 +37,26 @@ const REPO_ROOT = resolve(__dirname, '..', '..', '..', '..', '..', '..');
 /** The published token contract, which every role a stylesheet reads has to be declared in. */
 const TOKENS = readFileSync(resolve(REPO_ROOT, 'contracts', 'tokens.css'), 'utf8');
 
+/**
+ * jsdom has no `ResizeObserver`, which the band measures itself with (Story 9-15, DW-118). This one
+ * records the callback so a case can fire it after setting the band's size, the way a browser fires
+ * it after layout.
+ */
+const observed: { callback?: () => void; disconnected: boolean } = { disconnected: false };
+vi.stubGlobal(
+  'ResizeObserver',
+  class {
+    constructor(callback: () => void) {
+      observed.callback = callback;
+      observed.disconnected = false;
+    }
+    observe() {}
+    disconnect() {
+      observed.disconnected = true;
+    }
+  }
+);
+
 /** Render the header for one pathname, the hook answering exactly that. */
 const renderAt = (pathname: string) => {
   usePathname.mockReturnValue(pathname);
@@ -97,6 +117,40 @@ describe('the header renders a band holding the wordmark and the two destination
   it('carries no image and no alternative text anywhere, since the raster retired', () => {
     const { container } = renderAt('/work');
     expect(container.querySelectorAll('img, svg, picture, [alt]')).toHaveLength(0);
+  });
+});
+
+describe('the band tells the root how much of the scrollport it occludes (DW-118)', () => {
+  const padding = () => document.documentElement.style.getPropertyValue('scroll-padding-block-start');
+
+  it('writes its measured height, follows it when it grows, and takes it back when it leaves', () => {
+    const { container, unmount } = renderAt('/work');
+    const band = container.querySelector('header') as HTMLElement;
+    let height = 93;
+    band.getBoundingClientRect = () => ({ height }) as DOMRect;
+
+    observed.callback?.();
+    expect(padding(), 'the measured one-row band did not reach the root').toBe('93px');
+
+    // A wrapped row: the band grows by a line, which the four-token restatement cannot see.
+    height = 151.5;
+    observed.callback?.();
+    expect(padding(), 'the padding did not follow a band that grew').toBe('151.5px');
+
+    unmount();
+    expect(observed.disconnected, 'the observer outlived the band').toBe(true);
+    expect(padding(), 'the padding outlived the band, so `/` would inherit it').toBe('');
+  });
+
+  it('writes nothing for a band that measures zero, which is /celeste hiding it', () => {
+    const { container, unmount } = renderAt('/celeste');
+    const band = container.querySelector('header') as HTMLElement;
+    band.getBoundingClientRect = () => ({ height: 0 }) as DOMRect;
+    document.documentElement.style.setProperty('scroll-padding-block-start', '93px');
+
+    observed.callback?.();
+    expect(padding(), 'a hidden band still reserves scroll padding').toBe('');
+    unmount();
   });
 });
 
@@ -257,8 +311,10 @@ describe('the rules each sheet exists for', () => {
       expect(inner, `the row does not declare ${declaration}`).toContain(declaration);
     }
 
-    // The scroll padding restates the band's block size from the same four tokens, never a number.
-    expect(ruleOf(css, 'html:has(.header-container)')).toBe(
+    // The first paint's scroll padding restates the one-row block size from the same four tokens,
+    // never a number, and not on `/celeste`, which hides the band (DW-118). The measured height
+    // replaces it after hydration (the describe block above).
+    expect(ruleOf(css, 'html:has(body:not(#celeste) .header-container)')).toBe(
       'scroll-padding-block-start:calc(var(--s-lg) + var(--tap) + var(--s-lg) + var(--stroke-hair))'
     );
   });

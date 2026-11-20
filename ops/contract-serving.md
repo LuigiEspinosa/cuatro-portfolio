@@ -618,7 +618,7 @@ and declares no `build:`, so nothing on the box can compile it, and compose refu
 tag rather than run a floating one.
 
 **What a deploy no longer does.** It rolls `anchor-app` alone, the one id it names (AD-7), and runs no
-`up` over the stack: `anchor-umami` and `anchor-db` keep running as they are, a change to either in
+`up` over the stack: `anchor-umami` keeps running as it is, a change to it in
 `docker-compose.yml` reaches the box only by the Operator's own `docker compose up -d <service>`, and
 `--remove-orphans` went with the line that carried it. A compose command run by hand on the box needs
 `HUB_TAG` set: `ps` and `logs` take any value, and whatever starts a container is the deploy's.
@@ -879,6 +879,23 @@ Satellite's `AGENTS.md`. `cs-tracker` vendors the folder and fetches nothing: a 
 `config/`, `mix.exs` and `Dockerfile` for `cuatro.dev/contracts`, `registry.json` and `User-Agent`
 answers nothing (**Observed 2026-09-24** at `991d0f6`). So adopting is not the trigger, and neither
 is Story 1-19.
+
+## Standing triggers
+
+**Added 2026-10-18 by Story 9-0-rehome-trigger-entries.** Each line below names a deferred-work entry that was
+closed into this record, and quotes its trigger as the ledger wrote it. The closed entry in
+`_bmad-output/implementation-artifacts/deferred-work.md` keeps the evidence. When a story meets a trigger, it does
+the work the line names or brings it to the Operator.
+
+- **DW-264**, 2026-10-18. Trigger: "the next edit to `ops/deploy-remote.sh`." The problem: under the forced
+  command, a change to the script first runs one deploy late. The work: once its refusals pass, the script hands
+  over to the target commit's copy before doing anything else. It needs a guard against handing over twice, and a
+  case in `ops/__tests__/deploy-remote.test.ts` for each way in. Keep the sha as the last word of the workflow's
+  command string.
+- **DW-265**, 2026-10-18. Trigger: "the first Deploy run that times out, or the next edit to the report job." The
+  work: `deploy.yml`'s `report` job runs on `if: failure()` alone. One throwaway run settles whether a job past its
+  `timeout-minutes` counts for `failure()`. If it does not, widen the condition to `if: failure() || cancelled()`
+  and move the one-condition case in `ops/__tests__/capacity-gate.test.ts` with it.
 
 ## Pending Operator actions
 

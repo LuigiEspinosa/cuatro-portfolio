@@ -29,7 +29,7 @@ function findAdminRouteFiles(): string[] {
   const entries = readdirSync(ADMIN_ROUTES_DIR, { recursive: true, withFileTypes: true });
   return entries
     .filter((e) => e.isFile() && e.name === 'route.ts')
-    .map((e) => path.relative(ADMIN_ROUTES_DIR, path.join(e.parentPath ?? e.path, e.name)));
+    .map((e) => path.relative(ADMIN_ROUTES_DIR, path.join(e.parentPath, e.name)));
 }
 
 describe('AC1 — every admin command route is server-gated (structural coverage)', () => {

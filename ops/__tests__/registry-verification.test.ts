@@ -1104,10 +1104,10 @@ describe('the workflow', () => {
     expect(existsSync(resolve(REPO_ROOT, RECORD_REL))).toBe(true);
   });
 
-  it('runs on a GitHub-hosted ubuntu runner on Node 22, installing nothing, under the ceiling the record states', () => {
+  it('runs on a GitHub-hosted ubuntu runner on Node 24, installing nothing, under the ceiling the record states', () => {
     expect(instructions).toMatch(/^\s+runs-on: ubuntu-latest$/m);
     expect(instructions).toMatch(/^\s+timeout-minutes: 10$/m);
-    expect(instructions).toMatch(/^\s+node-version: 22$/m);
+    expect(instructions).toMatch(/^\s+node-version: 24$/m);
     expect(instructions).toMatch(/^\s+package-manager-cache: false$/m);
     expect(instructions).not.toMatch(/^\s+container\s*:/m);
     const actions = [...instructions.matchAll(/^\s*- uses: (.+)$/gm)].map((match) => match[1].trim());

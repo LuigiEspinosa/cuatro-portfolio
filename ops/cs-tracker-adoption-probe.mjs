@@ -45,55 +45,36 @@
 //   2  a defect in this file
 //   3  a Block If condition: nothing could be observed at all
 
-import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  realpathSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs';
-import { createServer } from 'node:http';
+import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { dirname, extname, join, normalize, relative, resolve, sep } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
-import { fileURLToPath } from 'node:url';
-import { stripVTControlCharacters } from 'node:util';
 import { CS_TRACKER_TOKENS, RECORD_REL, headerVersion, recordedAdoptedVersion, recordedVersionVerdict } from './contract-adoption.mjs';
+import {
+  BlockedError,
+  CONTRACTS,
+  CS_TRACKER,
+  REPO_ROOT,
+  describeRun,
+  invokedDirectly,
+  readOrNull,
+  run as runCommand,
+  say,
+  serve,
+  tailwindBanner,
+} from './probe-scaffold.mjs';
 
 // Story 1-20's stand-in for step 6 of the change-propagation runbook, re-exported
 // so `ops/__tests__/cs-tracker-adoption-probe.test.ts` pins it beside the other
 // pure verdicts this file uses.
 export { recordedVersionVerdict };
 
+// Re-exported, so this probe's public surface is what it was before the
+// scaffold moved into `ops/probe-scaffold.mjs` (epic-1 retro item 10).
+export { BlockedError, CONTRACTS, CS_TRACKER, REPO_ROOT, tailwindBanner };
+
 const require_ = createRequire(import.meta.url);
-
-/**
- * This module's own directory.
- *
- * Guarded, because under Vitest `import.meta.url` is a vite URL rather than a
- * `file:` one and `fileURLToPath` throws on it. An unguarded call here would
- * fail at import time and take the whole unit suite with it.
- */
-function moduleDir() {
-  try {
-    return dirname(fileURLToPath(import.meta.url));
-  } catch {
-    return resolve(process.cwd(), 'ops');
-  }
-}
-
-export const REPO_ROOT = resolve(moduleDir(), '..');
-export const CONTRACTS = join(REPO_ROOT, 'contracts');
-
-/** `cs-tracker`, resolved beside this repository rather than hardcoded. Read only. */
-export const CS_TRACKER = resolve(REPO_ROOT, '..', 'cs-tracker-workspace', 'cs-tracker');
 
 /**
  * AD-14's fixed folder name. A scheduled drift check looks here across seven
@@ -270,62 +251,12 @@ export const SIZE_COUNT = 10;
 /** One viewport for both pages, because `--t-display` is a `clamp()` carrying `9vw`. */
 export const VIEWPORT = { width: 1280, height: 720 };
 
-const MIME = {
-  '.css': 'text/css; charset=utf-8',
-  '.html': 'text/html; charset=utf-8',
-  '.woff2': 'font/woff2',
-  '.js': 'text/javascript; charset=utf-8',
-};
-
 /** How long any spawned command is given. Named, because the transcript quotes it. */
 const TIMEOUT_MS = 300_000;
 
-/** Thrown for a condition the story's Block If names, never for a defect in this file. */
-export class BlockedError extends Error {}
-
-function say(message) {
-  process.stdout.write(`${message}\n`);
-}
-
-/**
- * Run a command, returning its exit status, both streams, the signal that killed
- * it and any spawn error. Never throws on a non-zero exit: a compile failure is
- * a finding this probe records, not a crash to report.
- */
+/** The shared `run` from `ops/probe-scaffold.mjs`, with this probe's timeout. */
 function run(command, args, options = {}) {
-  const result = spawnSync(command, args, {
-    encoding: 'utf8',
-    timeout: TIMEOUT_MS,
-    maxBuffer: 32 * 1024 * 1024,
-    ...options,
-  });
-  return {
-    status: result.status,
-    signal: result.signal ?? null,
-    stdout: result.stdout ?? '',
-    stderr: result.stderr ?? '',
-    error: result.error ? String(result.error.message) : null,
-  };
-}
-
-/** How a finished command should be described in a failure message. */
-function describeRun(result) {
-  const how =
-    result.signal !== null
-      ? `was killed by ${result.signal}, which is what the ${TIMEOUT_MS / 1000} second timeout does`
-      : result.error !== null
-        ? `could not be started: ${result.error}`
-        : `exited ${result.status}`;
-  return `${how}\n${result.stdout}\n${result.stderr}`;
-}
-
-/** Read a file, or return null rather than throwing an ENOENT with no context. */
-function readOrNull(path) {
-  try {
-    return readFileSync(path, 'utf8');
-  } catch {
-    return null;
-  }
+  return runCommand(command, args, { timeout: TIMEOUT_MS, ...options });
 }
 
 // ---------------------------------------------------------------------------
@@ -978,43 +909,6 @@ export function findTailwindBinary(buildDir) {
     }
   }
   return null;
-}
-
-/**
- * The `tailwindcss vX.Y.Z` banner out of the binary's `--help` output, or null.
- *
- * The 4.1.12 CLI colours its banner through a pipe as well as on a terminal,
- * unless `NO_COLOR` is set, and one escape sits between the name and the
- * version. So every escape sequence is stripped before the match, and the pin
- * reads the same from any shell (DW-109).
- */
-export function tailwindBanner(helpText) {
-  return /(tailwindcss v[\d.]+)/.exec(stripVTControlCharacters(helpText ?? ''))?.[1] ?? null;
-}
-
-function serve(root) {
-  return new Promise((done, fail) => {
-    const server = createServer((request, response) => {
-      try {
-        const requested = decodeURIComponent(new URL(request.url ?? '/', 'http://127.0.0.1').pathname);
-        const target = normalize(join(root, requested));
-        if (!target.startsWith(root + sep) || !existsSync(target) || statSync(target).isDirectory()) {
-          response.writeHead(404, { 'content-type': 'text/plain' }).end('not found');
-          return;
-        }
-        response.writeHead(200, { 'content-type': MIME[extname(target)] ?? 'application/octet-stream' });
-        response.end(readFileSync(target));
-      } catch (error) {
-        try {
-          response.writeHead(500, { 'content-type': 'text/plain' }).end(String(error));
-        } catch {
-          response.destroy();
-        }
-      }
-    });
-    server.once('error', fail);
-    server.listen(0, '127.0.0.1', () => done(server));
-  });
 }
 
 /**
@@ -2017,26 +1911,7 @@ export function fixtureDrift(readSource) {
   return missing;
 }
 
-function sameFile(a, b) {
-  try {
-    return realpathSync(a) === realpathSync(b);
-  } catch {
-    return false;
-  }
-}
-
-function thisFile() {
-  try {
-    return fileURLToPath(import.meta.url);
-  } catch {
-    return null;
-  }
-}
-
-const entry = thisFile();
-const invokedDirectly = entry !== null && typeof process.argv[1] === 'string' && sameFile(process.argv[1], entry);
-
-if (invokedDirectly) {
+if (invokedDirectly(import.meta.url)) {
   // `process.exitCode` rather than `process.exit`. On a pipe, which is what a
   // shell redirection gives this process, `process.exit` can cut the transcript
   // off mid flush, and this probe's entire value is a transcript quoted

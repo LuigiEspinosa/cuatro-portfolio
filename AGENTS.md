@@ -196,9 +196,12 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
   transient `next/font` Google Fonts fetch with nothing under `apps/tracker` changed; re-run it before
   debugging.
 - Traefik on the box bind-mounts `ops/traefik/traefik.yml` and `ops/traefik/dynamic/` from the checkout
-  the deploy resets to `main`, so a merged routing change goes live at the next deploy, and no CI job
-  starts Traefik to prove it first (DW-299). Rehearse a `dynamic/` change locally as
-  `ops/traefik-cutover.md` § Rehearsed off the box did. Caddy and its Caddyfile are gone; read
+  the deploy resets to `main`, so a merged routing change goes live at the next deploy. The `traefik-routes`
+  job in `ci.yml` starts Traefik first (Story 9-21, DW-299): `ops/traefik-routes.sh` probes every router
+  against whoami stand-ins and holds the expected answers, so a router, upstream or header change edits that
+  script in the same commit, and `ops/__tests__/traefik-routes.test.ts` fails a router or upstream it does not
+  name. Run it locally with `bash ops/traefik-routes.sh` (Docker). It is not one of `main`'s required checks
+  unless the Operator rules it in, so read it on the pushed sha. Caddy and its Caddyfile are gone; read
   `ops/routing-inventory.md`, never a dated Caddy section, for the routing table.
 - Adding an application to `deploy.yml` trips the Capacity Gate (AD-9), which refuses any id
   not in `placements` in `ops/capacity-gate.yml` (six today, `cs-tournament` the latest). The gate is
@@ -277,3 +280,26 @@ block above so a context refresh does not replace it.
   security fixes, bot-authored pull requests and a workflow step that merges are observed by
   the `gh api` sweep the record describes, not by the test. That commit also moves the two
   literal pins in the same suite that state today's `none` cell and empty present list.
+
+## Process rules from retrospectives
+
+Kept outside the managed block for the same reason (Story 9-2, 2026-10-18). The rules Build applies
+itself are persistent facts in `_bmad/custom/bmad-build.toml`; these bind every agent working here.
+`ops/__tests__/process-rules.test.ts` holds both places.
+
+- **A story waiting on the Operator is not `done`** (Epic 2 action 10). A story whose remaining
+  acceptance criteria are Operator checks moves to `awaiting-operator` in `sprint-status.yaml`, or its
+  row carries a dated Operator override naming what was waived. A `done` row whose comment says it
+  waits on the Operator is a defect in the board.
+- **Cite code by symbol or test name, never by line number** (Epic 2 action 13). Name the file and
+  the function, constant or test case; a citation by line number drifts with the next edit. A comment
+  states a count only when a test holds that count. The existing line citations are DW-247's backfill.
+- **A box step lands in the standing runbook in the same change** (Epic 5 action 51). A step a story
+  makes by hand on the box is written into that application's standing runbook (its § Later rollouts)
+  in the same commit, never only into the story's run section.
+- **A dated row relying on CI names every workflow it read, on the full sha** (Epic 5 action 52).
+  "CI green" is not evidence. Name each workflow and its conclusion on the sha the row is about: the
+  image workflows (`image.yml` and `image-*.yml`) and `lighthouse.yml` run outside `ci.yml`, so a row
+  naming `ci.yml` alone never read them.
+- **An agent step gated on an Operator row waits for that row's dated completion** (Epic 8 action
+  60). Never push, or in a Satellite open the PR, first and draft the gated work after.

@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { EDGE_SLACK, durationMs, goTo, plantStyle } from './harness';
 
 /**
  * The Status mark's three structural axes, and A-5's Status half (Story 2-10).
@@ -73,14 +74,6 @@ const REPO_ROOT = resolve(__dirname, '..', '..');
  * seam. The A-5 cases, which are about width, now run there too because there is nowhere else.
  */
 const ROUTE = '/';
-
-/**
- * Sub-pixel slack, matching `hit-target-floor.pw.ts:252` and `suite-directory.pw.ts:57`.
- *
- * Layout produces fractional positions and a box ending a third of a pixel past an edge is a
- * rounding artifact rather than overflow.
- */
-const EDGE_SLACK = 0.5;
 
 /**
  * The four values, **read out of the published schema rather than written here**.
@@ -180,42 +173,10 @@ interface Mark {
 /** The structural triple, which is the whole of what a reader in greyscale has left. */
 const structure = (mark: Mark): string => `${mark.borderStyle.join('/')} at ${mark.borderWidth.join('/')}`;
 
-const goTo = async (page: Page, route: string): Promise<void> => {
-  const response = await page.goto(route, { waitUntil: 'load' });
-  expect(response, `navigating to ${route} produced no response`).toBeTruthy();
-  expect(response?.status(), `${route} did not answer 200`).toBe(200);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-  });
+const goToDirectory = async (page: Page, route: string): Promise<void> => {
+  await goTo(page, route);
   await expect(page.locator('.suite-directory__status').first()).toBeVisible();
 };
-
-/** Add a stylesheet to the running page, so a defect is planted without a fixture in the tree. */
-const plantStyle = (page: Page, css: string): Promise<void> =>
-  page.evaluate((text) => {
-    const style = document.createElement('style');
-    style.textContent = text;
-    document.head.append(style);
-  }, css);
-
-/**
- * A duration token's value in milliseconds, resolved through a probe rather than written down.
- *
- * Same helper and same reason as `tests/e2e/suite-directory.pw.ts:174-191`: a duration that governs
- * the interface comes from the contract, and a hand-written millisecond figure drifts from
- * `--dur-major` the day it moves. `transition-duration` computes to seconds, which is what the
- * probe reads back.
- */
-const durationMs = (page: Page, role: string): Promise<number> =>
-  page.evaluate((name) => {
-    const probe = document.createElement('span');
-    probe.style.transitionDuration = `var(${name})`;
-    document.body.append(probe);
-    const resolved = getComputedStyle(probe).transitionDuration;
-    probe.remove();
-    const seconds = Number.parseFloat(resolved);
-    return Number.isFinite(seconds) ? seconds * 1000 : Number.NaN;
-  }, role);
 
 /**
  * Read every value's computed mark off **one real element**, by varying `data-status` on it.
@@ -340,7 +301,7 @@ const marksOnThePage = (page: Page, slack: number) =>
 
 test.describe('the Status mark carries its value on three structural axes', () => {
   test('reads all four values the schema admits, off one real element', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     const read = await marks(page, STATUSES);
 
     expect(STATUSES.length, 'the schema declares no Status values, so every case below is vacuous').toBeGreaterThan(0);
@@ -357,7 +318,7 @@ test.describe('the Status mark carries its value on three structural axes', () =
   });
 
   test('separates every adjacent pair on something that is not hue and not opacity', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     const read = await marks(page, STATUSES);
 
     for (const pair of PAIRS) {
@@ -393,7 +354,7 @@ test.describe('the Status mark carries its value on three structural axes', () =
     // The per-value agreement, driven by `EXPECTED` so `ops/status-mark-axes.md` can be held equal
     // to the same literal. All four sides, because a border dropped on one edge and a border
     // dropped entirely are different defects that a single-side read cannot tell apart.
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     const read = await marks(page, STATUSES);
 
     expect(
@@ -414,7 +375,7 @@ test.describe('the Status mark carries its value on three structural axes', () =
   });
 
   test('axis two: Complete is solid where In progress is dashed, at the same width', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     const read = await marks(page, STATUSES);
 
     expect(read.Complete, 'the schema no longer declares Complete, so this axis has no subject').toBeDefined();
@@ -427,7 +388,7 @@ test.describe('the Status mark carries its value on three structural axes', () =
   });
 
   test('axis three: In progress has a border that Archived drops entirely', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     const read = await marks(page, STATUSES);
 
     expect(read.Archived, 'the schema no longer declares Archived, so this axis has no subject').toBeDefined();
@@ -451,7 +412,7 @@ test.describe('the Status mark carries its value on three structural axes', () =
   }) => {
     // The planted control for all three cases above. Four readings that differ prove nothing unless
     // the instrument is seen changing its answer when the stylesheet changes under it.
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     const before = await marks(page, STATUSES);
 
     await plantStyle(page, ".suite-directory__status[data-status='In progress'] { border-style: solid !important; }");
@@ -477,7 +438,7 @@ test.describe('the Status mark carries its value on three structural axes', () =
 
 test.describe('axis one, the dot, which is the axis a border cannot carry', () => {
   test('is painted at 4 by 4 with a real fill on every Live mark', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     const painted = await dots(page);
 
     expect(
@@ -516,7 +477,7 @@ test.describe('axis one, the dot, which is the axis a border cannot carry', () =
     // implementation that has dropped the dot. Removed from the page rather than from the tree,
     // which is this suite's rule, and the two shapes of removal are both covered: the node deleted,
     // and the node left in place with nothing painted.
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     expect((await dots(page)).length, 'nothing to remove, so this control proves nothing').toBeGreaterThan(0);
 
     await plantStyle(page, '.suite-directory__dot { display: none !important; background: none !important; }');
@@ -547,7 +508,7 @@ test.describe('the taxonomy in a medium with no hue, which is what O-9 asks', ()
     // black, and the mark's border, text and dot to `#000`, so hue is deleted at source rather
     // than filtered at paint time. A `filter: grayscale(1)` would leave every computed colour
     // exactly as it was and measure nothing.
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     const screen = await marks(page, STATUSES);
 
     await page.emulateMedia({ media: 'print' });
@@ -599,7 +560,7 @@ test.describe('the taxonomy in a medium with no hue, which is what O-9 asks', ()
     // is under the floor, so colour cannot be the signal". Computed colours arrive as `lab()`, so
     // the conversion to sRGB is done by painting each one and reading the pixel back rather than by
     // parsing components out of the string, which would read Lab values as if they were sRGB.
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
 
     const measured = await page.evaluate(() => {
       const mark = document.querySelector('.suite-directory__status');
@@ -686,7 +647,7 @@ test.describe('the taxonomy in a medium with no hue, which is what O-9 asks', ()
   test('and the print read is a live read, not the screen read under another name', async ({ page }) => {
     // The control. `emulateMedia` silently doing nothing would leave every assertion above passing
     // against screen values, and the mark is `#000` on neither axis there.
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     const screen = await marks(page, STATUSES);
     expect(
       screen.Live.borderColour,
@@ -718,7 +679,7 @@ test.describe("A-5's other half: the Status never truncates", () => {
    * were two routes, and it keeps one: the failure messages name the surface they measured.
    */
   const expectNoTruncation = async (page: Page, route: string): Promise<void> => {
-    await goTo(page, route);
+    await goToDirectory(page, route);
     const rendered = await marksOnThePage(page, EDGE_SLACK);
 
     expect(rendered.length, `${route} renders no Status mark, so this case is vacuous`).toBeGreaterThan(0);
@@ -755,7 +716,7 @@ test.describe("A-5's other half: the Status never truncates", () => {
   test('and the same measurement fires against a mark clamped too narrow to hold its value', async ({ page }) => {
     // The planted control. A page whose marks all fit and a page whose measurement is broken look
     // identical from the clean read alone.
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     await plantStyle(page, '.suite-directory__status { max-inline-size: 12px !important; overflow: hidden !important; }');
 
     const clamped = await marksOnThePage(page, EDGE_SLACK);
@@ -777,7 +738,7 @@ test.describe("A-5's other half: the Status never truncates", () => {
     // room than a top-level one. `document.querySelector` returns a top-level mark, the Hub's own
     // entry being first in file order, so planting into it measures the roomiest position and calls
     // the result A-5.
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
 
     const positions = await page.locator('.suite-directory__status').count();
     expect(positions, 'no marks to plant into').toBeGreaterThan(0);
@@ -826,7 +787,7 @@ test.describe('the Status mark is not interactive', () => {
     // what `Complete` means reads the word. The 44px floor therefore does not apply to it, which is
     // why it is absent from `tests/e2e/hit-target-floor.pw.ts` rather than exempted in it, and this
     // is what keeps that absence honest.
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
 
     const shape = await page.evaluate(() => {
       const marks = [...document.querySelectorAll('.suite-directory__status')];
@@ -864,7 +825,7 @@ test.describe('the Status mark is not interactive', () => {
   });
 
   test('and changes nothing at all when the pointer rests on it', async ({ page }) => {
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
 
     const read = () =>
       page.locator('.suite-directory__status').first().evaluate((element) => {
@@ -914,7 +875,7 @@ test.describe('the Status mark is not interactive', () => {
     // one whose comparison is broken look identical, and this is what separates them: a real
     // `:hover` rule of exactly the kind `EXPERIENCE.md:351` forbids, planted, and both instruments
     // seen reacting to it.
-    await goTo(page, ROUTE);
+    await goToDirectory(page, ROUTE);
     await plantStyle(
       page,
       '.suite-directory__status:hover { background: rgb(255, 0, 0) !important; cursor: pointer !important; }'

@@ -27,7 +27,8 @@
 //     `jwt_steamid64()` and `is_admin()`, the functions every RLS policy reads. Like a real login it
 //     creates the Auth user when the move did not carry it, and binds the claim; nothing else is written.
 //
-// Pure exports plus a thin `main`; the suite plants the fetcher and the query. Exit 0 the check passed,
+// Pure exports plus a thin `main`; the suite plants the fetcher, and runs `EXPORT_SQL` against a real
+// Postgres through the query seam (Story 9-8). Exit 0 the check passed,
 // 1 it refused, 2 a defect (a missing variable, an unreadable file, a malformed answer).
 
 import { spawnSync } from 'node:child_process';

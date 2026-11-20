@@ -4,7 +4,8 @@ import './PlateMark.scss';
  * The Plate mark: the Hub's one label component (Stories 2-11 and 2-31, `DESIGN.md:686-707`,
  * `RESTYLE-SPEC.md` § 7 Label).
  *
- * Mono uppercase signage on a hairline, carrying section identity. **Three variants, and no
+ * Mono uppercase signage on a hairline, naming what it sits over or leading a readout (see
+ * `label` for every kind of call site). **Three variants, and no
  * fourth**, each a different position for the rule:
  *
  * - **Section** (the default): identity on the leading edge, the position or domain the section
@@ -46,7 +47,17 @@ export type PlateMarkProps =
   | {
       variant?: 'section';
       /**
-       * Section identity, leading edge. Never a count and never an eyebrow on a heading.
+       * The leading cell: the identity of what the mark sits over, or the readout it leads with.
+       * `DESIGN.md` § Components (**Plate mark**) calls this section identity above a section head, and the call
+       * sites are wider than that, by design rather than drift (DW-239):
+       *
+       * - a page's identity over its heading: `CvIntro` (`Curriculum Vitae`), `Error404` (`Error`);
+       * - the site's own identity over a block that renders no heading: `Premise` passes the Hub
+       *   entry's `name` and its bare domain, the mark `mockups/key-screens.html` draws there;
+       * - a counted readout: `WorkHero`'s meta line, `N POSITIONS` over the period (Story 2-33).
+       *
+       * Never an eyebrow repeating a heading, and never a number typed here: a count is a length
+       * read from its source, as `WorkHero` reads `work.length`.
        *
        * Trimmed, and a label that trims to nothing draws no mark at all rather than an empty box
        * over a hairline. The Registry's schema constrains `name` to a string and not to a non-blank

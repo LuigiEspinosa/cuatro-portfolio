@@ -39,7 +39,15 @@
     "**/*.ts",
     "**/*.tsx"
   ],
+  // The test files are type checked by the root `pnpm typecheck` (ci.yml line 62), whose
+  // program spans the repo and so resolves `ops/literal-conformance.mjs`. They are excluded
+  // here because `next build` runs inside the Docker builder, where `turbo prune --docker`
+  // has deliberately left `ops/` out (see the note in Dockerfile). Type checking them in
+  // that context cannot work and the check is not lost, only moved to where the imports exist.
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ]
 }

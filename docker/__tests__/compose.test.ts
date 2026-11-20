@@ -179,8 +179,8 @@ describe("the Hub's healthcheck probe, run (DW-262)", () => {
 // Its image is an exact release and registry digest, never the floating `postgresql-latest` it ran before
 // (DW-191). The image's start script migrates unless SKIP_DB_MIGRATION is set, so the server sets it and
 // the migration is its own one-off under the `migrate` profile, from the same image (AD-23, DW-302). Both
-// reach database and role `umami` at `estate-postgres` and never `anchor-db`, which stays only as the
-// move's rollback. The server's healthcheck lets the move's `up` report healthy and a rollout roll it
+// reach database and role `umami` at `estate-postgres` and never `anchor-db`, the store Umami left, whose
+// declaration Story 9-20 removed. The server's healthcheck lets the move's `up` report healthy and a rollout roll it
 // (AD-8, DW-179).
 describe('the Umami services', () => {
   const PINNED = /^ {4}image: (ghcr\.io\/umami-software\/umami:\d+\.\d+\.\d+@sha256:[0-9a-f]{64})$/m;
@@ -255,7 +255,8 @@ describe('the Umami services', () => {
 
 // Story 3-5: the finance application, merged and imaged but not placed. Its two services sit under
 // profiles no deploy activates, run its image by the sha in FINANCE_TAG, and reach database and role
-// `finance` in `anchor-db` (AD-10). The migration is its own one-off service under the `migrate` profile,
+// `cuatro_finance` in the estate Postgres (AD-3, AD-10, Story 9-20), whose init creates them; finance was
+// the last reader of `anchor-db`, so that store's declaration and volume are gone. The migration is its own one-off service under the `migrate` profile,
 // the name `ops/deploy-remote.sh` runs before a rollout (AD-23), and the server's probe is the Hub's,
 // which the cases above run against a live server.
 describe('the finance services', () => {
@@ -263,10 +264,20 @@ describe('the finance services', () => {
   const finance = service('finance');
   const migrate = service('finance-migrate');
   const IMAGE = '    image: ghcr.io/luigiespinosa/finance:${FINANCE_TAG-}';
-  const DATABASE = '      - DATABASE_URL=postgresql://finance:${FINANCE_DB_PASSWORD-}@anchor-db:5432/finance';
+  const DATABASE =
+    '      - DATABASE_URL=postgresql://cuatro_finance:${CUATRO_FINANCE_DB_PASSWORD-}@estate-postgres:5432/cuatro_finance';
 
   it('runs the image by the sha in FINANCE_TAG, under a profile no deploy activates', () => {
     expect(finance.split('\n')).toEqual(expect.arrayContaining([IMAGE, '    profiles: [finance]', DATABASE]));
+  });
+
+  it('reaches cuatro_finance on the estate-postgres network, and nothing declares anchor-db any more', () => {
+    for (const part of [finance, migrate]) {
+      expect(part).toMatch(/^ {4}networks:\n {6}estate-postgres:$/m);
+      expect(part).not.toContain('anchor-db');
+    }
+    expect(parts(compose, 2).some((part) => part.startsWith('  anchor-db:'))).toBe(false);
+    expect(compose).not.toMatch(/^ {2}postgres_data:$/m);
   });
 
   it("probes /api/health with the Hub's probe, so the runs above cover it", () => {

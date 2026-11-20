@@ -1144,8 +1144,8 @@ describe('the vector coverage is real and uniquely claimed', () => {
       let bestN = 0n;
       let bestD = 0n;
       for (const sid of c.tied) {
-        const pair = c.players.find((p) => p.steamid64 === sid)?.stats_int.efficiency[numKey];
-        if (pair === undefined) return false;
+        const pair = c.players.find((p) => p.steamid64 === sid)?.stats_int.efficiency?.[numKey];
+        if (pair === undefined || typeof pair === 'string') return false;
         const n = BigInt(pair.num);
         const d = BigInt(pair.den);
         if (naive === undefined || n * bestD > bestN * d) [naive, bestN, bestD] = [sid, n, d];
